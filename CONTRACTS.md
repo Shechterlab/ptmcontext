@@ -758,7 +758,7 @@ shows). Every value is text unless said otherwise; empty means not known. Lists 
 `website.protein.card.records` (the card's "Who binds it" block over a `site_records` table) names the group headings in
 this order: the label of the `groups` attribute's value, else `labels: {code: label}` (optional, a map of a group's code to
 its heading), else the code with its underscores replaced by spaces. The summary line above the groups uses the same
-words, lower-cased. In `site_evidence`, a row's `kinds` entry of `""` names the row by its partner: `partner` (the
+words, lower-cased. `rollup: [{label, groups: [codes]}]` (optional) puts the groups it names under one heading and one phrase of the summary (for example "binds it modified" against "binds the residue, unmodified or in another state"); a group no entry names stands alone. In `site_evidence`, a row's `kinds` entry of `""` names the row by its partner: `partner` (the
 gene), else `partner_accession`, else the kind's label.
 
 `ptmc web` keeps each protein's rows beside its page (`data/e/NN.json`, `e_shards` files of about 0.4 MB by the rule of `map_shards`), the rows that name a
@@ -1401,7 +1401,7 @@ Blocks (`kind`):
 
 | Kind | Reads | Draws |
 |---|---|---|
-| `forest` | `rows: [row refs]` (with `group` headings), `method` (default within each protein) | odds ratios with 95% CIs, counts, q; with a selection, its rows tested again in the browser beside the whole dataset's |
+| `forest` | `rows: [row refs]` (with `group` headings), `method` (default within each protein) | odds ratios with 95% CIs, counts, q (a list of more than ten rows shows the first eight and the rest behind "Show all tests"); with a selection, its rows tested again in the browser beside the whole dataset's |
 | `lines` | `analysis`, `series: [category]`, `x: {<stratum>: <number>}`, `x_label` | each series' odds ratio against x (a question's strata), with CI bands |
 | `sets` | `analysis` (a protein-set question) | each set: marked proteins in it against all, fold, q, and its reading within abundance deciles |
 | `shares` | `attribute` (a category attribute of the marks) | a stacked bar of its values among the (selected) marks |
@@ -1409,7 +1409,7 @@ Blocks (`kind`):
 | `matrix` | `attribute` (a list attribute: columns), `rows: [{filter, value, label, group}]` (a filter key as the Filters panel's: `a:<analysis>`, `t:<attribute>`) | odds ratio of each row feature among the marks with each column value against those without (pooled or within proteins), with n |
 | `checker` | `attributes: [names]`, `tables: [names]` | a search box: a mark's values and its rows in those tables |
 | `example` | `tracks: [kinds]`, `protein` (default accession or gene) | one protein's map with those tracks, chosen in a box |
-| `table` | `table`, `columns: [names]`, `group_by`, `chips` (a column whose values filter), `sort`, `limit`, `search` | the rows (a selection's own), sortable, with links |
+| `table` | `table`, `columns: [names]`, `group_by`, `rollup: [{label, values: [group codes]}]` (headings that each hold several groups), `chips` (a column whose values filter), `sort`, `limit` (kept for older site files: a table shows ten rows at a time), `search` | one line of counts by kind or group, then the rows behind "Show all rows" (a selection's own, ten at a time), sortable, with links |
 | `bars` | `table` (key protein), `label` (a column), `groups: {column, values: {code: title}}`, `top` | for each group value, the labels counted by distinct (selected) proteins |
 | `pairs` | `table` (key protein), `label`, `rows: {column, value}`, `cols: {column, value}` | a matrix: proteins that both a row label and a column label pair with |
 | `histogram` | `table` (key residue), `value` (a number column), `step`, `max` | the values of marks against the other residues, binned |

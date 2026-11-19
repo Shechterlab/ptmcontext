@@ -2717,6 +2717,9 @@ website:                  # the look and words of the website (ptmc web); layout
           self: homo-oligomer contacts in structures
           predicted: complex models (ProtVar, AlphaFold DB), not observations
         open: [writes, removes, binds_methylated, mutation_changes_binding, binds_region, other_reaction, not_a_protein]
+        rollup:              # the groups under two headings: the residue in the site's state, against in any other
+          - {label: Binds it methylated, groups: [binds_methylated]}
+          - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
         not_papers: [predicted]              # groups whose records are not counted among the papers
         kinds: {self: another copy, rna: RNA, dna: DNA, gene: Gene locus, small_molecule: Small molecule, peptide: Peptide or complex}
         species: Homo sapiens                # partners of another species are named with theirs
@@ -3273,11 +3276,11 @@ website:                  # the look and words of the website (ptmc web); layout
           sections:
             - id: ix-who
               title: Who acts on the methylarginine
-              question: Which partners methylate these sites, demethylate them, or bind them methylated, and in which experiments?
+              question: Which partners methylate these sites, demethylate them, bind them methylated, or bind the residue in another state, and in which experiments?
               sub: methylarginines with a record
               blocks:
-                - {kind: table, table: records, group_by: group, columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
-                   where: [{column: group, in: [writes, removes, binds_methylated, mutation_changes_binding]}]}
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds it methylated, values: [binds_methylated]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
+                   where: [{column: group, in: [writes, removes, binds_methylated, binds_unmodified, binds_other_residue, binds_state_not_read, mutation_changes_binding]}]}
             - id: ixs-partners
               title: Writers, readers and other partners
               question: Which PRMTs and reader-domain proteins bind the methylated proteins?

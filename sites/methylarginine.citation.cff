@@ -245,3 +245,254 @@ references:   # the data sources: cited with every export
     end: 304
     year: 2018
     doi: "10.1016/j.cell.2018.03.022"
+  # the evidence behind the Interactions tab and the protein pages' partner lists (authors, titles and DOIs checked against Crossref;
+  # volumes and pages as the release's inputs/MANIFEST.tsv gives them)
+  - type: article   # PDB structures, contacts and entries (RCSB)
+    authors: [{family-names: Burley, given-names: SK}, {family-names: Bhikadiya, given-names: C}, {family-names: Bi, given-names: C}, {name: "et al."}]
+    title: "RCSB Protein Data Bank (RCSB.org): delivery of experimentally-determined PDB structures alongside one million computed structure models of proteins from artificial intelligence/machine learning"
+    journal: "Nucleic Acids Res"
+    volume: 51
+    start: D488
+    end: D508
+    year: 2023
+    doi: "10.1093/nar/gkac1077"
+  - type: article   # PDBe-KB interface residues; credited as PDBe-KB consortium
+    authors: [{family-names: Varadi, given-names: M}, {family-names: Anyango, given-names: S}, {name: "et al."}]
+    title: "PDBe-KB: collaboratively defining the biological context of structural data"
+    journal: "Nucleic Acids Res"
+    volume: 50
+    start: D534
+    end: D542
+    year: 2022
+    doi: "10.1093/nar/gkab988"
+  - type: article   # UniProt numbering of PDB chains
+    authors: [{family-names: Dana, given-names: JM}, {family-names: Gutmanas, given-names: A}, {family-names: Tyagi, given-names: N}, {name: "et al."}]
+    title: "SIFTS: updated Structure Integration with Function, Taxonomy and Sequences resource allows 40-fold increase in coverage of structure-based annotations for proteins"
+    journal: "Nucleic Acids Res"
+    volume: 47
+    start: D482
+    end: D489
+    year: 2019
+    doi: "10.1093/nar/gky1114"
+  - type: article   # predicted interfaces and contacts
+    authors: [{family-names: Stephenson, given-names: J}, {family-names: Totoo, given-names: P}, {family-names: Burke, given-names: DF}, {name: "et al."}]
+    title: "ProtVar: mapping and contextualizing human missense variation"
+    journal: "Nucleic Acids Res"
+    volume: 52
+    start: W140
+    end: W147
+    year: 2024
+    doi: "10.1093/nar/gkae413"
+  - type: article   # AlphaFold-Multimer models served by ProtVar
+    authors: [{family-names: Burke, given-names: DF}, {family-names: Bryant, given-names: P}, {family-names: Barrio-Hernandez, given-names: I}, {name: "et al."}]
+    title: "Towards a structurally resolved human protein interaction network"
+    journal: "Nat Struct Mol Biol"
+    volume: 30
+    start: 216
+    end: 225
+    year: 2023
+    doi: "10.1038/s41594-022-00910-8"
+  - type: preprint   # bioRxiv; AlphaFold DB human heterodimers
+    authors: [{family-names: Han, given-names: X}, {family-names: Tsenkov, given-names: M}, {family-names: Venanzi, given-names: M}, {name: "et al."}]
+    title: "AlphaFold Database expands to proteome-scale quaternary structures"
+    publisher: bioRxiv
+    year: 2026
+    doi: "10.64898/2026.03.27.714458"
+  - type: article   # IntAct mutations, binding regions and records
+    authors: [{family-names: del Toro, given-names: N}, {family-names: Shrivastava, given-names: A}, {family-names: Ragueneau, given-names: E}, {name: "et al."}]
+    title: "The IntAct database: efficient access to fine-grained molecular interaction data"
+    journal: "Nucleic Acids Res"
+    volume: 50
+    start: D648
+    end: D653
+    year: 2022
+    doi: "10.1093/nar/gkab1006"
+  - type: article   # physical partners (score 0.7 or more)
+    authors: [{family-names: Szklarczyk, given-names: D}, {family-names: Nastou, given-names: K}, {family-names: Koutrouli, given-names: M}, {name: "et al."}]
+    title: "The STRING database in 2025: protein networks with directionality of regulation"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D730
+    end: D737
+    year: 2025
+    doi: "10.1093/nar/gkae1113"
+  - type: article   # curated complexes
+    authors: [{family-names: Meldal, given-names: BHM}, {family-names: Perfetto, given-names: L}, {family-names: Combe, given-names: C}, {name: "et al."}]
+    title: "Complex Portal 2022: new curation frontiers"
+    journal: "Nucleic Acids Res"
+    volume: 50
+    start: D578
+    end: D586
+    year: 2022
+    doi: "10.1093/nar/gkab991"
+  - type: article   # RNA- and DNA-binding annotations; credited as the Gene Ontology Consortium
+    authors: [{family-names: Aleksander, given-names: SA}, {family-names: Balhoff, given-names: J}, {name: "et al."}]
+    title: "The Gene Ontology knowledgebase in 2023"
+    journal: "Genetics"
+    volume: 224
+    start: iyad031
+    year: 2023
+    doi: "10.1093/genetics/iyad031"
+  - type: preprint   # bioRxiv; the pepR-MS compendium (RNA-crosslinked residues); CC BY-NC
+    authors: [{family-names: Sha, given-names: S}, {family-names: Kuster, given-names: B}, {family-names: Trendel, given-names: J}]
+    title: "Peptide-RNA photocrosslinks with tunable RNA chain map RNA interfaces proteome-wide"
+    publisher: bioRxiv
+    year: 2025
+    doi: "10.1101/2025.09.05.674461"
+  - type: article   # Kramer 2014, re-analyzed in the pepR-MS compendium
+    authors: [{family-names: Kramer, given-names: K}, {family-names: Sachsenberg, given-names: T}, {family-names: Beckmann, given-names: BM}, {name: "et al."}]
+    title: "Photo-cross-linking and high-resolution mass spectrometry for assignment of RNA-binding sites in RNA-binding proteins"
+    journal: "Nat Methods"
+    volume: 11
+    start: 1064
+    end: 1070
+    year: 2014
+    doi: "10.1038/nmeth.3092"
+  - type: article   # XRNAX, re-analyzed in the pepR-MS compendium
+    authors: [{family-names: Trendel, given-names: J}, {family-names: Schwarzl, given-names: T}, {family-names: Horos, given-names: R}, {name: "et al."}]
+    title: "The Human RNA-Binding Proteome and Its Dynamics during Translational Arrest"
+    journal: "Cell"
+    volume: 176
+    start: 391
+    end: 403
+    year: 2019
+    doi: "10.1016/j.cell.2018.11.004"
+  - type: article   # RBS-ID, re-analyzed in the pepR-MS compendium
+    authors: [{family-names: Bae, given-names: JW}, {family-names: Kwon, given-names: SC}, {family-names: Na, given-names: Y}, {name: "et al."}]
+    title: "Chemical RNA digestion enables robust RNA-binding site mapping at single amino acid resolution"
+    journal: "Nat Struct Mol Biol"
+    volume: 27
+    start: 678
+    end: 682
+    year: 2020
+    doi: "10.1038/s41594-020-0436-2"
+  - type: article   # pRBS-ID, re-analyzed in the pepR-MS compendium
+    authors: [{family-names: Bae, given-names: JW}, {family-names: Kim, given-names: S}, {family-names: Kim, given-names: VN}, {name: "et al."}]
+    title: "Photoactivatable ribonucleosides mark base-specific RNA-binding sites"
+    journal: "Nat Commun"
+    volume: 12
+    start: 6026
+    year: 2021
+    doi: "10.1038/s41467-021-26317-5"
+  - type: article   # CAPRI RNA-crosslinked and RNA-bound peptides; CC BY 4.0
+    authors: [{family-names: Panhale, given-names: A}, {family-names: Richter, given-names: FM}, {family-names: Ramirez, given-names: F}, {name: "et al."}]
+    title: "CAPRI enables comparison of evolutionarily conserved RNA interacting regions"
+    journal: "Nat Commun"
+    volume: 10
+    start: 2682
+    year: 2019
+    doi: "10.1038/s41467-019-10585-3"
+  - type: article   # RBDmap RNA-bound fragments (Table S1); CC BY 4.0
+    authors: [{family-names: Castello, given-names: A}, {family-names: Fischer, given-names: B}, {family-names: Frese, given-names: CK}, {name: "et al."}]
+    title: "Comprehensive Identification of RNA-Binding Domains in Human Cells"
+    journal: "Mol Cell"
+    volume: 63
+    start: 696
+    end: 710
+    year: 2016
+    doi: "10.1016/j.molcel.2016.06.029"
+  - type: article   # pCLAP: the RNA-binding peptides are derived here from the deposited PRIDE PXD005739 search, by the rule of Mullari et al. 2023 (below); the article is not open access
+    authors: [{family-names: Mullari, given-names: M}, {family-names: Lyon, given-names: D}, {family-names: Jensen, given-names: LJ}, {name: "et al."}]
+    title: "Specifying RNA-Binding Regions in Proteins by Peptide Cross-Linking and Affinity Purification"
+    journal: "J Proteome Res"
+    volume: 16
+    start: 2762
+    end: 2772
+    year: 2017
+    doi: "10.1021/acs.jproteome.7b00042"
+  - type: article   # the pCLAP rule (Filter 1)
+    authors: [{family-names: Mullari, given-names: M}, {family-names: Fossat, given-names: N}, {family-names: Skotte, given-names: NH}, {name: "et al."}]
+    title: "Characterising the RNA-binding protein atlas of the mammalian brain uncovers RBM5 misregulation in mouse models of Huntington's disease"
+    journal: "Nat Commun"
+    volume: 14
+    start: 4348
+    year: 2023
+    doi: "10.1038/s41467-023-39936-x"
+  - type: article   # RBR-ID in K562 nuclei (PRIDE PXD035484, CC0)
+    authors: [{family-names: Oksuz, given-names: O}, {family-names: Henninger, given-names: JE}, {family-names: Warneford-Thomson, given-names: R}, {name: "et al."}]
+    title: "Transcription factors interact with RNA to regulate genes"
+    journal: "Mol Cell"
+    volume: 83
+    start: 2449
+    end: 2463
+    year: 2023
+    doi: "10.1016/j.molcel.2023.06.012"
+  - type: article   # the RBR-ID method and score
+    authors: [{family-names: He, given-names: C}, {family-names: Sidoli, given-names: S}, {family-names: Warneford-Thomson, given-names: R}, {name: "et al."}]
+    title: "High-Resolution Mapping of RNA-Binding Regions in the Nuclear Proteome of Embryonic Stem Cells"
+    journal: "Mol Cell"
+    volume: 64
+    start: 416
+    end: 430
+    year: 2016
+    doi: "10.1016/j.molcel.2016.09.034"
+  - type: article   # DNA-crosslinked residues and peptides; CC BY-NC 4.0
+    authors: [{family-names: Trendel, given-names: J}, {family-names: Trendel, given-names: S}, {family-names: Sha, given-names: S}, {name: "et al."}]
+    title: "The human proteome with direct physical access to DNA"
+    journal: "Cell"
+    volume: 188
+    start: 4424
+    end: 4440
+    year: 2025
+    doi: "10.1016/j.cell.2025.04.037"
+  - type: article   # RNA Bind-n-Seq
+    authors: [{family-names: Dominguez, given-names: D}, {family-names: Freese, given-names: P}, {family-names: Alexis, given-names: MS}, {name: "et al."}]
+    title: "Sequence, Structure, and Context Preferences of Human RNA Binding Proteins"
+    journal: "Mol Cell"
+    volume: 70
+    start: 854
+    end: 867
+    year: 2018
+    doi: "10.1016/j.molcel.2018.05.001"
+  - type: article   # ENCODE data; credited as the ENCODE Project Consortium
+    authors: [{family-names: Abascal, given-names: F}, {family-names: Acosta, given-names: R}, {name: "et al."}]
+    title: "Expanded encyclopaedias of DNA elements in the human and mouse genomes"
+    journal: "Nature"
+    volume: 583
+    start: 699
+    end: 710
+    year: 2020
+    doi: "10.1038/s41586-020-2493-4"
+  - type: article   # ENCODE eCLIP
+    authors: [{family-names: Van Nostrand, given-names: EL}, {family-names: Freese, given-names: P}, {family-names: Pratt, given-names: GA}, {name: "et al."}]
+    title: "A large-scale binding and functional map of human RNA-binding proteins"
+    journal: "Nature"
+    volume: 583
+    start: 711
+    end: 719
+    year: 2020
+    doi: "10.1038/s41586-020-2077-3"
+  - type: article   # ENCORE eCLIP; CC BY 4.0
+    authors: [{family-names: Her, given-names: H}, {family-names: Yee, given-names: BA}, {family-names: Xu, given-names: S}, {name: "et al."}]
+    title: "Comprehensive RNA-binding protein analyses and deep learning uncover genetic constraints and disease associations in protein-RNA interfaces"
+    journal: "Cell Syst"
+    volume: 17
+    start: 101588
+    year: 2026
+    doi: "10.1016/j.cels.2026.101588"
+  - type: article   # the eCLIP peak calling of ENCORE
+    authors: [{family-names: Boyle, given-names: EA}, {family-names: Her, given-names: H}, {family-names: Mueller, given-names: JR}, {name: "et al."}]
+    title: "Skipper analysis of eCLIP datasets enables sensitive detection of constrained translation factor binding sites"
+    journal: "Cell Genomics"
+    volume: 3
+    start: 100317
+    year: 2023
+    doi: "10.1016/j.xgen.2023.100317"
+  - type: article   # HTR-SELEX; CC BY-NC 4.0
+    authors: [{family-names: Jolma, given-names: A}, {family-names: Zhang, given-names: J}, {family-names: Mondragon, given-names: E}, {name: "et al."}]
+    title: "Binding specificities of human RNA-binding proteins toward structured and linear RNA sequences"
+    journal: "Genome Res"
+    volume: 30
+    start: 962
+    end: 973
+    year: 2020
+    doi: "10.1101/gr.258848.119"
+  - type: article   # DNA binding profiles (JASPAR 2026 release of the 2024 paper)
+    authors: [{family-names: Rauluseviciute, given-names: I}, {family-names: Riudavets-Puig, given-names: R}, {family-names: Blanc-Mathieu, given-names: R}, {name: "et al."}]
+    title: "JASPAR 2024: 20th anniversary of the open-access database of transcription factor binding profiles"
+    journal: "Nucleic Acids Res"
+    volume: 52
+    start: D174
+    end: D182
+    year: 2024
+    doi: "10.1093/nar/gkad1059"

@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Interactions tab and protein pages, simpler: a table shows one line of counts per kind or group and keeps its rows behind "Show all rows" (ten at a time); a forest of more than ten tests shows eight and the rest behind "Show all tests"; the method sentence of a forest is behind "Method". The writer line of a site card lists eight partners and counts the rest.
+- Who binds the residue: the records are split under "binds it modified" (methylated, acetylated or phosphorylated, where the structure or record has the residue in that state) and "binds the residue, unmodified or in another state", on the Interactions tab and the site card of all four sites (`rollup` in `website.pages[].groups[].sections[].blocks[]` for a table with `group_by`, and in `website.protein.card.records`). The methylarginine tab now lists the unmodified binders too.
+- Tiles that summarize several tests quote the significant ones only, with how many of the tests that is and the largest q.
+- Cite pages list the papers behind each interaction source a site shows: PDB, PDBe-KB, SIFTS, ProtVar, AlphaFold DB, IntAct, STRING, Complex Portal, GO, the pepR-MS compendium and its four re-analyzed datasets, CAPRI, RBDmap, pCLAP, RBR-ID, Trendel 2025, RNA Bind-n-Seq, HTR-SELEX, JASPAR and eCLIP. Titles, pages and DOIs were checked against Crossref.
+
 - Pin PTM_Pipeline v1.5.1 at its release commit 9a03d54 (tag v1.5.1; same tree as 7ae9a02, no md5 changes). Every site cites the release by its version DOI 10.5281/zenodo.24373077 (published 2026-11-19), with the concept DOI 10.5281/zenodo.22696798 for all versions; methyllysine, lysine and phospho now carry the data DOI. Human-facing source links name the tag.
 
 - Pin PTM_Pipeline 7ae9a02 (v1.5.1 with the corrected release README; no data file differs from 8b8e233).

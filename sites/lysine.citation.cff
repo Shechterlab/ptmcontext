@@ -285,3 +285,108 @@ references:   # the data sources: cited with every export
     end: 1421
     year: 2026
     doi: "10.1016/j.chembiol.2026.09.011"
+  # the evidence behind the Interactions tab and the protein pages' partner lists (authors, titles and DOIs checked against Crossref;
+  # volumes and pages as the release's inputs/MANIFEST.tsv gives them)
+  - type: article   # PDB structures, contacts and entries (RCSB)
+    authors: [{family-names: Burley, given-names: SK}, {family-names: Bhikadiya, given-names: C}, {family-names: Bi, given-names: C}, {name: "et al."}]
+    title: "RCSB Protein Data Bank (RCSB.org): delivery of experimentally-determined PDB structures alongside one million computed structure models of proteins from artificial intelligence/machine learning"
+    journal: "Nucleic Acids Res"
+    volume: 51
+    start: D488
+    end: D508
+    year: 2023
+    doi: "10.1093/nar/gkac1077"
+  - type: article   # PDBe-KB interface residues; credited as PDBe-KB consortium
+    authors: [{family-names: Varadi, given-names: M}, {family-names: Anyango, given-names: S}, {name: "et al."}]
+    title: "PDBe-KB: collaboratively defining the biological context of structural data"
+    journal: "Nucleic Acids Res"
+    volume: 50
+    start: D534
+    end: D542
+    year: 2022
+    doi: "10.1093/nar/gkab988"
+  - type: article   # UniProt numbering of PDB chains
+    authors: [{family-names: Dana, given-names: JM}, {family-names: Gutmanas, given-names: A}, {family-names: Tyagi, given-names: N}, {name: "et al."}]
+    title: "SIFTS: updated Structure Integration with Function, Taxonomy and Sequences resource allows 40-fold increase in coverage of structure-based annotations for proteins"
+    journal: "Nucleic Acids Res"
+    volume: 47
+    start: D482
+    end: D489
+    year: 2019
+    doi: "10.1093/nar/gky1114"
+  - type: preprint   # bioRxiv; the pepR-MS compendium (RNA-crosslinked residues); CC BY-NC
+    authors: [{family-names: Sha, given-names: S}, {family-names: Kuster, given-names: B}, {family-names: Trendel, given-names: J}]
+    title: "Peptide-RNA photocrosslinks with tunable RNA chain map RNA interfaces proteome-wide"
+    publisher: bioRxiv
+    year: 2025
+    doi: "10.1101/2025.09.05.674461"
+  - type: article   # Kramer 2014, re-analyzed in the pepR-MS compendium
+    authors: [{family-names: Kramer, given-names: K}, {family-names: Sachsenberg, given-names: T}, {family-names: Beckmann, given-names: BM}, {name: "et al."}]
+    title: "Photo-cross-linking and high-resolution mass spectrometry for assignment of RNA-binding sites in RNA-binding proteins"
+    journal: "Nat Methods"
+    volume: 11
+    start: 1064
+    end: 1070
+    year: 2014
+    doi: "10.1038/nmeth.3092"
+  - type: article   # XRNAX, re-analyzed in the pepR-MS compendium
+    authors: [{family-names: Trendel, given-names: J}, {family-names: Schwarzl, given-names: T}, {family-names: Horos, given-names: R}, {name: "et al."}]
+    title: "The Human RNA-Binding Proteome and Its Dynamics during Translational Arrest"
+    journal: "Cell"
+    volume: 176
+    start: 391
+    end: 403
+    year: 2019
+    doi: "10.1016/j.cell.2018.11.004"
+  - type: article   # RBS-ID, re-analyzed in the pepR-MS compendium
+    authors: [{family-names: Bae, given-names: JW}, {family-names: Kwon, given-names: SC}, {family-names: Na, given-names: Y}, {name: "et al."}]
+    title: "Chemical RNA digestion enables robust RNA-binding site mapping at single amino acid resolution"
+    journal: "Nat Struct Mol Biol"
+    volume: 27
+    start: 678
+    end: 682
+    year: 2020
+    doi: "10.1038/s41594-020-0436-2"
+  - type: article   # pRBS-ID, re-analyzed in the pepR-MS compendium
+    authors: [{family-names: Bae, given-names: JW}, {family-names: Kim, given-names: S}, {family-names: Kim, given-names: VN}, {name: "et al."}]
+    title: "Photoactivatable ribonucleosides mark base-specific RNA-binding sites"
+    journal: "Nat Commun"
+    volume: 12
+    start: 6026
+    year: 2021
+    doi: "10.1038/s41467-021-26317-5"
+  - type: article   # CAPRI RNA-crosslinked and RNA-bound peptides; CC BY 4.0
+    authors: [{family-names: Panhale, given-names: A}, {family-names: Richter, given-names: FM}, {family-names: Ramirez, given-names: F}, {name: "et al."}]
+    title: "CAPRI enables comparison of evolutionarily conserved RNA interacting regions"
+    journal: "Nat Commun"
+    volume: 10
+    start: 2682
+    year: 2019
+    doi: "10.1038/s41467-019-10585-3"
+  - type: article   # RBR-ID in K562 nuclei (PRIDE PXD035484, CC0)
+    authors: [{family-names: Oksuz, given-names: O}, {family-names: Henninger, given-names: JE}, {family-names: Warneford-Thomson, given-names: R}, {name: "et al."}]
+    title: "Transcription factors interact with RNA to regulate genes"
+    journal: "Mol Cell"
+    volume: 83
+    start: 2449
+    end: 2463
+    year: 2023
+    doi: "10.1016/j.molcel.2023.06.012"
+  - type: article   # the RBR-ID method and score
+    authors: [{family-names: He, given-names: C}, {family-names: Sidoli, given-names: S}, {family-names: Warneford-Thomson, given-names: R}, {name: "et al."}]
+    title: "High-Resolution Mapping of RNA-Binding Regions in the Nuclear Proteome of Embryonic Stem Cells"
+    journal: "Mol Cell"
+    volume: 64
+    start: 416
+    end: 430
+    year: 2016
+    doi: "10.1016/j.molcel.2016.09.034"
+  - type: article   # DNA-crosslinked residues and peptides; CC BY-NC 4.0
+    authors: [{family-names: Trendel, given-names: J}, {family-names: Trendel, given-names: S}, {family-names: Sha, given-names: S}, {name: "et al."}]
+    title: "The human proteome with direct physical access to DNA"
+    journal: "Cell"
+    volume: 188
+    start: 4424
+    end: 4440
+    year: 2025
+    doi: "10.1016/j.cell.2025.04.037"

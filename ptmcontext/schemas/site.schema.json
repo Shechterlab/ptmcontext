@@ -7994,6 +7994,29 @@
                                 "group_by": {
                                   "type": "string"
                                 },
+                                "rollup": {
+                                  "type": "array",
+                                  "description": "table with group_by: headings that each hold several groups, as [{label, values: [group codes]}] (for example binds it modified, against binds the residue in any other state)",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "values": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "label",
+                                      "values"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
                                 "chips": {
                                   "type": "string"
                                 },

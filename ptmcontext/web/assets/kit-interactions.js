@@ -432,45 +432,45 @@
     }
     return { body: parts.join(''), H: y + 20 };
   }
+  const OPEN = new Set(); // the "Show all" folds that are open (the page redraws on each click)
+  const FOREST_TOP = 8; // tests a long forest shows before "Show all tests"
   function forestHtml(pg, sec, b, bi) {
     const s = st(bkey(pg, sec, bi), { m: b.method || 'mantel_haenszel' }),
       rows = rowsFor(b.rows, s.m);
     const sc = scale(rows.flatMap((x) => [x.site, x.mine].filter(Boolean).flatMap((r) => [effOf(r), r.lo, r.hi])));
     const X = (v) => sc.X(v, 100).toFixed(2) + '%';
     let grp = null;
-    const body = rows
-      .map((x) => {
-        const r = shown(x),
-          d = dirOf(r),
-          head = x.group && x.group !== grp ? ((grp = x.group), `<div class="ixf-group">${esc(x.group)}</div>`) : '';
-        const tick =
-          selOn() && x.site && effOf(x.site)
-            ? `<line class="ixf-whole" x1="${X(effOf(x.site))}" x2="${X(effOf(x.site))}" y1="20%" ` + `y2="80%"/>`
-            : '';
-        const ci =
-          r && r.lo != null && r.hi != null
-            ? `<line class="whisker ${d}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" ` + `y2="50%"/>`
-            : '';
-        const dot = r && effOf(r) ? `<circle class="dot ${d}" cx="${X(effOf(r))}" cy="50%" r="4.6"/>` : '';
-        const n = r ? `${int(r.a)} of ${int(r.a + r.b)} <span class="muted">(${pcS(r.a, r.a + r.b)})</span>` : '–',
-          o = r ? `${int(r.c)} of ${int(r.c + r.d)} <span class="muted">(${pcS(r.c, r.c + r.d)})</span>` : '–';
-        return (
-          head +
-          (`<div class="ixf-row" data-f="a:${esc(x.ref.analysis)}" data-v="${esc(x.ref.category)}" role="button" ` +
-            `tabindex="0" title="Select the ${esc(W.marks)} ${esc(x.label)}" data-ixr="${esc(
-              JSON.stringify([x.ref.analysis, x.ref.category, s.m])
-            )}">`) +
-          `<span class="lab">${esc(x.label)}</span><svg aria-hidden="true">${gridLines(sc, X)}${tick}${ci}${dot}</svg>` +
-          `<span class="ixf-or ${d}">${
-            r && effOf(r)
-              ? `${fxn(effOf(r))}${r.lo != null ? ` <span class="muted">[${fxn(r.lo)}–${fxn(r.hi)}]</span>` : ''}`
-              : '–'
-          }</span>` +
-          (`<span class="ixf-n">${n}</span><span class="ixf-n">${o}</span><span class="ixf-q">${r ? fq(r.q) : '–'}</span><span ` +
-            `class="ixf-n">${r?.strata != null ? `${int(r.strata)}` : '–'}</span></div>`)
-        );
-      })
-      .join('');
+    const items = rows.map((x) => {
+      const r = shown(x),
+        d = dirOf(r),
+        head = x.group && x.group !== grp ? ((grp = x.group), `<div class="ixf-group">${esc(x.group)}</div>`) : '';
+      const tick =
+        selOn() && x.site && effOf(x.site)
+          ? `<line class="ixf-whole" x1="${X(effOf(x.site))}" x2="${X(effOf(x.site))}" y1="20%" ` + `y2="80%"/>`
+          : '';
+      const ci =
+        r && r.lo != null && r.hi != null
+          ? `<line class="whisker ${d}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" ` + `y2="50%"/>`
+          : '';
+      const dot = r && effOf(r) ? `<circle class="dot ${d}" cx="${X(effOf(r))}" cy="50%" r="4.6"/>` : '';
+      const n = r ? `${int(r.a)} of ${int(r.a + r.b)} <span class="muted">(${pcS(r.a, r.a + r.b)})</span>` : '–',
+        o = r ? `${int(r.c)} of ${int(r.c + r.d)} <span class="muted">(${pcS(r.c, r.c + r.d)})</span>` : '–';
+      return (
+        head +
+        (`<div class="ixf-row" data-f="a:${esc(x.ref.analysis)}" data-v="${esc(x.ref.category)}" role="button" ` +
+          `tabindex="0" title="Select the ${esc(W.marks)} ${esc(x.label)}" data-ixr="${esc(
+            JSON.stringify([x.ref.analysis, x.ref.category, s.m])
+          )}">`) +
+        `<span class="lab">${esc(x.label)}</span><svg aria-hidden="true">${gridLines(sc, X)}${tick}${ci}${dot}</svg>` +
+        `<span class="ixf-or ${d}">${
+          r && effOf(r)
+            ? `${fxn(effOf(r))}${r.lo != null ? ` <span class="muted">[${fxn(r.lo)}–${fxn(r.hi)}]</span>` : ''}`
+            : '–'
+        }</span>` +
+        (`<span class="ixf-n">${n}</span><span class="ixf-n">${o}</span><span class="ixf-q">${r ? fq(r.q) : '–'}</span><span ` +
+          `class="ixf-n">${r?.strata != null ? `${int(r.strata)}` : '–'}</span></div>`)
+      );
+    });
     const axis =
       `<div class="ixf-row ixf-axis" aria-hidden="true"><span></span><svg>${Array.from(
         { length: sc.hi - sc.lo + 1 },
@@ -486,7 +486,19 @@
       `[95% CI]</span><span></span><span>${esc(cap(W.marks))}</span><span>Other ${esc(W.residues)}</span><span ` +
       `title="${esc(K.GLOSS.q)}">q</span><span title="Proteins with ${esc(W.marks)} and other ${esc(W.residues)} on both ` +
       `sides of the class (within each protein)">Informative proteins</span></div>`;
-    return seg(bkey(pg, sec, bi), s.m) + `<div class="ixf">${head}${body}${axis}</div>` + forestNote(rows, s.m);
+    // a long list shows its first rows; the rest (and the axis again) sit behind "Show all tests"
+    const keep = items.length > FOREST_TOP + 2 ? FOREST_TOP : items.length;
+    const more = items.slice(keep).join('');
+    return (
+      seg(bkey(pg, sec, bi), s.m) +
+      `<div class="ixf">${head}${items.slice(0, keep).join('')}${axis}</div>` +
+      (more
+        ? `<details class="ix-fold ix-rows" data-ix-open="${esc(bkey(pg, sec, bi))}.all"${
+            OPEN.has(bkey(pg, sec, bi) + '.all') ? ' open' : ''
+          }><summary>Show all tests <span class="muted">${int(items.length)}</span></summary><div class="ixf">${more}${axis}</div></details>`
+        : '') +
+      forestNote(rows, s.m)
+    );
   }
   const gridLines = (sc, X) =>
     Array.from({ length: sc.hi - sc.lo + 1 }, (_, k) => sc.lo + k)
@@ -510,12 +522,12 @@
   function forestNote(rows, m) {
     if (!selOn())
       return (
-        `<p class="muted small">${
+        `<details class="ix-meth"><summary>Method</summary><p class="muted small">${
           m === 'mantel_haenszel'
             ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI ' +
               '(Robins–Breslow–Greenland), each protein analyzed separately'
             : 'Across all proteins: Fisher’s exact test, the Haldane–Anscombe odds ratio'
-        }; q: Benjamini–Hochberg ` + `within the question.</p>`
+        }; q: Benjamini–Hochberg ` + `within the question.</p></details>`
       );
     if (!testable())
       return (
@@ -1408,6 +1420,7 @@
   }
 
   // ---- table: a page table's rows --------------------------------------------------------------------------------
+  const PAGE = 10; // rows a table shows at first and adds with each "Show more"
   function tableView(pg, sec, b, bi) {
     const t = table(b.table);
     if (!t) return TERR[b.table] ? `<p class="muted">${esc(TERR[b.table])}</p>` : loading();
@@ -1416,7 +1429,7 @@
       chip: '',
       sort: b.sort || '',
       desc: b.descending ?? true,
-      n: b.limit || 25,
+      n: PAGE,
     });
     let rows = blockRows(t, b);
     const cols = b.columns && b.columns.length ? b.columns : ['accession', ...t.columns.map((c) => c.name)];
@@ -1526,15 +1539,23 @@
         .join('') +
       '</tbody></table></div>' +
       (rs.length > s.n
-        ? `<p><button type="button" class="linkish" data-ix-more="${esc(bkey(pg, sec, bi))}">Show ${int(Math.min(100, rs.length - s.n))} more of ${int(rs.length)}</button></p>`
+        ? `<p><button type="button" class="linkish" data-ix-more="${esc(bkey(pg, sec, bi))}">Show ${int(Math.min(PAGE, rs.length - s.n))} more of ${int(rs.length)}</button></p>`
         : '');
-    if (groupsOf)
-      return (
-        chips +
+    // block.rollup: [{label, values: [codes]}] puts several groups under one heading ("binds it modified" against "binds the residue")
+    const rollOf = (g) => (b.rollup || []).find((x) => (x.values || []).includes(g));
+    const rollHead = (g, all) => {
+      const roll = rollOf(g);
+      if (!roll || all.find(([x]) => roll.values.includes(x))[0] !== g) return '';
+      const n = all.filter(([x]) => roll.values.includes(x)).reduce((t, [, rs]) => t + rs.length, 0);
+      return `<h5 class="ix-roll">${esc(roll.label)} <span class="muted small">${int(n)} row${n === 1 ? '' : 's'}</span></h5>`;
+    };
+    const inner = groupsOf
+      ? chips +
           search +
           groupsOf
             .map(
               ([g, rs]) =>
+                rollHead(g, groupsOf) +
                 `<details class="ix-fold"${groupsOf.length <= 4 ? ' open' : ''}><summary><b>${esc(
                   (colMeta(t, b.group_by).values || {})[g] ?? (g || 'none')
                 )}</b> <span ` +
@@ -1543,11 +1564,27 @@
                 }</span></summary>${tbl(rs)}</details>`
             )
             .join('') || `<p class="muted">` + `No rows${selOn() ? ' for your selection' : ''}.</p>`
-      );
+      : chips +
+        search +
+        (rows.length ? tbl(rows) : `<p class="muted">No rows${selOn() ? ' for your selection' : ''}.</p>`);
+    // the summary line, one short count per kind or group, then the rows behind "Show all rows" (ten at a time)
+    const total = blockRows(t, b).length;
+    if (total <= PAGE) return inner;
+    const vl = (g) => (colMeta(t, b.group_by).values || {})[g] ?? (g || 'none');
+    const rolled = new Map();
+    (groupsOf || []).forEach(([g, rs]) => {
+      const k = rollOf(g)?.label || vl(g);
+      rolled.set(k, (rolled.get(k) || 0) + rs.length);
+    });
+    const parts = groupsOf
+      ? [...rolled].map(([k, n]) => `${k} ${int(n)}`)
+      : Object.entries(chipCounts)
+          .sort((x, y) => y[1] - x[1])
+          .map(([v, n]) => `${vlab(v)} ${int(n)}`);
     return (
-      chips +
-      search +
-      (rows.length ? tbl(rows) : `<p class="muted">No rows${selOn() ? ' for your selection' : ''}.</p>`)
+      (parts.length ? `<p class="ix-tsum">${esc(parts.join(' · '))}</p>` : '') +
+      `<details class="ix-fold ix-rows" data-ix-open="${esc(bkey(pg, sec, bi))}"${OPEN.has(bkey(pg, sec, bi)) ? ' open' : ''}><summary>Show all rows ` +
+      `<span class="muted">${int(total)}</span></summary>${inner}</details>`
     );
   }
   // a block's own rows of its table: those its where conditions keep (a column's value in a list), and with a
@@ -1982,7 +2019,13 @@
               : less.length
                 ? `<b>${range(less)}</b>: less often`
                 : 'No difference (q > 0.05)'
-          }${b.rows.length > 6 ? ` <span class="muted">` + `· ${int(b.rows.length)} tests</span>` : ''}</p>`
+          }${
+            rs.length > 1 && (more.length || less.length)
+              ? ` <span class="muted">· ` +
+                `${int(more.length || less.length)} of ${int(rs.length)} tests significant` +
+                `${b.rows.length > 6 ? `, ${int(b.rows.length)} in all` : ''}</span>`
+              : ''
+          }</p>`
         );
       }
       case 'lines': {
@@ -2077,9 +2120,15 @@
                 g[k] = g[k] || new Set();
                 g[k].add(r[0] + ':' + r[1]);
               });
-              return Object.entries(g)
-                .map(([k, v]) => `${esc((colMeta(t, b.group_by).values || {})[k] ?? k)} <b>${int(v.size)}</b>`)
-                .join(' · ');
+              const rolled = new Map(); // a rollup counts the sites of its groups together
+              Object.entries(g).forEach(([k, v]) => {
+                const roll = (b.rollup || []).find((x) => (x.values || []).includes(k)),
+                  key = roll ? roll.label : ((colMeta(t, b.group_by).values || {})[k] ?? k);
+                const set = rolled.get(key) || new Set();
+                v.forEach((x) => set.add(x));
+                rolled.set(key, set);
+              });
+              return [...rolled].map(([k, v]) => `${esc(k)} <b>${int(v.size)}</b>`).join(' · ');
             })()
           : '';
         return `<p class="ix-big"><b>${int(n)}</b> <span>${esc(
@@ -2167,9 +2216,14 @@
     if (h.rows && h.rows.length) {
       const rs = rowsFor(h.rows, 'mantel_haenszel').map(shown).filter(Boolean),
         d = rs.filter((r) => dirOf(r) === 'more' || dirOf(r) === 'less');
+      // a tile of several tests quotes the significant ones only, and says how many of them that is
+      const qmax = d.length ? Math.max(...d.map((r) => r.q ?? 0)) : null;
       return [
         d.length ? range(d) : 'n.s.',
         d.length && d.every((r) => dirOf(r) === 'more') ? 'more' : d.length ? 'less' : 'ns',
+        d.length
+          ? `${rs.length > 1 ? `${int(d.length)} of ${int(rs.length)} tests · ` : ''}q ${d.length > 1 ? '≤ ' : ''}${fq(qmax)}`
+          : `${rs.length > 1 ? `none of ${int(rs.length)} tests` : 'q'}${rs.length > 1 ? '' : ' ' + fq(rs[0]?.q)}`,
       ];
     }
     if (h.counts) {
@@ -2210,7 +2264,7 @@
     if (!pg.highlights.length) return '';
     return `<div class="ix-hls">${pg.highlights
       .map((h) => {
-        const [v, d] = highlightValue(h);
+        const [v, d, note] = highlightValue(h);
         return (
           `<a class="ix-hl ${d}" href="${esc(h.section ? K.link(pg.id, h.section) : K.link(pg.id))}"${
             h.rows?.length
@@ -2231,7 +2285,7 @@
           (h.glyph
             ? `<svg class="ix-glyph" viewBox="0 0 28 20" aria-hidden="true">${GLYPH[h.glyph] || ''}</svg>`
             : '') +
-          `<b>${esc(v)}</b><span>${esc(h.label)}</span>${h.tag ? `<small>${esc(h.tag)}</small>` : ''}</a>`
+          `<b>${esc(v)}</b><span>${esc(h.label)}</span>${note ? `<em class="ix-hq">${esc(note)}</em>` : ''}${h.tag ? `<small>${esc(h.tag)}</small>` : ''}</a>`
         );
       })
       .join('')}</div>`;
@@ -2686,7 +2740,7 @@
       (el) => {
         const s = st(el.dataset.ixChip, {});
         s.chip = el.dataset.v || '';
-        s.n = 25;
+        s.n = PAGE;
         K.render();
       },
     ],
@@ -2694,7 +2748,7 @@
       '[data-ix-more]',
       (el) => {
         const s = st(el.dataset.ixMore, {});
-        s.n = (s.n || 25) + 100;
+        s.n = (s.n || PAGE) + PAGE;
         K.render();
       },
     ],
@@ -2749,6 +2803,15 @@
       K.render();
     }
   });
+  // a table's "Show all rows" remembers whether it is open (the page redraws on each click)
+  document.addEventListener(
+    'toggle',
+    (e) => {
+      const k = e.target.dataset?.ixOpen;
+      if (k != null) e.target.open ? OPEN.add(k) : OPEN.delete(k);
+    },
+    true
+  );
   let tq;
   document.addEventListener('input', (e) => {
     const k = e.target.dataset?.ixTq;
@@ -2757,7 +2820,7 @@
     tq = setTimeout(() => {
       const s = st(k, {});
       s.q = e.target.value.trim();
-      s.n = 25;
+      s.n = PAGE;
       K.render();
       const el = document.querySelector(`[data-ix-tq="${CSS.escape(k)}"]`);
       if (el) {
@@ -2866,6 +2929,10 @@
     `min-width: 0; }
 .ix-sec, .ix-block > *, .ix-fold > * { min-width: 0; max-width: 100%; } .ix-tbl td.wrapok { min-width: 8rem; ` +
     `max-width: 26rem; white-space: normal; overflow-wrap: anywhere; } .ix-fold > summary { cursor: pointer; }
+.ix-hq { font-style: normal; font-size: 0.78rem; color: var(--muted); }
+.ix-roll { margin: 0.7rem 0 0.2rem; font-size: 0.92rem; }
+.ix-tsum { margin: 0; font-size: 0.92rem; } .ix-rows > summary { font-weight: 600; } .ix-meth { font-size: 0.85rem; } ` +
+    `.ix-meth > summary { cursor: pointer; color: var(--muted); }
 .ix-bars { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr)); gap: 0.8rem ` +
     `1.4rem; }
 .ix-barg h4 { font-size: 0.86rem; margin-bottom: 0.3rem; }
