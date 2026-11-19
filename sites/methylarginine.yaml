@@ -1573,6 +1573,7 @@ website:                  # the look and words of the website (ptmc web); layout
       crosslink: ["capri_adj_peptide_among_measured", "rbrid_residue_among_measured", "pclap_lysc_region", "pclap_lysc_region_outside_rg", "pclap_peptide", "rbdmap_fragment", "rbdmap_fragment_outside_rg"]
     glossary:
       "IDR": "an intrinsically disordered region, a stretch with no fixed fold."
+      "PRMT": "a protein arginine methyltransferase, an enzyme that adds methyl groups to arginines."
       "CAPRI": "peptides crosslinked to RNA in living cells (UV crosslinking and mass spectrometry)."
       "RBR-ID": "residues whose peptides drop after UV crosslinking to RNA in cells, a sign of RNA contact."
       "pDockQ": "confidence of a predicted protein-protein interface (AlphaFold); 0.23 is likely, 0.5 confident."
@@ -1855,6 +1856,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Studies and databases, attributes: [studies, n_studies, localised_by]}
   dataset: {label: data release, version: v1.5.1, date: "2026-11-19", doi: "10.5281/zenodo.24373077", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1"}
+  methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.5.1/releases/v1.5.1/human_methylarginine_sites_v1.5.1.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
