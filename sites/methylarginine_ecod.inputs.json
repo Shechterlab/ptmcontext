@@ -22,7 +22,7 @@
     "methylarginine_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv",
       "md5": "50dd293d1a3dd94ce7a0fb3168eae3bd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",

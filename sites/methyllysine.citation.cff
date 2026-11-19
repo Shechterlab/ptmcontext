@@ -5,7 +5,7 @@ message: "Please cite the data sources: there is no paper for this site yet."
 title: "PTMcontext: human methyllysine sites (release v1.5.1 of PTM_Pipeline)"
 version: "0.5.0"
 date-released: "2026-11-15"
-url: "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1"
+url: "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1"
 license: "CC-BY-NC-SA-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"

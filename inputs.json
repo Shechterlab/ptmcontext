@@ -49,7 +49,7 @@
     "methylarginine_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv",
       "md5": "50dd293d1a3dd94ce7a0fb3168eae3bd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
@@ -58,7 +58,7 @@
     "methylarginine_statistics_v1_5_1": {
       "file": "releases/v1.5.1/statistics_v1.5.1.tsv",
       "md5": "bdeb58f4dbbc713a3059930c363b074a",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
@@ -234,7 +234,7 @@
     "methylarginine_lower_confidence_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_methylarginine_lower_confidence_sites_v1.5.1.tsv",
       "md5": "165074c4b977aa6ea8e0937ff6e92772",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
@@ -243,7 +243,7 @@
     "methylarginine_statistics_lower_confidence_v1_5_1": {
       "file": "releases/v1.5.1/statistics_with_lower_confidence_v1.5.1.tsv",
       "md5": "c62a97c257bd354b8f4a336d9d9e65e9",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
@@ -252,7 +252,7 @@
     "methylarginine_proteins_v1_5_1": {
       "file": "releases/v1.5.1/human_methylarginine_proteins_v1.5.1.tsv",
       "md5": "05bb44ce35959d5749b474a0c5c690eb",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
@@ -261,7 +261,7 @@
     "maron2021_inhibitors_v1_5_1": {
       "file": "releases/v1.5.1/supporting/maron2021_inhibitors_v1.5.1.tsv",
       "md5": "53261fec99cb1cbb731a525cdf3f8eed",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1 (supporting/maron2021_inhibitors_v1.5.1.tsv); from Maron et al. 2021 Table S3, https://ars.els-cdn.com/content/image/1-s2.0-S2589004221009391-mmc4.xlsx (Maron MI et al., iScience 24:102971 (2021), doi:10.1016/j.isci.2021.102971)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1 (supporting/maron2021_inhibitors_v1.5.1.tsv); from Maron et al. 2021 Table S3, https://ars.els-cdn.com/content/image/1-s2.0-S2589004221009391-mmc4.xlsx (Maron MI et al., iScience 24:102971 (2021), doi:10.1016/j.isci.2021.102971)",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17), supporting table: Maron et al. 2021 inhibitors per methyl-IP",
       "licence": "CC BY-NC-ND 4.0: its source, Maron et al. 2021 Table S3 (open-access article; supplement redistributed unmodified, with attribution; PTM_Pipeline inputs/MANIFEST.tsv). The release (CC BY-NC-SA 4.0) redistributes the records derived from it, not the table itself",
       "role": "input",
@@ -270,7 +270,7 @@
     "carm1_ko_v1_5_1": {
       "file": "releases/v1.5.1/supporting/carm1_ko_v1.5.1.tsv",
       "md5": "1421435d03bec729120fd941f11390d0",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1 (supporting/carm1_ko_v1.5.1.tsv); from Shishkova et al. 2017 Supplementary Data 1, https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fncomms15571/MediaObjects/41467_2017_BFncomms15571_MOESM422_ESM.xlsx (Shishkova E et al., Nat Commun 8:15571 (2017), doi:10.1038/ncomms15571)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1 (supporting/carm1_ko_v1.5.1.tsv); from Shishkova et al. 2017 Supplementary Data 1, https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fncomms15571/MediaObjects/41467_2017_BFncomms15571_MOESM422_ESM.xlsx (Shishkova E et al., Nat Commun 8:15571 (2017), doi:10.1038/ncomms15571)",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17), supporting table: CARM1 knockout per cell line",
       "licence": "CC BY 4.0 (Shishkova et al. 2017, as PTM_Pipeline inputs/MANIFEST.tsv records its source)",
       "role": "input",
@@ -279,7 +279,7 @@
     "writer_perturbations_v1_5_1": {
       "file": "releases/v1.5.1/supporting/writer_perturbations_v1.5.1.tsv",
       "md5": "368e601f1752b6282ccff412cc0bc804",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1 (supporting/writer_perturbations_v1.5.1.tsv); from Shishkova et al. 2017 (doi:10.1038/ncomms15571), Szewczyk et al. 2020 (doi:10.1038/s41467-020-16271-z), Hartel et al. 2019 (doi:10.1074/mcp.RA119.001625), Lu et al. 2024 (doi:10.1021/acs.jproteome.3c00724) and Li et al. 2021 (doi:10.1038/s41467-021-21963-1)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1 (supporting/writer_perturbations_v1.5.1.tsv); from Shishkova et al. 2017 (doi:10.1038/ncomms15571), Szewczyk et al. 2020 (doi:10.1038/s41467-020-16271-z), Hartel et al. 2019 (doi:10.1074/mcp.RA119.001625), Lu et al. 2024 (doi:10.1021/acs.jproteome.3c00724) and Li et al. 2021 (doi:10.1038/s41467-021-21963-1)",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17), supporting table: PRMT knockouts, knockdowns and inhibitors",
       "licence": "Each perturbation keeps its source's terms (PTM_Pipeline inputs/MANIFEST.tsv): CC BY-NC 4.0 for the PRMT5 inhibitor rows (Lu et al. 2024 supporting information, ACS figshare; the article is not open access); CC BY 4.0 for the others: the CARM1 knockout (Shishkova et al. 2017), the PRMT7 knockout (Szewczyk et al. 2020: the article's license, taken to cover its Supplementary Data), the PRMT1 knockdown (Hartel et al. 2019, from 2020-09-15) and the Li et al. 2021 arms (the article's license, taken to cover its Supplementary Data)",
       "role": "input",
@@ -350,7 +350,7 @@
     "methylarginine_studies_v1_5_1": {
       "file": "releases/v1.5.1/studies_v1.5.1.tsv",
       "md5": "2132e4b6c309d92628360cddbccad3a9",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -359,7 +359,7 @@
     "methylarginine_site_interactions_v1_5_1": {
       "file": "releases/v1.5.1/supporting/methylarginine_site_interactions_v1.5.1.tsv",
       "md5": "6bcf76c1ea443a8fa28a5a71d2d3b15d",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -368,7 +368,7 @@
     "methylarginine_site_interaction_records_v1_5_1": {
       "file": "releases/v1.5.1/supporting/methylarginine_site_interaction_records_v1.5.1.tsv",
       "md5": "53c485e8980c6c8a3359837a507c5da1",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -377,7 +377,7 @@
     "methylarginine_nucleic_acid_contacts_v1_5_1": {
       "file": "releases/v1.5.1/supporting/methylarginine_nucleic_acid_contacts_v1.5.1.tsv",
       "md5": "de303766f58bf0b40acf68f13058e540",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -386,7 +386,7 @@
     "methylarginine_nucleic_acid_near_sites_v1_5_1": {
       "file": "releases/v1.5.1/supporting/methylarginine_nucleic_acid_near_sites_v1.5.1.tsv",
       "md5": "a9e94161866c6427fbd274e4af1c07df",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -395,7 +395,7 @@
     "methylarginine_nucleic_acid_regions_v1_5_1": {
       "file": "releases/v1.5.1/supporting/nucleic_acid_regions_v1.5.1.tsv",
       "md5": "244126e0faf5b7fe803b66b01950c9d4",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -404,7 +404,7 @@
     "methylarginine_dna_motifs_v1_5_1": {
       "file": "releases/v1.5.1/supporting/dna_motifs_v1.5.1.tsv",
       "md5": "b5ee0ac01e31897bd36ca2b7bc3cef0b",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -413,7 +413,7 @@
     "methylarginine_rna_bind_n_seq_v1_5_1": {
       "file": "releases/v1.5.1/supporting/rna_bind_n_seq_v1.5.1.tsv",
       "md5": "7d2bccc6ce1482943997613d3ef741c8",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -422,7 +422,7 @@
     "methylarginine_eclip_v1_5_1": {
       "file": "releases/v1.5.1/supporting/eclip_v1.5.1.tsv",
       "md5": "acfdad3a4a6f82f9d07866e3ced0a249",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -431,7 +431,7 @@
     "methylarginine_residue_evidence_v1_5_1": {
       "file": "releases/v1.5.1/supporting/methylarginine_residue_evidence_v1.5.1.tsv",
       "md5": "8a7764aa518675e594fdaffb4f8c3cc7",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -440,7 +440,7 @@
     "methylarginine_source_records_v1_5_1": {
       "file": "releases/v1.5.1/supporting/source_records_v1.5.1.tsv",
       "md5": "27a2e57f6e978fcba017c6e9c4b0240f",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -449,7 +449,7 @@
     "methylarginine_writer_perturbations_v1_5_1": {
       "file": "releases/v1.5.1/supporting/writer_perturbations_v1.5.1.tsv",
       "md5": "368e601f1752b6282ccff412cc0bc804",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -458,7 +458,7 @@
     "methylarginine_maron2021_inhibitors_v1_5_1": {
       "file": "releases/v1.5.1/supporting/maron2021_inhibitors_v1.5.1.tsv",
       "md5": "53261fec99cb1cbb731a525cdf3f8eed",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -467,7 +467,7 @@
     "methylarginine_protein_partners_v1_5_1": {
       "file": "releases/v1.5.1/supporting/protein_partners_v1.5.1.tsv",
       "md5": "8631f3df370c2b0cef0a02b8e0cfe20a",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -476,7 +476,7 @@
     "density_windows_v1_5_1": {
       "file": "releases/v1.5.1/supporting/density_windows_v1.5.1.tsv",
       "md5": "d707433811f76cd9659ff6c61e892c86",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -495,7 +495,7 @@
     "methylarginine_disease_ontology_v1_5_1": {
       "file": "releases/v1.5.1/supporting/disease_ontology_v1.5.1.tsv",
       "md5": "efe543b7019105127166e47d5030b233",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17), supporting/disease_ontology",
       "licence": "CC BY-NC-SA 4.0 (the release); Disease Ontology CC0 1.0; DOSE gene sets Artistic-2.0",
       "role": "reference_output",
@@ -504,7 +504,7 @@
     "methylarginine_disease_terms_tested_v1_5_1": {
       "file": "releases/v1.5.1/supporting/disease_terms_tested_v1.5.1.tsv",
       "md5": "ed047e8b2ece3d24b8f2a6bcae6900e3",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17), supporting/disease_terms_tested",
       "licence": "CC BY-NC-SA 4.0 (the release); DisGeNET data CC BY-NC-SA 4.0",
       "role": "reference_output",
@@ -513,7 +513,7 @@
     "methylarginine_lc_disease_ontology_v1_5_1": {
       "file": "releases/v1.5.1/analyses_with_lower_confidence/disease/disease_ontology.tsv",
       "md5": "6f797a78b9ac5d00cf0f627733a93581",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17), analyses_with_lower_confidence/disease/disease_ontology",
       "licence": "CC BY-NC-SA 4.0 (the release); Disease Ontology CC0 1.0; DOSE gene sets Artistic-2.0",
       "role": "reference_output",
@@ -522,7 +522,7 @@
     "methylarginine_lc_disease_terms_v1_5_1": {
       "file": "releases/v1.5.1/analyses_with_lower_confidence/disease/disease_terms.tsv",
       "md5": "aea09b24e34256243d8c2c1438027a77",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17), analyses_with_lower_confidence/disease/disease_terms",
       "licence": "CC BY-NC-SA 4.0 (the release); DisGeNET data CC BY-NC-SA 4.0",
       "role": "reference_output",
@@ -531,7 +531,7 @@
     "methylarginine_other_ptm_sites_v1_5_1": {
       "file": "releases/v1.5.1/supporting/other_ptm_sites_v1.5.1.tsv",
       "md5": "fb852bc28016e6c1e504ae67ca7e7a68",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0); component databases keep their own terms",
       "role": "input",
@@ -540,7 +540,7 @@
     "functional_experiments_v1_5_1": {
       "file": "releases/v1.5.1/supporting/functional_experiments_v1.5.1.tsv",
       "md5": "f8902195b280b87bb64f85860213ddec",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0); component databases keep their own terms",
       "role": "input",
@@ -1247,7 +1247,7 @@
     "release_pclap_peptides": {
       "file": "releases/v1.5.1/supporting/methylarginine_residue_evidence_v1.5.1.tsv",
       "md5": "8a7764aa518675e594fdaffb4f8c3cc7",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -1268,7 +1268,7 @@
     "release_pclap_lysc_regions": {
       "file": "releases/v1.5.1/supporting/methylarginine_residue_evidence_v1.5.1.tsv",
       "md5": "8a7764aa518675e594fdaffb4f8c3cc7",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -1289,7 +1289,7 @@
     "release_arginine_rna_distances": {
       "file": "releases/v1.5.1/supporting/arginine_nucleic_acid_distances_v1.5.1.tsv",
       "md5": "78f34a90f671ebdf75e8e1c19862d403",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the structures: wwPDB data, CC0)",
       "role": "input",
@@ -1311,7 +1311,7 @@
     "release_arginine_dna_distances": {
       "file": "releases/v1.5.1/supporting/arginine_nucleic_acid_distances_v1.5.1.tsv",
       "md5": "78f34a90f671ebdf75e8e1c19862d403",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0 (the structures: wwPDB data, CC0)",
       "role": "input",
@@ -1333,7 +1333,7 @@
     "release_complexes": {
       "file": "releases/v1.5.1/supporting/complexes_v1.5.1.tsv",
       "md5": "e7b088eed51884aa6cd45e277763bcab",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -1342,7 +1342,7 @@
     "release_rna_bind_n_seq": {
       "file": "releases/v1.5.1/supporting/rna_bind_n_seq_v1.5.1.tsv",
       "md5": "7d2bccc6ce1482943997613d3ef741c8",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -1351,7 +1351,7 @@
     "release_htr_selex": {
       "file": "releases/v1.5.1/supporting/htr_selex_v1.5.1.tsv",
       "md5": "c89d0a813e1309bcb13fead0ca817229",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -1360,7 +1360,7 @@
     "release_dna_motifs": {
       "file": "releases/v1.5.1/supporting/dna_motifs_v1.5.1.tsv",
       "md5": "b5ee0ac01e31897bd36ca2b7bc3cef0b",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -1369,7 +1369,7 @@
     "release_eclip": {
       "file": "releases/v1.5.1/supporting/eclip_v1.5.1.tsv",
       "md5": "acfdad3a4a6f82f9d07866e3ced0a249",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -1378,7 +1378,7 @@
     "release_arginine_background": {
       "file": "releases/v1.5.1/supporting/arginine_background_v1.5.1.tsv",
       "md5": "1632ace3df199a4d6263da727aff0e64",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17), supporting/arginine_background",
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
@@ -1387,7 +1387,7 @@
     "release_eclip_rna_compartments": {
       "file": "releases/v1.5.1/supporting/eclip_rna_compartments_v1.5.1.tsv",
       "md5": "feaed0917ea9ed25898d6f179b12b608",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17), supporting/eclip_rna_compartments",
       "licence": "CC BY-NC-SA 4.0 (the maps: APEX-seq, Fazal et al. 2019, GEO GSE116008; TSA-seq, Chen et al. 2018, GEO GSE81553; Hi-C subcompartments, Rao et al. 2014, GEO GSE63525: no use restrictions; eCLIP: ENCODE, no use restrictions)",
       "role": "input",
@@ -1396,56 +1396,56 @@
     "context_methyllysine_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv",
       "md5": "911a56655d3d0c3ba80a63981fdd28dd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Berryhill 2023; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Berryhill 2023: the article is CC BY 4.0, its Supplementary Table 5 is included",
       "role": "input",
-      "note": "Methyllysine sites of the human reviewed proteome (5,746 rows on 5,178 residues), one row per residue and state, with sources (UniProt, iPTMnet, Berryhill 2023), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 1419d35."
+      "note": "Methyllysine sites of the human reviewed proteome (5,746 rows on 5,178 residues), one row per residue and state, with sources (UniProt, iPTMnet, Berryhill 2023), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
     },
     "context_phosphorylation_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv",
       "md5": "2b4cacbbedf48862d8c2816b9157c8fe",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Ochoa 2020; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Ochoa et al., Nat Biotechnol 38:365 (2020): the article is not open access and its supplementary table has no license, included",
       "role": "input",
-      "note": "Phosphorylation sites of the human reviewed proteome (142,415 rows), one row per residue and state, with sources (UniProt, iPTMnet, Ochoa 2020), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 1419d35."
+      "note": "Phosphorylation sites of the human reviewed proteome (142,415 rows), one row per residue and state, with sources (UniProt, iPTMnet, Ochoa 2020), evidence class (experimental, by-similarity, text-mined, unspecified), iPTMnet upstream databases and PubMed IDs. Shown as context beside the site's own mark; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
     },
     "context_acetylation_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv",
       "md5": "079ce9e22305fcb01fb9f035fca778f7",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-12); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
       "role": "input",
-      "note": "Context marks: lysine acetylation sites of the human reviewed proteome (4,597 rows on 4,597 residues of 1,834 proteins), one row per residue, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, unspecified), iPTMnet upstream databases and PubMed IDs. Shown beside the methylarginines, methyllysines and phosphosites by the protein map and the near_acetylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 1419d35."
+      "note": "Context marks: lysine acetylation sites of the human reviewed proteome (4,597 rows on 4,597 residues of 1,834 proteins), one row per residue, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, unspecified), iPTMnet upstream databases and PubMed IDs. Shown beside the methylarginines, methyllysines and phosphosites by the protein map and the near_acetylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
     },
     "context_lysine_acylation_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_lysine_acylation_sites_v1.5.1.tsv",
       "md5": "4164819cece8710a79904b9901cfa2bf",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-12); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
       "role": "input",
-      "note": "Context marks: lysine acylation sites of the human reviewed proteome (8,008 rows on 5,504 residues of 1,945 proteins; 13 acyl types in acyl_type, 4,597 of them acetyl), one row per residue and acyl type, with sources, evidence class and PubMed IDs. Read as the mark 'other acylations' (every acyl type but acetyl) beside the methylarginines, methyllysines and phosphosites by the protein map and the near_other_acylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 1419d35."
+      "note": "Context marks: lysine acylation sites of the human reviewed proteome (8,008 rows on 5,504 residues of 1,945 proteins; 13 acyl types in acyl_type, 4,597 of them acetyl), one row per residue and acyl type, with sources, evidence class and PubMed IDs. Read as the mark 'other acylations' (every acyl type but acetyl) beside the methylarginines, methyllysines and phosphosites by the protein map and the near_other_acylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
     },
     "context_ubiquitination_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_ubiquitination_sites_v1.5.1.tsv",
       "md5": "6e6491617eb7ff03429eee4a6a42cc2a",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Akimov 2018; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Akimov et al., Nat Struct Mol Biol 25:631 (2018): the article is not open access and its supplementary table has no notice of its own, included",
       "role": "input",
-      "note": "Context marks: lysine ubiquitination sites of the human reviewed proteome (63,480 rows on 9,032 proteins; Akimov 2018 62,871, UniProt 951, iPTMnet 610 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity) and PubMed IDs. Shown beside the site's own mark by the protein map and the near_ubiquitination question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 1419d35."
+      "note": "Context marks: lysine ubiquitination sites of the human reviewed proteome (63,480 rows on 9,032 proteins; Akimov 2018 62,871, UniProt 951, iPTMnet 610 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity) and PubMed IDs. Shown beside the site's own mark by the protein map and the near_ubiquitination question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
     },
     "context_sumoylation_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_sumoylation_sites_v1.5.1.tsv",
       "md5": "e01697c623934b97357e04a654fa07bd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/1419d3586fbbf7263d489afe0eac737e4628f64a/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
       "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Hendriks 2017; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Hendriks et al., Nat Struct Mol Biol 24:325 (2017): the article is not open access and its supplementary table has no notice of its own, included",
       "role": "input",
-      "note": "Context marks: lysine SUMOylation sites of the human reviewed proteome (40,249 rows on 6,410 proteins; Hendriks 2017 39,858, UniProt 5,531, iPTMnet 33 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity) and PubMed IDs. Shown beside the site's own mark by the protein map and the near_sumoylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 1419d35."
+      "note": "Context marks: lysine SUMOylation sites of the human reviewed proteome (40,249 rows on 6,410 proteins; Hendriks 2017 39,858, UniProt 5,531, iPTMnet 33 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity) and PubMed IDs. Shown beside the site's own mark by the protein map and the near_sumoylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
     },
     "go_bp_annotations": {
       "file": "inputs/annotation/go_bp_human_2026-11-04.tsv",
