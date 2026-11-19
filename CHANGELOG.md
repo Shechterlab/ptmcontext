@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Reader-facing text: no raw column or file names in the lower-confidence tooltips and the Sources table, "Ser or Thr" and
+  PubMed IDs keep their capitals, "h 0.0" has no minus sign, the page PDF foot carries the full page link, the data
+  sources, the version and the license, "PTMcontext" in the README title and the landing footer, and the agent rules
+  state the 17 November 2026 decision that CPLM 4.0 is excluded.
 - Docs: docs/DATA_STANDARD.md, the standard for adding data (gate, required metadata, validation, independence, provenance, versioning rule, checklists), with a contributor kit in templates/contribution/ (metadata sheet and `ptm-sites/1` sites file); linked from README.md and ADDING_DATA.md.
 - CPLM 4.0 removed: the methyllysine, lysine and phospho sites read PTM_Pipeline tables rebuilt without it (methyllysine 5,746 rows, acetylation 4,597, lysine acylation 8,008, ubiquitination 63,480, SUMOylation 40,249). The cplm_evidence attribute, filter, chips and column, the CPLM-only and Dat. variants, and every CPLM credit, citation and note are gone; the workflows pin the new PTM_Pipeline commit and the input MD5s follow.
 - Controls: the methyllysine, lysine and phospho sites repeat their disorder, charge and (where the site has one) motif questions with only the sites at least two independent studies report (control "high-confidence sites", as on the methylarginine site). Only experimental records count; a study is a PubMed ID or a direct dataset (Berryhill 2023, Ochoa 2020, Hendriks 2017, Akimov 2018), so a database counts only through the papers it cites and Ochoa 2020 counts once. New marks_where condition distinct_units_at_least (CONTRACTS.md). No release row changes.
@@ -435,9 +439,9 @@ What changed for readers:
   Each pair is also tested among lysines with another modification only (a type other than the two compared, methylation
   included), still within each protein, because mass spectrometry finds some lysines far more often than others; the
   result is shown beside the pair's own and is in the statistics download.
-- All sites read PTM_Pipeline v1.5.0 at commit e1852ba, whose acetylation and acylation tables now include CPLM 4.0
-  (53,177 acetylation sites instead of 4,597; 15 other acyl types). The "near acetylation" and "near other acylation"
-  questions of the methylarginine, methyllysine and phosphosite sites change with them.
+- All sites read PTM_Pipeline v1.5.0 at commit e1852ba. The "near acetylation" and "near other acylation" questions of
+  the methylarginine, methyllysine and phosphosite sites change with its rebuilt tables (CPLM 4.0 is not included; see
+  the first entry above).
 - The protein map opens with an "All modifications" block: a thin lane for each modification with its short name (Kme,
   Rme, Sph/Tph/Yph, Kac, Kub, Ksu, ...); on the lysine site each lysine modification has its own lane. The grey UniProt row
   of other modifications starts off.

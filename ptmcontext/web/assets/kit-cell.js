@@ -54,7 +54,11 @@
     DISP = C.dispersion !== false,
     ABUND = !!C.abundance;
   const hOf = (p, q) => 2 * Math.asin(Math.sqrt(p)) - 2 * Math.asin(Math.sqrt(q));
-  const hText = (h) => (h == null ? '–' : 'h ' + (h > 0 ? '+' : h < 0 ? '−' : '') + Math.abs(h).toFixed(1));
+  const hText = (h) => {
+    if (h == null) return '–';
+    const r = Math.abs(h).toFixed(1); // round first: a value that rounds to 0.0 carries no sign
+    return 'h ' + (Number(r) === 0 ? '' : h > 0 ? '+' : '−') + r;
+  };
   const hStep = (h) => H_BANDS.filter((b) => Math.abs(h) >= b).length;
   const hBand = (h) =>
     ['negligible', 'small', 'medium', 'large'][hStep(h)] + (hStep(h) ? '' : ' (under ' + H_BANDS[0] + ')');
