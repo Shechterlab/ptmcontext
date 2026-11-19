@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Pin PTM_Pipeline 7ae9a02 (v1.5.1 with the corrected release README; no data file differs from 8b8e233).
+
 - CI: the test jobs check out `releases/v1.5.1/release.json`, which the v1.5.1-matches-v1.4.3 test reads.
 
 - Every site reads PTM_Pipeline v1.5.1 (commit 8b8e233): methylarginine too, whose v1.5.1 data are byte for byte those of v1.4.3 (the six interaction tables under methylarginine_ names). Workflows and the inputs manifests are pinned to it; the parity test reads the v1.5.1 copies; a new test checks that those files equal the v1.4.3 ones.

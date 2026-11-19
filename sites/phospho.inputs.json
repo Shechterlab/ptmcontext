@@ -516,11 +516,11 @@
     "phosphorylation_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv",
       "md5": "2b4cacbbedf48862d8c2816b9157c8fe",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv (commit 8b8e233, release v1.5.1): UniProt 2026_04 Modified residue records (Phosphoserine, Phosphothreonine, Phosphotyrosine), iPTMnet 6.2 phosphorylation records, and the phosphosites of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3, with their functional scores (Supplementary Table 2 of the article)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv (commit 7ae9a02, release v1.5.1): UniProt 2026_04 Modified residue records (Phosphoserine, Phosphothreonine, Phosphotyrosine), iPTMnet 6.2 phosphorylation records, and the phosphosites of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3, with their functional scores (Supplementary Table 2 of the article)",
       "version": "v1.5.1 (2026-11-10): 142,415 rows on 142,415 residues of 12,588 proteins (S 101,126, T 31,170, Y 10,119); evidence_class experimental 135,936, by-similarity 4,393, text-mined 2,018, unspecified 68; 112,405 rows carry an Ochoa 2020 functional score",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet 6.2, CC BY-NC-SA 4.0); UniProt data CC BY 4.0; iPTMnet's upstream databases keep their own terms; Ochoa et al., Nat Biotechnol 38:365 (2020): the article is not open access and its supplementary table has no license, included",
       "role": "input",
-      "note": "No reference release: the statistics of this site are new. A row per residue and state; positions on UniProt 2026_03. Columns beyond the earlier table: functional_score (Ochoa 2020, 0 to 1), best_localization_probability, best_pep, biological_samples and spectral_counts (Ochoa 2020's mass-spectrometry evidence) and iptmnet_score. Ochoa 2020 is not open access and its supplementary table has no license: its rows are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Pinned to PTM_Pipeline commit 8b8e233."
+      "note": "No reference release: the statistics of this site are new. A row per residue and state; positions on UniProt 2026_03. Columns beyond the earlier table: functional_score (Ochoa 2020, 0 to 1), best_localization_probability, best_pep, biological_samples and spectral_counts (Ochoa 2020's mass-spectrometry evidence) and iptmnet_score. Ochoa 2020 is not open access and its supplementary table has no license: its rows are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Pinned to PTM_Pipeline commit 7ae9a02."
     },
     "string_physical_v12_5": {
       "file": "inputs/interactions/string_v12.5_human_physical_links_score400.tsv",
@@ -542,56 +542,56 @@
     "context_methylarginine_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv",
       "md5": "50dd293d1a3dd94ce7a0fb3168eae3bd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1 (the same bytes as v1.5.1)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1 (the same bytes as v1.5.1)",
       "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-17), as a context mark of the methyllysine site",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
-      "note": "Context marks: the methylarginine sites of the human reviewed proteome (11,632 rows, one per residue), read beside the phosphosites by the protein map and the near_methylarginine question. The same file the methylarginine site reads as its marks. Pinned to PTM_Pipeline commit 8b8e233."
+      "note": "Context marks: the methylarginine sites of the human reviewed proteome (11,632 rows, one per residue), read beside the phosphosites by the protein map and the near_methylarginine question. The same file the methylarginine site reads as its marks. Pinned to PTM_Pipeline commit 7ae9a02."
     },
     "context_methyllysine_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv",
       "md5": "911a56655d3d0c3ba80a63981fdd28dd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv (commit 8b8e233, release v1.5.1): UniProt 2026_04 N6-methyllysine, N6,N6-dimethyllysine and N6,N6,N6-trimethyllysine records, iPTMnet 6.2 lysine methylation records, and the methyllysine sites of Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (Supplementary Table 5, states me1, me2 and me3; HEK293T and U2OS cells)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv (commit 7ae9a02, release v1.5.1): UniProt 2026_04 N6-methyllysine, N6,N6-dimethyllysine and N6,N6,N6-trimethyllysine records, iPTMnet 6.2 lysine methylation records, and the methyllysine sites of Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (Supplementary Table 5, states me1, me2 and me3; HEK293T and U2OS cells)",
       "version": "v1.5.1 (2026-11-10): 5,746 rows on 5,178 lysines of 2,843 proteins; evidence_class experimental 5,359, by-similarity 181, unspecified 206 rows; 5,072 rows report Berryhill 2023 (me1, me2, me3)",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet 6.2, CC BY-NC-SA 4.0); UniProt data CC BY 4.0; Berryhill 2023: the article is CC BY 4.0, its Supplementary Table 5 has no separate license notice and is included",
       "role": "input",
-      "note": "Context marks: the methyllysine sites of the human reviewed proteome (5,746 rows: UniProt, iPTMnet and Berryhill 2023), one row per lysine and degree, read beside the phosphosites by the protein map and the near_methyllysine question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
+      "note": "Context marks: the methyllysine sites of the human reviewed proteome (5,746 rows: UniProt, iPTMnet and Berryhill 2023), one row per lysine and degree, read beside the phosphosites by the protein map and the near_methyllysine question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 7ae9a02."
     },
     "context_acetylation_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv",
       "md5": "079ce9e22305fcb01fb9f035fca778f7",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1",
       "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-12); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
       "role": "input",
-      "note": "Context marks: lysine acetylation sites of the human reviewed proteome (4,597 rows on 4,597 residues of 1,834 proteins), one row per residue, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, unspecified), iPTMnet upstream databases and PubMed IDs. Shown beside the phosphosites by the protein map and the near_acetylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
+      "note": "Context marks: lysine acetylation sites of the human reviewed proteome (4,597 rows on 4,597 residues of 1,834 proteins), one row per residue, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, unspecified), iPTMnet upstream databases and PubMed IDs. Shown beside the phosphosites by the protein map and the near_acetylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 7ae9a02."
     },
     "context_lysine_acylation_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_lysine_acylation_sites_v1.5.1.tsv",
       "md5": "4164819cece8710a79904b9901cfa2bf",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1",
       "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-12); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
       "role": "input",
-      "note": "Context marks: lysine acylation sites of the human reviewed proteome (8,008 rows on 5,504 residues of 1,945 proteins; 13 acyl types in acyl_type, 4,597 of them acetyl), one row per residue and acyl type, with sources, evidence class and PubMed IDs. Read as the mark 'other acylations' (every acyl type but acetyl) beside the phosphosites by the protein map and the near_other_acylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
+      "note": "Context marks: lysine acylation sites of the human reviewed proteome (8,008 rows on 5,504 residues of 1,945 proteins; 13 acyl types in acyl_type, 4,597 of them acetyl), one row per residue and acyl type, with sources, evidence class and PubMed IDs. Read as the mark 'other acylations' (every acyl type but acetyl) beside the phosphosites by the protein map and the near_other_acylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 7ae9a02."
     },
     "context_ubiquitination_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_ubiquitination_sites_v1.5.1.tsv",
       "md5": "6e6491617eb7ff03429eee4a6a42cc2a",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1",
       "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Akimov 2018; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Akimov et al., Nat Struct Mol Biol 25:631 (2018): the article is not open access and its supplementary table has no notice of its own, included",
       "role": "input",
-      "note": "Context marks: lysine ubiquitination sites of the human reviewed proteome (63,480 rows on 9,032 proteins; Akimov 2018 62,871, UniProt 951, iPTMnet 610 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity) and PubMed IDs. Shown beside the site's own mark by the protein map and the near_ubiquitination question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
+      "note": "Context marks: lysine ubiquitination sites of the human reviewed proteome (63,480 rows on 9,032 proteins; Akimov 2018 62,871, UniProt 951, iPTMnet 610 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity) and PubMed IDs. Shown beside the site's own mark by the protein map and the near_ubiquitination question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 7ae9a02."
     },
     "context_sumoylation_sites_v1_5_1": {
       "file": "releases/v1.5.1/human_sumoylation_sites_v1.5.1.tsv",
       "md5": "e01697c623934b97357e04a654fa07bd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1",
       "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Hendriks 2017; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Hendriks et al., Nat Struct Mol Biol 24:325 (2017): the article is not open access and its supplementary table has no notice of its own, included",
       "role": "input",
-      "note": "Context marks: lysine SUMOylation sites of the human reviewed proteome (40,249 rows on 6,410 proteins; Hendriks 2017 39,858, UniProt 5,531, iPTMnet 33 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity) and PubMed IDs. Shown beside the site's own mark by the protein map and the near_sumoylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 8b8e233."
+      "note": "Context marks: lysine SUMOylation sites of the human reviewed proteome (40,249 rows on 6,410 proteins; Hendriks 2017 39,858, UniProt 5,531, iPTMnet 33 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity) and PubMed IDs. Shown beside the site's own mark by the protein map and the near_sumoylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 7ae9a02."
     },
     "go_bp_annotations": {
       "file": "inputs/annotation/go_bp_human_2026-11-04.tsv",
@@ -614,7 +614,7 @@
     "phospho_site_interactions_v1_5_1": {
       "file": "releases/v1.5.1/supporting/phospho_site_interactions_v1.5.1.tsv",
       "md5": "886d80e5655f6904d57380bb555be5a3",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1",
       "version": "PTM_Pipeline release v1.5.1 (phosphorylation supporting tables, 2026-11-16)",
       "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
       "role": "input",
@@ -623,7 +623,7 @@
     "phospho_site_interaction_records_v1_5_1": {
       "file": "releases/v1.5.1/supporting/phospho_site_interaction_records_v1.5.1.tsv",
       "md5": "f1e3fec12479bf2bbdef5a3323edbe00",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1",
       "version": "PTM_Pipeline release v1.5.1 (phosphorylation supporting tables, 2026-11-16)",
       "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
       "role": "input",
@@ -632,7 +632,7 @@
     "phospho_nucleic_acid_contacts_v1_5_1": {
       "file": "releases/v1.5.1/supporting/phospho_nucleic_acid_contacts_v1.5.1.tsv",
       "md5": "7ebbeb5f5b814a02a0898bdb61e172e9",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1",
       "version": "PTM_Pipeline release v1.5.1 (phosphorylation supporting tables, 2026-11-16)",
       "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
       "role": "input",
@@ -641,7 +641,7 @@
     "phospho_nucleic_acid_near_sites_v1_5_1": {
       "file": "releases/v1.5.1/supporting/phospho_nucleic_acid_near_sites_v1.5.1.tsv",
       "md5": "72c0401c1516818f7ef267d25df93592",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1",
       "version": "PTM_Pipeline release v1.5.1 (phosphorylation supporting tables, 2026-11-16)",
       "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
       "role": "input",
@@ -650,7 +650,7 @@
     "phospho_residue_evidence_v1_5_1": {
       "file": "releases/v1.5.1/supporting/phospho_residue_evidence_v1.5.1.tsv",
       "md5": "26e70bbf61571f5d24e5704092b3c5e8",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/8b8e233eb51402f764814d1df0ea5edf8a245751/releases/v1.5.1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/7ae9a0210e6c3a995e5a2493f68d30d90bb89279/releases/v1.5.1",
       "version": "PTM_Pipeline release v1.5.1 (phosphorylation supporting tables, 2026-11-16)",
       "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
       "role": "input",
