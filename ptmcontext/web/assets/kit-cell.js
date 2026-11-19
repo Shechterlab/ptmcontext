@@ -325,6 +325,7 @@
     '.pk-ref{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}',
     '.pk-tick{display:inline-block;width:2px;height:12px;background:var(--ink);margin-right:.3rem}',
     '@media (max-width:700px){.cell-view button{padding:.3rem .55rem}}',
+    '@media(max-width:700px){.cell-cell svg,.cell-svg.cell-cell,.cell-svg.cell-nucleus,.cell-svg.cell-bars,.cell-svg.cell-funnel{min-width:0}.tbl-wrap:has(>.cell-funnel-tbl){overflow-x:auto}}', // a phone: the drawings scale to the width and the funnel table scrolls inside its box, instead of widening the page
   ].join('');
 
   // ---- the site's rows of each map: the enricher row (counts, fold, q) and its repeat within the strata ----------------

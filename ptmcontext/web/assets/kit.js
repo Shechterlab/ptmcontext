@@ -699,7 +699,9 @@
     const v = S.view;
     if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return ''; // a protein of the selection: its page fades the sites outside it, and says so
     if (follows(v)) return ''; // the bar above says what is selected and how many; its Clear all removes it
-    return `<p class="sel-line off" role="status">${esc(K.views[v]?.offNote || 'Not filtered by your selection.')}</p>`;
+    const n = K.views[v]?.offNote;
+    const note = typeof n === 'function' ? n() : n || 'Not filtered by your selection.'; // a page may say nothing: its sets already include the selection
+    return note ? `<p class="sel-line off" role="status">${esc(note)}</p>` : '';
   }
   // the tabs, the same on every explorer and in this order. A tab whose data a site lacks is greyed out with its reason on
   // hover (website.tabs.<page>.empty words it), never hidden; a page of the site's own (website.pages) follows Network

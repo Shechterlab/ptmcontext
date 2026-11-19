@@ -2810,8 +2810,10 @@
   K.views.overlap = {
     render: view,
     title: () => K.tabName('overlap', 'Compare sets'),
-    offNote:
-      'Not filtered by your selection: this page compares the sets chosen on it. Add “The current selection” as a set to compare it.',
+    offNote: () =>
+      S.ot.includes('sel')
+        ? ''
+        : 'Not filtered by your selection: this page compares the sets chosen on it. Add “The current selection” as a set to compare it.',
   };
   K.tabs.push(() => ['overlap', 'Compare sets', null]);
   (K.methodParts ||= []).push(

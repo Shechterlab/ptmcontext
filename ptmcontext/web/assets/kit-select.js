@@ -771,7 +771,8 @@
       q.positions.length ||
       cons.length ||
       q.unmatched.length ||
-      unresolved.length
+      unresolved.length ||
+      (!SD && q.terms?.length) // a filter term in the search is not resolved until the marks load: the selection is on, and loading
     );
     let marks = null,
       proteins = null;

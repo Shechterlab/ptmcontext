@@ -11655,3 +11655,31 @@ html.rail-lock body {
     background: radial-gradient(circle, var(--accent) 35%, transparent 40%);
   }
 }
+summary {
+  cursor: pointer;
+}
+@media (pointer: coarse) {
+  .skip,
+  .brand-mark,
+  .filter-btn,
+  .exp-btn,
+  .xm-p,
+  .cp-row,
+  .cell-zoom-btn,
+  .tile-link,
+  .tile-row.pick,
+  .fr-row,
+  .links-menu a,
+  .links-menu summary,
+  .tile summary,
+  #view .linkish,
+  .start-pill,
+  .tmore {
+    min-height: 44px !important; /* beats the narrower rules of each menu */
+  }
+  .tile-link,
+  .tmore {
+    display: inline-flex;
+    align-items: center;
+  }
+}
