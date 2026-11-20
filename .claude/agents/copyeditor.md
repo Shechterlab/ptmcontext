@@ -24,7 +24,7 @@ Write as a careful scientist would for colleagues.
 **Form**
 - Prefer one short sentence. A hover gets one line, maybe two.
 - A tile caption needs no sentence at all if the label and the number already say it.
-- Match the original explorer's voice (PTM_Pipeline/docs/assets/explorer.js). Grep it for the same element.
+- Match the original explorer's voice (PTM_Pipeline `docs/assets/explorer.js` at tag v1.6.0, from the data root's docs/ at f042367; later releases replace the explorer with redirect stubs). Grep it for the same element.
 
 **Don't change**
 - Ids, keys, search syntax or anything code reads.

@@ -22,8 +22,8 @@ def _copy(tmp_path, tag):
 
 
 def test_the_repository_pins_one_commit_everywhere():
-    assert mod.problems(root=ROOT) == []
-    assert any('not tagged' in x for x in mod.problems(require_tag=True, root=ROOT))
+    assert mod.problems(root=ROOT, offline=True) == []
+    assert json.loads((ROOT / 'data_pin.json').read_text())['tag'] == 'v1.6.0'
 
 
 def test_a_tag_must_resolve_to_the_pinned_commit(tmp_path):

@@ -48,7 +48,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: f042367da8aac9746559f64a597ce031a2b6c05f  # PTM_Pipeline, the commit of data_pin.json; actions/checkout needs the full hash. TODO(v1.6.0 tag): ref the tag name once it exists
+          ref: f042367da8aac9746559f64a597ce031a2b6c05f  # PTM_Pipeline, the commit of data_pin.json; actions/checkout needs the full hash. The tag is v1.6.0 (checked by tools/check_data_pin.py); the hash is what is checked out
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -258,7 +258,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: f042367da8aac9746559f64a597ce031a2b6c05f  # PTM_Pipeline, the commit of data_pin.json; actions/checkout needs the full hash. TODO(v1.6.0 tag): ref the tag name once it exists
+          ref: f042367da8aac9746559f64a597ce031a2b6c05f  # PTM_Pipeline, the commit of data_pin.json; actions/checkout needs the full hash. The tag is v1.6.0 (checked by tools/check_data_pin.py); the hash is what is checked out
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -451,7 +451,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: f042367da8aac9746559f64a597ce031a2b6c05f  # PTM_Pipeline, the commit of data_pin.json; actions/checkout needs the full hash. TODO(v1.6.0 tag): ref the tag name once it exists
+          ref: f042367da8aac9746559f64a597ce031a2b6c05f  # PTM_Pipeline, the commit of data_pin.json; actions/checkout needs the full hash. The tag is v1.6.0 (checked by tools/check_data_pin.py); the hash is what is checked out
           path: reference
           sparse-checkout: |
             inputs/reference

@@ -3,7 +3,7 @@
 Read AGENTS.md first; its rules hold. Also:
 
 - **Spend few tokens.** Grep before you read, and read line ranges, not whole files. The original explorer
-  (`PTM_Pipeline/docs/assets/explorer.js`, about 18k lines) is grep-only. Prefer a script that measures over a
+  (`PTM_Pipeline` `docs/assets/explorer.js` at tag v1.6.0, the data root's docs/ at f042367; about 18k lines) is grep-only. Prefer a script that measures over a
   screenshot that you look at, and take a screenshot only to confirm a fix. Don't rerun the full pipeline unless
   your change can alter its output; `pytest -q -k <area>` comes before the full suite.
 - **Never `pip install`** (it repoints the shared `ptmc` command and packages for everyone). Run your copy's code as
