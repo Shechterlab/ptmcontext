@@ -45,6 +45,20 @@
     }
     return undefined;
   }
+  // the variant lists of the sources kept in their own files (card.variant_counts[].lazy), asked once when the card is opened
+  const DT = {},
+    dAsked = new Set();
+  function detail(acc) {
+    if (acc in DT) return DT[acc];
+    if (!dAsked.has(acc)) {
+      dAsked.add(acc);
+      K.card.loadDetail(acc).then((d) => {
+        DT[acc] = d;
+        paintAll();
+      });
+    }
+    return undefined;
+  }
   const sets = (aid) => {
     const sd = K.sel.meta(),
       ps = sd?.protein_sets?.[aid] || sd?.protein_sets_meta?.[aid];
@@ -475,6 +489,17 @@
     document.querySelectorAll('[data-pc="dependency"], [data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
     paintAll();
   });
+  // a card whose variant lists are in files of their own is filled when it is opened (toggle does not bubble)
+  document.addEventListener(
+    'toggle',
+    (ev) => {
+      const el = ev.target.querySelector?.('[data-pc="germline"]');
+      if (!el || !ev.target.open) return;
+      delete el.dataset.pcOk;
+      paintAll();
+    },
+    true
+  );
   let CFLAG = false; // show only the sites flagged at least flag_ratio times the protein's average
   document.addEventListener('click', (ev) => {
     if (!ev.target.closest?.('[data-cc-flag]')) return;
@@ -687,7 +712,7 @@
       `</section>`;
     return { html, nHot, nSites: byQ.size, nKnown: rec.marks.filter((m) => VCK.at(tb, x, m[0]).length).length };
   }
-  function germlineBuild(p, rec, tb) {
+  function germlineBuild(p, rec, tb, el) {
     const VCK = K.card.vc,
       resSet = new Set(D.residues || []),
       seq = rec.seq || '',
@@ -697,6 +722,22 @@
     for (let i = 0; i < seq.length; i++) if (resSet.has(seq[i])) cands.push(i + 1);
     const pool = CMODE === 'all' ? cands : [...known].filter((q) => seq[q - 1]).sort((a, b) => a - b);
     const letters = [...new Set(pool.map((q) => seq[q - 1]))].sort((a, b) => order(a) - order(b));
+    const lazy = VCK.entries.some((x) => x.lazy);
+    if (lazy && !tb._vd) {
+      // the variant lists are in files of their own: read when the card is opened; closed, only the counts show
+      const sums = VCK.entries.map((x) => {
+        const m = VCK.sums(tb, x);
+        return `${x.label}: ${(() => {
+          const n = rec.marks.filter((q) => m.has(q[0])).length;
+          return n ? plural(n, 'site') : 'no site';
+        })()}`;
+      });
+      if (!el.closest('details')?.open) return { html: '', sum: sums.join(' · ') };
+      const d = detail(p.acc);
+      if (d === undefined) return { html: K.loading('Loading the variants…'), sum: sums.join(' · '), wait: true };
+      if (d === null) return { html: '<p class="muted">The variants could not be read.</p>', sum: sums.join(' · ') };
+      tb._vd = d;
+    }
     const secs = VCK.entries.map((x) => germlineSource(p, rec, tb, x, pool, letters, { cands: cands.length }));
     const seg =
       `<div class="seg" role="group" aria-label="Residues counted"><span class="seg-l">Count</span>` +

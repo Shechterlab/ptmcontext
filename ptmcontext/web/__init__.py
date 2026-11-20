@@ -1438,19 +1438,29 @@ def unit_value_data(folder: Path, listing: list, tracks: list[dict]) -> dict:
 
 
 def protein_tables(
-    specs: dict, run: dict, data: dict, listing: list, fasta: Path, out: Path, log=print, records: dict | None = None
+    specs: dict,
+    run: dict,
+    data: dict,
+    listing: list,
+    fasta: Path,
+    out: Path,
+    log=print,
+    records: dict | None = None,
+    detail: dict | None = None,
 ) -> tuple[dict, int]:
     """Pack the site's website.tables (tables.py) for the protein pages: each protein's rows into data/e/NN.json (D.e_shards files, by accession,
     like data/p but fewer, larger), the rows that name a protein without marks into its light page's record in data/u/NN.json (D.u_shards files; with its
     name, length and sequence from the snapshot), and an index of those proteins (data/u/index.json). Adds the tables'
     columns (D.tables), lookups (D.lookups) and other names of the proteins (D.protein_aliases) to the page's data. A
-    table whose input the run did not record is left out, with a line saying so."""
+    table whose input the run did not record is left out, with a line saying so. The variant lists of the card's
+    `lazy` sources are written to data/g (variants.py) and, when `detail` is a dict, left in it by file number."""
     import hashlib
 
     from ..snapshot import md5_file, parse_fasta, parse_fasta_headers
     from . import tables as T
+    from . import variants as V
 
-    for d in ('e', 'u'):
+    for d in ('e', 'u', 'g'):
         if (out / 'data' / d).exists():
             shutil.rmtree(out / 'data' / d)
     (out / 'data' / 'sites_default.json').unlink(missing_ok=True)
@@ -1470,6 +1480,9 @@ def protein_tables(
     header, rows, partner, lookups = T.pack(specs, paths, marked, set(seqs) | marked, log=log)
     data['tables'] = header
     data['lookups'] = lookups
+    data.pop('variant_detail', None)
+    lazy = V.lazy_entries((data.get('protein_view') or {}).get('card') or {})
+    glists, gspec = V.split(lazy, header, rows) if lazy else ({}, {})
     aliases = {}
     for name, spec in specs.items():
         if spec.get('format') == 'protein_values' and 'aliases' in (header.get(name) or {}).get('columns', []):
@@ -1500,6 +1513,18 @@ def protein_tables(
     for k in range(n_e):  # every shard, so a protein with no rows reads an empty one
         shards[k] = T.dedupe(shards.get(k, {}))
         (out / 'data' / 'e' / f'{k:02d}.json').write_text(json.dumps(shards[k], separators=(',', ':'), default=int))
+    if gspec:  # the variant lists, a few proteins to a file, read when a card is opened
+        n_g, gfiles = V.shards(glists, gspec)
+        (out / 'data' / 'g').mkdir(parents=True, exist_ok=True)
+        for k, f in gfiles.items():
+            (out / 'data' / 'g' / f'{k:03d}.json').write_text(json.dumps(f, separators=(',', ':'), default=int))
+        data['variant_detail'] = {'shards': n_g, 'entries': gspec}
+        if detail is not None:
+            detail.update({f'g{k:03d}': f for k, f in gfiles.items()})
+        gsize = sum(f.stat().st_size for f in (out / 'data' / 'g').glob('*.json'))
+        log(
+            f'  variant lists: {len(glists):,} proteins in {n_g} files ({gsize / 1e6:.1f} MB), read when a card is opened'
+        )
     # the light pages: every protein of the snapshot without a mark, with the rows naming it as a partner
     light_rows: dict[str, dict] = {}
     index = []
@@ -1729,6 +1754,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         (out / 'data' / 'units.json').unlink()
     # the tables the protein pages show (website.tables, in the formats of CONTRACTS.md): each protein's rows beside its
     # page (data/e), the rows naming a protein without marks on its own light page (data/u), lookups in the page
+    g_files: dict = {}
     ev_shards, light = (
         protein_tables(
             web.get('tables') or {},
@@ -1739,6 +1765,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             out,
             log,
             {a: r for sh in shards.values() for a, r in sh.items()},
+            g_files,
         )
         if listing
         else ({}, 0)
@@ -1809,7 +1836,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         )
         inline_proteins = '{}'
     inline_tables = json.dumps(
-        {f'{k:02d}': v for k, v in ev_shards.items()}, separators=(',', ':'), default=int
+        {**{f'{k:02d}': v for k, v in ev_shards.items()}, **g_files}, separators=(',', ':'), default=int
     ).replace('</', '<\\/')
     if inline_proteins == '{}' or len(inline_proteins) + len(inline_tables) > cap:
         inline_tables = '{}'

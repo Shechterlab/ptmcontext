@@ -1715,6 +1715,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {id: depmap, label: DepMap, unit: [cell line, cell lines], tables: [depmap_changes_K], background: cancer_background, count: depmap_changes}
       variant_counts:      # germline variants at each candidate residue from per-variant tables, beside the protein's average for that residue (the toggle as above)
         - id: clinvar
+          lazy: true       # its rows are read from a file of their own when the card is opened
           label: ClinVar
           unit: [variant, variants]
           tables: [clinvar_K]
@@ -1728,6 +1729,7 @@ website:                  # the look and words of the website (ptmc web); layout
             - {column: conditions, label: Conditions, separator: "|", max: 60}
           link: {column: variation_id, url: "https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/"}
         - id: gnomad
+          lazy: true       # its rows are read from a file of their own when the card is opened
           label: gnomAD
           unit: [variant, variants]
           tables: [gnomad_K]

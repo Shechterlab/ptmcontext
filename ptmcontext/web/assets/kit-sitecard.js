@@ -23,11 +23,49 @@
   const shardOf = (acc, n) => [...acc].reduce((s, c) => s + c.charCodeAt(0), 0) % (n || D.shards || 64);
   const cache = {};
   const getShard = (dir, k) => {
-    const key = String(k).padStart(2, '0');
-    if (dir === 'e' && inline[key]) return Promise.resolve(inline[key]);
+    const key = String(k).padStart(dir === 'g' ? 3 : 2, '0');
+    if ((dir === 'e' || dir === 'g') && inline[(dir === 'g' ? 'g' : '') + key])
+      return Promise.resolve(inline[(dir === 'g' ? 'g' : '') + key]);
     return (cache[dir + key] ||= fetch(`data/${dir}/${key}.json`).then((r) =>
       r.ok ? r.json() : Promise.reject(new Error(String(r.status)))
     ));
+  };
+  // the variant lists of the sources with `lazy` (data/g, a few proteins to a file) are read when a card is opened; the
+  // file's hash of an accession is variants.py's hash_shard
+  const hashOf = (acc, n) => {
+    let h = 0;
+    for (const c of acc) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0;
+    return h % n;
+  };
+  // a protein's variant lists as row objects by source id ({} when it has none, null when they cannot be read)
+  const loadDetail = (acc) => {
+    const VD = D.variant_detail;
+    if (!VD) return Promise.resolve({});
+    return getShard('g', hashOf(acc, VD.shards)).then(
+      (sh) => {
+        const s = sh._s || [],
+          rec = sh[acc] || {},
+          out = {};
+        for (const [id, block] of Object.entries(rec)) {
+          const { columns, kinds } = VD.entries[id],
+            n = (block[0] || []).length,
+            list = new Array(n);
+          let pos = 0;
+          for (let i = 0; i < n; i++) {
+            const o = {};
+            for (let j = 0; j < columns.length; j++) {
+              const v = block[j][i];
+              if (kinds[j] === 'pos') o[columns[j]] = pos += v;
+              else o[columns[j]] = kinds[j] === 'str' ? str(s, v) : v;
+            }
+            list[i] = o;
+          }
+          out[id] = list;
+        }
+        return out;
+      },
+      () => null
+    );
   };
   // a protein's tables ({} when it has no rows, null when they cannot be read)
   // a shard writes its repeated strings once ('_s'); a number in a row (but a position) is an index there
@@ -561,17 +599,34 @@
     // position -> [row], over the entry's tables
     let m = VC_IDX.get(tb);
     if (!m) VC_IDX.set(tb, (m = {}));
+    if (x.lazy && !tb._vd?.[x.id]) return new Map(); // its list is not read yet
     return (m[x.id] ||= (() => {
       const idx = new Map();
-      for (const t of x.tables || [])
-        for (const r of rows(tb, t)) {
-          if (!idx.has(r.position)) idx.set(r.position, []);
-          idx.get(r.position).push(r);
-        }
+      for (const r of x.lazy ? tb._vd[x.id] : (x.tables || []).flatMap((t) => rows(tb, t))) {
+        if (!idx.has(r.position)) idx.set(r.position, []);
+        idx.get(r.position).push(r);
+      }
       return idx;
     })());
   }
   const variantsAt = (tb, x, pos) => variantIdx(tb, x).get(pos) || [];
+  // the count and the highlighted count at a residue: a lazy source keeps them in the protein's table shard (_vc), the
+  // rest are counted from the rows
+  const VS_IDX = new WeakMap();
+  function variantSums(tb, x) {
+    let m = VS_IDX.get(tb);
+    if (!m) VS_IDX.set(tb, (m = {}));
+    return (m[x.id] ||= (() => {
+      const out = new Map();
+      if (x.lazy) {
+        const f = tb._vc?.[x.id] || [];
+        let pos = 0;
+        for (let i = 0; i < f.length; i += 3) out.set((pos += f[i]), { n: f[i + 1], hot: f[i + 2] });
+      } else variantIdx(tb, x).forEach((v, q) => out.set(q, { n: v.length, hot: v.filter((r) => isHot(x, r)).length }));
+      return out;
+    })());
+  }
+  const variantSum = (tb, x, pos) => variantSums(tb, x).get(pos) || { n: 0, hot: 0 };
   // a variant is highlighted when the entry's highlight column equals the value, or matches the pattern (pathogenic, say)
   const HOT_RX = new WeakMap();
   const isHot = (x, r) => {
@@ -589,14 +644,13 @@
     const letter = (c.seq || '')[c.pos - 1] || '',
       nm = residueName(letter);
     return VCN.map((x) => {
-      const v = variantsAt(c.tb, x, c.pos),
+      const { n, hot } = variantSum(c.tb, x, c.pos),
         unit = x.unit || ['variant', 'variants'],
-        hot = hotCount(x, v),
         b = changeAvg(c.tb, x, letter);
-      const head = `<b>${esc(x.label)}</b>: ${v.length ? int(v.length) : 'no'} ${esc(v.length === 1 ? unit[0] : unit[1])}${
+      const head = `<b>${esc(x.label)}</b>: ${n ? int(n) : 'no'} ${esc(n === 1 ? unit[0] : unit[1])}${
         hot && x.highlight.label ? ` <span class="muted">(${int(hot)} ${esc(x.highlight.label)})</span>` : ''
       }`;
-      const flag = flagged(c.tb, x, letter, v.length) ? ' ' + flagTag(x) : '';
+      const flag = flagged(c.tb, x, letter, n) ? ' ' + flagTag(x) : '';
       return `<div>${head}${flag} <span class="muted small">· protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`;
     }).join('');
   }
@@ -1508,6 +1562,7 @@
   K.card = {
     proteinRecords,
     load,
+    loadDetail,
     loadDefault,
     defaultTb,
     compact: SDF,
@@ -1526,6 +1581,8 @@
     vc: {
       entries: VCN,
       at: variantsAt,
+      sum: variantSum,
+      sums: variantSums,
       hot: isHot,
       hotCount,
       avg: changeAvg,

@@ -1,4 +1,5 @@
 ## Unreleased
+- Germline variants load when the card is opened: the ClinVar and gnomAD rows of the methyllysine, lysine and phospho sites leave the per-protein table shards for files of their own (`data/g`, columnar and dictionary-encoded, allele frequency to three significant digits), and the shards keep one count per residue for the site card's line. New `lazy: true` on a `variant_counts` source (CONTRACTS.md). No row or column is dropped.
 - Site numbering: every view numbers the histones, and the proteins whose UniProt entry records the initiator methionine as removed, without that methionine (histone H3.1 K36, not K37), in the card, map, variants, regions table, IDR tables, Sites page, search and links; downloads keep the UniProt position beside the shown site. Statistics are unchanged.
 - Cancer card: in "all candidate residues" mode, residues that are not marked sites now use the same numbering as the rest of the page.
 - Landing page: the whole card opens its explorer again, including the "Explore … →" button and the card body; a positioned color band had confined the card link to the band.

@@ -776,6 +776,15 @@ the character that joins several values, shown as `; `, `words` maps a code to i
 in the address is the column's value). The card has the same switch as the change counts, and one section a source; its
 list shows `limit` variants (default 12) and a button for the rest. The `flag_ratio` rule is the change counts'.
 
+`lazy: true` on a source keeps its variants out of the protein's table shard (`data/e`): they are written to `data/g/NNN.json`,
+a few proteins to a file (about 150 KB each before compression; the file of an accession is `h % D.variant_detail.shards`, with
+`h = h * 31 + code` over its characters, 32-bit), and read when the Germline variants card is opened. The shard keeps `_vc`, a
+flat list `[position delta, variants, highlighted]` for each residue with a variant, which the site card's line and the closed
+card's summary read. A protein's record in a `data/g` file is `{source id: [positions as deltas, column 1, column 2, ...]}`, one
+array per column in the order of `D.variant_detail.entries[id].columns`; a text a file repeats is its index in the file's `_s`,
+a `sci`, `int` or `stars` field is a number (`sci` to three significant digits) and an empty cell is `null`. Every row and column
+of the tables is kept. Without `lazy` the rows stay in the shard.
+
 `website.protein.card.records` (the card's "Who binds it" block over a `site_records` table) names the group headings in
 this order: the label of the `groups` attribute's value, else `labels: {code: label}` (optional, a map of a group's code to
 its heading), else the code with its underscores replaced by spaces. The summary line above the groups uses the same
