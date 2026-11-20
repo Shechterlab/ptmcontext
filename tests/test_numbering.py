@@ -75,3 +75,12 @@ def test_the_page_reads_one_rule(tmp_path):
     run = subprocess.run(['node', '-e', head + '(async () => {' + body + '})();'], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-1200:]
     assert json.loads(run.stdout) == [N.offset(*p, _rules()) for p in (H3, REMOVED, KEPT)] == [-1, -1, 0]
+
+
+def test_every_protein_card_residue_name_carries_the_accession():
+    import re
+    from pathlib import Path
+
+    js = (Path(__file__).resolve().parents[1] / 'ptmcontext/web/assets/kit-pcards.js').read_text()
+    calls = re.findall(r'siteName\(rec, [^)]*\)', js)
+    assert calls and all(c.count(',') == 2 for c in calls), calls

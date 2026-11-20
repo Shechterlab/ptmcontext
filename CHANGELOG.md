@@ -1,5 +1,6 @@
 ## Unreleased
 - Site numbering: every view numbers the histones, and the proteins whose UniProt entry records the initiator methionine as removed, without that methionine (histone H3.1 K36, not K37), in the card, map, variants, regions table, IDR tables, Sites page, search and links; downloads keep the UniProt position beside the shown site. Statistics are unchanged.
+- Cancer card: in "all candidate residues" mode, residues that are not marked sites now use the same numbering as the rest of the page.
 - Landing page: the whole card opens its explorer again, including the "Explore … →" button and the card body; a positioned color band had confined the card link to the band.
 
 - Interactions tab and protein pages, simpler: a table shows one line of counts per kind or group and keeps its rows behind "Show all rows" (ten at a time); a forest of more than ten tests shows eight and the rest behind "Show all tests"; the method sentence of a forest is behind "Method". The writer line of a site card lists eight partners and counts the rest.

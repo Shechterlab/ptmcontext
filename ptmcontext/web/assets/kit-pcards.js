@@ -569,7 +569,7 @@
             .slice(0, 12)
             .map(
               (r) =>
-                `<tr><td>${known.has(r.q) ? siteLink(p, rec, r.q) : esc(siteName(rec, r.q))}</td>${cn
+                `<tr><td>${known.has(r.q) ? siteLink(p, rec, r.q) : esc(siteName(rec, r.q, p.acc))}</td>${cn
                   .map((x, k) => `<td>${cellOf(r, k)}</td>`)
                   .join('')}</tr>`
             )
