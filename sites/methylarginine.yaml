@@ -1900,6 +1900,15 @@ website:                  # the look and words of the website (ptmc web); layout
   dataset: {label: data release, version: v1.5.1, date: "2026-11-19", doi: "10.5281/zenodo.24373077", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1"}
   methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
+  whats_new:               # what v1.6.0 added (the Help page)
+    title: What’s new in v1.6.0
+    items:
+      - "Cancer changes at every candidate residue (TCGA tumors, DepMap cell lines) and germline variants (ClinVar, gnomAD), with the gene named for proteins that several genes encode."
+      - "A count of the changes the cards do not show, with a download of those rows."
+      - "Histones and proteins without their initiator methionine are numbered as papers number them; one short name (H4) for a protein several genes encode, and search finds old gene names too."
+      - "The four human sites show the same protein-page cards, wherever the data have the residue."
+      - "Network clusters are named against the annotated human proteome, with a tooltip of each cluster's best terms and a Highlight a term box."
+    doi: ""   # TODO(v1.6.0 DOI): the data DOI, once the release is tagged
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.5.1/releases/v1.5.1/human_methylarginine_sites_v1.5.1.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.5.1/releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv", format: TSV, note: "the same, tab-separated"}

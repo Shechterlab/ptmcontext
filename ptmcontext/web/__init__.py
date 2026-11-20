@@ -689,6 +689,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'legacy_params': web.get('legacy_params') or {},
         'dataset': web.get('dataset'),
         'downloads': web.get('downloads') or [],
+        'whats_new': web.get('whats_new') or None,
         'download_terms': web.get('download_terms', ''),
         'methods_note': web.get('methods_note', ''),
         # the maps of the cell as one question (kit-cell.js) and the parts of the kit's drawings; protein-set questions

@@ -230,6 +230,13 @@
     const term = (t, d) => `<dt>${t}</dt><dd>${d}</dd>`;
     return (
       `<div class="page-head"><h2>Help</h2></div><div class="doc help-doc">` +
+      (D.whats_new?.items?.length
+        ? `<section id="h-new" class="whats-new"><h3>${esc(D.whats_new.title || 'What’s new')}</h3><ul>${D.whats_new.items
+            .map((x) => `<li>${esc(x)}</li>`)
+            .join(
+              ''
+            )}</ul>${D.whats_new.doi ? `<p class="muted small">Data: ${esc(D.whats_new.doi)}</p>` : ''}</section>`
+        : '') +
       sec(
         'h-search',
         `<p>The search box takes a protein (gene name, UniProt accession or entry name), a list of proteins separated by ` +

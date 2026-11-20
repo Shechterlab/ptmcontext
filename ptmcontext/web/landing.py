@@ -275,6 +275,16 @@ def page(
     )
     note = (cfg.get('footer') or {}).get('note')
     refs = ''.join(_ref(x) for x in cfg.get('references') or [])
+    wn = cfg.get('whats_new') or {}
+    new = (
+        f'<section class="land-new"><h2>{html.escape(wn.get("title") or "What’s new")}</h2><ul>'
+        + ''.join(f'<li>{html.escape(x)}</li>' for x in wn['items'])
+        + '</ul>'
+        + (f'<p class="muted">Data: {html.escape(wn["doi"])}</p>' if wn.get('doi') else '')
+        + '</section>'
+        if wn.get('items')
+        else ''
+    )
     groups = [g for g in cfg.get('groups') or [] if g.get('id')] or [{'id': None}]
     ids = {g['id'] for g in groups}
     sections = ''
@@ -311,6 +321,7 @@ def page(
 <main class="wrap" id="sites">
 {f'<section class="land-intro" aria-label="About">{intro}</section>' if intro else ''}
 {f'<ul class="land-refs" aria-label="Paper and data">{refs}</ul>' if refs else ''}
+{new}
 {SEARCH_HTML if search else ''}
 <h2 class="vh">The explorers</h2>
 {sections}</main>

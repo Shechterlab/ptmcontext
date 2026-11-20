@@ -5632,6 +5632,16 @@
             }
           }
         },
+        "whats_new": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "what a release added, shown at the top of the Help page: a `title`, a list of `items` (plain sentences) and the release's data `doi` once it has one",
+          "properties": {
+            "title": {"type": "string"},
+            "items": {"type": "array", "items": {"type": "string"}},
+            "doi": {"type": "string"}
+          }
+        },
         "download_terms": {
           "type": "string",
           "description": "the terms the downloads come under (licenses, attribution), shown above the list"
