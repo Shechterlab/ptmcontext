@@ -82,3 +82,22 @@ def test_variant_counts_are_checked_against_their_tables():
 def test_a_germline_card_without_sources_is_named():
     out = pcards.problems(_site([], {'germline': {}}))
     assert any('cards.germline: names no sources' in m for m in out)
+
+
+def test_excluded_changes_are_counted_by_reason_and_kept_in_the_lazy_files():
+    from ptmcontext.web import variants as V
+
+    card = {
+        'excluded': [
+            {'id': 'cancer', 'lazy': True, 'tables': ['x'], 'count_by': 'reason'},
+            {'id': 'off', 'tables': ['x']},
+        ]
+    }
+    assert [e['id'] for e in V.lazy_entries(card)] == ['cancer']
+    header = {'x': {'format': 'site_table', 'columns': ['position', 'source_id', 'reason']}}
+    rows = {
+        'P1': {'x': [[5, 'a', 'residue_differs'], [9, 'b', 'residue_differs'], [9, 'c', 'position_beyond_sequence']]}
+    }
+    lists, spec = V.split(V.lazy_entries(card), header, rows)
+    assert rows['P1'] == {'_xc': {'cancer': {'residue_differs': 2, 'position_beyond_sequence': 1}}}
+    assert len(lists['P1']['cancer']) == 3 and spec['cancer']['columns'] == ['position', 'source_id', 'reason']

@@ -38,6 +38,7 @@ DEFAULTS = {
     'min_coverage': 0.25,
     'thin_term': 'best',
     'weak_p': 0.05,
+    'background': 'proteome',
     'min_overlap': 3,
     'min_term': 5,
     'max_fraction': 0.2,
@@ -179,7 +180,7 @@ def communities(n: int, edges: list, opt: dict) -> list[int]:
 
 
 # ---- labels: the most enriched term of each cluster ---------------------------------------------------------------------
-def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict) -> list[dict]:
+def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict, bg: dict | None = None) -> list[dict]:
     """For each cluster (a community number, in order), the term of the smallest one-sided hypergeometric p among the
     terms the cluster has `min_overlap` or more proteins in, that annotate `min_term` or more of the network's N proteins
     and no more than `max_fraction` of them (broad terms are left out), against all the network's proteins. q is
@@ -192,17 +193,22 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
     names two clusters (larger clusters choose first; two terms with one short name count as one). A cluster still without a
     name takes, when `weak_p` is above 0, the term of the smallest p (p <= weak_p, coverage as above) although its q is above
     `max_q`; the row carries `weak: True` and the label its q. With `opt['label']` set,
-    only the terms of that source (the second number of a term) are used."""
+    only the terms of that source (the second number of a term) are used. `bg` ({'N': [proteins of each source's
+    background], 'M': [proteins of the background each term annotates]}, see `background`) replaces the cluster's own
+    network as the background of the test and of the `min_term` and `max_fraction` rules; without it the network drawn is."""
     N = len(comm)
     members = defaultdict(list)
     for i, c in enumerate(comm):
         members[c].append(i)
     count: dict[int, int] = Counter(t for a in ann for t in a)
+    if bg:
+        count = {t: bg['M'][t] for t in count}
+    Nt = (lambda t: bg['N'][terms[t][1]]) if bg else (lambda t: N)  # noqa: E731
     ok = {
         t
         for t, m in count.items()
         if m >= opt['min_term']
-        and m / N <= opt['max_fraction']
+        and m / Nt(t) <= opt['max_fraction']
         and (opt.get('label') is None or terms[t][1] == opt['label'])
         and not (terms[t][2] in opt.get('exclude', ()) or terms[t][0] in opt.get('exclude', ()))
     }
@@ -216,7 +222,7 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
         tested = sorted(t for t, k in k_of.items() if k >= opt['min_overlap'])
         row = {'n': n, 'term': None}
         if tested:
-            ps = [hypergeom_sf(k_of[t], N, count[t], n) for t in tested]
+            ps = [hypergeom_sf(k_of[t], Nt(t), count[t], n) for t in tested]
             qs = [float(x) for x in benjamini_hochberg(ps)]
 
             def key(j):
@@ -252,7 +258,7 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
                         'q': qs[best],
                         'k': k_of[t],
                         'M': count[t],
-                        'N': N,
+                        'N': Nt(t),
                     }
                     break
                 remaining.remove(best)
@@ -284,7 +290,7 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
                         'q': qs[j],
                         'k': k_of[t],
                         'M': count[t],
-                        'N': N,
+                        'N': Nt(t),
                         'thin': True,
                     }
             if row['term'] is None and opt.get('weak_p', 0) > 0:
@@ -320,11 +326,25 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
                         'q': qs[j],
                         'k': k_of[t],
                         'M': count[t],
-                        'N': N,
+                        'N': Nt(t),
                         'weak': True,
                     }
         out.append(row)
     return out
+
+
+def background(full: dict, opt: dict) -> dict | None:
+    """The background the clusters' terms are tested against (`opt['background']`): `drawn` (None: the proteins of the view),
+    `site` (every protein the site's network can draw) or `proteome` (every annotated reviewed protein, counted when the
+    network was made: full['bg']; the site's own when a source has no proteome table). {'N': per source, 'M': per term}."""
+    mode = opt.get('background', 'proteome')
+    if mode == 'drawn':
+        return None
+    if mode == 'proteome' and full.get('bg'):
+        return full['bg']
+    n_src = max([t[1] for t in full['terms']], default=-1) + 1
+    count = Counter(t for a in full['ann'] for t in a)
+    return {'N': [len(full['nodes'])] * n_src, 'M': [count.get(t, 0) for t in range(len(full['terms']))]}
 
 
 # ---- the graph a view draws -----------------------------------------------------------------------------------------------
@@ -360,7 +380,7 @@ def make_view(full: dict, opt: dict, select: set | None = None, sources: list | 
     pos = {g: k for k, g in enumerate(live)}
     comm = communities(len(live), [(pos[a], pos[b], w) for a, b, _, _, w in edges], opt)
     ann = [full['ann'][g] for g in live]
-    labels = label_clusters(comm, ann, full['terms'], opt)
+    labels = label_clusters(comm, ann, full['terms'], opt, background(full, opt))
     # the three proteins with most sites of each cluster: its name when no term names it
     by_c: dict = defaultdict(list)
     for i, g in enumerate(live):
@@ -728,6 +748,8 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
     # the terms of the labels: sets annotating at least min_term of the nodes
     terms, ann = [], [[] for _ in nodes]
     labels = []
+    bg_n: list[int] = []
+    bg_m: list[int] = []
     for lab in cfg.get('label_from') or []:
         li = len(labels)  # the source's number among those read
         mf = _path(site, run, lab['input'], log)
@@ -738,7 +760,10 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         has_iea = 'non_iea' in mt.columns
         if lab.get('non_iea', True) and has_iea:
             mt = mt[mt['non_iea'] == 'true']
-        mt = mt[mt[lab['protein']].map(base).isin(ix)]
+        every = mt[lab['protein']].map(base)  # the whole annotated proteome of this source: the labels' background
+        bg_n.append(int(every.nunique()))
+        whole_count = mt.assign(_p=every).groupby(lab['set'])['_p'].nunique().to_dict()
+        mt = mt[every.isin(ix)]
         names, depth, whole = {}, {}, {}
         if nf is not None:
             nt = _table(nf)
@@ -767,6 +792,7 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
                 continue
             t = len(terms)
             terms.append([names.get(s, s), li, s, depth.get(s, 0)])
+            bg_m.append(int(whole_count.get(s, len(by_set[s]))))
             for p in by_set[s]:
                 ann[ix[p]].append(t)
         labels.append(
@@ -806,6 +832,7 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         'edges': edges,
         'terms': terms,
         'ann': ann,
+        **({'bg': {'N': bg_n, 'M': bg_m}} if len(bg_n) == len(labels) and terms else {}),
     }
     view = make_view(full, opt)
     default = {
@@ -846,6 +873,7 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
             'edges': [x for e in edges for x in e],
             'terms': terms,
             'ann': ann,
+            **({'bg': full['bg']} if 'bg' in full else {}),
             'color': color,
             **({'outline': outline} if outline else {}),
             **({'extra': extra_out} if extra_out else {}),

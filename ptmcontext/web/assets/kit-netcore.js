@@ -114,18 +114,33 @@
       .trim();
     return s || String(t || '');
   };
-  function labelClusters(comm, ann, terms, opt) {
+  // bg ({N: proteins of each source's background, M: proteins of it each term annotates}, from backgroundOf) is the background
+  // of the test and of the min_term and max_fraction rules; without it the proteins of the view are
+  // the background the terms are tested against (opt.background): drawn (null), site (every protein the network can draw) or
+  // proteome (the whole annotated proteome, counted when the network was made: full.bg; the site's own without it)
+  function backgroundOf(full, opt) {
+    const mode = opt.background || 'proteome';
+    if (mode === 'drawn') return null;
+    if (mode === 'proteome' && full.bg) return full.bg;
+    const nSrc = full.terms.reduce((a, t) => Math.max(a, t[1] + 1), 0),
+      M = full.terms.map(() => 0);
+    full.ann.forEach((a) => a.forEach((t) => M[t]++));
+    return { N: new Array(nSrc).fill(full.acc ? full.acc.length : full.nodes.length), M };
+  }
+  function labelClusters(comm, ann, terms, opt, bg) {
     const N = comm.length,
       members = [];
     comm.forEach((c, i) => (members[c] ||= []).push(i));
     const count = new Map();
     ann.forEach((a) => a.forEach((t) => count.set(t, (count.get(t) || 0) + 1)));
+    if (bg) count.forEach((m, t) => count.set(t, bg.M[t]));
+    const Nt = (t) => (bg ? bg.N[terms[t][1]] : N);
     const ex = new Set(opt.exclude || []),
       ok = new Set();
     count.forEach((m, t) => {
       if (
         m >= opt.min_term &&
-        m / N <= opt.max_fraction &&
+        m / Nt(t) <= opt.max_fraction &&
         (opt.label == null || terms[t][1] === opt.label) &&
         !ex.has(terms[t][2]) &&
         !ex.has(terms[t][0])
@@ -140,7 +155,7 @@
       mem.forEach((i) => ann[i].forEach((t) => ok.has(t) && kOf.set(t, (kOf.get(t) || 0) + 1)));
       const tested = [...kOf.keys()].filter((t) => kOf.get(t) >= opt.min_overlap).sort((a, b) => a - b);
       if (!tested.length) return { n, term: null };
-      const ps = tested.map((t) => window.PTMC_STATS.hyperSF(kOf.get(t), N, count.get(t), n)),
+      const ps = tested.map((t) => window.PTMC_STATS.hyperSF(kOf.get(t), Nt(t), count.get(t), n)),
         qs = window.PTMC_STATS.bh(ps);
       const dp = (j) => terms[tested[j]][3] || 0,
         cnt = (j) => count.get(tested[j]),
@@ -177,7 +192,7 @@
             q: qs[best],
             k: kOf.get(t),
             M: count.get(t),
-            N,
+            N: Nt(t),
           };
         }
         remaining = remaining.filter((j) => j !== best);
@@ -210,7 +225,7 @@
             q: qs[j],
             k: kOf.get(t),
             M: count.get(t),
-            N,
+            N: Nt(t),
             thin: true,
           };
         }
@@ -253,7 +268,7 @@
             q: qs[j],
             k: kOf.get(t),
             M: count.get(t),
-            N,
+            N: Nt(t),
             weak: true,
           };
         }
@@ -306,7 +321,8 @@
         comm,
         live.map((g) => full.ann[g]),
         full.terms,
-        opt
+        opt,
+        backgroundOf(full, opt)
       ),
     };
     // the three proteins with most sites of each cluster: its name when no term names it

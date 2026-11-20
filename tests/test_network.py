@@ -911,3 +911,23 @@ setTimeout(()=>{const before=nothing();held=true;const after=nothing();console.l
     )
     got = _node(prog, {'net': str(ASSETS / 'kit-network.js'), 'file': file})
     assert got == {'before': True, 'after': False}, got
+
+
+def test_the_background_decides_which_terms_are_broad_and_what_is_enriched():
+    # a selection of 20 proteins that all hold term 0: against its own proteins the term is in all of them (broad, left out);
+    # against a proteome of 1000 where 50 hold it, it names the cluster
+    comm = [0] * 10 + [1] * 10
+    ann = [[0] for _ in range(20)]
+    terms = [['chromatin organization', 0, 'C']]
+    opt = {**NW.DEFAULTS, 'min_term': 3, 'background': 'drawn'}
+    assert NW.label_clusters(comm, ann, terms, opt)[0]['term'] is None
+    bg = {'N': [1000], 'M': [50]}
+    lab = NW.label_clusters(comm, ann, terms, opt, bg)
+    assert lab[0]['term'] == 'chromatin organization' and lab[0]['M'] == 50 and lab[0]['N'] == 1000
+    # max_fraction applies to the background: a term in 30% of the proteome is dropped though it is rare in the selection
+    assert NW.label_clusters(comm, ann, terms, opt, {'N': [1000], 'M': [300]})[0]['term'] is None
+    # `site` counts every protein the network can draw; `proteome` takes the table made with the network
+    full = {'terms': terms, 'ann': [[0]] * 20 + [[]] * 180, 'nodes': [None] * 200, 'bg': bg}
+    assert NW.background(full, {'background': 'drawn'}) is None
+    assert NW.background(full, {'background': 'proteome'}) == bg
+    assert NW.background(full, {'background': 'site'}) == {'N': [200], 'M': [20]}
