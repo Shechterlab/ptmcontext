@@ -831,6 +831,51 @@
       "licence": "derived counts of the gnomAD tables (CC0 1.0)",
       "role": "input",
       "note": "Per reviewed entry and residue (R, K, S, T, Y): how many residues of that kind the entry has, and the gnomAD variants, positions and alleles at them. The base of the protein average."
+    },
+    "nucleic_acid_regions": {
+      "file": "releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv",
+      "md5": "244126e0faf5b7fe803b66b01950c9d4",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit c0d90e2)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "Runs of residues within 4 Å of RNA or DNA in PDB structures, with the bound segments: the protein page's RNA and DNA interactions card. PDB: CC0."
+    },
+    "dna_motifs": {
+      "file": "releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv",
+      "md5": "b5ee0ac01e31897bd36ca2b7bc3cef0b",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit c0d90e2)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "JASPAR 2026 DNA-binding profiles of the proteins: the protein page's RNA and DNA interactions card. JASPAR: CC BY 4.0."
+    },
+    "rna_bind_n_seq": {
+      "file": "releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv",
+      "md5": "7d2bccc6ce1482943997613d3ef741c8",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit c0d90e2)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "The v1.6.0 release's ENCODE RNA Bind-n-Seq experiments of the proteins: their most enriched 5-mers (ENCODE: no use restrictions). Read by the website's Interactions page only."
+    },
+    "eclip": {
+      "file": "releases/v1.6.0/supporting/eclip_v1.6.0.tsv",
+      "md5": "acfdad3a4a6f82f9d07866e3ced0a249",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/eclip_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit c0d90e2)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "ENCODE and ENCORE eCLIP experiments of the proteins: peaks by transcript region, top genes and enriched 5-mers (in cells): the protein page's RNA and DNA interactions card."
+    },
+    "htr_selex": {
+      "file": "releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv",
+      "md5": "c89d0a813e1309bcb13fead0ca817229",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit c0d90e2)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "The v1.6.0 release's HTR-SELEX RNA-binding models of the proteins (Jolma et al., Genome Res 30:962 (2020), CC BY-NC 4.0). Read by the website's Interactions page only."
     }
   }
 }

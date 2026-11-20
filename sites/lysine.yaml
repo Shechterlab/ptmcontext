@@ -1560,6 +1560,62 @@ website:                  # the look and words of the website (ptmc web); layout
       input: depmap_gene_effect
       format: protein_records
       columns: {accession: canonical_UniProtAC, lines: lines, dependent: dependent_lines, median: median, common_essential: common_essential, histogram: histogram, lineages: most_dependent_lineages}
+    hpa:                   # the Location and condensates card: Human Protein Atlas locations
+      input: hpa_locations
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, location: location, main: main, reliability: reliability}
+    condensate_members:    # CD-CODE 2.3 members of each condensate, with the confidence score and the evidence
+      input: cdcode_members_2_3
+      format: protein_records
+      columns: {accession: uniprot_accession, condensate: condensate_uid, score: confidence_score, roles: roles, evidence: experimental_evidence, pmids: pmids}
+    condensates:           # CD-CODE condensate names and types
+      input: cdcode_condensates
+      format: lookup
+      sep: ","
+      columns: {key: uid}
+      values: [name, condensate_type]
+    # the RNA and DNA interactions card and the Interactions page: protein-level tables of the v1.6.0 release (no residue of a kind is named in them)
+    nucleic_regions:       # runs of residues within 4 Å of RNA or DNA in PDB structures (the RNA and DNA interactions card)
+      input: nucleic_acid_regions
+      format: protein_records
+      columns: {accession: uniprot_accession}
+      values: [start, end, nucleic_acid, n_entries]
+    dna_motifs:            # JASPAR profiles of the protein
+      input: dna_motifs
+      format: protein_records
+      columns: {accession: uniprot_accession}
+      values: [matrix_id, name, tf_class, tf_family, consensus]
+    rna_bind_n_seq:        # ENCODE RNA Bind-n-Seq, in vitro
+      input: rna_bind_n_seq
+      format: protein_records
+      columns: {accession: uniprot_accession}
+      values: [encode_experiment, concentration, top_5mers, top_5mer_R]
+    eclip:                 # ENCODE and ENCORE eCLIP, in cells
+      input: eclip
+      format: protein_records
+      columns: {accession: uniprot_accession}
+      values: [source, experiment, cell_line, n_peaks, peaks_CDS, peaks_UTR3, peaks_UTR5, peaks_noncoding_exon, peaks_intron, peaks_intergenic,
+               top_target_genes, top_target_peaks, top_5mers, top_5mer_ratios, same_data_as]
+    rbns:
+      input: rna_bind_n_seq
+      format: protein_values
+      columns: {accession: uniprot_accession}
+      values: [encode_experiment, concentration, top_5mers]
+    htr_selex:
+      input: htr_selex
+      format: protein_values
+      columns: {accession: uniprot_accession}
+      values: [model_id, motif_kind, consensus]
+    ix_dna_motifs:
+      input: dna_motifs
+      format: protein_values
+      columns: {accession: uniprot_accession}
+      values: [matrix_id, name, tf_family, consensus]
+    ix_eclip:
+      input: eclip
+      format: protein_values
+      columns: {accession: uniprot_accession}
+      values: [experiment, source, cell_line, n_peaks, top_target_genes, top_5mers]
     string:                # STRING v12.5 physical links, each pair listed once and read both ways, at score 0.7 or more
       input: string_physical_v12_5
       format: protein_partners
@@ -1602,10 +1658,13 @@ website:                  # the look and words of the website (ptmc web); layout
                 title: paper_title}
   sites:                   # the Sites tab
     table:                 # the optional columns (the Columns menu): the same set on every site, where the data has it
+      - {id: na, label: RNA/DNA contacts, menu: "RNA/DNA contacts (structures) and crosslinks (cells)", show: [sequences, around], default: true}
       - {id: type, label: Modification, attribute: acyl_type, default: true, hide: xs}
       - {id: src, label: Reported by, attribute: sources, default: true, hide: sm}
       - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context], hide: xs}
+      - {id: nn, label: "Nearest other mark", menu: "Distance to the nearest other mark", show: [nearest], hide: sm}
       - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
+      - {id: tcga, label: Changes in cancers, menu: "Changes in tumors (TCGA) and cell lines (DepMap)", show: [changes], hide: sm}
   protein:                 # the protein page
     conservation:          # orthologs live from Ensembl Compara, and the selection's logo (CONTRACTS.md, Conservation across species)
       reference: Human
@@ -1640,6 +1699,22 @@ website:                  # the look and words of the website (ptmc web); layout
       logo: true
       logo_mode: freq      # the logo's first stack is residue frequency, as the explorer's; bits is a switch
     open_partners: true
+    order: [p-map, p-cell, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologs after the sites
+    groups:                # about five headings, each holding its folds (website.protein.groups)
+      - {id: g-overview, title: Overview and map, folds: [p-map, p-cell, p-kinds]}
+      - {id: g-sites, title: Sites, folds: [p-sites, p-cons, p-score, p-pert, p-exp, p-cluster, p-ptm]}
+      - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
+      - {id: g-context, title: "Context: location, condensates, disease, cancer", switch: true, folds: [p-cond, p-dis, p-depmap, p-germline]}
+      - {id: g-structure, title: Structure and sequence, folds: [p-struct, p-regions, p-seq]}
+    headings:              # the cards front end's folds under labeled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
+      - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
+      - {id: h-sites, title: Sites and structure, folds: [p-score, p-pert, p-exp]}
+      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cons]}
+      - {id: h-seq, title: Sequence features, folds: [p-cluster, p-ptm, p-seq]}
+    context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
+      p-cond: [condensate_proteome, hpa_location]
+      p-dis: [disease_family]
+    open: [p-map, p-cell]   # the map and where in the cell open, every other fold shut
     map:
       hide_ptm_kinds: [SUMO, Ubiquitin, Lys acyl]   # the live UniProt row would repeat the lysine modifications of the tables
       combined_marks:      # one "All modifications" block (a thin lane for each modification, the site's own first); the rows of the context marks fold behind it
@@ -1672,6 +1747,26 @@ website:                  # the look and words of the website (ptmc web); layout
         table: residues
         span: 5
         kinds: {rna_crosslink: rna, dna_crosslink: dna}
+      regions:             # runs of residues bound in structures (no site is listed: the bound residues are the run itself)
+        table: nucleic_regions
+        kinds: {rna: rna, dna: dna}
+        fields: {start: start, end: end, kind: nucleic_acid, entries: n_entries}
+      motifs:
+        table: dna_motifs
+        kind: dna
+        url: "https://jaspar.elixir.no/matrix/{id}/"
+        fields: {id: matrix_id, name: name, class: tf_class, family: tf_family, consensus: consensus}
+      rbns:
+        table: rna_bind_n_seq
+        kind: rna
+        url: "https://www.encodeproject.org/experiments/{id}/"
+        fields: {id: encode_experiment, conc: concentration, kmers: top_5mers, scores: top_5mer_R}
+      eclip:
+        table: eclip
+        kind: rna
+        url: {ENCODE: "https://www.encodeproject.org/experiments/{id}/", ENCORE: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE315407"}
+        fields: {id: experiment, source: source, cell: cell_line, peaks: n_peaks, genes: top_target_genes, gene_peaks: top_target_peaks, kmers: top_5mers, ratios: top_5mer_ratios, same: same_data_as,
+                 regions: {CDS: peaks_CDS, "3′ UTR": peaks_UTR3, "5′ UTR": peaks_UTR5, "non-coding exon": peaks_noncoding_exon, intron: peaks_intron, intergenic: peaks_intergenic}}
     structure:             # the 3D viewer's evidence at the sites (CONTRACTS.md, Structure evidence), through the tables above
       contacts:            # PDBe-KB interfaces at the sites, with the PDB entries that show each
         table: interactions
@@ -1708,6 +1803,24 @@ website:                  # the look and words of the website (ptmc web); layout
               - {id: protein, label: Protein interface, colour: protein, where: [{column: kind, equals: "pdb_protein; at_residue"}]}
               - {id: self, label: Interface with another copy of the protein, colour: self, where: [{column: kind, equals: "pdb_self; at_residue"}]}
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
+      location:
+        title: Location and condensates
+        summary: Human Protein Atlas locations, where the subcellular maps find it, and CD-CODE condensates
+        hpa: {table: hpa, analysis: hpa_location, title: Subcellular location, source: Human Protein Atlas 25.1, url: "https://www.proteinatlas.org/search/{acc}", unsure: Uncertain}
+        maps: true
+        condensates:
+          members: condensate_members
+          names: condensates
+          analysis: condensate_proteome
+          title: Condensates
+          source: CD-CODE 2.3
+          url: "https://cd-code.org/condensates/{id}"
+          max_score: 5
+          default_type: biomolecular
+          pubmed: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
+          roles: {member: member, driver: driver, client: client, regulator: regulator, unknown: role not given}
+          evidence: {in_vivo: in vivo, in_cellulo: in cellulo, in_vitro: in vitro, frap: FRAP, colocalization: colocalization, mass_spectrometry: mass spectrometry,
+                     emergent properties: emergent properties, others: other}
       dependency:
         title: Cancer cell lines and tumors
         table: dependency
@@ -1716,11 +1829,30 @@ website:                  # the look and words of the website (ptmc web); layout
         histogram: {from: -3, to: 1, axis: gene effect per cell line (Chronos); lower is a stronger dependency, marks: [{at: 0, label: no effect}, {at: -1, label: median of common essentials}]}
         url: "https://depmap.org/portal/gene/{gene}?tab=overview"
         note: "Data: DepMap Public 24Q4 (CRISPR, Chronos; CC BY 4.0) and TCGA tumors (MC3 somatic calls from the GDC, open access; based on data generated by the TCGA Research Network). A change counts only at a lysine of the canonical UniProt sequence."
+      other_ptms:
+        title: Other PTMs
+        sub: "The other modifications recorded on this protein: the same marks, with the same counts, as the legend of the protein map."
+        near: 10
       germline:
         title: Germline variants
         sub: "Variants in ClinVar (clinical classifications) and gnomAD v4.1 (population frequencies) at the protein's lysines, against the protein's average for the same residue type. A variant at a residue does not show an effect on the mark, and a variant seen in a population is not necessarily harmless."
         note: "Data: ClinVar (NCBI; public domain; submitters may claim rights in what they submitted) and gnomAD v4.1 exomes (CC0 1.0; Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0). A variant counts only at a lysine of the canonical UniProt sequence."
+    sets:                  # cards of the protein's own sets, each linked to its page and selecting its proteins
+      - id: p-dis
+        title: Disease associations
+        summary: "UniProt, Open Targets, Disease Ontology, DisGeNET terms and disease families"
+        analyses: [disease_ontology, disease_term, disease_family, disease_family_additional]
+        term_groups: {terms: disease_term, families: [disease_family, disease_family_additional]}
+        live: {uniprot: true, open_targets: {graphql: "https://api.platform.opentargets.org/api/v4/graphql", size: 12, page: "https://platform.opentargets.org/target/{id}/associations"}}
+    facts:                 # the headline cards under the map: each opens its section, with a hover
+      - {count: marks, of: candidates, label: "{residues} modified", kind: Sites, glyph: pins, opens: p-seq}
+      - {analysis: motif, best: true, label: "in {class} motifs", kind: Sequence motif, glyph: letters, opens: p-score}
+      - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
+      - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
+      - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
     card:                  # the site card: its blocks, each reading a table above (a block without its data is absent)
+      hide_questions: [cancer_change, clinvar_plp, gnomad_variant]   # their counts are the blocks above (Changes, Germline variants)
+      primary_questions: [motif, disorder, domain_class, idr_charge]   # the rest are behind "Other questions"
       change_counts:       # changes at each lysine from residue_changes tables, beside the protein's average for that residue (the toggle: known sites only, or every candidate)
         - {id: tcga, label: TCGA, unit: [tumor, tumors], tables: [tcga_changes_K], background: cancer_background, count: tcga_changes}
         - {id: depmap, label: DepMap, unit: [cell line, cell lines], tables: [depmap_changes_K], background: cancer_background, count: depmap_changes}
@@ -1841,6 +1973,15 @@ website:                  # the look and words of the website (ptmc web); layout
               question: Which RNA and DNA do modified lysines contact in structures, and how close do they come?
               blocks:
                 - {kind: table, table: contacts, title: RNA and DNA at modified lysines, sub: "Each PDB chain of RNA or DNA within reach of a site’s side chain, with the bound sequence around the closest nucleotide.", chips: type, columns: [accession, window, type, name, distance, entry], sort: distance, descending: false}
+            - id: ix-pref
+              title: Preferred RNA and DNA, by protein
+              question: What do these proteins prefer to bind, in vitro and in cells?
+              sub: proteins with RNA Bind-n-Seq data
+              blocks:
+                - {kind: table, table: rbns, title: RNA in vitro (RNA Bind-n-Seq), columns: [accession, top_5mers, concentration, encode_experiment]}
+                - {kind: table, table: htr_selex, title: RNA in vitro (HTR-SELEX), columns: [accession, consensus, motif_kind, model_id]}
+                - {kind: table, table: ix_eclip, title: RNA in cells (eCLIP), columns: [accession, cell_line, n_peaks, top_target_genes, top_5mers, experiment], sort: n_peaks}
+                - {kind: table, table: ix_dna_motifs, title: DNA (JASPAR), columns: [accession, consensus, name, tf_family, matrix_id]}
         - name: Structures
           sections:
             - id: ixs-pdb
