@@ -99,6 +99,8 @@ def problems(site: dict) -> list[str]:
                 out.append(
                     f'{w}.tables: {name!r} is a {tables[name].get("format")} table; read a residue_changes table'
                 )
+            elif x.get('gene') and x['gene'] not in _cols(tables[name]):
+                out.append(f'{w}.tables: table {name!r} has no column {x["gene"]!r} (the card reads it as the gene)')
         bg = x.get('background')
         if not bg:
             out.append(f'{w}: names no background table (a protein_records table with residue, residues and the count)')
@@ -107,6 +109,26 @@ def problems(site: dict) -> list[str]:
         else:
             missing = [c for c in ('residue', 'residues', x.get('count')) if c not in _cols(tables[bg])]
             out.extend(f'{w}.background: table {bg!r} has no column {c!r} (the card reads it)' for c in missing)
+    excl = (cfg.get('card') or {}).get('excluded') or []
+    ids = {x.get('id') for x in excl}
+    for k, x in enumerate(excl):
+        w = f'website.protein.card.excluded[{k}]'
+        if not x.get('id'):
+            out.append(f'{w}: needs an id')
+        if not x.get('tables'):
+            out.append(f'{w}: names no tables (site_table tables of website.tables)')
+        for name in x.get('tables') or []:
+            if name not in tables:
+                out.append(f'{w}.tables: no table {name!r} in website.tables')
+            elif tables[name].get('format') != 'site_table':
+                out.append(f'{w}.tables: {name!r} is a {tables[name].get("format")} table; read a site_table table')
+            elif x.get('count_by') and x['count_by'] not in _cols(tables[name]):
+                out.append(f'{w}.tables: table {name!r} has no column {x["count_by"]!r} (count_by)')
+    for cname, c in cards.items():
+        if isinstance(c, dict) and c.get('excluded') and c['excluded'] not in ids:
+            out.append(
+                f'website.protein.cards.{cname}.excluded: no entry {c["excluded"]!r} in website.protein.card.excluded'
+            )
     vcs = (cfg.get('card') or {}).get('variant_counts') or []
     if 'germline' in cards and not vcs:
         out.append('website.protein.cards.germline: names no sources (website.protein.card.variant_counts)')
@@ -120,7 +142,7 @@ def problems(site: dict) -> list[str]:
             elif tables[name].get('format') != 'site_table':
                 out.append(f'{w}.tables: {name!r} is a {tables[name].get("format")} table; read a site_table table')
             else:
-                shown = [x.get('alt', 'alt'), *[f.get('column') for f in x.get('fields') or []]]
+                shown = [x.get('alt', 'alt'), x.get('gene'), *[f.get('column') for f in x.get('fields') or []]]
                 shown += [(x.get(key) or {}).get('column') for key in ('highlight', 'link')]
                 shown += [s.get('column') for s in x.get('sort') or []]
                 missing = sorted({c for c in shown if c and c not in _cols(tables[name])})

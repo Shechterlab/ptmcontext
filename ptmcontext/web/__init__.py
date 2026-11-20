@@ -1496,6 +1496,19 @@ def protein_tables(
         if a in head:
             head[a] = {**head[a], 'gene': g['short']}
     header, rows, partner, lookups = T.pack(specs, paths, marked, set(seqs) | marked, log=log)
+    # a partner several genes encode is named by its short name in every partner list, as its own page is
+    for name, h in header.items():
+        cols = h['columns']
+        if multi and 'partner' in cols and 'partner_accession' in cols:
+            ip, ia = cols.index('partner'), cols.index('partner_accession')
+            for tb in rows.values():
+                for r in tb.get(name, []):
+                    if r[ia] in multi:
+                        r[ip] = multi[r[ia]]['short']
+            for tb in partner.values():  # rows [partner's accession, row ...] on a protein without marks
+                for r in tb.get(name, []):
+                    if r[1 + ia] in multi:
+                        r[1 + ip] = multi[r[1 + ia]]['short']
     data['tables'] = header
     data['lookups'] = lookups
     data.pop('variant_detail', None)
@@ -1522,6 +1535,7 @@ def protein_tables(
         log(
             f'  sites page default columns: {len(compact):,} proteins, {(out / "data" / "sites_default.json").stat().st_size / 1e6:.1f} MB in one file'
         )
+    short = T.repeated_columns(header, rows)
     shards: dict[int, dict] = {}
     n_e = data['e_shards'] = shard_count(sum(len(_dumps(tb)) for tb in rows.values()))
     for acc, tb in rows.items():
@@ -1529,7 +1543,7 @@ def protein_tables(
     shutil.rmtree(out / 'data' / 'e', ignore_errors=True)
     (out / 'data' / 'e').mkdir(parents=True, exist_ok=True)
     for k in range(n_e):  # every shard, so a protein with no rows reads an empty one
-        shards[k] = T.dedupe(shards.get(k, {}))
+        shards[k] = T.dedupe(shards.get(k, {}), short=short)
         (out / 'data' / 'e' / f'{k:02d}.json').write_text(json.dumps(shards[k], separators=(',', ':'), default=int))
     if gspec:  # the variant lists, a few proteins to a file, read when a card is opened
         n_g, gfiles = V.shards(glists, gspec)
@@ -1815,7 +1829,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         # distances beside the marks, the partners in their own file
         from . import search as SR
 
-        data['search'] = SR.data(site, run, sel, listing, fasta, out, log)
+        data['search'] = SR.data(site, run, sel, listing, fasta, out, log, multi)
         (out / 'data').mkdir(parents=True, exist_ok=True)
         (out / 'data' / 'selection.json').unlink(missing_ok=True)  # the whole selection was one file once
         SEL.write(sel, listing, out, log)

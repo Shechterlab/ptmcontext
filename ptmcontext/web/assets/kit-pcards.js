@@ -432,15 +432,32 @@
     const bins = g.map(Number),
       n = bins.length,
       W0 = 460,
-      H0 = 150,
       ml = 8,
       mr = 8,
-      mt = 8,
       mb = 38,
       mx = Math.max(1, ...bins),
       lo = h.from,
       hi = h.to,
       bw = (W0 - ml - mr) / n;
+    // the marks' labels stand on rows: a label that would meet another one goes a row lower (about 5.6 units a letter)
+    const ROW = 12,
+      xm = (v) => ml + ((v - lo) / (hi - lo)) * (W0 - ml - mr),
+      placed = [];
+    const marks = [...(h.marks || [])]
+      .sort((a, b) => a.at - b.at)
+      .map((m) => {
+        const w = String(m.label).length * 5.6 + 6,
+          right = m.at > (lo + hi) / 2,
+          a = right ? xm(m.at) - 3 - w : xm(m.at) + 3,
+          b = a + w;
+        let r = 0;
+        while (placed.some((q) => q.r === r && a < q.b + 4 && b > q.a - 4)) r++;
+        placed.push({ a, b, r });
+        return { ...m, r, right };
+      });
+    const rows = Math.max(0, ...marks.map((m) => m.r)),
+      mt = 8 + ROW * rows + (rows ? 10 : 0),
+      H0 = 150 + (mt - 8);
     const x = (v) => ml + ((v - lo) / (hi - lo)) * (W0 - ml - mr),
       step = (hi - lo) / n;
     let s = bins
@@ -457,12 +474,10 @@
       s +=
         `<line class="ha" x1="${x(v).toFixed(1)}" x2="${x(v).toFixed(1)}" y1="${H0 - mb}" y2="${H0 - mb + 4}"/><text ` +
         `class="ht" x="${x(v).toFixed(1)}" y="${H0 - mb + 15}" text-anchor="middle">${v < 0 ? '−' : ''}${Math.abs(v)}</text>`;
-    (h.marks || []).forEach((m) => {
+    marks.forEach((m) => {
       s +=
-        `<line class="hm" x1="${x(m.at).toFixed(1)}" x2="${x(m.at).toFixed(1)}" y1="${mt}" y2="${H0 - mb}"/><text ` +
-        `class="ht" x="${x(m.at).toFixed(1)}" y="${mt + 9}" ${
-          m.at > (lo + hi) / 2 ? 'text-anchor="end" dx="-3"' : 'dx="3"'
-        }>${esc(m.label)}</text>`;
+        `<line class="hm" x1="${x(m.at).toFixed(1)}" x2="${x(m.at).toFixed(1)}" y1="${8 + m.r * ROW}" y2="${H0 - mb}"/><text ` +
+        `class="ht" x="${x(m.at).toFixed(1)}" y="${17 + m.r * ROW}" ${m.right ? 'text-anchor="end" dx="-3"' : 'dx="3"'}>${esc(m.label)}</text>`;
     });
     s += `<text class="ht" x="${ml}" y="${H0 - 4}">${esc(h.axis || '')}</text>`;
     return `<svg class="pc-hist" viewBox="0 0 ${W0} ${H0}" role="img" aria-label="${esc(h.axis || 'histogram')}">${s}</svg>`;
@@ -564,11 +579,24 @@
         .join('') +
       `</div> <span class="seg" role="group" aria-label="Flagged sites"><button type="button" class="cc-chip" data-cc-flag aria-pressed="${CFLAG}" title="Show only the sites with at ` +
       `least ${cn.map((x) => x.flag_ratio || 3).join(' or ')} times the protein's average">Flagged only <span class="muted">${int(nFlag)}</span></button></span>`;
-    const cellOf = (r, k) => {
-      const v = r.cells[k];
+    // a protein several genes encode lists a residue once a gene, with a Gene column (a lone gene is the page's title)
+    const geneOn = cn.some((x) => CCK.showGene(p.acc, tb, x));
+    const genesAt = (r) => {
+      const tot = {};
+      r.cells.forEach((v) =>
+        v.forEach((a) => Object.entries(a.by || {}).forEach(([g, n]) => (tot[g] = (tot[g] || 0) + n)))
+      );
+      const gs = Object.keys(tot).sort((a, b) => tot[b] - tot[a] || (a < b ? -1 : 1));
+      return gs.length ? gs : [''];
+    };
+    const lines2 = geneOn
+      ? per.flatMap((r) => genesAt(r).map((g, i) => ({ r, g, first: i === 0 })))
+      : per.map((r) => ({ r, g: '', first: true }));
+    const cellOf = (r, k, g, first) => {
+      const v = g ? r.cells[k].map((a) => ({ alt: a.alt, n: a.by?.[g] || 0 })).filter((a) => a.n) : r.cells[k];
       return v.length
         ? esc(v.map((a) => siteName(rec, r.q, p.acc) + a.alt + (a.n > 1 ? ' ×' + a.n : '')).join(', ')) +
-            (flagOf(r, k) ? ' ' + CCK.flagTag(cn[k]) : '')
+            (first && flagOf(r, k) ? ' ' + CCK.flagTag(cn[k]) : '')
         : '<span class="muted">—</span>';
     };
     const html =
@@ -587,22 +615,25 @@
         )
         .join('; ')}.</p>` +
       (per.length
-        ? `<div class="tbl-wrap"><table class="pc-tbl"><thead><tr><th>${CMODE === 'known' ? 'Site' : 'Residue'}</th>${cn
+        ? `<div class="tbl-wrap"><table class="pc-tbl"><thead><tr><th>${CMODE === 'known' ? 'Site' : 'Residue'}</th>${geneOn ? '<th>Gene</th>' : ''}${cn
             .map((x) => `<th>${esc(x.label)}</th>`)
             .join('')}</tr></thead><tbody>` +
-          per
+          lines2
             .slice(0, 12)
             .map(
-              (r) =>
-                `<tr><td>${known.has(r.q) ? siteLink(p, rec, r.q) : esc(siteName(rec, r.q, p.acc))}</td>${cn
-                  .map((x, k) => `<td>${cellOf(r, k)}</td>`)
-                  .join('')}</tr>`
+              ({ r, g, first }) =>
+                `<tr><td>${known.has(r.q) ? siteLink(p, rec, r.q) : esc(siteName(rec, r.q, p.acc))}</td>${
+                  geneOn ? `<td>${g ? esc(g) : '<span class="muted">—</span>'}</td>` : ''
+                }${cn.map((x, k) => `<td>${cellOf(r, k, g, first)}</td>`).join('')}</tr>`
             )
             .join('') +
           `</tbody></table></div>` +
-          (per.length > 12
-            ? `<p class="muted small">${int(per.length - 12)} more ${CMODE === 'known' ? 'sites' : 'residues'} changed.</p>`
+          (lines2.length > 12
+            ? `<p class="muted small">${int(lines2.length - 12)} more ${geneOn ? 'rows' : CMODE === 'known' ? 'sites' : 'residues'} changed.</p>`
             : '')
+        : '') +
+      (per.length
+        ? `<p class="small screen-only"><button type="button" class="linkish" data-vc-dl="cc:${esc(p.acc)}">Download every change of the protein (TSV)</button></p>`
         : '') +
       `</section>`;
     return { html, nSites, nKnown: cn.map((x) => rec.marks.filter((m) => tot(x, m[0])).length) };
@@ -635,6 +666,168 @@
     const s = f.separator ? String(v).split(f.separator).filter(Boolean).join('; ') : String(v);
     return f.max && s.length > f.max ? `<span title="${esc(s)}">${esc(s.slice(0, f.max - 1))}…</span>` : esc(s);
   }
+  // ---- the changes a card does not show (card.excluded, named by the card's `excluded`): a line with their count and why,
+  // from the counts the protein's table shard keeps (`_xc`), and a download of the rows, read from their own file when asked
+  const excludedOf = (cfg) => (D.protein_view?.card?.excluded || []).find((e) => e.id === cfg?.excluded);
+  function excludedLine(p, tb, cfg) {
+    const x = excludedOf(cfg),
+      by = Object.entries(tb._xc?.[x?.id] || {}),
+      n = by.reduce((a, [, v]) => a + v, 0);
+    if (!x || !n) return '';
+    const why = (k) => (x.reasons || {})[k] || String(k).replace(/_/g, ' ');
+    const text = by.length === 1 ? why(by[0][0]) : by.map(([k, v]) => `for ${int(v)}, ${why(k)}`).join('; ');
+    return (
+      `<p class="small pc-excl"><b>${int(n)} ${n === 1 ? 'change' : 'changes'} not shown</b>: ${esc(text)}. ` +
+      `<button type="button" class="linkish screen-only" data-excl-dl="${esc(x.id)}:${esc(p.acc)}">Download ${n === 1 ? 'it' : 'them'} (TSV)</button></p>`
+    );
+  }
+  document.addEventListener('click', async (ev) => {
+    const b = ev.target.closest?.('[data-excl-dl]');
+    if (!b) return;
+    const [id, acc] = b.dataset.exclDl.split(':'),
+      x = (D.protein_view?.card?.excluded || []).find((e) => e.id === id),
+      p = CUR.p,
+      rec = CUR.rec;
+    if (!x || !p || p.acc !== acc) return;
+    const d = await K.card.loadDetail(acc);
+    const list = d?.[id];
+    if (!list) return;
+    const seq = rec?.seq || '',
+      shown = (q) => (K.prot?.shownPos ? K.prot.shownPos(acc, q) : q),
+      why = (k) => (x.reasons || {})[k] || String(k).replace(/_/g, ' ');
+    const head = [
+      'accession',
+      'gene_of_protein',
+      'position',
+      'site',
+      'source',
+      'source_id',
+      'gene',
+      'source_ref',
+      'canonical_ref',
+      'alt',
+      'reason',
+      'why',
+    ];
+    const text = list.map((r) =>
+      [
+        acc,
+        p.gene || '',
+        r.position,
+        (r.canonical_ref || seq[r.position - 1] || '') + shown(r.position),
+        r.source,
+        r.source_id,
+        r.gene,
+        r.source_ref,
+        r.canonical_ref,
+        r.alt,
+        r.reason,
+        why(r.reason),
+      ]
+        .map(tsvCell)
+        .join('\t')
+    );
+    K.download(
+      `${acc}_variants_not_shown_${id}.tsv`,
+      K.preamble(
+        `${p.gene || acc}: variants not shown`,
+        `the ${int(list.length)} changes of ${p.gene || acc} that the page does not show, because ${[...new Set(list.map((r) => why(r.reason)))].join(' or ')}; ` +
+          `rows of the release's excluded-changes table; position is the position the source gives (UniProt's frame)`
+      ) +
+        head.join('\t') +
+        '\n' +
+        text.join('\n') +
+        '\n',
+      'text/tab-separated-values'
+    );
+  });
+  // the whole list of a source, every candidate residue of the protein, as a TSV (the gene column kept whenever the table has it)
+  const tsvCell = (v) => String(v ?? '').replace(/[\t\r\n]+/g, ' ');
+  function listDownload(key) {
+    const [kind, a, b] = key.split(':'),
+      acc = kind === 'cc' ? a : b,
+      p = CUR.p,
+      rec = CUR.rec,
+      tb = TB[acc];
+    if (!p || !rec || !tb) return;
+    const seq = rec.seq || '',
+      known = new Set(rec.marks.map((m) => m[0])),
+      shown = (q) => (K.prot?.shownPos ? K.prot.shownPos(acc, q) : q),
+      head = ['source', 'accession', 'gene_of_protein', 'position', 'site', 'known_site', 'residue'];
+    let out, name, what;
+    if (kind === 'cc') {
+      const cn = K.card.cc.entries;
+      const gcol = cn.some((x) => x.gene);
+      out = [[...head, 'change', ...(gcol ? ['gene'] : []), 'count'].join('\t')];
+      cn.forEach((x) =>
+        (x.tables || []).forEach((t) =>
+          rows(tb, t)
+            .slice()
+            .sort((u, v) => u.position - v.position)
+            .forEach((r) =>
+              out.push(
+                [
+                  x.label,
+                  acc,
+                  p.gene || '',
+                  r.position,
+                  seq[r.position - 1] + shown(r.position),
+                  known.has(r.position) ? 'yes' : 'no',
+                  seq[r.position - 1] || '',
+                  seq[r.position - 1] + shown(r.position) + r.alt,
+                  ...(gcol ? [r[x.gene] || ''] : []),
+                  r.n,
+                ]
+                  .map(tsvCell)
+                  .join('\t')
+              )
+            )
+        )
+      );
+      name = `${acc}_changes`;
+      what = `every change at the residues of ${p.gene || acc} that the sources list, one row per site, new residue and gene, with the number of tumors or cell lines that carry it`;
+    } else {
+      const x = K.card.vc.entries.find((e) => e.id === a);
+      if (!x || !tb._vd?.[x.id]) return;
+      const cols = [
+        x.alt || 'alt',
+        ...(x.gene ? [x.gene] : []),
+        ...(x.fields || []).map((f) => f.column),
+        ...(x.link ? [x.link.column] : []),
+      ];
+      out = [[...head, 'change', ...cols.map((c) => (c === (x.alt || 'alt') ? 'alt' : c))].join('\t')];
+      tb._vd[x.id].forEach((r) =>
+        out.push(
+          [
+            x.label,
+            acc,
+            p.gene || '',
+            r.position,
+            seq[r.position - 1] + shown(r.position),
+            known.has(r.position) ? 'yes' : 'no',
+            seq[r.position - 1] || '',
+            seq[r.position - 1] + shown(r.position) + r[x.alt || 'alt'],
+            ...cols.map((c) => r[c]),
+          ]
+            .map(tsvCell)
+            .join('\t')
+        )
+      );
+      name = `${acc}_${x.id}_variants`;
+      what = `every ${x.label} variant at the residues of ${p.gene || acc}, one row per variant`;
+    }
+    K.download(
+      name + '.tsv',
+      K.preamble(`${p.gene || acc}: ${what.split(',')[0]}`, what + '; the position column is the UniProt position') +
+        out.join('\n') +
+        '\n',
+      'text/tab-separated-values'
+    );
+  }
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest?.('[data-vc-dl]');
+    if (b) listDownload(b.dataset.vcDl);
+  });
   function germlineSource(p, rec, tb, x, pool, letters, nKnown) {
     const VCK = K.card.vc,
       seq = rec.seq || '',
@@ -680,6 +873,7 @@
       list1 = open ? all : all.slice(0, limit),
       flagSeen = new Set();
     const fields = x.fields || [];
+    const geneOn = VCK.showGene(p.acc, tb, x);
     const row = ({ q, r }) => {
       const l = seq[q - 1],
         fl = VCK.flagged(tb, x, l, byQ.get(q) || 0) && !flagSeen.has(q) ? (flagSeen.add(q), ' ' + VCK.flagTag(x)) : '',
@@ -691,6 +885,7 @@
       return (
         `<tr${hot ? ' class="vc-hot"' : ''}><td>${known.has(q) ? siteLink(p, rec, q) : esc(siteName(rec, q, p.acc))}${fl}</td>` +
         `<td>${esc(l + shown(q) + r[alt])}${hot && x.highlight.label ? ` <span class="tag vc-hot-tag" title="${esc(x.highlight.title || '')}">${esc(x.highlight.label)}</span>` : ''}</td>` +
+        (geneOn ? `<td>${r[x.gene] ? esc(r[x.gene]) : '<span class="muted">–</span>'}</td>` : '') +
         fields.map((f) => `<td>${fieldCell(f, r)}</td>`).join('') +
         `<td>${link}</td></tr>`
       );
@@ -700,7 +895,7 @@
       `<ul class="small pc-cc-lines">${lines}</ul>` +
       `<p class="small">${int(byQ.size)} of ${esc(what)} ${byQ.size === 1 ? 'has' : 'have'} a variant${hotWord}.</p>` +
       (all.length
-        ? `<div class="tbl-wrap"><table class="pc-tbl"><thead><tr><th>${known1 ? 'Site' : 'Residue'}</th><th>Change</th>${fields
+        ? `<div class="tbl-wrap"><table class="pc-tbl"><thead><tr><th>${known1 ? 'Site' : 'Residue'}</th><th>Change</th>${geneOn ? '<th>Gene</th>' : ''}${fields
             .map((f) => `<th>${esc(f.label || f.column)}</th>`)
             .join('')}<th></th></tr></thead><tbody>${list1.map(row).join('')}</tbody></table></div>` +
           (all.length > limit
@@ -708,6 +903,9 @@
                 open ? 'Show fewer' : `Show all ${int(all.length)} ${esc(unit[1])}`
               }</button>${open ? '' : ` <span class="muted">(${int(limit)} shown${x.highlight?.label ? `, ${esc(x.highlight.label)} first` : ''})</span>`}</p>`
             : '')
+        : '') +
+      (all.length
+        ? `<p class="small screen-only"><button type="button" class="linkish" data-vc-dl="vc:${esc(x.id)}:${esc(p.acc)}">Download every ${esc(unit[0])} of the protein (TSV)</button></p>`
         : '') +
       `</section>`;
     return { html, nHot, nSites: byQ.size, nKnown: rec.marks.filter((m) => VCK.at(tb, x, m[0]).length).length };
@@ -752,7 +950,7 @@
       CMODE === 'known'
         ? `The protein's known ${esc(W.marks)} only.`
         : `Every ${esc(W.residue)} of the protein, a known ${esc(W.mark)} or not.`
-    }</p><div class="pc-grid pc-grid-wide">${secs.map((s) => s.html).join('')}</div>`;
+    }</p><div class="pc-grid pc-grid-wide">${secs.map((s) => s.html).join('')}</div>${excludedLine(p, tb, PC.germline)}`;
     const sum = VCK.entries
       .map((x, k) => `${x.label}: ${secs[k].nKnown ? plural(secs[k].nKnown, 'site') : 'no site'}`)
       .join(' · ');
@@ -863,6 +1061,7 @@
         : '') +
       (cnSec ? cnSec.html : '') +
       '</div>' +
+      excludedLine(p, tb, cfg) +
       (cfg.note ? `` : '');
     const first = ch[0],
       sum = [

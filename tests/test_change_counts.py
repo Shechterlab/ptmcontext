@@ -74,3 +74,34 @@ def test_change_counts_are_checked_against_their_tables():
     assert "change_counts[1].tables: no table 'nope'" in text
     assert "no column 'missing'" in text
     assert 'change_counts[2]: names no tables' in text and 'change_counts[2]: names no background table' in text
+
+
+def test_changes_are_counted_per_gene_when_the_table_names_one(tmp_path):
+    p = tmp_path / 'g.tsv'
+    pd.DataFrame(
+        {
+            'ac': ['P1'] * 4,
+            'pos': ['12'] * 4,
+            'to': ['R', 'R', 'R', 'N'],
+            'gene': ['G1', 'G1', 'G2', 'G2'],
+        }
+    ).to_csv(p, sep='\t', index=False)
+    spec = {
+        'input': 'x',
+        'format': 'residue_changes',
+        'columns': {'accession': 'ac', 'position': 'pos', 'alt': 'to', 'gene': 'gene'},
+    }
+    assert T.problems('c', spec) == []
+    t = T.read(spec, p)
+    assert list(t.columns) == ['accession', 'position', 'alt', 'gene', 'n']
+    assert sorted(zip(t.alt, t.gene, t.n)) == [('N', 'G2', '1'), ('R', 'G1', '2'), ('R', 'G2', '1')]
+
+
+def test_a_repeated_short_text_column_is_written_once_per_shard():
+    header = {'t': {'format': 'residue_changes', 'columns': ['position', 'alt', 'gene', 'n']}}
+    rows = {f'P{i}': {'t': [[j, 'R', 'TP53' if i else 'H4C1', '1'] for j in range(1, 11)]} for i in range(100)}
+    short = T.repeated_columns(header, rows)
+    assert short == {'t': {1, 2, 3}}  # alt, gene and the count repeat a few values over many rows
+    out = T.dedupe({a: {'tables': tb} for a, tb in rows.items()}, short=short)
+    assert set(out['_s']) == {'R', 'TP53', 'H4C1', '1'}
+    assert all(isinstance(v, int) for r in out['P3']['tables']['t'] for v in r[1:])

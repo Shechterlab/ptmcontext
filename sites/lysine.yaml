@@ -1523,11 +1523,11 @@ website:                  # the look and words of the website (ptmc web); layout
     tcga_changes_K:
       input: tcga_changes_K
       format: residue_changes
-      columns: {accession: canonical_UniProtAC, position: position, alt: alt}
+      columns: {accession: canonical_UniProtAC, position: position, alt: alt, gene: gene}
     depmap_changes_K:
       input: depmap_changes_K
       format: residue_changes
-      columns: {accession: canonical_UniProtAC, position: position, alt: alt}
+      columns: {accession: canonical_UniProtAC, position: position, alt: alt, gene: gene}
     cancer_background:     # per protein and residue: how many candidates it has and the changes at them, the base of its average
       input: cancer_change_background
       format: protein_records
@@ -1539,12 +1539,12 @@ website:                  # the look and words of the website (ptmc web); layout
       input: clinvar_changes_K
       format: site_table
       columns: {accession: canonical_UniProtAC, position: position}
-      values: [alt, variation_id, germline_classification, clinsig_simple, review_stars, conditions]
+      values: [alt, variation_id, germline_classification, clinsig_simple, review_stars, conditions, gene]
     gnomad_K:
       input: gnomad_changes_K
       format: site_table
       columns: {accession: canonical_UniProtAC, position: position}
-      values: [alt, variant_id, af, nhomalt, grpmax]
+      values: [alt, variant_id, af, nhomalt, grpmax, gene]
     clinvar_background:       # per protein and residue: how many candidates it has and the variants at them, the base of its average
       input: clinvar_background
       format: protein_records
@@ -1557,6 +1557,21 @@ website:                  # the look and words of the website (ptmc web); layout
       columns: {accession: canonical_UniProtAC, residue: residue, residues: residues}
       values: [gnomad_variants]
       include: [{column: residue, in: [K]}]
+    # changes the sources list that the cards do not show (the source's residue differs from UniProt's, or lies past its end): read whole, in files of their own
+    excluded_cancer:
+      input: variant_changes_excluded
+      format: site_table
+      columns: {accession: canonical_UniProtAC, position: position}
+      values: [source, source_id, gene, source_ref, canonical_ref, alt, reason]
+      include: [{column: source, in: [tcga_mc3, depmap_24q4]}]
+      include_any: [{column: source_ref, in: [K]}, {column: canonical_ref, in: [K]}]      # the source or UniProt names one of the site's residues
+    excluded_germline:
+      input: variant_changes_excluded
+      format: site_table
+      columns: {accession: canonical_UniProtAC, position: position}
+      values: [source, source_id, gene, source_ref, canonical_ref, alt, reason]
+      include: [{column: source, in: [clinvar, gnomad_v4_1]}]
+      include_any: [{column: source_ref, in: [K]}, {column: canonical_ref, in: [K]}]
     dependency:            # the Cancer cell lines and tumors card
       input: depmap_gene_effect
       format: protein_records
@@ -1833,6 +1848,7 @@ website:                  # the look and words of the website (ptmc web); layout
                      emergent properties: emergent properties, others: other}
       dependency:
         title: Cancer cell lines and tumors
+        excluded: cancer
         table: dependency
         unit: cancer cell lines
         sub: "Cancer genetics, not evidence about lysine modification: how much cancer cell lines depend on the gene in DepMap's CRISPR screens, and the protein changes at its lysines in TCGA tumors and DepMap cell lines."
@@ -1845,6 +1861,7 @@ website:                  # the look and words of the website (ptmc web); layout
         near: 10
       germline:
         title: Germline variants
+        excluded: germline
         sub: "Variants in ClinVar (clinical classifications) and gnomAD v4.1 (population frequencies) at the protein's lysines, against the protein's average for the same residue type. A variant at a residue does not show an effect on the mark, and a variant seen in a population is not necessarily harmless."
         note: "Data: ClinVar (NCBI; public domain; submitters may claim rights in what they submitted) and gnomAD v4.1 exomes (CC0 1.0; Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0). A variant counts only at a lysine of the canonical UniProt sequence."
     sets:                  # cards of the protein's own sets, each linked to its page and selecting its proteins
@@ -1864,8 +1881,8 @@ website:                  # the look and words of the website (ptmc web); layout
       hide_questions: [cancer_change, clinvar_plp, gnomad_variant]   # their counts are the blocks above (Changes, Germline variants)
       primary_questions: [motif, disorder, domain_class, idr_charge]   # the rest are behind "Other questions"
       change_counts:       # changes at each lysine from residue_changes tables, beside the protein's average for that residue (the toggle: known sites only, or every candidate)
-        - {id: tcga, label: TCGA, unit: [tumor, tumors], tables: [tcga_changes_K], background: cancer_background, count: tcga_changes}
-        - {id: depmap, label: DepMap, unit: [cell line, cell lines], tables: [depmap_changes_K], background: cancer_background, count: depmap_changes}
+        - {id: tcga, label: TCGA, unit: [tumor, tumors], tables: [tcga_changes_K], background: cancer_background, count: tcga_changes, gene: gene}
+        - {id: depmap, label: DepMap, unit: [cell line, cell lines], tables: [depmap_changes_K], background: cancer_background, count: depmap_changes, gene: gene}
       variant_counts:      # germline variants at each candidate residue from per-variant tables, beside the protein's average for that residue (the toggle as above)
         - id: clinvar
           lazy: true       # its rows are read from a file of their own when the card is opened
@@ -1874,6 +1891,7 @@ website:                  # the look and words of the website (ptmc web); layout
           tables: [clinvar_K]
           background: clinvar_background
           count: clinvar_variants
+          gene: gene       # the column naming the gene; the card shows it for a protein several genes encode
           highlight: {column: germline_classification, matches: "(Pathogenic|Likely pathogenic)([;,/].*)?", label: P/LP, title: "Classified pathogenic or likely pathogenic by ClinVar"}
           sort: [{column: review_stars, order: desc}]
           fields:
@@ -1888,12 +1906,24 @@ website:                  # the look and words of the website (ptmc web); layout
           tables: [gnomad_K]
           background: gnomad_background
           count: gnomad_variants
+          gene: gene       # the column naming the gene; the card shows it for a protein several genes encode
           sort: [{column: af, order: desc}]
           fields:
             - {column: af, label: Allele frequency, type: sci}
             - {column: nhomalt, label: Homozygotes, type: int}
             - {column: grpmax, label: Highest group, words: {afr: African, amr: Admixed American, asj: Ashkenazi Jewish, eas: East Asian, fin: Finnish, mid: Middle Eastern, nfe: Non-Finnish European, sas: South Asian, remaining: Remaining}}
           link: {column: variant_id, url: "https://gnomad.broadinstitute.org/variant/{}?dataset=gnomad_r4"}
+      excluded:            # changes the cards do not show, one list a card: kept in files of their own, counted by reason (CONTRACTS.md)
+        - id: cancer
+          lazy: true
+          tables: [excluded_cancer]
+          count_by: reason
+          reasons: {residue_differs: "the source's residue differs from UniProt's", position_beyond_sequence: "the position lies beyond the end of UniProt's sequence"}
+        - id: germline
+          lazy: true
+          tables: [excluded_germline]
+          count_by: reason
+          reasons: {residue_differs: "the source's residue differs from UniProt's", position_beyond_sequence: "the position lies beyond the end of UniProt's sequence"}
       evidence:            # interaction evidence: PDB entries, bound RNA and DNA, crosslinks near the site
         title: Interaction evidence
         entries:                             # the site's entries in structures, by kind (a site_evidence table)

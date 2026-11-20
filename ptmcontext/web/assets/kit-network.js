@@ -951,7 +951,7 @@
           .slice()
           .sort((a, b) => M.nodes[b].sites - M.nodes[a].sites || (M.nodes[a].gene < M.nodes[b].gene ? -1 : 1));
         return (
-          `<tr><th scope="row">${x.other ? 'Smaller cluster: ' : ''}${esc(x.name)}${x.l.q != null ? ` <span class="muted">· ${int(x.l.k)} of ${int(x.n)}</span>` : x.other ? '' : ' <span class="muted">· no term holds for enough of it</span>'}</th><td class="num">${int(x.n)}</td><td class="num">${
+          `<tr><th scope="row">${x.other ? 'Smaller cluster: ' : ''}${esc(x.name)}${x.l.q != null ? ` <span class="muted">· ${int(x.l.k)} of ${int(x.n)}</span>` : ''}</th><td class="num">${int(x.n)}</td><td class="num">${
             x.l.q != null ? esc(K.fq(x.l.q)) : '–'
           }</td><td>${esc(x.l.source != null ? NC.labels[x.l.source]?.label || '' : '')}</td><td class="nw-ps">` +
           ps

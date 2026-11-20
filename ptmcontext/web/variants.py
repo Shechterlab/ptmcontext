@@ -3,7 +3,9 @@
 A source with `lazy: true` lists one row per variant at every candidate residue, far more than the page needs until the
 reader opens the card. Its rows leave the protein's table shard (data/e) and go, columnar and dictionary-encoded, into
 data/g/NNN.json (a few proteins each, `D.variant_detail.shards` files); the shard keeps, per protein, only a count and a
-highlighted count per residue (`_vc`), which is all the site card's line and the closed card's summary read.
+highlighted count per residue (`_vc`), which is all the site card's line and the closed card's summary read. An entry
+of `card.excluded` (the changes a source lists that the cards do not show) is kept the same way, in the same files; the shard
+holds its counts by the values of `count_by` (`_xc`: {id: {value: n}}) for the line that offers its download.
 
 data/g record of a protein: {source id: [position deltas, column 1, column 2, ...]}, the columns in the order of
 D.variant_detail.entries[id].columns (the first is the position, written as the difference from the one before). A text
@@ -31,8 +33,9 @@ def hash_shard(accession: str, n: int) -> int:
 
 
 def lazy_entries(card: dict) -> list[dict]:
-    """The variant_counts sources whose rows are kept in their own files."""
-    return [x for x in (card or {}).get('variant_counts') or [] if x.get('lazy')]
+    """The variant_counts sources and the `excluded` lists (changes the cards do not show) whose rows are kept in their own
+    files."""
+    return [x for k in ('variant_counts', 'excluded') for x in (card or {}).get(k) or [] if x.get('lazy')]
 
 
 def kinds(entry: dict, columns: list[str]) -> list[str]:
@@ -93,7 +96,11 @@ def split(entries: list[dict], header: dict, rows: dict) -> tuple[dict, dict]:
             for pos in sorted(counts):
                 flat += [pos - last, *counts[pos]]
                 last = pos
-            tb.setdefault('_vc', {})[x['id']] = flat
+            if x.get('count_by'):  # a list read whole: its count by the values of a column, not by residue
+                by = Counter(o[x['count_by']] for o in objs)
+                tb.setdefault('_xc', {})[x['id']] = dict(sorted(by.items(), key=lambda kv: (-kv[1], kv[0])))
+            else:
+                tb.setdefault('_vc', {})[x['id']] = flat
             lists.setdefault(acc, {})[x['id']] = have
     for tb in rows.values():
         for t in taken:

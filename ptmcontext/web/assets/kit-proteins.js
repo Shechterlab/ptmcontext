@@ -1488,8 +1488,12 @@
       PV.span = null;
       PV.spanArg = '';
     } else if (PV.spanArg !== sitePos) {
-      const a = Math.max(1, +span[1]),
-        b = Math.min(p.len, +span[2]),
+      // the region is read as the page numbers it (R2-30 on a protein numbered without its first residue is 3 to 31 in
+      // UniProt's); a span that ends past the shown length can only be a link made in UniProt's frame, read as such
+      const off = numOf(p)?.offset || 0,
+        asShown = off && +span[2] <= p.len + off,
+        a = Math.max(1, +span[1] - (asShown ? off : 0)),
+        b = Math.min(p.len, +span[2] - (asShown ? off : 0)),
         pad = Math.max(5, Math.round((b - a + 1) * 0.15));
       PV.span = [a, b];
       PV.spanArg = sitePos;
@@ -1509,7 +1513,7 @@
         PV.site
           ? ` › ${esc(PV.rec ? siteOf(p, PV.site) : PV.site)}`
           : PV.span
-            ? ` › ${int(PV.span[0])}–${int(PV.span[1])}`
+            ? ` › ${rangeOf(p, PV.span[0], PV.span[1])}`
             : ''
       }</p>` +
       protHead(p);

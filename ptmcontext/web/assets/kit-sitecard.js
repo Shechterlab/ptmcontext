@@ -544,7 +544,12 @@
       for (const t of x.tables || [])
         for (const r of rows(tb, t)) {
           if (!idx.has(r.position)) idx.set(r.position, []);
-          idx.get(r.position).push({ alt: r.alt, n: +r.n || 0 });
+          // one entry a new residue; a table that names the gene keeps the count of each gene in `by`
+          const v = idx.get(r.position);
+          let e = v.find((a) => a.alt === r.alt);
+          if (!e) v.push((e = { alt: r.alt, n: 0, by: {} }));
+          e.n += +r.n || 0;
+          if (x.gene && r[x.gene]) e.by[r[x.gene]] = (e.by[r[x.gene]] || 0) + (+r.n || 0);
         }
       idx.forEach((v) => v.sort((a, b) => b.n - a.n || (a.alt < b.alt ? -1 : 1)));
       return idx;
@@ -610,6 +615,15 @@
     })());
   }
   const variantsAt = (tb, x, pos) => variantIdx(tb, x).get(pos) || [];
+  // the genes a protein's rows of one source name, and whether the page shows them: only for a protein that several genes
+  // encode, or whose rows name more than one gene (a lone gene is the page's title already)
+  function genesOfRows(tb, x) {
+    if (!x.gene) return [];
+    const rs = x.lazy ? tb._vd?.[x.id] || [] : (x.tables || []).flatMap((t) => rows(tb, t));
+    return [...new Set(rs.map((r) => r[x.gene]).filter(Boolean))];
+  }
+  const showGene = (acc, tb, x) =>
+    !!x.gene && ((D.protein_genes?.[acc] || []).length > 1 || genesOfRows(tb, x).length > 1);
   // the count and the highlighted count at a residue: a lazy source keeps them in the protein's table shard (_vc), the
   // rest are counted from the rows
   const VS_IDX = new WeakMap();
@@ -1584,6 +1598,7 @@
       sum: variantSum,
       sums: variantSums,
       hot: isHot,
+      showGene,
       hotCount,
       avg: changeAvg,
       avgText,
@@ -1596,6 +1611,7 @@
     cc: {
       entries: CCN,
       at: changesAt,
+      showGene,
       total: changeTotal,
       avg: changeAvg,
       avgText,

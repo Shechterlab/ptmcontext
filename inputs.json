@@ -1821,6 +1821,15 @@
       "role": "input",
       "note": "Per reviewed entry and residue (R, K, S, T, Y): how many residues of that kind the entry has, and the gnomAD variants, positions and alleles at them. The base of the protein average."
     },
+    "variant_changes_excluded": {
+      "file": "releases/v1.6.0/supporting/variant_changes_excluded_v1.6.0.tsv.gz",
+      "md5": "e9d043b7798d4317a35a7e6d549dda64",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/variant_changes_excluded_v1.6.0.tsv.gz",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367); UniProt 2026_03 canonical sequences",
+      "licence": "derived from the TCGA MC3, DepMap 24Q4, ClinVar and gnomAD v4.1 change tables of the release (their licenses and credits apply)",
+      "role": "input",
+      "note": "The changes of those four sources that the change tables leave out: the residue the source names differs from the canonical UniProt residue at that position (residue_differs), or the position lies beyond the canonical sequence (position_beyond_sequence). 42,056 rows on 1,240 proteins. Shown as a download and a count beside the cancer and germline cards, never counted."
+    },
     "tcga_changes_R": {
       "file": "releases/v1.6.0/supporting/tcga_mc3_changes_R_v1.6.0.tsv.gz",
       "md5": "31583c11cb71773a1b9076823b67e7bf",

@@ -5283,6 +5283,10 @@
                   ],
                   "description": "Cancer cell lines and tumors: a protein_records table with lines (screened), dependent (lines depending), median, common_essential, histogram (counts, ;-separated) and lineages (name|lines|mean, ;-separated); the changes at the marks are the site card's (card.changes, or card.change_counts)",
                   "properties": {
+                    "excluded": {
+                      "type": "string",
+                      "description": "the id of an entry of website.protein.card.excluded: its count of the changes the card does not show, with a Download button"
+                    },
                     "title": {
                       "type": "string"
                     },
@@ -5458,6 +5462,10 @@
                   "additionalProperties": false,
                   "description": "Germline variants: the sources are card.variant_counts (per-variant tables of website.tables, a background table for the protein average); the card has the same switch as the change counts, known sites only or every candidate residue",
                   "properties": {
+                    "excluded": {
+                      "type": "string",
+                      "description": "the id of an entry of website.protein.card.excluded: its count of the changes the card does not show, with a Download button"
+                    },
                     "title": {
                       "type": "string"
                     },
@@ -6232,6 +6240,13 @@
                   },
                   "additionalProperties": false
                 }
+              },
+              "include_any": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/row_condition"
+                },
+                "description": "rows kept: any one of these conditions holds (include keeps the rows every condition holds for)"
               }
             }
           }

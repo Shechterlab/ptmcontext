@@ -181,6 +181,8 @@
     PD.accessions.forEach((a, k) => {
       (geneIdx[a.toUpperCase()] ||= []).push(k);
     });
+    // a protein several genes encode is named by its short name; each of its genes still finds it
+    PD.accessions.forEach((a, k) => (D.protein_genes?.[a] || []).forEach((g) => (geneIdx[g.toUpperCase()] ||= []).push(k)));
   }
   const minScore = (cons) => {
     const v = cons?.find(([k]) => k === 'b:score')?.[1]?.[0];

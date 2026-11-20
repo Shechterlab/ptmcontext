@@ -1499,7 +1499,9 @@
     if (!x) return;
     const tip = document.getElementById('tip');
     if (tip) tip.hidden = true;
-    K.go('protein', { arg: `${pr(x)[0]}/${x.s}-${x.e}` });
+    // the region in the numbering the protein page shows (histones without the initiator methionine); the page reads it so
+    const sh = (n) => Math.max(1, K.prot?.shownPos ? K.prot.shownPos(pr(x)[0], n) : n);
+    K.go('protein', { arg: `${pr(x)[0]}/${sh(x.s)}-${sh(x.e)}` });
   };
 
   if (SECTION) {

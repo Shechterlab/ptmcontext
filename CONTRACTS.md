@@ -748,7 +748,7 @@ shows). Every value is text unless said otherwise; empty means not known. Lists 
 | `lookup` | `key` | any columns under `values:` | the sources of the citation box and of the card's links (`label`, `citation`, `doi`, `licence`) |
 | `site_evidence` | site | **`kind`** (a code: the values of the card's evidence attribute), `partner`, `partner_accession`, `ids` (a list of entry ids, e.g. PDB), `score` (number), `detail` | the card's interaction evidence: the entries at the site by kind, the partners named in a tag |
 | `bound_windows` | site | **`window`** (the bound chain around the contacted unit: one letter a unit, `[X]` a contacted unit, `-` past the chain's end), **`kind`** (a code: rna, dna, …), `type` (a code), `name`, `entry` (an id), `entries` (a count, for a row that stands for several), `distance` (Å), `offset` (k when the residue i + k makes the contact; empty or 0: the site), `preparation`, `chain`, `nucleotides`, `numbers`, `distances` (the contacted units, their author numbers and Å, lists in the same order) | the card's bound sequences, aligned on the contacted unit; the sites table's contacts column |
-| `residue_changes` | site | **`alt`** (the new residue, `*` a stop) | a list with one row per tumor sample or cell line: counted per site and new residue (columns `alt`, `n`), for `website.protein.card.change_counts` |
+| `residue_changes` | site | **`alt`** (the new residue, `*` a stop) | a list with one row per tumor sample or cell line: counted per site and new residue, and per gene when a `gene` column is mapped (columns `alt`, `gene`, `n`), for `website.protein.card.change_counts` |
 | `residue_evidence` | `accession` | **`start`**, **`end`** (integers; a residue: start = end), **`kind`** (a code), `source` | the card's line on evidence at or within `span` residues of the site (crosslinks, bound stretches) |
 | `site_records` | site | **`group`** (a code: what the record shows), `partner`, `partner_name`, `partner_accession`, `partner_kind` (protein, self, rna, dna, gene, small_molecule, … : labels from the site file), `species`, `source` (PDB, IntAct, …), `id`, `method`, `context`, `state` (the site in the experiment: a code), `state_detail`, `other_marks`, `pubmed`, `doi`, `citation`, `title` | "Who binds it, and how it was found" (records grouped by `group`, rows by partner, state and source), the writer-and-reader lines, and on a protein without marks the records naming it as `partner_accession` |
 | `site_measurements` | site | **`condition`** (a code), **`call`** (a code: the site file gives each a mark and words), `n`, `n_down`, `n_up` (counts), `value` (a log2 change), `q`, `rule` | the perturbation marks of the card and the sites table, and every measurement in the Evidence row |
@@ -776,6 +776,12 @@ the character that joins several values, shown as `; `, `words` maps a code to i
 in the address is the column's value). The card has the same switch as the change counts, and one section a source; its
 list shows `limit` variants (default 12) and a button for the rest. The `flag_ratio` rule is the change counts'.
 
+`gene: <column>` on a `change_counts` or `variant_counts` entry names the column that holds the gene of a row (map it in
+the `residue_changes` table's `columns`, or list it in a `site_table`'s `values`). The card shows a Gene column only for a
+protein that several genes encode (`website.protein.genes`) or whose rows name more than one gene, since for any other
+protein the page's title is the gene; the site card's counts add the genes up. The card's Download button writes every
+row of the protein with the `gene` column whether or not the card shows it.
+
 `lazy: true` on a source keeps its variants out of the protein's table shard (`data/e`): they are written to `data/g/NNN.json`,
 a few proteins to a file (about 150 KB each before compression; the file of an accession is `h % D.variant_detail.shards`, with
 `h = h * 31 + code` over its characters, 32-bit), and read when the Germline variants card is opened. The shard keeps `_vc`, a
@@ -784,6 +790,15 @@ card's summary read. A protein's record in a `data/g` file is `{source id: [posi
 array per column in the order of `D.variant_detail.entries[id].columns`; a text a file repeats is its index in the file's `_s`,
 a `sci`, `int` or `stars` field is a number (`sci` to three significant digits) and an empty cell is `null`. Every row and column
 of the tables is kept. Without `lazy` the rows stay in the shard.
+
+`website.protein.card.excluded` lists changes a source reports that the cards leave out (for the PTM_Pipeline release, the
+`variant_changes_excluded` table: the source's residue differs from UniProt's, or the position lies beyond the sequence):
+each entry is `{id, lazy: true, tables, count_by, reasons}`. `tables` are `site_table` tables with a row per change (a table's
+`include_any: [{column, in}]` keeps a row any of its conditions holds for, so a site can take the rows whose source or UniProt
+residue is one of its own), `count_by` the column whose values the count is split by and `reasons` maps a value to the words
+of the one-line count. The rows are kept in the lazy files of `variant_counts` (`data/g`) and the protein's table shard keeps
+`_xc` (`{id: {value: n}}`). A card (`cards.dependency`, `cards.germline`) names an entry with `excluded: <id>` and shows "12
+changes not shown: the source's residue differs from UniProt's" with a Download button that writes that protein's rows.
 
 `website.protein.card.records` (the card's "Who binds it" block over a `site_records` table) names the group headings in
 this order: the label of the `groups` attribute's value, else `labels: {code: label}` (optional, a map of a group's code to
