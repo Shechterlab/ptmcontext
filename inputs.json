@@ -1706,6 +1706,38 @@
       },
       "note": "The rows of the table above whose classification is pathogenic or likely pathogenic (Pathogenic, Likely pathogenic, Pathogenic/Likely pathogenic, with ClinVar's qualifiers; not conflicting classifications): the residues the site question lists. The same file, read with a condition."
     },
+    "clinvar_changes_R": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_R_v1.6.0.tsv.gz",
+      "md5": "18a7d9fbc7e05d17fb13d77958ef541e",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_R_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "ClinVar single-residue substitutions and stops at every R of reviewed canonical proteins, one row per variation (germline classification, review status and conditions as ClinVar gives them). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. This repository checks the bytes. Landrum et al., Nucleic Acids Res 53:D1313 (2025), doi:10.1093/nar/gkae1090."
+    },
+    "clinvar_plp_changes_R": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_R_v1.6.0.tsv.gz",
+      "md5": "18a7d9fbc7e05d17fb13d77958ef541e",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_R_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position",
+        "include": [
+          {
+            "column": "germline_classification",
+            "matches": "(Pathogenic|Likely pathogenic)([;,/].*)?"
+          }
+        ]
+      },
+      "note": "The rows of the table above whose classification is pathogenic or likely pathogenic (Pathogenic, Likely pathogenic, Pathogenic/Likely pathogenic, with ClinVar's qualifiers; not conflicting classifications): the residues the site question lists. The same file, read with a condition."
+    },
     "gnomad_changes_K": {
       "file": "releases/v1.6.0/supporting/gnomad_v4_1_changes_K_v1.6.0.tsv.gz",
       "md5": "dd5b09b868043c783952f1816fb265f1",
@@ -1757,6 +1789,19 @@
         "position": "position"
       },
       "note": "gnomAD v4.1 exome missense and stop-gained variants (FILTER PASS) at every Y of reviewed canonical proteins, one row per variant, with allele count, number, frequency, homozygotes and the ancestry group of highest frequency. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0."
+    },
+    "gnomad_changes_R": {
+      "file": "releases/v1.6.0/supporting/gnomad_v4_1_changes_R_v1.6.0.tsv.gz",
+      "md5": "776eb438ce6ef9fb5d3b66f3b68ff6fb",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/gnomad_v4_1_changes_R_v1.6.0.tsv.gz",
+      "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
+      "licence": "CC0 1.0 (gnomAD primary data)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "gnomAD v4.1 exome missense and stop-gained variants (FILTER PASS) at every R of reviewed canonical proteins, one row per variant, with allele count, number, frequency, homozygotes and the ancestry group of highest frequency. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0."
     },
     "clinvar_background": {
       "file": "releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz",

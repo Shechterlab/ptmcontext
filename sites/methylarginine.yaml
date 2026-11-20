@@ -37,6 +37,8 @@ inputs:                # role the layers read: manifest input that fills it
   depmap_genes: depmap_gene_effect
   tcga_changes: tcga_arginine_changes
   depmap_changes: depmap_arginine_changes
+  clinvar_plp: clinvar_plp_changes_R
+  gnomad_variants: gnomad_changes_R
   # the protein map's own rows (website.protein.map.rows): release tables read for the map only, no test reads them
   residue_evidence: methylarginine_residue_evidence_v1_5_1
   density_windows: density_windows_v1_5_1
@@ -915,6 +917,39 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     proteins: {input: depmap_genes, column: canonical_UniProtAC, label: " whose gene DepMap screened"}
     marks_alone: count
     order: [{categories: [tcga_tumours, depmap_cell_lines]}]
+  # Germline variants at the methylarginines: a ClinVar single-residue substitution or stop with a pathogenic or likely pathogenic
+  # record, or a gnomAD v4.1 exome variant, against the other arginines of the same proteins; every mark counts, as for the
+  # tumor and cell-line question above. Display only: no row of the release's analyses reads these inputs.
+  - id: clinvar_plp
+    new: true
+    layer: residue_lists
+    with:
+      flags: {clinvar_plp: clinvar_plp}
+      noun: arginine with a pathogenic ClinVar variant
+      title: ClinVar pathogenic variants
+      question: "Does a methylarginine carry a pathogenic or likely pathogenic ClinVar variant more or less often than the other arginines of its protein?"
+      sub: "Methylarginines against the other arginines of the same proteins: a ClinVar single-residue substitution or stop classified pathogenic or likely pathogenic. ClinVar lists the genes and regions that clinical testing covers, so a well-studied protein has more variants at every residue; the comparison within each protein limits that, not removes it. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most, and the codons of methylated and other arginines may differ"
+      section: Disease and cancer
+      labels: {clinvar_plp: Pathogenic or likely pathogenic in ClinVar}
+      help:
+        clinvar_plp: "A single-residue substitution or stop whose ClinVar germline classification is pathogenic or likely pathogenic (including Pathogenic/Likely pathogenic; conflicting classifications are not counted), on a RefSeq protein UniProt assigns to the entry"
+    marks_alone: count
+    order: [{categories: [clinvar_plp]}]
+  - id: gnomad_variant
+    new: true
+    layer: residue_lists
+    with:
+      flags: {gnomad_variant: gnomad_variants}
+      noun: arginine with a gnomAD variant
+      title: gnomAD variants
+      question: "Does a methylarginine carry a gnomAD variant more or less often than the other arginines of its protein?"
+      sub: "Methylarginines against the other arginines of the same proteins: a missense or stop-gained variant in gnomAD v4.1 exomes (730,947 exomes; FILTER PASS), at any allele frequency. Most are rare. A variant seen in healthy adults does not show that it is harmless, and a residue without one may only be rare in the sample. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most, and the codons of methylated and other arginines may differ"
+      section: Disease and cancer
+      labels: {gnomad_variant: Variant in gnomAD}
+      help:
+        gnomad_variant: "A missense or stop-gained change of the residue in at least one gnomAD v4.1 exome variant that passed the filters (VEP consequence on a transcript UniProt assigns to the entry)"
+    marks_alone: count
+    order: [{categories: [gnomad_variant]}]
   - {id: motif, layer: motif}
   - {id: disorder, layer: disorder}
   - {id: domain_context, layer: domain_context}
@@ -1535,6 +1570,8 @@ website:                  # the look and words of the website (ptmc web); layout
       eclip_gene_hic: "Genes of bound RNAs (Hi-C)"
       depmap_dependency: "Cancer cell dependency"
       cancer_change: "Tumor and cell-line changes"
+      clinvar_plp: "ClinVar pathogenic variants"
+      gnomad_variant: "gnomAD variants"
       motif: "Sequence motifs"
       disorder: "Disorder context"
       domain_context: "Domain context"
@@ -1700,6 +1737,8 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: disease_family_additional, title: "More disease families"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
           - {analysis: cancer_change, title: Changes in tumors and cell lines}
+          - {analysis: clinvar_plp, title: ClinVar pathogenic variants}
+          - {analysis: gnomad_variant, title: gnomAD variants}
       - name: Evidence and studies
         about: "Which studies and databases reported the sites."
         #  counted, not tested (website.counts)
@@ -1845,7 +1884,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {name: "CARM1 KD, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: carm1_kd_hek293, table: writer_perturbations, where: {perturbation: carm1_kd_hek293}, change: log2_treated_over_control}
         - {name: "PRMT5 KD, HEK293", note: "Li WJ et al. 2021 · published call; decreased sites only", kind: knockdown, listed: true, attribute: perturbation, value: prmt5_kd_hek293, table: writer_perturbations, where: {perturbation: prmt5_kd_hek293}, change: log2_treated_over_control}
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
-    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change], attributes: [tcga_any, depmap_any]}
+    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant], attributes: [tcga_any, depmap_any]}
     - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, reactome_top_level], proteins: [marks, arg_enrichment_q]}
     - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
     - {name: Methylation state, attributes: [state, maron_s2, methyl_ip, neutral_loss]}
@@ -2424,19 +2463,42 @@ website:                  # the look and words of the website (ptmc web); layout
       format: protein_values
       columns: {accession: uniprot_accession}
       values: [experiment, source, cell_line, n_peaks, top_target_genes, top_5mers]
+    # germline variants at every arginine (ClinVar, gnomAD v4.1): one row per variant, read beside the site
+    clinvar_R:
+      input: clinvar_changes_R
+      format: site_table
+      columns: {accession: canonical_UniProtAC, position: position}
+      values: [alt, variation_id, germline_classification, clinsig_simple, review_stars, conditions]
+    gnomad_R:
+      input: gnomad_changes_R
+      format: site_table
+      columns: {accession: canonical_UniProtAC, position: position}
+      values: [alt, variant_id, af, nhomalt, grpmax]
+    clinvar_background:       # per protein and residue: how many candidates it has and the variants at them, the base of its average
+      input: clinvar_background
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, residue: residue, residues: residues}
+      values: [clinvar_variants]
+      include: [{column: residue, in: [R]}]
+    gnomad_background:       # per protein and residue: how many candidates it has and the variants at them, the base of its average
+      input: gnomad_background
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, residue: residue, residues: residues}
+      values: [gnomad_variants]
+      include: [{column: residue, in: [R]}]
   protein:                 # the protein page
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
-    order: [p-map, p-cell, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologs after the sites
+    order: [p-map, p-cell, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologs after the sites
     groups:                # about five headings, each holding its folds (website.protein.groups)
       - {id: g-overview, title: Overview and map, folds: [p-map, p-cell, p-kinds]}
       - {id: g-sites, title: Sites, folds: [p-sites, p-cons, p-score, p-pert, p-exp, p-cluster, p-ptm]}
       - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
-      - {id: g-context, title: "Context: location, condensates, disease, cancer", switch: true, folds: [p-cond, p-dis, p-depmap]}
+      - {id: g-context, title: "Context: location, condensates, disease, cancer", switch: true, folds: [p-cond, p-dis, p-depmap, p-germline]}
       - {id: g-structure, title: Structure and sequence, folds: [p-struct, p-regions, p-seq]}
     headings:              # the cards front end's folds under labeled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
       - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
       - {id: h-sites, title: Sites and structure, folds: [p-score, p-pert, p-exp]}
-      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cons]}
+      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cons]}
       - {id: h-seq, title: Sequence features, folds: [p-cluster, p-ptm, p-seq]}
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
@@ -2491,6 +2553,10 @@ website:                  # the look and words of the website (ptmc web); layout
         kinds: {lys_acyl: Lysine acylation, ub_sumo: Ubiquitin and SUMO}
         near: 10
         note: "Not an exhaustive list: it holds only what the cross-PTM table used here contains (an iPTMnet export of HPRD, literature mining and other curated sources, plus UniProt), so modifications reported elsewhere may be missing."
+      germline:
+        title: Germline variants
+        sub: "Variants in ClinVar (clinical classifications) and gnomAD v4.1 (population frequencies) at the protein's arginines, against the protein's average for an arginine. A variant at a residue does not show an effect on methylation, and a variant seen in a population is not necessarily harmless."
+        note: "Data: ClinVar (NCBI; public domain; submitters may claim rights in what they submitted) and gnomAD v4.1 exomes (CC0 1.0; Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0). A variant counts only at an arginine of the canonical UniProt sequence."
     nucleic:               # the RNA and DNA interactions card (CONTRACTS.md, RNA and DNA interactions)
       title: RNA and DNA interactions
       kinds: {rna: RNA, dna: DNA}
@@ -2693,6 +2759,34 @@ website:                  # the look and words of the website (ptmc web); layout
       changes:             # changes of the residue, with how many tumors or lines carry each (counts: a site_values column in step)
         - {attribute: tcga, table: site, counts: tcga_change_tumours, unit: [tumor, tumors], label: TCGA}
         - {attribute: depmap, table: site, counts: depmap_change_lines, unit: [cell line, cell lines], label: DepMap}
+      variant_counts:      # germline variants at each candidate residue from per-variant tables, beside the protein's average for that residue (the toggle: known sites only, or every arginine)
+        - id: clinvar
+          lazy: true       # its rows are read from a file of their own when the card is opened
+          label: ClinVar
+          unit: [variant, variants]
+          tables: [clinvar_R]
+          background: clinvar_background
+          count: clinvar_variants
+          highlight: {column: germline_classification, matches: "(Pathogenic|Likely pathogenic)([;,/].*)?", label: P/LP, title: "Classified pathogenic or likely pathogenic by ClinVar"}
+          sort: [{column: review_stars, order: desc}]
+          fields:
+            - {column: germline_classification, label: Classification}
+            - {column: review_stars, label: Review, type: stars, max: 4}
+            - {column: conditions, label: Conditions, separator: "|", max: 60}
+          link: {column: variation_id, url: "https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/"}
+        - id: gnomad
+          lazy: true
+          label: gnomAD
+          unit: [variant, variants]
+          tables: [gnomad_R]
+          background: gnomad_background
+          count: gnomad_variants
+          sort: [{column: af, order: desc}]
+          fields:
+            - {column: af, label: Allele frequency, type: sci}
+            - {column: nhomalt, label: Homozygotes, type: int}
+            - {column: grpmax, label: Highest group, words: {afr: African, amr: Admixed American, asj: Ashkenazi Jewish, eas: East Asian, fin: Finnish, mid: Middle Eastern, nfe: Non-Finnish European, sas: South Asian, remaining: Remaining}}
+          link: {column: variant_id, url: "https://gnomad.broadinstitute.org/variant/{}?dataset=gnomad_r4"}
       calls:               # a mark per decrease or increase: site_measurements tables and category attributes
         tables: [perturbations]
         attributes: {gsk591: GSK591, ms023: MS023}

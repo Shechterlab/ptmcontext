@@ -496,3 +496,21 @@ references:   # the data sources: cited with every export
     end: D182
     year: 2024
     doi: "10.1093/nar/gkad1059"
+  - type: article   # ClinVar (NCBI, public domain): germline variants at the residues
+    authors: [{family-names: Landrum, given-names: MJ}, {family-names: Chitipiralla, given-names: S}, {family-names: Kaur, given-names: K}, {name: "et al."}]
+    title: "ClinVar: updates to support classifications of both germline and somatic variants"
+    journal: "Nucleic Acids Res"
+    volume: 53
+    start: D1313
+    end: D1321
+    year: 2025
+    doi: "10.1093/nar/gkae1090"
+  - type: article   # gnomAD v4.1 (CC0): population variants at the residues
+    authors: [{family-names: Chen, given-names: S}, {family-names: Francioli, given-names: LC}, {family-names: Goodrich, given-names: JK}, {name: "et al."}]
+    title: "A genomic mutational constraint map using variation in 76,156 human genomes"
+    journal: "Nature"
+    volume: 625
+    start: 92
+    end: 100
+    year: 2024
+    doi: "10.1038/s41586-023-06045-0"

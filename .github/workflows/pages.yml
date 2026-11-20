@@ -94,10 +94,12 @@ jobs:
             releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/clinvar_changes_R_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/gnomad_v4_1_changes_K_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/gnomad_v4_1_changes_S_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/gnomad_v4_1_changes_T_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/gnomad_v4_1_changes_Y_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/gnomad_v4_1_changes_R_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz
             releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv
