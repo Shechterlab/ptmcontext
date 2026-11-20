@@ -2463,6 +2463,21 @@ website:                  # the look and words of the website (ptmc web); layout
       format: protein_values
       columns: {accession: uniprot_accession}
       values: [experiment, source, cell_line, n_peaks, top_target_genes, top_5mers]
+    # changes at every arginine (TCGA MC3 tumors, DepMap 24Q4 cell lines; the same rows as the arginine tables the questions read): one table a source, counted per site and new residue
+    tcga_changes_R:
+      input: tcga_changes_R
+      format: residue_changes
+      columns: {accession: canonical_UniProtAC, position: position, alt: alt}
+    depmap_changes_R:
+      input: depmap_changes_R
+      format: residue_changes
+      columns: {accession: canonical_UniProtAC, position: position, alt: alt}
+    cancer_background:     # per protein and residue: how many candidates it has and the changes at them, the base of its average
+      input: cancer_change_background
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, residue: residue, residues: residues}
+      values: [tcga_changes, depmap_changes]
+      include: [{column: residue, in: [R]}]
     # germline variants at every arginine (ClinVar, gnomAD v4.1): one row per variant, read beside the site
     clinvar_R:
       input: clinvar_changes_R
@@ -2756,9 +2771,9 @@ website:                  # the look and words of the website (ptmc web); layout
         - {table: site, column: uniprot_states, label: UniProt, url: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"}
         - {attribute: neutral_loss, label: "Hartel 2019, neutral loss", source: Hartel2019}
         - {table: site, column: states_by_study_design, label: a study that looked for one state only}
-      changes:             # changes of the residue, with how many tumors or lines carry each (counts: a site_values column in step)
-        - {attribute: tcga, table: site, counts: tcga_change_tumours, unit: [tumor, tumors], label: TCGA}
-        - {attribute: depmap, table: site, counts: depmap_change_lines, unit: [cell line, cell lines], label: DepMap}
+      change_counts:       # changes at each candidate residue from residue_changes tables, beside the protein's average for that residue (the toggle: known sites only, or every arginine)
+        - {id: tcga, label: TCGA, unit: [tumor, tumors], tables: [tcga_changes_R], background: cancer_background, count: tcga_changes}
+        - {id: depmap, label: DepMap, unit: [cell line, cell lines], tables: [depmap_changes_R], background: cancer_background, count: depmap_changes}
       variant_counts:      # germline variants at each candidate residue from per-variant tables, beside the protein's average for that residue (the toggle: known sites only, or every arginine)
         - id: clinvar
           lazy: true       # its rows are read from a file of their own when the card is opened
