@@ -658,8 +658,8 @@
     },
     "tcga_changes_K": {
       "file": "releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz",
-      "md5": "cc7e2bdf880a6a7a60b61b8e7c330731",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz",
+      "md5": "98bb86a2123c81ba0ac39140fb4969bc",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -671,8 +671,8 @@
     },
     "tcga_changes_S": {
       "file": "releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz",
-      "md5": "ff12e08bebe766a1eb02a99fc72c7681",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz",
+      "md5": "6b4ff26259a5d3be25d34e6c0f3d8fb9",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -684,8 +684,8 @@
     },
     "tcga_changes_T": {
       "file": "releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz",
-      "md5": "bd958ddcba96ab38fab6cdefa5e3e590",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz",
+      "md5": "d8068cdf2c8ea6b12f303f143051eeed",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -697,8 +697,8 @@
     },
     "tcga_changes_Y": {
       "file": "releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz",
-      "md5": "ba6ba7ce9f00765bda07f035f049d10b",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz",
+      "md5": "e36ef60ecfc6bc6f5972707e37b1c643",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -710,8 +710,8 @@
     },
     "depmap_changes_K": {
       "file": "releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz",
-      "md5": "5633878a39673d621ba1d3cd14f170ee",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz",
+      "md5": "9abba4e226b3bf97ab179bd66d02dfc7",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -723,8 +723,8 @@
     },
     "depmap_changes_S": {
       "file": "releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz",
-      "md5": "3aa26abc758092764a419d5e8a9cfc92",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz",
+      "md5": "cfa0d44b1193f3e9d5e531bd08598227",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -736,8 +736,8 @@
     },
     "depmap_changes_T": {
       "file": "releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz",
-      "md5": "6380e4b959446439cd2411d8d19b47b3",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz",
+      "md5": "0fa9ef4dafde1469013db2578ff1a420",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -749,8 +749,8 @@
     },
     "depmap_changes_Y": {
       "file": "releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz",
-      "md5": "58bc75f1ca3a77ae055ffac5e59afbc5",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz",
+      "md5": "8e84b4cb11be159dbec81ecd1ced811f",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -763,7 +763,7 @@
     "cancer_change_background": {
       "file": "releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz",
       "md5": "03537973ea1bbde64735a38c84bd7405",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz",
       "version": "TCGA MC3 v0.2.8 and DepMap Public 24Q4",
       "licence": "derived counts of the two tables above (GDC open-access data; CC BY 4.0)",
       "role": "input",
@@ -771,8 +771,8 @@
     },
     "clinvar_changes_K": {
       "file": "releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz",
-      "md5": "f013dfe2524dd13b7549de8f943a68fc",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz",
+      "md5": "0b8fe5e9bfe14e8e65e2b8a353c4fc4d",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz",
       "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
       "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
       "role": "input",
@@ -784,8 +784,8 @@
     },
     "clinvar_plp_changes_K": {
       "file": "releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz",
-      "md5": "f013dfe2524dd13b7549de8f943a68fc",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz",
+      "md5": "0b8fe5e9bfe14e8e65e2b8a353c4fc4d",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz",
       "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
       "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
       "role": "input",
@@ -803,8 +803,8 @@
     },
     "gnomad_changes_K": {
       "file": "releases/v1.6.0/supporting/gnomad_v4_1_changes_K_v1.6.0.tsv.gz",
-      "md5": "dd5b09b868043c783952f1816fb265f1",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/gnomad_v4_1_changes_K_v1.6.0.tsv.gz",
+      "md5": "acf63ff665963c33d85b05df6b614193",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/gnomad_v4_1_changes_K_v1.6.0.tsv.gz",
       "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
       "licence": "CC0 1.0 (gnomAD primary data)",
       "role": "input",
@@ -817,7 +817,7 @@
     "clinvar_background": {
       "file": "releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz",
       "md5": "81929ddfc93711ff5b968b36d01d4d52",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz",
       "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
       "licence": "derived counts of the ClinVar tables (public domain)",
       "role": "input",
@@ -826,7 +826,7 @@
     "gnomad_background": {
       "file": "releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz",
       "md5": "22a457f6990f903491e7d47f628b15c5",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz",
       "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
       "licence": "derived counts of the gnomAD tables (CC0 1.0)",
       "role": "input",
@@ -835,8 +835,8 @@
     "nucleic_acid_regions": {
       "file": "releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv",
       "md5": "244126e0faf5b7fe803b66b01950c9d4",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv",
-      "version": "PTM_Pipeline v1.6.0 release folder (commit c0d90e2)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
       "note": "Runs of residues within 4 Å of RNA or DNA in PDB structures, with the bound segments: the protein page's RNA and DNA interactions card. PDB: CC0."
@@ -844,8 +844,8 @@
     "dna_motifs": {
       "file": "releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv",
       "md5": "b5ee0ac01e31897bd36ca2b7bc3cef0b",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv",
-      "version": "PTM_Pipeline v1.6.0 release folder (commit c0d90e2)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
       "note": "JASPAR 2026 DNA-binding profiles of the proteins: the protein page's RNA and DNA interactions card. JASPAR: CC BY 4.0."
@@ -853,8 +853,8 @@
     "rna_bind_n_seq": {
       "file": "releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv",
       "md5": "7d2bccc6ce1482943997613d3ef741c8",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv",
-      "version": "PTM_Pipeline v1.6.0 release folder (commit c0d90e2)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
       "note": "The v1.6.0 release's ENCODE RNA Bind-n-Seq experiments of the proteins: their most enriched 5-mers (ENCODE: no use restrictions). Read by the website's Interactions page only."
@@ -862,8 +862,8 @@
     "eclip": {
       "file": "releases/v1.6.0/supporting/eclip_v1.6.0.tsv",
       "md5": "acfdad3a4a6f82f9d07866e3ced0a249",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/eclip_v1.6.0.tsv",
-      "version": "PTM_Pipeline v1.6.0 release folder (commit c0d90e2)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/eclip_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
       "note": "ENCODE and ENCORE eCLIP experiments of the proteins: peaks by transcript region, top genes and enriched 5-mers (in cells): the protein page's RNA and DNA interactions card."
@@ -871,8 +871,8 @@
     "htr_selex": {
       "file": "releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv",
       "md5": "c89d0a813e1309bcb13fead0ca817229",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv",
-      "version": "PTM_Pipeline v1.6.0 release folder (commit c0d90e2)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
       "note": "The v1.6.0 release's HTR-SELEX RNA-binding models of the proteins (Jolma et al., Genome Res 30:962 (2020), CC BY-NC 4.0). Read by the website's Interactions page only."

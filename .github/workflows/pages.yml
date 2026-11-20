@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: f042367da8aac9746559f64a597ce031a2b6c05f  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -109,6 +109,7 @@ jobs:
             releases/v1.6.0/supporting/gnomad_v4_1_changes_R_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/variant_changes_excluded_v1.6.0.tsv.gz
             releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv
             releases/v1.5.1/statistics_v1.5.1.tsv
             releases/v1.5.1/human_methylarginine_proteins_v1.5.1.tsv

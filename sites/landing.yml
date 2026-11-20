@@ -23,5 +23,6 @@ footer:
     - {label: Shechter Lab, url: "https://www.shechterlab.org/"}
 references:                # lines under the intro: a label with a DOI (and all versions), or text with an optional link
   - {label: Paper, doi: "10.1016/j.chembiol.2026.09.011"}
+# TODO(v1.6.0 DOI): PTM_Pipeline v1.6.0 is untagged. Once it is tagged and archived, set the version DOI here (and `version`, `date`, `url` to the v1.6.0 tag); the all-versions DOI 10.5281/zenodo.22696798 stays. Do not use the v1.5.1 DOI for v1.6.0 data.
   - {label: Data, doi: "10.5281/zenodo.24373077", all_versions: "10.5281/zenodo.22696798"}
   - {label: Data, text: PTM_Pipeline v1.5.1, url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1"}

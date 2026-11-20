@@ -1896,6 +1896,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Studies and databases, attributes: [studies, n_studies, localised_by]}
+  # TODO(v1.6.0 DOI): PTM_Pipeline v1.6.0 is untagged. Once it is tagged and archived, set the version DOI here (and `version`, `date`, `url` to the v1.6.0 tag); the all-versions DOI 10.5281/zenodo.22696798 stays. Do not use the v1.5.1 DOI for v1.6.0 data.
   dataset: {label: data release, version: v1.5.1, date: "2026-11-19", doi: "10.5281/zenodo.24373077", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1"}
   methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
