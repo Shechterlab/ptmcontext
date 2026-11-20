@@ -43,6 +43,8 @@ inputs:                # role the layers read: manifest input that fills it
   depmap_genes: depmap_gene_effect
   tcga_changes: tcga_changes_K
   depmap_changes: depmap_changes_K
+  clinvar_plp: clinvar_plp_changes_K
+  gnomad_variants: gnomad_changes_K
   # interactions (the methyllysine site's roles)
   uniprot_disorder: uniprot_disordered_regions
   uniprot_domains: uniprot_domain_regions
@@ -732,6 +734,39 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     proteins: {input: depmap_genes, column: canonical_UniProtAC, label: " whose gene DepMap screened"}
     marks_alone: count
     order: [{categories: [tcga_tumours, depmap_cell_lines]}]
+  # Germline variants at the modified lysines: a ClinVar single-residue substitution or stop with a pathogenic or likely pathogenic record,
+  # or a gnomAD v4.1 exome variant, against the other lysines of the same proteins; every mark counts, as for the
+  # tumor and cell-line question above
+  - id: clinvar_plp
+    new: true
+    layer: residue_lists
+    with:
+      flags: {clinvar_plp: clinvar_plp}
+      noun: lysine with a pathogenic ClinVar variant
+      title: ClinVar pathogenic variants
+      question: "Does a modified lysine carry a pathogenic or likely pathogenic ClinVar variant more or less often than the other lysines of its protein?"
+      sub: "Modified lysines against the other lysines of the same proteins: a ClinVar single-residue substitution or stop classified pathogenic or likely pathogenic. ClinVar lists the genes and regions that clinical testing covers, so a well-studied protein has more variants at every residue; the comparison within each protein limits that, not removes it. Not adjusted for codon or sequence context, which may differ between the modified lysines and the other lysines"
+      section: Disease and cancer
+      labels: {clinvar_plp: Pathogenic or likely pathogenic in ClinVar}
+      help:
+        clinvar_plp: "A single-residue substitution or stop whose ClinVar germline classification is pathogenic or likely pathogenic (including Pathogenic/Likely pathogenic; conflicting classifications are not counted), on a RefSeq protein UniProt assigns to the entry"
+    marks_alone: count
+    order: [{categories: [clinvar_plp]}]
+  - id: gnomad_variant
+    new: true
+    layer: residue_lists
+    with:
+      flags: {gnomad_variant: gnomad_variants}
+      noun: lysine with a gnomAD variant
+      title: gnomAD variants
+      question: "Does a modified lysine carry a gnomAD variant more or less often than the other lysines of its protein?"
+      sub: "Modified lysines against the other lysines of the same proteins: a missense or stop-gained variant in gnomAD v4.1 exomes (730,947 exomes; FILTER PASS), at any allele frequency. Most are rare. A variant seen in healthy adults does not show that it is harmless, and a residue without one may only be rare in the sample. Not adjusted for codon or sequence context, which may differ between the modified lysines and the other lysines"
+      section: Disease and cancer
+      labels: {gnomad_variant: Variant in gnomAD}
+      help:
+        gnomad_variant: "A missense or stop-gained change of the residue in at least one gnomAD v4.1 exome variant that passed the filters (VEP consequence on a transcript UniProt assigns to the entry)"
+    marks_alone: count
+    order: [{categories: [gnomad_variant]}]
   # Near other marks: are modified lysines more often within 10 residues of another mark than the other lysines of their
   # protein? Context marks (context_marks below), not part of the release's analyses
   - id: near_phospho
@@ -1246,6 +1281,8 @@ website:                  # the look and words of the website (ptmc web); layout
                 ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
           - {analysis: cancer_change, title: Changes in tumors and cell lines}
+          - {analysis: clinvar_plp, title: ClinVar pathogenic variants}
+          - {analysis: gnomad_variant, title: gnomAD variants}
       - name: Evidence and studies
         about: "How well supported the modification sites are, and which databases they come from. Nearly all ubiquitination sites are from Akimov et al. 2018 and most SUMOylation sites from Hendriks et al. 2017. The data sources tile shows how many sites each reports."
         #  counted, not tested (website.counts)
@@ -1374,7 +1411,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Same lysine, analyses: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]}
     - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex]}
     - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome]}
-    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change]}
+    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: RNA and DNA, analyses: [pdb_interface_na]}
@@ -1495,6 +1532,29 @@ website:                  # the look and words of the website (ptmc web); layout
       format: protein_records
       columns: {accession: canonical_UniProtAC, residue: residue, residues: residues}
       values: [tcga_changes, depmap_changes]
+      include: [{column: residue, in: [K]}]
+    # germline variants at every candidate residue (ClinVar, gnomAD v4.1): one row per variant, read beside the site
+    clinvar_K:
+      input: clinvar_changes_K
+      format: site_table
+      columns: {accession: canonical_UniProtAC, position: position}
+      values: [alt, variation_id, germline_classification, clinsig_simple, review_stars, conditions]
+    gnomad_K:
+      input: gnomad_changes_K
+      format: site_table
+      columns: {accession: canonical_UniProtAC, position: position}
+      values: [alt, variant_id, af, nhomalt, grpmax]
+    clinvar_background:       # per protein and residue: how many candidates it has and the variants at them, the base of its average
+      input: clinvar_background
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, residue: residue, residues: residues}
+      values: [clinvar_variants]
+      include: [{column: residue, in: [K]}]
+    gnomad_background:       # per protein and residue: how many candidates it has and the variants at them, the base of its average
+      input: gnomad_background
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, residue: residue, residues: residues}
+      values: [gnomad_variants]
       include: [{column: residue, in: [K]}]
     dependency:            # the Cancer cell lines and tumors card
       input: depmap_gene_effect
@@ -1656,10 +1716,40 @@ website:                  # the look and words of the website (ptmc web); layout
         histogram: {from: -3, to: 1, axis: gene effect per cell line (Chronos); lower is a stronger dependency, marks: [{at: 0, label: no effect}, {at: -1, label: median of common essentials}]}
         url: "https://depmap.org/portal/gene/{gene}?tab=overview"
         note: "Data: DepMap Public 24Q4 (CRISPR, Chronos; CC BY 4.0) and TCGA tumors (MC3 somatic calls from the GDC, open access; based on data generated by the TCGA Research Network). A change counts only at a lysine of the canonical UniProt sequence."
+      germline:
+        title: Germline variants
+        sub: "Variants in ClinVar (clinical classifications) and gnomAD v4.1 (population frequencies) at the protein's lysines, against the protein's average for the same residue type. A variant at a residue does not show an effect on the mark, and a variant seen in a population is not necessarily harmless."
+        note: "Data: ClinVar (NCBI; public domain; submitters may claim rights in what they submitted) and gnomAD v4.1 exomes (CC0 1.0; Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0). A variant counts only at a lysine of the canonical UniProt sequence."
     card:                  # the site card: its blocks, each reading a table above (a block without its data is absent)
       change_counts:       # changes at each lysine from residue_changes tables, beside the protein's average for that residue (the toggle: known sites only, or every candidate)
         - {id: tcga, label: TCGA, unit: [tumor, tumors], tables: [tcga_changes_K], background: cancer_background, count: tcga_changes}
         - {id: depmap, label: DepMap, unit: [cell line, cell lines], tables: [depmap_changes_K], background: cancer_background, count: depmap_changes}
+      variant_counts:      # germline variants at each candidate residue from per-variant tables, beside the protein's average for that residue (the toggle as above)
+        - id: clinvar
+          label: ClinVar
+          unit: [variant, variants]
+          tables: [clinvar_K]
+          background: clinvar_background
+          count: clinvar_variants
+          highlight: {column: germline_classification, matches: "(Pathogenic|Likely pathogenic)([;,/].*)?", label: P/LP, title: "Classified pathogenic or likely pathogenic by ClinVar"}
+          sort: [{column: review_stars, order: desc}]
+          fields:
+            - {column: germline_classification, label: Classification}
+            - {column: review_stars, label: Review, type: stars, max: 4}
+            - {column: conditions, label: Conditions, separator: "|", max: 60}
+          link: {column: variation_id, url: "https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/"}
+        - id: gnomad
+          label: gnomAD
+          unit: [variant, variants]
+          tables: [gnomad_K]
+          background: gnomad_background
+          count: gnomad_variants
+          sort: [{column: af, order: desc}]
+          fields:
+            - {column: af, label: Allele frequency, type: sci}
+            - {column: nhomalt, label: Homozygotes, type: int}
+            - {column: grpmax, label: Highest group, words: {afr: African, amr: Admixed American, asj: Ashkenazi Jewish, eas: East Asian, fin: Finnish, mid: Middle Eastern, nfe: Non-Finnish European, sas: South Asian, remaining: Remaining}}
+          link: {column: variant_id, url: "https://gnomad.broadinstitute.org/variant/{}?dataset=gnomad_r4"}
       evidence:            # interaction evidence: PDB entries, bound RNA and DNA, crosslinks near the site
         title: Interaction evidence
         entries:                             # the site's entries in structures, by kind (a site_evidence table)

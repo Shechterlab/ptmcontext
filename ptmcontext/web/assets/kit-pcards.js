@@ -472,7 +472,7 @@
     } catch (e) {
       /* storage may be blocked */
     }
-    document.querySelectorAll('[data-pc="dependency"]').forEach((el) => delete el.dataset.pcOk);
+    document.querySelectorAll('[data-pc="dependency"], [data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
     paintAll();
   });
   let CFLAG = false; // show only the sites flagged at least flag_ratio times the protein's average
@@ -581,6 +581,141 @@
         : '') +
       `</section>`;
     return { html, nSites, nKnown: cn.map((x) => rec.marks.filter((m) => tot(x, m[0])).length) };
+  }
+  // ---- germline variants (card.variant_counts, cards.germline): one section a source, each from a table with a row per
+  // variant. The same switch as the change counts (known sites only, or every candidate residue); a count of at least
+  // flag_ratio times the protein's average per residue of that kind is flagged; a variant the entry highlights comes first.
+  const VMORE = new Set(); // the sources whose whole list is shown
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest?.('[data-vc-more]');
+    if (!b) return;
+    const id = b.dataset.vcMore;
+    if (VMORE.has(id)) VMORE.delete(id);
+    else VMORE.add(id);
+    document.querySelectorAll('[data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
+    paintAll();
+  });
+  const sci = (v) => (!isFinite(v) ? '–' : v === 0 ? '0' : v.toExponential(1).replace('.0e', 'e'));
+  function fieldCell(f, r) {
+    const v = r[f.column];
+    if (v === '' || v == null) return '<span class="muted">–</span>';
+    if (f.type === 'stars') {
+      const top = f.max || 4,
+        n = Math.max(0, Math.min(top, +v || 0));
+      return `<span class="vc-stars" title="${n} of ${top} review stars" aria-label="${n} of ${top} stars">${'★'.repeat(n)}${'☆'.repeat(top - n)}</span>`;
+    }
+    if (f.type === 'sci') return esc(sci(+v));
+    if (f.type === 'int') return esc(int(+v));
+    if (f.words) return esc(f.words[v] ?? v);
+    const s = f.separator ? String(v).split(f.separator).filter(Boolean).join('; ') : String(v);
+    return f.max && s.length > f.max ? `<span title="${esc(s)}">${esc(s.slice(0, f.max - 1))}…</span>` : esc(s);
+  }
+  function germlineSource(p, rec, tb, x, pool, letters, nKnown) {
+    const VCK = K.card.vc,
+      seq = rec.seq || '',
+      known = new Set(rec.marks.map((m) => m[0])),
+      unit = x.unit || ['variant', 'variants'],
+      alt = x.alt || 'alt',
+      shown = (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, q) : q),
+      limit = PC.germline?.limit || 12,
+      all = pool.flatMap((q) => VCK.at(tb, x, q).map((r) => ({ q, r }))),
+      byQ = new Map();
+    for (const v of all) byQ.set(v.q, (byQ.get(v.q) || 0) + 1);
+    const nHot = new Set(all.filter((v) => VCK.hot(x, v.r)).map((v) => v.q)).size;
+    const known1 = CMODE === 'known';
+    const lines = letters
+      .map((l) => {
+        const qs = pool.filter((q) => seq[q - 1] === l),
+          n = qs.reduce((a, q) => a + (byQ.get(q) || 0), 0),
+          b = VCK.avg(tb, x, l),
+          nm = VCK.residueName(l),
+          one = known1 ? `known ${W.mark}` : `candidate ${nm}`,
+          many = known1 ? `known ${W.marks}` : `candidate ${VCK.residueNames(l)}`,
+          of = known1 && letters.length > 1 ? ` (${VCK.residueNames(l)})` : '';
+        return (
+          `<li>${int(n)} ${esc(n === 1 ? unit[0] : unit[1])} at its ${esc(plural(qs.length, one, many))}${esc(of)} · ` +
+          `per ${known1 ? 'site' : esc(nm)}: <b>${VCK.avgText(qs.length ? n / qs.length : null)}</b> · ` +
+          `protein average per ${esc(nm)}: <b>${VCK.avgText(b?.per)}</b></li>`
+        );
+      })
+      .join('');
+    const what = known1 ? plural(known.size, W.mark, W.marks) : plural(nKnown.cands, 'candidate residue');
+    const hotWord = x.highlight?.label ? ` (${int(nHot)} with ${esc(x.highlight.label)})` : '';
+    const sorts = x.sort || [];
+    all.sort((a, b) => {
+      const h = VCK.hot(x, b.r) - VCK.hot(x, a.r);
+      if (h) return h;
+      for (const s of sorts) {
+        const d = (+b.r[s.column] || 0) - (+a.r[s.column] || 0);
+        if (d) return s.order === 'asc' ? -d : d;
+      }
+      return a.q - b.q;
+    });
+    const open = VMORE.has(x.id),
+      list1 = open ? all : all.slice(0, limit),
+      flagSeen = new Set();
+    const fields = x.fields || [];
+    const row = ({ q, r }) => {
+      const l = seq[q - 1],
+        fl = VCK.flagged(tb, x, l, byQ.get(q) || 0) && !flagSeen.has(q) ? (flagSeen.add(q), ' ' + VCK.flagTag(x)) : '',
+        hot = VCK.hot(x, r),
+        link =
+          x.link && r[x.link.column]
+            ? ext(x.link.url.replace('{}', encodeURIComponent(r[x.link.column])), `${esc(x.label)} ↗`)
+            : '';
+      return (
+        `<tr${hot ? ' class="vc-hot"' : ''}><td>${known.has(q) ? siteLink(p, rec, q) : esc(siteName(rec, q, p.acc))}${fl}</td>` +
+        `<td>${esc(l + shown(q) + r[alt])}${hot && x.highlight.label ? ` <span class="tag vc-hot-tag" title="${esc(x.highlight.title || '')}">${esc(x.highlight.label)}</span>` : ''}</td>` +
+        fields.map((f) => `<td>${fieldCell(f, r)}</td>`).join('') +
+        `<td>${link}</td></tr>`
+      );
+    };
+    const html =
+      `<section class="pc-sec pc-vc"><h4>${esc(x.label)}</h4>` +
+      `<ul class="small pc-cc-lines">${lines}</ul>` +
+      `<p class="small">${int(byQ.size)} of ${esc(what)} ${byQ.size === 1 ? 'has' : 'have'} a variant${hotWord}.</p>` +
+      (all.length
+        ? `<div class="tbl-wrap"><table class="pc-tbl"><thead><tr><th>${known1 ? 'Site' : 'Residue'}</th><th>Change</th>${fields
+            .map((f) => `<th>${esc(f.label || f.column)}</th>`)
+            .join('')}<th></th></tr></thead><tbody>${list1.map(row).join('')}</tbody></table></div>` +
+          (all.length > limit
+            ? `<p class="small"><button type="button" class="linkish" data-vc-more="${esc(x.id)}">${
+                open ? 'Show fewer' : `Show all ${int(all.length)} ${esc(unit[1])}`
+              }</button>${open ? '' : ` <span class="muted">(${int(limit)} shown${x.highlight?.label ? `, ${esc(x.highlight.label)} first` : ''})</span>`}</p>`
+            : '')
+        : '') +
+      `</section>`;
+    return { html, nHot, nSites: byQ.size, nKnown: rec.marks.filter((m) => VCK.at(tb, x, m[0]).length).length };
+  }
+  function germlineBuild(p, rec, tb) {
+    const VCK = K.card.vc,
+      resSet = new Set(D.residues || []),
+      seq = rec.seq || '',
+      known = new Set(rec.marks.map((m) => m[0])),
+      order = (l) => (D.residues || []).indexOf(l);
+    const cands = [];
+    for (let i = 0; i < seq.length; i++) if (resSet.has(seq[i])) cands.push(i + 1);
+    const pool = CMODE === 'all' ? cands : [...known].filter((q) => seq[q - 1]).sort((a, b) => a - b);
+    const letters = [...new Set(pool.map((q) => seq[q - 1]))].sort((a, b) => order(a) - order(b));
+    const secs = VCK.entries.map((x) => germlineSource(p, rec, tb, x, pool, letters, { cands: cands.length }));
+    const seg =
+      `<div class="seg" role="group" aria-label="Residues counted"><span class="seg-l">Count</span>` +
+      [
+        ['known', 'Known sites only'],
+        ['all', 'All candidate residues'],
+      ]
+        .map(([k, t]) => `<button type="button" data-cc-mode="${k}" aria-pressed="${CMODE === k}">${t}</button>`)
+        .join('') +
+      `</div>`;
+    const html = `${seg}<p class="small muted">${
+      CMODE === 'known'
+        ? `The protein's known ${esc(W.marks)} only.`
+        : `Every ${esc(W.residue)} of the protein, a known ${esc(W.mark)} or not.`
+    }</p><div class="pc-grid">${secs.map((s) => s.html).join('')}</div>`;
+    const sum = VCK.entries
+      .map((x, k) => `${x.label}: ${secs[k].nKnown ? plural(secs[k].nKnown, 'site') : 'no site'}`)
+      .join(' · ');
+    return { html, sum };
   }
   function dependencyBuild(p, rec, tb) {
     const cfg = PC.dependency,
@@ -1136,6 +1271,7 @@
     ['experiments', 'p-exp', 'Experiments', experimentsBuild],
     ['clustering', 'p-cluster', 'Clustering', clusteringBuild],
     ['other_ptms', 'p-ptm', 'Other PTMs', ptmsBuild],
+    ['germline', 'p-germline', 'Germline variants', germlineBuild],
   ].filter(([k]) => PC[k] || k === 'location_cell');
   const BUILD = { live: liveBuild };
   K.pcards = BUILD; // the cards' builders: (protein, record, tables) -> { html, sum }

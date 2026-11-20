@@ -1468,7 +1468,7 @@
     "tcga_changes_K": {
       "file": "releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz",
       "md5": "cc7e2bdf880a6a7a60b61b8e7c330731",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/34d974b46488941dce37d6538dfdea5b999586e1/releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -1481,7 +1481,7 @@
     "tcga_changes_S": {
       "file": "releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz",
       "md5": "ff12e08bebe766a1eb02a99fc72c7681",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/34d974b46488941dce37d6538dfdea5b999586e1/releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -1494,7 +1494,7 @@
     "tcga_changes_T": {
       "file": "releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz",
       "md5": "bd958ddcba96ab38fab6cdefa5e3e590",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/34d974b46488941dce37d6538dfdea5b999586e1/releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -1507,7 +1507,7 @@
     "tcga_changes_Y": {
       "file": "releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz",
       "md5": "ba6ba7ce9f00765bda07f035f049d10b",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/34d974b46488941dce37d6538dfdea5b999586e1/releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -1520,7 +1520,7 @@
     "depmap_changes_K": {
       "file": "releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz",
       "md5": "5633878a39673d621ba1d3cd14f170ee",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/34d974b46488941dce37d6538dfdea5b999586e1/releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -1533,7 +1533,7 @@
     "depmap_changes_S": {
       "file": "releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz",
       "md5": "3aa26abc758092764a419d5e8a9cfc92",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/34d974b46488941dce37d6538dfdea5b999586e1/releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -1546,7 +1546,7 @@
     "depmap_changes_T": {
       "file": "releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz",
       "md5": "6380e4b959446439cd2411d8d19b47b3",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/34d974b46488941dce37d6538dfdea5b999586e1/releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -1559,7 +1559,7 @@
     "depmap_changes_Y": {
       "file": "releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz",
       "md5": "58bc75f1ca3a77ae055ffac5e59afbc5",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/34d974b46488941dce37d6538dfdea5b999586e1/releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -1572,11 +1572,209 @@
     "cancer_change_background": {
       "file": "releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz",
       "md5": "03537973ea1bbde64735a38c84bd7405",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/34d974b46488941dce37d6538dfdea5b999586e1/releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz",
       "version": "TCGA MC3 v0.2.8 and DepMap Public 24Q4",
       "licence": "derived counts of the two tables above (GDC open-access data; CC BY 4.0)",
       "role": "input",
       "note": "Per reviewed entry and residue (R, K, S, T, Y, and all): how many residues of that kind the entry has, and the changes, tumor samples and positions (TCGA) and the changes, cell lines and positions (DepMap) at them. The base of the protein average beside a count of changes."
+    },
+    "clinvar_changes_K": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz",
+      "md5": "f013dfe2524dd13b7549de8f943a68fc",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "ClinVar single-residue substitutions and stops at every K of reviewed canonical proteins, one row per variation (germline classification, review status and conditions as ClinVar gives them). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. This repository checks the bytes. Landrum et al., Nucleic Acids Res 53:D1313 (2025), doi:10.1093/nar/gkae1090."
+    },
+    "clinvar_plp_changes_K": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz",
+      "md5": "f013dfe2524dd13b7549de8f943a68fc",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position",
+        "include": [
+          {
+            "column": "germline_classification",
+            "matches": "(Pathogenic|Likely pathogenic)([;,/].*)?"
+          }
+        ]
+      },
+      "note": "The rows of the table above whose classification is pathogenic or likely pathogenic (Pathogenic, Likely pathogenic, Pathogenic/Likely pathogenic, with ClinVar's qualifiers; not conflicting classifications): the residues the site question lists. The same file, read with a condition."
+    },
+    "clinvar_changes_S": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz",
+      "md5": "3ff4d900c857a7c55da649c89f0e8861",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "ClinVar single-residue substitutions and stops at every S of reviewed canonical proteins, one row per variation (germline classification, review status and conditions as ClinVar gives them). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. This repository checks the bytes. Landrum et al., Nucleic Acids Res 53:D1313 (2025), doi:10.1093/nar/gkae1090."
+    },
+    "clinvar_plp_changes_S": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz",
+      "md5": "3ff4d900c857a7c55da649c89f0e8861",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position",
+        "include": [
+          {
+            "column": "germline_classification",
+            "matches": "(Pathogenic|Likely pathogenic)([;,/].*)?"
+          }
+        ]
+      },
+      "note": "The rows of the table above whose classification is pathogenic or likely pathogenic (Pathogenic, Likely pathogenic, Pathogenic/Likely pathogenic, with ClinVar's qualifiers; not conflicting classifications): the residues the site question lists. The same file, read with a condition."
+    },
+    "clinvar_changes_T": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz",
+      "md5": "bbd8a7e47d875e631c32f2d1ee227f41",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "ClinVar single-residue substitutions and stops at every T of reviewed canonical proteins, one row per variation (germline classification, review status and conditions as ClinVar gives them). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. This repository checks the bytes. Landrum et al., Nucleic Acids Res 53:D1313 (2025), doi:10.1093/nar/gkae1090."
+    },
+    "clinvar_plp_changes_T": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz",
+      "md5": "bbd8a7e47d875e631c32f2d1ee227f41",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position",
+        "include": [
+          {
+            "column": "germline_classification",
+            "matches": "(Pathogenic|Likely pathogenic)([;,/].*)?"
+          }
+        ]
+      },
+      "note": "The rows of the table above whose classification is pathogenic or likely pathogenic (Pathogenic, Likely pathogenic, Pathogenic/Likely pathogenic, with ClinVar's qualifiers; not conflicting classifications): the residues the site question lists. The same file, read with a condition."
+    },
+    "clinvar_changes_Y": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz",
+      "md5": "23f394215bc9cc8fb343236cbed5bb4a",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "ClinVar single-residue substitutions and stops at every Y of reviewed canonical proteins, one row per variation (germline classification, review status and conditions as ClinVar gives them). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. This repository checks the bytes. Landrum et al., Nucleic Acids Res 53:D1313 (2025), doi:10.1093/nar/gkae1090."
+    },
+    "clinvar_plp_changes_Y": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz",
+      "md5": "23f394215bc9cc8fb343236cbed5bb4a",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position",
+        "include": [
+          {
+            "column": "germline_classification",
+            "matches": "(Pathogenic|Likely pathogenic)([;,/].*)?"
+          }
+        ]
+      },
+      "note": "The rows of the table above whose classification is pathogenic or likely pathogenic (Pathogenic, Likely pathogenic, Pathogenic/Likely pathogenic, with ClinVar's qualifiers; not conflicting classifications): the residues the site question lists. The same file, read with a condition."
+    },
+    "gnomad_changes_K": {
+      "file": "releases/v1.6.0/supporting/gnomad_v4_1_changes_K_v1.6.0.tsv.gz",
+      "md5": "dd5b09b868043c783952f1816fb265f1",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/gnomad_v4_1_changes_K_v1.6.0.tsv.gz",
+      "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
+      "licence": "CC0 1.0 (gnomAD primary data)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "gnomAD v4.1 exome missense and stop-gained variants (FILTER PASS) at every K of reviewed canonical proteins, one row per variant, with allele count, number, frequency, homozygotes and the ancestry group of highest frequency. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0."
+    },
+    "gnomad_changes_S": {
+      "file": "releases/v1.6.0/supporting/gnomad_v4_1_changes_S_v1.6.0.tsv.gz",
+      "md5": "f00e8c1d025daedbb99c2fb5be449717",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/gnomad_v4_1_changes_S_v1.6.0.tsv.gz",
+      "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
+      "licence": "CC0 1.0 (gnomAD primary data)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "gnomAD v4.1 exome missense and stop-gained variants (FILTER PASS) at every S of reviewed canonical proteins, one row per variant, with allele count, number, frequency, homozygotes and the ancestry group of highest frequency. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0."
+    },
+    "gnomad_changes_T": {
+      "file": "releases/v1.6.0/supporting/gnomad_v4_1_changes_T_v1.6.0.tsv.gz",
+      "md5": "7710d644b3f4051a097303caa7adacb7",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/gnomad_v4_1_changes_T_v1.6.0.tsv.gz",
+      "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
+      "licence": "CC0 1.0 (gnomAD primary data)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "gnomAD v4.1 exome missense and stop-gained variants (FILTER PASS) at every T of reviewed canonical proteins, one row per variant, with allele count, number, frequency, homozygotes and the ancestry group of highest frequency. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0."
+    },
+    "gnomad_changes_Y": {
+      "file": "releases/v1.6.0/supporting/gnomad_v4_1_changes_Y_v1.6.0.tsv.gz",
+      "md5": "8eb9a1d01c02f8b972d1dee70ff26f6b",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/gnomad_v4_1_changes_Y_v1.6.0.tsv.gz",
+      "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
+      "licence": "CC0 1.0 (gnomAD primary data)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "gnomAD v4.1 exome missense and stop-gained variants (FILTER PASS) at every Y of reviewed canonical proteins, one row per variant, with allele count, number, frequency, homozygotes and the ancestry group of highest frequency. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0."
+    },
+    "clinvar_background": {
+      "file": "releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz",
+      "md5": "81929ddfc93711ff5b968b36d01d4d52",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "derived counts of the ClinVar tables (public domain)",
+      "role": "input",
+      "note": "Per reviewed entry and residue (R, K, S, T, Y): how many residues of that kind the entry has, and the ClinVar variants, pathogenic or likely pathogenic variants and positions at them. The base of the protein average."
+    },
+    "gnomad_background": {
+      "file": "releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz",
+      "md5": "22a457f6990f903491e7d47f628b15c5",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b/releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz",
+      "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
+      "licence": "derived counts of the gnomAD tables (CC0 1.0)",
+      "role": "input",
+      "note": "Per reviewed entry and residue (R, K, S, T, Y): how many residues of that kind the entry has, and the gnomAD variants, positions and alleles at them. The base of the protein average."
     }
   }
 }

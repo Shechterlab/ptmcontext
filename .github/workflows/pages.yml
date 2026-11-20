@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: 34d974b46488941dce37d6538dfdea5b999586e1  # PTM_Pipeline; actions/checkout needs the full hash
+          ref: c0d90e2093251a5f73b89a3dbaf04ac3159d6f6b  # PTM_Pipeline; actions/checkout needs the full hash
           path: reference
           sparse-checkout: |
             inputs/reference
@@ -90,6 +90,16 @@ jobs:
             releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/gnomad_v4_1_changes_K_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/gnomad_v4_1_changes_S_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/gnomad_v4_1_changes_T_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/gnomad_v4_1_changes_Y_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz
             releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv
             releases/v1.5.1/statistics_v1.5.1.tsv
             releases/v1.5.1/human_methylarginine_proteins_v1.5.1.tsv

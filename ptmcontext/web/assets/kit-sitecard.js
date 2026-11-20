@@ -553,6 +553,53 @@
       );
     }).join('');
   }
+  // ---- variants at residues from per-variant tables (card.variant_counts): the count at a residue beside the protein's
+  // average per residue of the same kind, as the change counts above. A table lists one row per variant (site_table).
+  const VCN = (C.variant_counts || []).filter((x) => (x.tables || []).some(has));
+  const VC_IDX = new WeakMap();
+  function variantIdx(tb, x) {
+    // position -> [row], over the entry's tables
+    let m = VC_IDX.get(tb);
+    if (!m) VC_IDX.set(tb, (m = {}));
+    return (m[x.id] ||= (() => {
+      const idx = new Map();
+      for (const t of x.tables || [])
+        for (const r of rows(tb, t)) {
+          if (!idx.has(r.position)) idx.set(r.position, []);
+          idx.get(r.position).push(r);
+        }
+      return idx;
+    })());
+  }
+  const variantsAt = (tb, x, pos) => variantIdx(tb, x).get(pos) || [];
+  // a variant is highlighted when the entry's highlight column equals the value, or matches the pattern (pathogenic, say)
+  const HOT_RX = new WeakMap();
+  const isHot = (x, r) => {
+    const h = x.highlight;
+    if (!h) return false;
+    const v = String(r[h.column] ?? '');
+    if (h.matches) {
+      if (!HOT_RX.has(h)) HOT_RX.set(h, new RegExp('^(?:' + h.matches + ')$'));
+      return HOT_RX.get(h).test(v);
+    }
+    return v === String(h.equals);
+  };
+  const hotCount = (x, vs) => vs.filter((r) => isHot(x, r)).length;
+  function variantCounts(c) {
+    const letter = (c.seq || '')[c.pos - 1] || '',
+      nm = residueName(letter);
+    return VCN.map((x) => {
+      const v = variantsAt(c.tb, x, c.pos),
+        unit = x.unit || ['variant', 'variants'],
+        hot = hotCount(x, v),
+        b = changeAvg(c.tb, x, letter);
+      const head = `<b>${esc(x.label)}</b>: ${v.length ? int(v.length) : 'no'} ${esc(v.length === 1 ? unit[0] : unit[1])}${
+        hot && x.highlight.label ? ` <span class="muted">(${int(hot)} ${esc(x.highlight.label)})</span>` : ''
+      }`;
+      const flag = flagged(c.tb, x, letter, v.length) ? ' ' + flagTag(x) : '';
+      return `<div>${head}${flag} <span class="muted small">· protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`;
+    }).join('');
+  }
   function changes(c) {
     const cs = C.changes || [];
     if (!cs.length) return changeCounts(c);
@@ -1476,6 +1523,19 @@
     around,
     states,
     changes,
+    vc: {
+      entries: VCN,
+      at: variantsAt,
+      hot: isHot,
+      hotCount,
+      avg: changeAvg,
+      avgText,
+      residueName,
+      residueNames,
+      flagged,
+      flagTag,
+    },
+    variants: variantCounts,
     cc: {
       entries: CCN,
       at: changesAt,

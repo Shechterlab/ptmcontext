@@ -765,6 +765,17 @@ card shows the site's changes with its count beside the protein's average for th
 a switch between the known sites only (the default) and every candidate residue (`profile.residues`), and keeps the
 reader's choice in the browser. A count of at least `flag_ratio` (default 3) times the protein's average for that residue type is marked "≥3× protein average" on the site card and in the protein's list, which has a chip to show only those. Words for a residue come from `residue_names` of the profile, else its `words.residue`.
 
+`website.protein.card.variant_counts` lists sources of variants counted at every candidate residue (the site card's line
+and the Germline variants card, `website.protein.cards.germline`): each entry is `{id, label, unit: [one, many], tables,
+background, count}` as `change_counts`, but its `tables` are `site_table` tables with a row per variant, and the optional
+keys say how a variant is shown: `alt` (the column of the new residue, default `alt`), `highlight: {column, equals or matches, label,
+title}` (a variant whose column equals the value, or matches the regular expression, is marked and listed first), `sort: [{column, order: desc|asc}]` (numbers,
+after the highlighted), `fields: [{column, label, type: text|stars|sci|int, max, separator, words}]` (a column of the list: `stars`
+draws a count up to `max` as stars, `sci` a number as compact scientific notation, `max` truncates a text, `separator` is
+the character that joins several values, shown as `; `, `words` maps a code to its words) and `link: {column, url}` (`{}`
+in the address is the column's value). The card has the same switch as the change counts, and one section a source; its
+list shows `limit` variants (default 12) and a button for the rest. The `flag_ratio` rule is the change counts'.
+
 `website.protein.card.records` (the card's "Who binds it" block over a `site_records` table) names the group headings in
 this order: the label of the `groups` attribute's value, else `labels: {code: label}` (optional, a map of a group's code to
 its heading), else the code with its underscores replaced by spaces. The summary line above the groups uses the same
@@ -801,6 +812,7 @@ in the module. Live parts are asked by accession and fall back to a line saying 
 |---|---|---|
 | `location` (`p-cond`) | `hpa.table`: `location`, `main` (`1` or `true`), `reliability`; `condensates.members`: `condensate` (id), `score` (0 to `max_score`), `roles`, `evidence`, `pmids` (`; `-separated); `condensates.names` (a `lookup` with `name`, `condensate_type`) | its locations, main first, each linking to the proteins at it (`hpa.analysis`); `maps: true` draws it in `website.cell`'s drawings, a part colored when a map places it, and lists each map's compartments; every condensate membership, most confident first, with stars, role, evidence, papers (named live when `pubmed` gives the summary service's address) |
 | `dependency` (`p-depmap`) | `table`: `lines`, `dependent`, `median`, `common_essential`, `histogram` (bin counts, `; `-separated, over `histogram.from` to `.to`), `lineages` (`name|lines|mean`, `; `-separated) | how many lines depend on the gene, the histogram, the lineages; the marks' changes are `website.protein.card.changes` (the attributes and counts of the site card), listed per mark |
+| `germline` (`p-germline`) | none of its own: `website.protein.card.variant_counts` (above), with the card's `title`, `sub`, `limit` and `note` | one section a source: the variants at the known sites, or at every candidate residue, with the count beside the protein's average per residue of that kind, the variants listed with their fields and a link |
 | `perturbations` (`p-pert`) | none of its own: `website.protein.card.calls` (its `tables`, `attributes`, `conditions`, `marks`, `words`) | a mark per call, a row per mark, a column per experiment the protein has |
 | `experiments` (`p-exp`) | `table`: `position`, `region`, `perturbation`, `system`, `species`, `readout`, `direction` (`decreased`, `increased`, `no_change`), `finding`, `figure`, `reference`, `doi`, `read_from`, `in_release` | the curated experiments on the protein |
 | `clustering` (`p-cluster`) | `table`: `spacing_min`, `spacing_median`, `max_<n>` for each of `windows`, `window_size`, `window_start`, `window_end`, `window_sites`, `window_log2`, `window_q`, `architecture`, `clusters` (`; ` between clusters, `,` between positions) | median spacing, the most marks within n residues, the top window, the architecture |

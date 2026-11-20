@@ -539,6 +539,7 @@
     states: 'State by source',
     calls: 'Perturbations',
     changes: 'Changes',
+    germline: 'Germline variants',
     reported: 'Reported by',
     ...(CC.labels || {}),
   };
@@ -811,6 +812,7 @@
       ((CC.changes || []).length || (CC.change_counts || []).length
         ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait)
         : '') +
+      ((CC.variant_counts || []).length ? kv(esc(CL_WORDS.germline), ready ? K.card.variants(c) : wait) : '') +
       '</dl></section>';
     return (
       `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.mark)}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)}${

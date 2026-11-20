@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-CARDS = ('location', 'dependency', 'perturbations', 'experiments', 'clustering', 'other_ptms')
+CARDS = ('location', 'dependency', 'perturbations', 'experiments', 'clustering', 'other_ptms', 'germline')
 FOLD = re.compile(r'^p-[a-z0-9-]+$')
 
 
@@ -99,6 +99,32 @@ def problems(site: dict) -> list[str]:
                 out.append(
                     f'{w}.tables: {name!r} is a {tables[name].get("format")} table; read a residue_changes table'
                 )
+        bg = x.get('background')
+        if not bg:
+            out.append(f'{w}: names no background table (a protein_records table with residue, residues and the count)')
+        elif bg not in tables:
+            out.append(f'{w}.background: no table {bg!r} in website.tables')
+        else:
+            missing = [c for c in ('residue', 'residues', x.get('count')) if c not in _cols(tables[bg])]
+            out.extend(f'{w}.background: table {bg!r} has no column {c!r} (the card reads it)' for c in missing)
+    vcs = (cfg.get('card') or {}).get('variant_counts') or []
+    if 'germline' in cards and not vcs:
+        out.append('website.protein.cards.germline: names no sources (website.protein.card.variant_counts)')
+    for k, x in enumerate(vcs):
+        w = f'website.protein.card.variant_counts[{k}]'
+        if not x.get('tables'):
+            out.append(f'{w}: names no tables (site_table tables of website.tables, one row per variant)')
+        for name in x.get('tables') or []:
+            if name not in tables:
+                out.append(f'{w}.tables: no table {name!r} in website.tables')
+            elif tables[name].get('format') != 'site_table':
+                out.append(f'{w}.tables: {name!r} is a {tables[name].get("format")} table; read a site_table table')
+            else:
+                shown = [x.get('alt', 'alt'), *[f.get('column') for f in x.get('fields') or []]]
+                shown += [(x.get(key) or {}).get('column') for key in ('highlight', 'link')]
+                shown += [s.get('column') for s in x.get('sort') or []]
+                missing = sorted({c for c in shown if c and c not in _cols(tables[name])})
+                out.extend(f'{w}.tables: table {name!r} has no column {c!r} (the card reads it)' for c in missing)
         bg = x.get('background')
         if not bg:
             out.append(f'{w}: names no background table (a protein_records table with residue, residues and the count)')

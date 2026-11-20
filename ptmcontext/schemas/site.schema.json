@@ -5393,6 +5393,30 @@
                       "type": "string"
                     }
                   }
+                },
+                "germline": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Germline variants: the sources are card.variant_counts (per-variant tables of website.tables, a background table for the protein average); the card has the same switch as the change counts, known sites only or every candidate residue",
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "sub": {
+                      "type": "string"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "variants listed per source before Show all (default 12)"
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }

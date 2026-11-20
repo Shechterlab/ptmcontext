@@ -11744,3 +11744,17 @@ summary {
   grid-row: 1 / span 2;
   align-self: center;
 }
+
+/* germline variants card: a variant the source highlights (pathogenic or likely pathogenic) and the review stars */
+.pc-tbl tr.vc-hot td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.tag.vc-hot-tag {
+  border-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+.vc-stars {
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+}
