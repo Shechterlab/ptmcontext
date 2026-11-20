@@ -484,7 +484,7 @@
       title: `${gene(acc)} ${lab(acc, pos)} across species`,
       sub:
         `${acc} · Ensembl Compara ` +
-        `orthologs, columns anchored on the ${REF} sequence · residues ${Math.max(1, pos - flank)}–${pos + flank}`,
+        `orthologs, columns anchored on the ${REF} sequence · residues ${K.prot?.range ? K.prot.range(acc, Math.max(1, pos - flank), pos + flank) : Math.max(1, pos - flank) + '–' + (pos + flank)}`,
       body: g,
       bodyH: y,
       W: Wd,

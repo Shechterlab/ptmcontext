@@ -148,38 +148,25 @@
     );
   };
   function proteinRows(tok) {
-    const t = low(tok),
-      tn = norm(tok),
-      exact = [],
-      prefix = [],
-      alias = [],
-      accs = [],
-      named = [];
-    if (!t) return [];
-    for (const p of P) {
-      const al = K.sel.aliasesOf(p.i),
-        g = low(p.gene);
-      const ex = al.find((x) => low(x) === t || (tn.length >= 3 && norm(x) === tn));
-      if (g === t || low(p.acc) === t || low(p.entry) === t) exact.push([p, '']);
-      else if (ex) exact.push([p, ex]);
-      else if (g.startsWith(t)) prefix.push([p, '']);
-      else {
-        const a = al.find((x) => low(x).startsWith(t) || (tn.length >= 3 && norm(x).startsWith(tn)));
-        if (a) alias.push([p, a]);
-        else if (low(p.acc).startsWith(t)) accs.push([p, '']);
-        else if (t.length >= 3 && low(p.name).includes(t)) named.push([p, '']);
-      }
-    }
-    const by = (a, b) => b[0].marks - a[0].marks;
-    const rows = [...exact, ...prefix.sort(by), ...alias.sort(by), ...accs.sort(by), ...named.sort(by)]
-      .slice(0, 8)
-      .map(([p, a]) => ({
-        kind: 'protein',
-        text: p.gene || p.acc,
-        label: p.gene || p.acc,
-        sub: [a, p.name].filter(Boolean).join(' · '),
-        n: `${int(p.marks)} ${p.marks === 1 ? W.mark : W.marks}`,
-      }));
+    if (!low(tok)) return [];
+    // the same ranking as the landing page's search (kit-names.js)
+    const nameRows = P.map((p) => ({
+      acc: p.acc,
+      gene: p.gene,
+      genes: D.protein_genes?.[p.acc] || [],
+      aliases: K.sel.aliasesOf(p.i),
+      name: p.name,
+      entry: p.entry,
+      w: p.marks,
+      p,
+    }));
+    const rows = window.PTMNames.rank(nameRows, tok).map((h) => ({
+      kind: 'protein',
+      text: h.label,
+      label: h.label,
+      sub: h.sub,
+      n: `${int(h.row.p.marks)} ${h.row.p.marks === 1 ? W.mark : W.marks}`,
+    }));
     // a protein of the sequences without a mark: its light page
     if (light?.length && tok.length >= 2 && rows.length < 8) {
       const u = tok.toUpperCase();

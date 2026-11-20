@@ -213,7 +213,7 @@ def test_the_landing_search_index_lists_each_protein_with_its_sites(tmp_path):
     land = web.pages([a], tmp_path / 'site', out_root=root, log=lambda *_: None, landing_config=cfg).read_text()
     idx = json.loads((tmp_path / 'site' / 'proteins.json').read_text())
     assert [s['id'] for s in idx['sites']] == ['toya'] and idx['p']
-    acc, gene, name, sites = idx['p'][0]
+    acc, gene, name, sites, *names = idx['p'][0]  # names: the genes and symbols, only where there are any
     assert acc and sites == [0]
     # the box, its results and the script are on the page
     assert 'id="land-q"' in land and 'id="land-hits"' in land and "fetch('proteins.json')" in land

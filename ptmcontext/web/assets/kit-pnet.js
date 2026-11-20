@@ -1587,14 +1587,16 @@
         });
         return m;
       });
-    return { acc, len: (rec.seq || '').length || siteProtein(acc)?.len || Math.max(...sites, 1), sites, cells };
+    const len = (rec.seq || '').length || siteProtein(acc)?.len || Math.max(...sites, 1),
+      first = K.prot?.first ? K.prot.first(acc) : 1; // the axis starts at residue 1 as the page numbers it
+    return { acc, len, first, sites: sites.filter((s) => s >= first), cells };
   }
   function ccSvg(M, ex) {
     const W0 = 900,
       x0 = 210,
       x1 = W0 - 24,
       H = ccH(),
-      X = (pos) => x0 + ((pos - 0.5) / M.len) * (x1 - x0),
+      X = (pos) => x0 + ((pos - M.first + 0.5) / (M.len - M.first + 1)) * (x1 - x0),
       ink = ex ? EXPORT.ink : null;
     let g = `<text x="12" y="30" ${
       ex ? `font-size="11" fill="${EXPORT.muted}"` : 'class="pn-cc-t"'
@@ -1630,11 +1632,12 @@
     const ay = ccH() - 14;
     g += `<text x="${x0}" y="${ay}" ${
       ex ? `font-size="10" fill="${EXPORT.muted}"` : 'class="pn-cc-t pn-cc-s"'
-    }>1</text><text x="${x1}" y="${ay}" text-anchor="end" ${
+    }>${int(shownOf(M.acc, M.first))}</text><text x="${x1}" y="${ay}" text-anchor="end" ${
       ex ? `font-size="10" ` + `fill="${EXPORT.muted}"` : 'class="pn-cc-t pn-cc-s"'
-    }>${int(M.len)}</text>`;
+    }>${int(shownOf(M.acc, M.len))}</text>`;
     return { svg: g, W: W0, H };
   }
+  const shownOf = (acc, q) => (K.prot?.shownPos ? K.prot.shownPos(acc, q) : q);
   const short = (t) => {
     const s = String(t).replace(/ \([^)]*\)$/, '');
     return s.length > 31 ? s.slice(0, 30) + '…' : s;

@@ -475,12 +475,17 @@
   // ---- numbering: a protein the site file numbers as papers do (website.protein.numbering: histones without the
   // initiator methionine, say) shows position + offset everywhere, and a link's position is read the same way ----------
   const numOf = K.numbering; // one rule for every view (kit-select.js)
+  const genesOf = (p) => D.protein_genes?.[p?.acc] || []; // the genes of a protein several genes encode
   const shownPos = (p, pos) => pos + (numOf(p)?.offset || 0);
   // the line a download adds when the protein is numbered as papers do: the shown numbers beside UniProt's
   const numNote = (p) =>
     numOf(p)
       ? ` ${numOf(p).note || 'Numbered as papers do'}: the site and shown_range columns use it, position, start and end are UniProt positions.`
       : '';
+  // residues the page leaves out at the start (the initiator methionine, numbered 0 by the rule's -1 offset), and the
+  // length of the protein as the page numbers it
+  const dropped = (p) => Math.max(0, -(numOf(p)?.offset || 0));
+  const shownLen = (p, rec) => Math.max(0, (rec.seq || '').length - dropped(p));
   const rangeOf = (p, a, b) => `${Math.max(1, shownPos(p, a))}–${Math.max(1, shownPos(p, b))}`;
   const uniPos = (p, n) => n - (numOf(p)?.offset || 0);
   const resAt = (p, pos) => (PV.acc === p?.acc && PV.rec?.seq?.[pos - 1]) || residueOf(p, pos);
@@ -492,6 +497,9 @@
     numbering: (acc) => numOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
     // a stretch as the page numbers it: its first residue is 1 even where the initiator methionine (0) is inside it
     range: (acc, a, b) => rangeOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), a, b),
+    // the first residue the page shows (2 where the initiator methionine, numbered 0, is left out) and the protein's length as numbered
+    first: (acc) => 1 + dropped(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
+    length: (acc, n) => n - dropped(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
     tables: (acc) => (PV.acc === acc ? PV.tb || null : null),
   };
 
@@ -916,6 +924,7 @@
       .forEach((g) => addName(g, acc));
     if (entry) addName(entry, acc);
   });
+  Object.entries(D.protein_genes || {}).forEach(([acc, gs]) => gs.forEach((g) => addName(g, acc))); // every gene of a protein
   Object.entries(D.protein_aliases || {}).forEach(([acc, al]) =>
     String(al)
       .split(/;\s*/)
@@ -1525,7 +1534,7 @@
         fold(
           'p-map',
           'Protein map',
-          `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${
+          `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(K.prot.length(p.acc, p.len))} aa${
             numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''
           }`,
           `<div class="card-head">${mapExp(['pdf', 'svg', 'png', 'tsv'])}</div><div ` +
@@ -1568,13 +1577,7 @@
             regionsHtml(p, rec),
             false
           ) +
-          fold(
-            'p-seq',
-            'Sequence',
-            `${int((rec.seq || '').length)} aa, and as FASTA`,
-            sequenceHtml(p, rec, sel),
-            false
-          ) +
+          fold('p-seq', 'Sequence', `${int(shownLen(p, rec))} aa, and as FASTA`, sequenceHtml(p, rec, sel), false) +
           (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '') + // kit-3d.js
           ''
       )
@@ -1604,12 +1607,21 @@
       .map(([b, t]) => `<div class="fact"><b>${b}</b><span>${esc(t)}</span></div>`)
       .join('')}</div>`;
   }
+  // other names, without the genes the page already lists
+  const aliasLine = (p) => {
+    const have = new Set(genesOf(p).map((g) => g.toUpperCase())),
+      al = String(D.protein_aliases?.[p.acc] || '')
+        .split(/;\s*/)
+        .filter((a) => a && !have.has(a.toUpperCase()));
+    return al.length ? `Also reported as ${esc(al.join(', '))}` : '';
+  };
   // the head of a protein's page: its names, function (UniProt, live), links, and its Download menu (PDF of the page, Print)
   const protHead = (p, light) =>
-    `<div class="prot-head"><h2>${esc(p.gene || p.acc)} <small>${esc(p.name)}</small></h2>` +
-    (`<p class="aliases" id="aliases">${
-      D.protein_aliases?.[p.acc] ? `Also reported as ${esc(D.protein_aliases[p.acc].replace(/;\s*/g, ', '))}` : ''
-    }</p><div ` +
+    `<div class="prot-head"><h2>${esc(p.gene || p.acc)} <small>${genesOf(p).length > 1 ? '· ' : ''}${esc(p.name)}</small></h2>` +
+    (genesOf(p).length > 1
+      ? `<p class="aliases genes" id="genes">Encoded by ${int(genesOf(p).length)} genes: ${genesOf(p).map(esc).join(', ')}</p>`
+      : '') +
+    (`<p class="aliases" id="aliases">${aliasLine(p)}</p><div ` +
       `class="fn" id="fn"><p class="muted">Asking UniProt for its function…</p></div>`) +
     (`<div class="prot-chips"><span class="chip mono">${esc(p.acc)}</span>${
       PV.rec?.entry || p.entry ? `<span class="chip ` + `mono">${esc(PV.rec?.entry || p.entry)}</span>` : ''
@@ -1674,13 +1686,13 @@
       fold(
         'p-map',
         'Protein map',
-        `${int(n)} ${esc(K.shown.row())} on ${int(p.len)} aa`,
+        `${int(n)} ${esc(K.shown.row())} on ${int(K.prot.length(p.acc, p.len))} aa`,
         `<div class="card-head">${mapExp(['pdf', 'svg', 'png'])}</div><div ` +
           `id="pmap" class="pmap"></div>${siteCard(p, rec)}`,
         true
       ) +
       fold('p-sites', esc(cap(W.marks)), `${int(n)} ${esc(K.shown.row())}`, `${table}`, true) +
-      fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
+      fold('p-seq', 'Sequence', `${int(shownLen(p, rec))} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '');
     return page;
   }
@@ -1745,7 +1757,7 @@
       fold(
         'p-map',
         'Protein map',
-        `${int(p.len)} aa, no ${esc(W.mark)}`,
+        `${int(K.prot.length(p.acc, p.len))} aa, no ${esc(W.mark)}`,
         `<div class="card-head">${mapExp(['pdf', 'svg', 'png'])}</div><div ` + `id="pmap" class="pmap"></div>`,
         true
       ) +
@@ -1772,7 +1784,7 @@
             true
           )
         : '') +
-      fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
+      fold('p-seq', 'Sequence', `${int(shownLen(p, rec))} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '') + // kit-3d.js
       (K.lightFolds || []).map((f) => f(p, null, fold)).join('');
     return page;
@@ -2083,15 +2095,16 @@
 
   // ---- the sequence, with the marks in it, and as FASTA ---------------------------------------------------------
   function fasta(p, rec) {
-    const seq = rec.seq || '';
+    const seq = (rec.seq || '').slice(dropped(p));
     return (
-      `>${p.acc}${rec.entry ? '|' + rec.entry : ''} ${p.name || ''}${p.gene ? ' GN=' + p.gene : ''} [${(D.run.snapshot || {}).release || ''}; ${D.site.name}]\n` +
+      `>${p.acc}${rec.entry ? '|' + rec.entry : ''} ${p.name || ''}${p.gene ? ' GN=' + p.gene : ''} [${(D.run.snapshot || {}).release || ''}; ${D.site.name}${dropped(p) ? '; initiator methionine not shown' : ''}]\n` +
       (seq.match(/.{1,60}/g) || []).join('\n') +
       '\n'
     );
   }
   function sequenceHtml(p, rec, sel) {
-    const seq = rec.seq || '';
+    const seq = rec.seq || '',
+      d = dropped(p); // the initiator methionine is left out where the page numbers without it
     if (!seq) return `<p class="muted">No sequence is stored for this protein.</p>`;
     const at = new Map(rec.marks.map((m) => [m[0], m]));
     const res = (i) => {
@@ -2106,20 +2119,20 @@
       );
     };
     const lines = [];
-    for (let s = 1; s <= seq.length; s += 60) {
+    for (let s = d + 1; s <= seq.length; s += 60) {
       const blocks = [];
       for (let b = s; b < Math.min(s + 60, seq.length + 1); b += 10) {
         let t = '';
         for (let i = b; i < Math.min(b + 10, seq.length + 1); i++) t += res(i);
         blocks.push(t);
       }
-      lines.push(`<span class="sq-n">${s}</span>${blocks.join(' ')}`);
+      lines.push(`<span class="sq-n">${shownPos(p, s)}</span>${blocks.join(' ')}`);
     }
     return (
-      `<div class="card-head"><p class="sub">${int(seq.length)} residues (${esc(
+      `<div class="card-head"><p class="sub">${int(seq.length - d)} residues (${esc(
         (D.run.snapshot || {}).release || ''
       )}), the ${esc(W.marks)} in color ` +
-      `as on the map; hover one for its name, click it for its card.</p>` +
+      `as on the map; hover one for its name, click it for its card.${d ? ' The initiator methionine is not shown or counted.' : ''}</p>` +
       (`<span class="exp"><button class="btn small" type="button" data-fasta="copy">Copy FASTA</button><button ` +
         `class="btn small" type="button" data-fasta="dl">Download FASTA</button></span></div><pre class="seq">${lines.join('\n')}</pre>`)
     );

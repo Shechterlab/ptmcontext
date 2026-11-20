@@ -177,6 +177,7 @@ marks:
     # the release's own evidence at each site (human_methylarginine_sites_v1.5.1.tsv; definitions in its README)
     tcga:
       column: tcga_changes
+      position_tokens: true     # R4C: shown as the protein page numbers it
       label: Changes in TCGA tumors
       kind: list
       separator: "; "
@@ -194,6 +195,7 @@ marks:
       help: "Whether a TCGA tumor (MC3 public calls) has a missense or stop change at this arginine. This counts every methylarginine; the tumor question compares only the proteins whose gene DepMap screened, so its count is smaller"
     depmap:
       column: depmap_changes
+      position_tokens: true     # R4C: shown as the protein page numbers it
       label: Changes in DepMap cell lines
       kind: list
       separator: "; "
@@ -2668,8 +2670,17 @@ website:                  # the look and words of the website (ptmc web); layout
         analyses: [disease_ontology, disease_term, disease_family, disease_family_additional]
         term_groups: {terms: disease_term, families: [disease_family, disease_family_additional]}
         live: {uniprot: true, open_targets: {graphql: "https://api.platform.opentargets.org/api/v4/graphql", size: 12, page: "https://platform.opentargets.org/target/{id}/associations"}}
+    genes:                 # one accession several genes encode: a short name for labels and titles, the full list on the page, every gene searchable
+      input: uniprot_entries
+      from: Entry
+      to: "Gene Names (primary)"
+      separator: ";"
+      symbols: sites/data/hgnc_symbols.tsv   # previous and alias symbols (HGNC, CC0): HIST1H4B finds H4
+      short:
+        - {pattern: "^H3-3[AB]$", replace: "H3.3"}
+        - {pattern: "^(H2A|H2B|H3|H4)[C-]\\d+[A-Z]?$", replace: "\\1"}
     numbering:             # proteins numbered as papers do: histones without the initiator methionine (H3R2 is UniProt R3)
-      - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
+      - genes: "^(H1-\\d+P?|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
         names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"
         offset: -1
         label: histone numbering

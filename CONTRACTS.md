@@ -809,6 +809,8 @@ and links); a table download keeps the UniProt `position` (or `start`, `end`) an
 with a line in its header saying so. A link's letter and number is read as shown, unless only the UniProt reading names a
 site of that residue.
 
+`website.protein.genes` names a table with the genes of each accession (`input`, the accession column `from`, the gene column `to`, `separator`) and, optionally, `short` rules (`pattern`, `replace`: a regular-expression substitution on a gene). A protein with two or more genes shows one short name (the first rule that gives the same name for all its genes, else the common start of the genes) in its title, cards, labels and the network, and the page says `Encoded by N genes` with the list under the title; each gene finds the protein in search and links. The page data hold the lists as `protein_genes`.
+
 ## Protein page cards
 
 Context cards on a protein's page, each a fold with an id, on when the site file names it under `website.protein.cards` and

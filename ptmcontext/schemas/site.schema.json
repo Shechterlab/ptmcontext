@@ -187,6 +187,10 @@
                 "type": "boolean",
                 "description": "true: the attribute exists only where the marks table has its column (a column a later release may add, a score); without the column the attribute and everything built on it (filters, columns, downloads, count questions and their cards, header tiles) are left out"
               },
+              "position_tokens": {
+                "type": "boolean",
+                "description": "list: the values name changes with a residue position (R4C, K79*); on a protein the site numbers without its initiator methionine the page shows the positions as the protein is numbered (downloads keep the UniProt ones)"
+              },
               "join_rows": {
                 "type": "boolean",
                 "description": "list: a mark on several rows of the table (one per methylation state, say) keeps every row's values, each once, in the order of the rows; without it a mark takes its first row's"
@@ -4127,6 +4131,58 @@
             "default_links": {
               "type": "boolean",
               "description": "false: leave out the kit's own list (config/protein_links.json)"
+            },
+            "genes": {
+              "type": "object",
+              "description": "proteins several genes encode (one accession, a list of genes in a table): the page names them by a short name and shows the list, and search finds every gene; the short name is the first rule that gives one name for all the genes, else the common start of the genes",
+              "required": [
+                "input",
+                "from",
+                "to"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "input": {
+                  "type": "string",
+                  "description": "the manifest input (a tab-separated table) with a row per accession"
+                },
+                "from": {
+                  "type": "string",
+                  "description": "its accession column"
+                },
+                "to": {
+                  "type": "string",
+                  "description": "its gene column, the genes of an accession split at the separator"
+                },
+                "separator": {
+                  "type": "string"
+                },
+                "symbols": {
+                  "type": "string",
+                  "description": "a tab-separated table (accession, previous and alias columns of symbols separated by semicolons; # lines are comments) of the old and alternative symbols of the proteins, read by the search, links and the landing search (sites/data/hgnc_symbols.tsv, from the HGNC complete set)"
+                },
+                "short": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "pattern",
+                      "replace"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "pattern": {
+                        "type": "string",
+                        "description": "a regular expression on a gene"
+                      },
+                      "replace": {
+                        "type": "string",
+                        "description": "its replacement (\\1 is the first group): the short name"
+                      }
+                    }
+                  }
+                }
+              }
             },
             "numbering": {
               "type": "array",

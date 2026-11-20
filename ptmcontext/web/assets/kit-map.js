@@ -964,7 +964,7 @@
     const { p, rec, uni, af } = ctx,
       L = p.len,
       seq = rec.seq || '';
-    const [za, zb] = M.zoom || [1, L],
+    const [za, zb] = M.zoom || [K.prot?.first ? K.prot.first(p.acc) : 1, L], // the whole protein as the page numbers it
       span = zb - za + 1;
     const X = (pos) => X0 + ((pos - za + 0.5) / span) * (X1 - X0),
       inView = (a, b) => b >= za && a <= zb;
@@ -2556,7 +2556,7 @@
         : '') +
       `<span class="rows-wrap"><button type="button" class="btn small" data-map-rows aria-expanded="${M.rowsMenu}">Rows ▾</button>${M.rowsMenu ? rowsMenu() : ''}</span>` +
       (M.zoom
-        ? `<span class="map-range small" id="map-range">residues ${K.prot?.range && M.ctx?.p ? K.prot.range(M.ctx.p.acc, M.zoom[0], M.zoom[1]) : int(M.zoom[0]) + '–' + int(M.zoom[1])} of ${int(M.ctx?.p?.len || 0)}</span><button ` +
+        ? `<span class="map-range small" id="map-range">residues ${K.prot?.range && M.ctx?.p ? K.prot.range(M.ctx.p.acc, M.zoom[0], M.zoom[1]) : int(M.zoom[0]) + '–' + int(M.zoom[1])} of ${int(plen(M.ctx?.p))}</span><button ` +
           `type="button" class="btn small" data-map-unzoom title="Show the whole protein again (double-click the ` +
           `map, or press Esc)">${K.ACT.resetView}</button>`
         : '') +
@@ -2898,6 +2898,7 @@
   }
   // the residue under the pointer: what the map knows about it
   // a position and a stretch as the protein page numbers them (K.prot, kit-proteins.js)
+  const plen = (p) => (p ? (K.prot?.length ? K.prot.length(p.acc, p.len) : p.len) : 0);
   const shownOf = (acc, q) => (K.prot?.shownPos ? K.prot.shownPos(acc, q) : q);
   const rngOf = (acc, a, b) => (K.prot?.range ? K.prot.range(acc, a, b) : `${a}–${b}`);
   function readout(ctx, pos) {
@@ -3031,7 +3032,7 @@
     parts.push(
       `<text x="${Pd}" y="${Pd + 12}" font-size="${r1(ts)}" font-weight="bold" fill="${P.ink}">${esc(title)}</text>`
     );
-    const sub = `${p.acc} · ${int(p.len)} aa · ${int(ctx.rec.marks.length)} ${
+    const sub = `${p.acc} · ${int(plen(p))} aa · ${int(ctx.rec.marks.length)} ${
       ctx.rec.marks.length === 1 ? W.mark : W.marks
     }${M.zoom ? ` · showing ${K.prot?.range ? K.prot.range(p.acc, M.zoom[0], M.zoom[1]) : M.zoom[0] + '–' + M.zoom[1]}` : ''}`;
     let y = Pd + 30;

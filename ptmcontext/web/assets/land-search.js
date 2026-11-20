@@ -1,5 +1,5 @@
-/* The landing page's search: a gene name or a UniProt accession, then the site to open it in. The index is
-   proteins.json beside the landing page ({sites: [{id, label}], p: [[accession, gene, name, [index of each site that has it]]]}), read
+/* The landing page's search: a gene name (any of a protein's genes, or an old or alternative symbol) or a UniProt accession, then the site to open it in. The index is
+   proteins.json beside the landing page ({sites: [{id, label}], p: [[accession, gene, name, [index of each site that has it], genes, aliases]]}), read
    when the box is first used. Each hit lists the sites that have the protein, each a link to its protein page. Plain
    script (it is inlined into the landing page; the sites' pages do not load it). */
 (() => {
@@ -32,33 +32,19 @@
         wait = 0;
       }));
   };
+  // the same ranking and names as a site's search (kit-names.js, inlined before this script)
   const find = (q) => {
-    const t = q.trim().toUpperCase();
-    if (!t || !idx) return [];
-    const hits = [];
-    for (const row of idx.p) {
-      const acc = row[0].toUpperCase(),
-        gene = String(row[1] || '').toUpperCase(),
-        genes = gene.split(/[\s;,]+/).filter(Boolean);
-      // an exact accession or gene first, then a name that starts with the text, then one that contains it
-      const rank =
-        acc === t || genes.includes(t)
-          ? 0
-          : acc.startsWith(t) || genes.some((g) => g.startsWith(t))
-            ? 1
-            : t.length >= 3 &&
-                (gene.includes(t) ||
-                  String(row[2] || '')
-                    .toUpperCase()
-                    .includes(t))
-              ? 2
-              : 9;
-      if (rank < 9) hits.push([rank, row]);
-    }
-    return hits
-      .sort((a, b) => a[0] - b[0] || String(a[1][1]).length - String(b[1][1]).length)
-      .slice(0, 12)
-      .map((h) => h[1]);
+    if (!q.trim() || !idx) return [];
+    idx.rows ||= idx.p.map(([acc, gene, name, ids, genes, aliases]) => ({
+      acc,
+      gene,
+      name,
+      genes: genes || [],
+      aliases: aliases || [],
+      w: ids.length,
+      ids,
+    }));
+    return window.PTMNames.rank(idx.rows, q, 12);
   };
   const draw = () => {
     const q = box.value.trim();
@@ -73,18 +59,19 @@
     }
     const rows = find(q);
     out.innerHTML = rows
-      .map(([acc, gene, name, ids]) => {
-        const links = ids
-          .map((k) => idx.sites[k])
-          .filter(Boolean)
-          .map(
-            (s) =>
-              `<a href="${esc(encodeURIComponent(s.id))}/#/protein/${esc(encodeURIComponent(acc))}">${esc(s.label)}</a>`
-          )
-          .join(' ');
+      .map((h) => {
+        const { acc, ids } = h.row,
+          links = ids
+            .map((k) => idx.sites[k])
+            .filter(Boolean)
+            .map(
+              (s) =>
+                `<a href="${esc(encodeURIComponent(s.id))}/#/protein/${esc(encodeURIComponent(acc))}">${esc(s.label)}</a>`
+            )
+            .join(' ');
         return (
-          `<li><span class="hit-name"><b>${esc(String(gene || acc).split(/[\s;,]+/)[0])}</b> ` +
-          `<span class="muted">${esc(acc)}</span>${name ? ` ${esc(name)}` : ''}</span>` +
+          `<li><span class="hit-name"><b>${esc(h.label)}</b>${h.desc ? ` · ${esc(h.desc)}` : ''} ` +
+          `<span class="muted">${esc(acc)}${h.via ? ` · also ${esc(h.via)}` : ''}</span></span>` +
           `<span class="hit-sites">Open in ${links}</span></li>`
         );
       })
