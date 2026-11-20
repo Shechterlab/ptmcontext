@@ -11758,3 +11758,31 @@ summary {
   white-space: nowrap;
   letter-spacing: 0.05em;
 }
+
+/* the "Count" label of a segmented switch sits inside the pill, before its buttons, and does not shrink onto them */
+.seg > .seg-l {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 0.25rem 0.6rem 0.25rem 0.8rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  border-right: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+/* germline table: the link column keeps its text, the first cell clears the highlight bar, the conditions wrap in a bounded column */
+.pc-vc .pc-tbl td:last-child {
+  white-space: nowrap;
+}
+.pc-vc .pc-tbl td:first-child,
+.pc-vc .pc-tbl th:first-child {
+  padding-left: 0.7rem;
+}
+.pc-vc .pc-tbl td:nth-last-child(2) {
+  min-width: 9rem;
+  max-width: 16rem;
+}
+/* the germline tables have six columns: one source a row unless the card is wide enough for two */
+.pc-grid.pc-grid-wide {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 36rem), 1fr));
+}

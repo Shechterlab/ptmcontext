@@ -752,7 +752,7 @@
       CMODE === 'known'
         ? `The protein's known ${esc(W.marks)} only.`
         : `Every ${esc(W.residue)} of the protein, a known ${esc(W.mark)} or not.`
-    }</p><div class="pc-grid">${secs.map((s) => s.html).join('')}</div>`;
+    }</p><div class="pc-grid pc-grid-wide">${secs.map((s) => s.html).join('')}</div>`;
     const sum = VCK.entries
       .map((x, k) => `${x.label}: ${secs[k].nKnown ? plural(secs[k].nKnown, 'site') : 'no site'}`)
       .join(' · ');
