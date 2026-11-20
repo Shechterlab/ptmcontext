@@ -50,10 +50,6 @@
     marks,
     entry: entry || '',
   }));
-  const norm = (x) =>
-    String(x || '')
-      .toUpperCase()
-      .replace(/[-\s._/]/g, '');
   const low = (x) => String(x || '').toLowerCase();
   // the search keys: questions, attributes of the marks and proteins, the site's own words, older keys, the modules'
   function keys() {

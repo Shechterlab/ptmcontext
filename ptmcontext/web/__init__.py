@@ -1733,12 +1733,6 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     for row in (shown or {}).get('proteins', []):
         if row[0] in multi:
             row[1] = multi[row[0]]['short']
-    shown_accs = {r[0] for r in (shown or {}).get('proteins', [])} | {r[0] for r in listing}
-    for a, names in other_names.items():  # old and alternative symbols (website.protein.genes.symbols): searchable
-        if a in shown_accs:
-            al = data.setdefault('protein_aliases', {})
-            have = [x for x in str(al.get(a, '')).split('; ') if x]
-            al[a] = '; '.join(dict.fromkeys(have + names))
     if shown:
         data['shown_marks'], data['shown_view'] = shown, web.get('shown_marks') or {}
         log(
@@ -1810,6 +1804,12 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         else ({}, 0)
     )
     data['light_pages'] = light
+    shown_accs = {r[0] for r in (shown or {}).get('proteins', [])} | {r[0] for r in listing}
+    for a, names in other_names.items():  # old and alternative symbols (website.protein.genes.symbols): searchable
+        if a in shown_accs:
+            al = data.setdefault('protein_aliases', {})
+            have = [x for x in str(al.get(a, '')).split('; ') if x]
+            al[a] = '; '.join(dict.fromkeys(have + names))
     if listing:
         # the search's words and the filters that read more than the marks' classes (website.search): windows and
         # distances beside the marks, the partners in their own file
