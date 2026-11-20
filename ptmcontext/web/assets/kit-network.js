@@ -327,7 +327,9 @@
   }
   // clusters as drawn: the colour slot of the shown ones (the communities with the minimum number of proteins or more, in
   // order, as many as the layout takes), or grey on the shelf of small ones
-  const share = (l) => (l.thin ? ` \u00b7 ${Math.round((100 * l.k) / l.n)}%` : '');
+  const share = (l) =>
+    l.thin ? ` \u00b7 ${Math.round((100 * l.k) / l.n)}%` : l.weak ? ` \u00b7 q ${l.q.toFixed(2)}` : '';
+  const unnamed = (l, c) => ((l.genes || []).length ? `Unnamed: ${l.genes.join(', ')}` : `Cluster ${c + 1}`);
   function clusters(M) {
     const shown = M.labels
         .map((l, c) => c)
@@ -346,10 +348,10 @@
         term: l.term,
         short: sn,
         l,
-        // a cluster no significant term names is named by its busiest proteins; a term that holds for a small share of it
-        // carries that share
-        name: (l.term ? l.term + share(l) : '') || (l.genes || []).join(', ') || `Cluster ${c + 1}`,
-        label: (sn ? sn + share(l) : '') || (l.genes || []).join(', ') || `Cluster ${c + 1}`,
+        // a cluster no term names is called "Unnamed" with its busiest proteins; a term that holds for a small share of it
+        // carries that share, one that is not significant after correction carries its q
+        name: (l.term ? l.term + share(l) : '') || unnamed(l, c),
+        label: (sn ? sn + share(l) : '') || unnamed(l, c),
       };
     });
     return {
@@ -983,7 +985,7 @@
         ? `Links: two proteins are joined when ${famOf(p)} scores them ${OPT.min_score / 1000} or more${g.length ? ` or ${g.map((x) => x.label).join(' and ')} puts them in one group (groups over ${int(g[0].max_size)} proteins are left out)` : ''}${fx.length ? `; ${fx.map((x) => x.label).join(' and ')} (dashed, faint) can be added from the key` : ''}.`
         : `Links: two proteins are joined when they share a group in ${sourceNames()}.`,
       `Clusters: Louvain communities (Blondel et al. 2008) of the links; the Clusters menu asks for a number, and communities under ${UI.minc} proteins are gray.`,
-      `Names: the ${lab} term with the smallest q (hypergeometric test against the network, Benjamini–Hochberg) among terms of ${OPT.min_term} proteins or more and at most ${Math.round(OPT.max_fraction * 100)}% of the network${L.min_depth ? `, at least ${L.min_depth} levels below the top` : ''}${L.max_size ? `, with at most ${int(L.max_size)} proteins in the whole proteome` : ''}${L.non_iea ? ', from curated annotations only' : ''}; a term names a cluster if it holds for ${Math.round(OPT.min_coverage * 100)}% of it or more; ${OPT.thin_term === 'genes' ? 'otherwise the cluster is named by its three busiest proteins' : 'otherwise the best significant term names it, written with its share of the cluster (for example "chromatin organization · 18%"), and a cluster with no significant term is named by its three busiest proteins'}; the figure shows a short form and the hover and table the full name.`,
+      `Names: the ${lab} term with the smallest q (hypergeometric test against the network, Benjamini–Hochberg) among terms of ${OPT.min_term} proteins or more and at most ${Math.round(OPT.max_fraction * 100)}% of the network${L.min_depth ? `, at least ${L.min_depth} levels below the top` : ''}${L.max_size ? `, with at most ${int(L.max_size)} proteins in the whole proteome` : ''}${L.non_iea ? ', from curated annotations only' : ''}; a term names a cluster if it holds for ${Math.round(OPT.min_coverage * 100)}% of it or more; ${OPT.thin_term === 'genes' ? 'otherwise the cluster is named by its three busiest proteins' : 'otherwise the best significant term names it, written with its share of the cluster (for example "chromatin organization · 18%"), and a cluster with no significant term is named by its term of smallest p when that is below ${OPT.weak_p} (written with its q), and only when there is none by "Unnamed" and its three busiest proteins'}; the figure shows a short form and the hover and table the full name.`,
     ];
     const cites = [
       ...SRC.map((s) => s.cite).filter(Boolean),

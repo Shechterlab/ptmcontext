@@ -463,12 +463,24 @@ def test_a_term_names_a_cluster_only_if_it_holds_for_a_fair_share_and_names_one_
     # with no coverage asked for, the thin term names cluster 0 and the others follow
     lax = NW.label_clusters(comm, ann, terms, {**opt, 'min_coverage': 0})
     assert lax[0]['term'] == 'beta'
+    # no term significant at max_q: the term of the smallest p that holds for a quarter of the cluster names it, marked weak
+    # (cluster 0: alpha, 6 of 20; beta holds for 4 only), with weak_p 0 it stays unnamed
+    weak = NW.label_clusters(comm, ann, terms, {**opt, 'max_q': 1e-12, 'weak_p': 0.5})
+    assert weak[0]['term'] == 'alpha, via a long mechanism' and weak[0]['weak'] and not weak[0].get('thin')
+    assert weak[0]['q'] > 1e-12 and weak[2]['term'] is None  # zeta holds for under a quarter: no weak name
+    assert NW.label_clusters(comm, ann, terms, {**opt, 'max_q': 1e-12, 'weak_p': 0})[0]['term'] is None
 
 
 @pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
 def test_the_browser_twin_names_clusters_by_the_same_coverage_and_uniqueness_rule():
     comm, ann, terms, opt = _coverage_case()
-    opts = [opt, {**opt, 'min_coverage': 0}, {**opt, 'thin_term': 'genes'}]
+    opts = [
+        opt,
+        {**opt, 'min_coverage': 0},
+        {**opt, 'thin_term': 'genes'},
+        {**opt, 'max_q': 1e-12, 'weak_p': 0.5},
+        {**opt, 'max_q': 1e-12, 'weak_p': 0},
+    ]
     want = [NW.label_clusters(comm, ann, terms, o) for o in opts]
     prog = (
         'global.window=global;const fs=require("fs");'
@@ -487,6 +499,7 @@ def test_the_browser_twin_names_clusters_by_the_same_coverage_and_uniqueness_rul
     for w, g in zip(want, got):
         assert [x.get('term') for x in w] == [x.get('term') for x in g]
         assert [bool(x.get('thin')) for x in w] == [bool(x.get('thin')) for x in g]
+        assert [bool(x.get('weak')) for x in w] == [bool(x.get('weak')) for x in g]
 
 
 def test_every_cluster_has_its_busiest_proteins_for_a_name_and_the_layout_uses_it():
@@ -529,6 +542,11 @@ def test_a_thin_term_names_its_cluster_with_its_share_in_the_figure():
     }
     out = NL.layout(view, 'desktop')
     assert any('20%' in lb['name'] for lb in out['clabels'])
+    # a weak term carries its q, and a cluster with no term is called Unnamed with its proteins
+    labels[0].update(thin=False, weak=True, q=0.1076)
+    out = NL.layout({**view, 'labels': labels}, 'desktop')
+    assert any('q 0.11' in lb['name'] for lb in out['clabels'])
+    assert any(lb['name'].startswith('Unnamed: ') for lb in out['clabels'])
 
 
 # ---- link types, enzyme roles and node size -------------------------------------------------------------------------------

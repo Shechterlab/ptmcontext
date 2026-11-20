@@ -518,9 +518,14 @@
       for (const c of shown.slice().sort((a, b) => size[b] - size[a] || a - b)) {
         const ci = posC.get(c),
           full = labels[c].term || null,
+          genes = (labels[c].genes || []).join(', '),
           term =
-            (shortName(full) || (labels[c].genes || []).join(', ') || `Cluster ${c + 1}`) +
-            (full && labels[c].thin ? ` \u00b7 ${Math.round((100 * labels[c].k) / size[c])}%` : '');
+            (shortName(full) || (genes ? `Unnamed: ${genes}` : `Cluster ${c + 1}`)) +
+            (full && labels[c].thin
+              ? ` \u00b7 ${Math.round((100 * labels[c].k) / size[c])}%`
+              : full && labels[c].weak
+                ? ` \u00b7 q ${labels[c].q.toFixed(2)}`
+                : '');
         let lines, cnt, w, h;
         if (!phone) {
           lines = wrap2(term, 22);
