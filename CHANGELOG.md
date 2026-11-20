@@ -1,4 +1,5 @@
 ## Unreleased
+- The data DOI of PTM_Pipeline v1.6.0, 10.5281/zenodo.24406688 (concept DOI 10.5281/zenodo.22696798, unchanged), replaces the placeholders: the landing page's Data lines and What's new, each site's dataset line and citation file, the README. The dataset date shown is 2026-11-20.
 - PTM_Pipeline v1.6.0 is tagged (f042367): `data_pin.json` names the tag. The references to the original explorer in the agent rules and the copyeditor's notes point to `docs/assets/explorer.js` at that tag.
 - The data pin is a commit and a tag: `data_pin.json` names both (the tag is a `TODO(v1.6.0 tag)` marker until the owner tags the release; the workflows say so beside their `ref:`), and `tools/check_data_pin.py` checks that the workflows and manifests name the pinned commit and, once the tag is set, that `git ls-remote` resolves it to that commit (`--offline` skips the lookup). The new `data-pin` job in tests.yml runs it with `--require-tag`, so CI fails for a data release that is not tagged.
 - HANDOFF.md: who owns what (website, data, owner) and how a data release reaches the sites.
