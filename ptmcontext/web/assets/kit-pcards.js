@@ -623,7 +623,7 @@
             .map(
               ({ r, g, first }) =>
                 `<tr><td>${known.has(r.q) ? siteLink(p, rec, r.q) : esc(siteName(rec, r.q, p.acc))}</td>${
-                  geneOn ? `<td>${g ? esc(g) : '<span class="muted">—</span>'}</td>` : ''
+                  geneOn ? `<td>${g ? geneHtml(g) : '<span class="muted">—</span>'}</td>` : ''
                 }${cn.map((x, k) => `<td>${cellOf(r, k, g, first)}</td>`).join('')}</tr>`
             )
             .join('') +
@@ -668,6 +668,17 @@
   }
   // ---- the changes a card does not show (card.excluded, named by the card's `excluded`): a line with their count and why,
   // from the counts the protein's table shard keeps (`_xc`), and a download of the rows, read from their own file when asked
+  // a gene as shown: an Ensembl id (a gene HGNC has no symbol for) reads "unnamed gene" with the id on hover and focus; two
+  // overlapping genes ("A;B") read "A, B"
+  const geneHtml = (g) =>
+    String(g)
+      .split(';')
+      .map((x) =>
+        /^ENSG\d+/.test(x)
+          ? `<span class="gene-unnamed" tabindex="0" title="${esc(x)}">unnamed gene</span>`
+          : esc(x.trim())
+      )
+      .join(', ');
   const excludedOf = (cfg) => (D.protein_view?.card?.excluded || []).find((e) => e.id === cfg?.excluded);
   function excludedLine(p, tb, cfg) {
     const x = excludedOf(cfg),
@@ -676,6 +687,9 @@
     if (!x || !n) return '';
     const why = (k) => (x.reasons || {})[k] || String(k).replace(/_/g, ' ');
     const text = by.length === 1 ? why(by[0][0]) : by.map(([k, v]) => `for ${int(v)}, ${why(k)}`).join('; ');
+    // fewer than 3 rows are not worth a line: only a small download link (the line says what the rows are from 3 on)
+    if (n < 3)
+      return `<p class="small muted screen-only pc-excl"><button type="button" class="linkish" data-excl-dl="${esc(x.id)}:${esc(p.acc)}">Download ${n === 1 ? 'the change' : 'the changes'} not shown (TSV)</button></p>`;
     return (
       `<p class="small pc-excl"><b>${int(n)} ${n === 1 ? 'change' : 'changes'} not shown</b>: ${esc(text)}. ` +
       `<button type="button" class="linkish screen-only" data-excl-dl="${esc(x.id)}:${esc(p.acc)}">Download ${n === 1 ? 'it' : 'them'} (TSV)</button></p>`
@@ -885,7 +899,7 @@
       return (
         `<tr${hot ? ' class="vc-hot"' : ''}><td>${known.has(q) ? siteLink(p, rec, q) : esc(siteName(rec, q, p.acc))}${fl}</td>` +
         `<td>${esc(l + shown(q) + r[alt])}${hot && x.highlight.label ? ` <span class="tag vc-hot-tag" title="${esc(x.highlight.title || '')}">${esc(x.highlight.label)}</span>` : ''}</td>` +
-        (geneOn ? `<td>${r[x.gene] ? esc(r[x.gene]) : '<span class="muted">–</span>'}</td>` : '') +
+        (geneOn ? `<td>${r[x.gene] ? geneHtml(r[x.gene]) : '<span class="muted">–</span>'}</td>` : '') +
         fields.map((f) => `<td>${fieldCell(f, r)}</td>`).join('') +
         `<td>${link}</td></tr>`
       );
