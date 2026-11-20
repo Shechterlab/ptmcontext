@@ -16,7 +16,7 @@ Landing page: <https://shechterlab.github.io/ptmcontext/>
 | Human lysine modification sites (acetylation and other acylations, ubiquitination, SUMOylation) | <https://shechterlab.github.io/ptmcontext/lysine/> |
 | Human phosphosites | <https://shechterlab.github.io/ptmcontext/phospho/> |
 
-The methylarginine site rebuilds the statistics of release v1.5.1 (its methylarginine data equal v1.4.3) of the
+The methylarginine site rebuilds the statistics of release v1.6.0 (its methylarginine data equal v1.4.3) of the
 [Methylarginine Site Explorer](https://github.com/Shechterlab/PTM_Pipeline) without running its code.
 `tests/test_parity_v1_4_3.py` checks that 4,549 of the release's 4,659 rows are reproduced exactly.
 The methyllysine, phosphosite and lysine modification sites have no earlier release, so all their statistics are new. Each site also shows the
@@ -28,8 +28,8 @@ describes its inputs, tests and caveats.
 ## Data
 
 Every input is in a manifest with its source, release and MD5. Staging is the only step that uses the network.
-The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pipeline) pinned by commit: v1.5.1 for every
-site (the methylarginine data of v1.5.1 are byte for byte those of v1.4.3). The v1.5.1 context tables come from UniProt, iPTMnet, Berryhill et al. 2023, Ochoa et al. 2020, Hendriks et al. 2017 (SUMO-2) and Akimov et al. 2018
+The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pipeline) pinned by commit: v1.6.0 for every
+site (the methylarginine data of v1.6.0 are byte for byte those of v1.4.3). The v1.6.0 context tables come from UniProt, iPTMnet, Berryhill et al. 2023, Ochoa et al. 2020, Hendriks et al. 2017 (SUMO-2) and Akimov et al. 2018
 (ubiquitination).
 
 To cite the data, use the archive of this release, v1.6.0 (doi:10.5281/zenodo.24406688), and

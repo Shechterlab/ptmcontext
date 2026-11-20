@@ -531,64 +531,64 @@
       "role": "input"
     },
     "context_methylarginine_sites_v1_5_1": {
-      "file": "releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv",
+      "file": "releases/v1.6.0/human_methylarginine_sites_v1.6.0.tsv",
       "md5": "50dd293d1a3dd94ce7a0fb3168eae3bd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1 (the same bytes as v1.5.1)",
-      "version": "Methylarginine Site Explorer release v1.5.1 (2026-11-19), as a context mark of the lysine site",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0 (the same bytes as v1.6.0)",
+      "version": "Methylarginine Site Explorer release v1.6.0 (2026-11-19), as a context mark of the lysine site",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
       "note": "Context marks: the methylarginine sites of the human reviewed proteome (11,632 rows, one per residue), read beside the lysine modifications by the protein map and the near_methylarginine question. The same file the methylarginine site reads as its marks. Pinned to PTM_Pipeline commit cf1dfa1."
     },
     "context_phosphorylation_sites_v1_5_1": {
-      "file": "releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv",
+      "file": "releases/v1.6.0/human_phosphorylation_sites_v1.6.0.tsv",
       "md5": "2b4cacbbedf48862d8c2816b9157c8fe",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
-      "version": "Context marks, release v1.5.1 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Ochoa 2020; positions on UniProt 2026_03",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "Context marks, release v1.6.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Ochoa 2020; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Ochoa et al., Nat Biotechnol 38:365 (2020): the article is not open access and its supplementary table has no license, included",
       "role": "input",
       "note": "Context marks: phosphorylation sites of the human reviewed proteome (142,415 rows), one row per residue and state, with sources (UniProt, iPTMnet, Ochoa 2020), evidence class and PubMed IDs. Shown beside the lysine modifications by the protein map and the near_phospho question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 9a03d54."
     },
     "acetylation_sites_v1_5_1": {
-      "file": "releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv",
+      "file": "releases/v1.6.0/human_acetylation_sites_v1.6.0.tsv",
       "md5": "079ce9e22305fcb01fb9f035fca778f7",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
-      "version": "Release v1.5.1 of PTM_Pipeline (commit 9a03d54, 2026-11-19); positions on UniProt 2026_03",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "Release v1.6.0 of PTM_Pipeline (commit 9a03d54, 2026-11-19); positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
       "role": "input",
       "note": "Lysine acetylation sites of the human reviewed proteome (4,597 rows on 4,597 residues of 1,834 proteins; UniProt and iPTMnet), one row per residue, with sources, evidence class, iPTMnet upstream databases and PubMed IDs. The lysine site's marks of type acetyl. Pinned to PTM_Pipeline commit 9a03d54."
     },
     "lysine_acylation_sites_v1_5_1": {
-      "file": "releases/v1.5.1/human_lysine_acylation_sites_v1.5.1.tsv",
+      "file": "releases/v1.6.0/human_lysine_acylation_sites_v1.6.0.tsv",
       "md5": "4164819cece8710a79904b9901cfa2bf",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
-      "version": "Release v1.5.1 of PTM_Pipeline (commit 9a03d54, 2026-11-19); positions on UniProt 2026_03",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "Release v1.6.0 of PTM_Pipeline (commit 9a03d54, 2026-11-19); positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
       "role": "input",
       "note": "Lysine acylation sites of the human reviewed proteome (8,008 rows on 5,504 residues of 1,945 proteins; UniProt and iPTMnet; 13 acyl types in acyl_type, 4,597 of them acetyl, which the lysine site reads from the acetylation table), one row per residue and acyl type. The lysine site's marks of each acyl type other than acetyl, each kept as its own type. Pinned to PTM_Pipeline commit 9a03d54."
     },
     "ubiquitination_sites_v1_5_1": {
-      "file": "releases/v1.5.1/human_ubiquitination_sites_v1.5.1.tsv",
+      "file": "releases/v1.6.0/human_ubiquitination_sites_v1.6.0.tsv",
       "md5": "6e6491617eb7ff03429eee4a6a42cc2a",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
-      "version": "Release v1.5.1 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Akimov 2018; positions on UniProt 2026_03",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "Release v1.6.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Akimov 2018; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Akimov et al., Nat Struct Mol Biol 25:631 (2018): the article is not open access and its supplementary table has no notice of its own, included",
       "role": "input",
       "note": "Lysine ubiquitination sites of the human reviewed proteome (63,480 rows on 9,032 proteins; Akimov 2018 62,871, UniProt 951, iPTMnet 610 rows), one row per residue, with sources, evidence class and PubMed IDs. The lysine site's marks of type ubiquitin. Pinned to PTM_Pipeline commit 9a03d54."
     },
     "sumoylation_sites_v1_5_1": {
-      "file": "releases/v1.5.1/human_sumoylation_sites_v1.5.1.tsv",
+      "file": "releases/v1.6.0/human_sumoylation_sites_v1.6.0.tsv",
       "md5": "e01697c623934b97357e04a654fa07bd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
-      "version": "Release v1.5.1 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Hendriks 2017; positions on UniProt 2026_03",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "Release v1.6.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Hendriks 2017; positions on UniProt 2026_03",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Hendriks et al., Nat Struct Mol Biol 24:325 (2017): the article is not open access and its supplementary table has no notice of its own, included",
       "role": "input",
       "note": "Lysine SUMOylation sites of the human reviewed proteome (40,249 rows on 6,410 proteins; Hendriks 2017 39,858, UniProt 5,531, iPTMnet 33 rows), one row per residue, with sources, evidence class and PubMed IDs. The lysine site's marks of type SUMO. Pinned to PTM_Pipeline commit 9a03d54."
     },
     "context_methyllysine_sites_v1_5_1": {
-      "file": "releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv",
+      "file": "releases/v1.6.0/human_methyllysine_sites_v1.6.0.tsv",
       "md5": "911a56655d3d0c3ba80a63981fdd28dd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/v1.5.1/releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv (commit 9a03d54, release v1.5.1): UniProt 2026_04 N6-methyllysine, N6,N6-dimethyllysine and N6,N6,N6-trimethyllysine records, iPTMnet 6.2 lysine methylation records, and the methyllysine sites of Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (Supplementary Table 5, states me1, me2 and me3; HEK293T and U2OS cells)",
-      "version": "v1.5.1 (2026-11-10): 5,746 rows on 5,178 lysines of 2,843 proteins; evidence_class experimental 5,359, by-similarity 181, unspecified 206 rows; 5,072 rows report Berryhill 2023 (me1, me2, me3)",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/v1.6.0/releases/v1.6.0/human_methyllysine_sites_v1.6.0.tsv (commit 9a03d54, release v1.6.0): UniProt 2026_04 N6-methyllysine, N6,N6-dimethyllysine and N6,N6,N6-trimethyllysine records, iPTMnet 6.2 lysine methylation records, and the methyllysine sites of Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (Supplementary Table 5, states me1, me2 and me3; HEK293T and U2OS cells)",
+      "version": "v1.6.0 (2026-11-10): 5,746 rows on 5,178 lysines of 2,843 proteins; evidence_class experimental 5,359, by-similarity 181, unspecified 206 rows; 5,072 rows report Berryhill 2023 (me1, me2, me3)",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet 6.2, CC BY-NC-SA 4.0); UniProt data CC BY 4.0; Berryhill 2023: the article is CC BY 4.0, its Supplementary Table 5 has no separate license notice and is included",
       "role": "input",
       "note": "Methyllysine sites of the human reviewed proteome (5,746 rows on 5,178 residues of 2,843 proteins), one row per residue and degree, read beside the lysine modifications by the protein map and the questions on a lysine that also carries a methyl group; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 9a03d54."
@@ -612,47 +612,47 @@
       "note": "The GO biological process terms with at least one reviewed human protein: name, depth, protein counts, parents. Staged by PTM_Pipeline scripts/63_stage_go_bp.py. Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556. Read for the Overlap page."
     },
     "lysine_site_interactions_v1_5_1": {
-      "file": "releases/v1.5.1/supporting/lysine_site_interactions_v1.5.1.tsv",
+      "file": "releases/v1.6.0/supporting/lysine_site_interactions_v1.6.0.tsv",
       "md5": "a90d4ffd4d2a6dd1baaca9eb67d5b1da",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
-      "version": "PTM_Pipeline release v1.5.1 (lysine supporting tables, 2026-11-16)",
-      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "PTM_Pipeline release v1.6.0 (lysine supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.6.0); each record keeps its source's terms",
       "role": "input",
       "note": "Each modified lysine site's interaction evidence, one row per kind and partner (PDB interfaces with proteins, RNA, DNA and another copy of the protein; RNA and DNA crosslinks; RNA-bound peptides; UniProt DNA-binding regions): the site card's interaction evidence and the Interactions page. Sources: PDBe-KB interface residues (EMBL-EBI terms of use); PDB data through the RCSB ModelServer and Data API and SIFTS (CC0, EMBL-EBI terms); pepR-MS RNA crosslinks (Sha, Kuster & Trendel, bioRxiv 2025, CC BY-NC; with re-analyses of Kramer 2014, XRNAX 2019, RBS-ID 2020 and pRBS-ID 2021); CAPRI (Panhale 2019, CC BY 4.0); RBR-ID (Oksuz 2023, PRIDE, CC0); DNA crosslinks (Trendel 2025, CC BY-NC 4.0); UniProt DNA-binding regions (CC BY 4.0). RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in this table."
     },
     "lysine_site_interaction_records_v1_5_1": {
-      "file": "releases/v1.5.1/supporting/lysine_site_interaction_records_v1.5.1.tsv",
+      "file": "releases/v1.6.0/supporting/lysine_site_interaction_records_v1.6.0.tsv",
       "md5": "3b77e37b995e8339f414be4715e8317e",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
-      "version": "PTM_Pipeline release v1.5.1 (lysine supporting tables, 2026-11-16)",
-      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "PTM_Pipeline release v1.6.0 (lysine supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.6.0); each record keeps its source's terms",
       "role": "input",
       "note": "Every interaction record at a site with its source, method, paper and the state of the lysine in it (lysine, Kme1, Kme2, Kme3, Kac, another residue, not read): the site card's 'Who binds it, and how it was found' and the Interactions page. Sources as for the site interactions table: PDB data (CC0, EMBL-EBI terms), PDBe-KB, pepR-MS (CC BY-NC) and its re-analyses, CAPRI (CC BY 4.0), RBR-ID (CC0), Trendel 2025 DNA crosslinks (CC BY-NC 4.0), UniProt (CC BY 4.0). RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in this table."
     },
     "lysine_nucleic_acid_contacts_v1_5_1": {
-      "file": "releases/v1.5.1/supporting/lysine_nucleic_acid_contacts_v1.5.1.tsv",
+      "file": "releases/v1.6.0/supporting/lysine_nucleic_acid_contacts_v1.6.0.tsv",
       "md5": "42396342cd33056579b9275b809fb698",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
-      "version": "PTM_Pipeline release v1.5.1 (lysine supporting tables, 2026-11-16)",
-      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "PTM_Pipeline release v1.6.0 (lysine supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.6.0); each record keeps its source's terms",
       "role": "input",
       "note": "The RNA and DNA chains within reach of each modified lysine in PDB structures, with the contacted nucleotides and the bound window: the site card's RNA and DNA contacts, the 3D viewer and the Interactions page. PDB data through the RCSB ModelServer and Data API and SIFTS (CC0, EMBL-EBI terms)."
     },
     "lysine_nucleic_acid_near_sites_v1_5_1": {
-      "file": "releases/v1.5.1/supporting/lysine_nucleic_acid_near_sites_v1.5.1.tsv",
+      "file": "releases/v1.6.0/supporting/lysine_nucleic_acid_near_sites_v1.6.0.tsv",
       "md5": "094877f6301ad9abbc81dec3f576555b",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
-      "version": "PTM_Pipeline release v1.5.1 (lysine supporting tables, 2026-11-16)",
-      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "PTM_Pipeline release v1.6.0 (lysine supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.6.0); each record keeps its source's terms",
       "role": "input",
       "note": "RNA and DNA in contact with a residue next to a modified lysine in PDB structures: the site card's contacts through a neighboring residue. PDB data through the RCSB ModelServer and Data API and SIFTS (CC0, EMBL-EBI terms)."
     },
     "lysine_residue_evidence_v1_5_1": {
-      "file": "releases/v1.5.1/supporting/lysine_residue_evidence_v1.5.1.tsv",
+      "file": "releases/v1.6.0/supporting/lysine_residue_evidence_v1.6.0.tsv",
       "md5": "3ec83b5ca61f35e7c585195bd2226d37",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1",
-      "version": "PTM_Pipeline release v1.5.1 (lysine supporting tables, 2026-11-16)",
-      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.5.1); each record keeps its source's terms",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "PTM_Pipeline release v1.6.0 (lysine supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.6.0); each record keeps its source's terms",
       "role": "input",
       "note": "Interaction evidence along each protein, one row per residue or stretch (PDB interfaces, RNA and DNA crosslinks, RNA-bound peptides and regions, UniProt DNA-binding regions): the site card's evidence within a few residues of a site and the 3D viewer's colorings. Sources as for the site interactions table: PDBe-KB, PDB data and SIFTS, pepR-MS and its re-analyses (CC BY-NC), CAPRI (CC BY 4.0), RBR-ID (CC0), Trendel 2025 (CC BY-NC 4.0), UniProt (CC BY 4.0). RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in this table."
     },
@@ -1183,7 +1183,7 @@
       "version": "PTM_Pipeline v1.6.0 release folder (commit f042367), supporting/eclip_rna_compartments",
       "licence": "CC BY-NC-SA 4.0 (the maps: APEX-seq, Fazal et al. 2019, GEO GSE116008; TSA-seq, Chen et al. 2018, GEO GSE81553; Hi-C subcompartments, Rao et al. 2014, GEO GSE63525: no use restrictions; eCLIP: ENCODE, no use restrictions)",
       "role": "input",
-      "note": "Release v1.5.1's call, for each protein with eCLIP data and each map of RNA or DNA, of whether its bound RNAs gather in a compartment (q <= 0.05 and Mantel-Haenszel odds ratio above 1 within expression and gene-length deciles; computed by PTM_Pipeline scripts/cell_maps.py). Read by the eclip_* protein-set questions. Its nuclear-body rows (map nuclear_body) derive from Barutcu et al. 2022, whose license is pending: each question keeps only its own map (sets.include), so nothing reads or shows them."
+      "note": "Release v1.6.0's call, for each protein with eCLIP data and each map of RNA or DNA, of whether its bound RNAs gather in a compartment (q <= 0.05 and Mantel-Haenszel odds ratio above 1 within expression and gene-length deciles; computed by PTM_Pipeline scripts/cell_maps.py). Read by the eclip_* protein-set questions. Its nuclear-body rows (map nuclear_body) derive from Barutcu et al. 2022, whose license is pending: each question keeps only its own map (sets.include), so nothing reads or shows them."
     }
   }
 }

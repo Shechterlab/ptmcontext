@@ -52,28 +52,28 @@ jobs:
           path: reference
           sparse-checkout: |
             inputs/reference
-            releases/v1.5.1/release.json
-            releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv
-            releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv
-            releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv
-            releases/v1.5.1/human_lysine_acylation_sites_v1.5.1.tsv
-            releases/v1.5.1/human_ubiquitination_sites_v1.5.1.tsv
-            releases/v1.5.1/human_sumoylation_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_residue_evidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_residue_evidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_residue_evidence_v1.5.1.tsv
+            releases/v1.6.0/release.json
+            releases/v1.6.0/human_methyllysine_sites_v1.6.0.tsv
+            releases/v1.6.0/human_phosphorylation_sites_v1.6.0.tsv
+            releases/v1.6.0/human_acetylation_sites_v1.6.0.tsv
+            releases/v1.6.0/human_lysine_acylation_sites_v1.6.0.tsv
+            releases/v1.6.0/human_ubiquitination_sites_v1.6.0.tsv
+            releases/v1.6.0/human_sumoylation_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_residue_evidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_residue_evidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_residue_evidence_v1.6.0.tsv
             inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
             inputs/annotation/interpro_108.0_domain_intervals.tsv
             inputs/annotation/interpro_108.0_all_entry_intervals.tsv
@@ -130,33 +130,33 @@ jobs:
             releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/variant_changes_excluded_v1.6.0.tsv.gz
-            releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv
-            releases/v1.5.1/statistics_v1.5.1.tsv
-            releases/v1.5.1/human_methylarginine_proteins_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/dna_motifs_v1.5.1.tsv
-            releases/v1.5.1/supporting/eclip_v1.5.1.tsv
-            releases/v1.5.1/supporting/nucleic_acid_regions_v1.5.1.tsv
-            releases/v1.5.1/supporting/rna_bind_n_seq_v1.5.1.tsv
-            releases/v1.5.1/supporting/protein_partners_v1.5.1.tsv
-            releases/v1.5.1/supporting/other_ptm_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/functional_experiments_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_residue_evidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/source_records_v1.5.1.tsv
-            releases/v1.5.1/studies_v1.5.1.tsv
-            releases/v1.5.1/supporting/carm1_ko_v1.5.1.tsv
-            releases/v1.5.1/supporting/maron2021_inhibitors_v1.5.1.tsv
-            releases/v1.5.1/supporting/writer_perturbations_v1.5.1.tsv
-            releases/v1.5.1/human_methylarginine_lower_confidence_sites_v1.5.1.tsv
-            releases/v1.5.1/statistics_with_lower_confidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/density_windows_v1.5.1.tsv
-            releases/v1.5.1/supporting/disease_ontology_v1.5.1.tsv
-            releases/v1.5.1/supporting/disease_terms_tested_v1.5.1.tsv
-            releases/v1.5.1/analyses_with_lower_confidence/disease/disease_ontology.tsv
-            releases/v1.5.1/analyses_with_lower_confidence/disease/disease_terms.tsv
+            releases/v1.6.0/human_methylarginine_sites_v1.6.0.tsv
+            releases/v1.6.0/statistics_v1.6.0.tsv
+            releases/v1.6.0/human_methylarginine_proteins_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv
+            releases/v1.6.0/supporting/eclip_v1.6.0.tsv
+            releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv
+            releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv
+            releases/v1.6.0/supporting/protein_partners_v1.6.0.tsv
+            releases/v1.6.0/supporting/other_ptm_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/functional_experiments_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_residue_evidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/source_records_v1.6.0.tsv
+            releases/v1.6.0/studies_v1.6.0.tsv
+            releases/v1.6.0/supporting/carm1_ko_v1.6.0.tsv
+            releases/v1.6.0/supporting/maron2021_inhibitors_v1.6.0.tsv
+            releases/v1.6.0/supporting/writer_perturbations_v1.6.0.tsv
+            releases/v1.6.0/human_methylarginine_lower_confidence_sites_v1.6.0.tsv
+            releases/v1.6.0/statistics_with_lower_confidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/density_windows_v1.6.0.tsv
+            releases/v1.6.0/supporting/disease_ontology_v1.6.0.tsv
+            releases/v1.6.0/supporting/disease_terms_tested_v1.6.0.tsv
+            releases/v1.6.0/analyses_with_lower_confidence/disease/disease_ontology.tsv
+            releases/v1.6.0/analyses_with_lower_confidence/disease/disease_terms.tsv
             inputs/interactions/capri_panhale2019_adj_peptides.tsv
             inputs/interactions/capri_panhale2019_measured_peptides.tsv
             inputs/interactions/capri_panhale2019_xl_peptides.tsv
@@ -184,11 +184,11 @@ jobs:
             inputs/interactions/trendel2025_mcf7_dna_interactome.tsv
             inputs/interactions/uniprot_human_dna_binding_regions_2026-10-16.tsv
             inputs/interactions/uniprot_human_regions_2026-10-16.tsv
-            releases/v1.5.1/supporting/arginine_nucleic_acid_distances_v1.5.1.tsv
-            releases/v1.5.1/supporting/complexes_v1.5.1.tsv
-            releases/v1.5.1/supporting/eclip_rna_compartments_v1.5.1.tsv
-            releases/v1.5.1/supporting/arginine_background_v1.5.1.tsv
-            releases/v1.5.1/supporting/htr_selex_v1.5.1.tsv
+            releases/v1.6.0/supporting/arginine_nucleic_acid_distances_v1.6.0.tsv
+            releases/v1.6.0/supporting/complexes_v1.6.0.tsv
+            releases/v1.6.0/supporting/eclip_rna_compartments_v1.6.0.tsv
+            releases/v1.6.0/supporting/arginine_background_v1.6.0.tsv
+            releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv
             releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
             releases/v1.4.3/statistics_v1.4.3.tsv
             releases/v1.4.3/human_methylarginine_proteins_v1.4.3.tsv
@@ -262,28 +262,28 @@ jobs:
           path: reference
           sparse-checkout: |
             inputs/reference
-            releases/v1.5.1/release.json
-            releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv
-            releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv
-            releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv
-            releases/v1.5.1/human_lysine_acylation_sites_v1.5.1.tsv
-            releases/v1.5.1/human_ubiquitination_sites_v1.5.1.tsv
-            releases/v1.5.1/human_sumoylation_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_residue_evidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_residue_evidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_residue_evidence_v1.5.1.tsv
+            releases/v1.6.0/release.json
+            releases/v1.6.0/human_methyllysine_sites_v1.6.0.tsv
+            releases/v1.6.0/human_phosphorylation_sites_v1.6.0.tsv
+            releases/v1.6.0/human_acetylation_sites_v1.6.0.tsv
+            releases/v1.6.0/human_lysine_acylation_sites_v1.6.0.tsv
+            releases/v1.6.0/human_ubiquitination_sites_v1.6.0.tsv
+            releases/v1.6.0/human_sumoylation_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_residue_evidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_residue_evidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_residue_evidence_v1.6.0.tsv
             inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
             inputs/annotation/interpro_108.0_domain_intervals.tsv
             inputs/annotation/interpro_108.0_all_entry_intervals.tsv
@@ -338,33 +338,33 @@ jobs:
             releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/variant_changes_excluded_v1.6.0.tsv.gz
-            releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv
-            releases/v1.5.1/statistics_v1.5.1.tsv
-            releases/v1.5.1/human_methylarginine_proteins_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/dna_motifs_v1.5.1.tsv
-            releases/v1.5.1/supporting/eclip_v1.5.1.tsv
-            releases/v1.5.1/supporting/nucleic_acid_regions_v1.5.1.tsv
-            releases/v1.5.1/supporting/rna_bind_n_seq_v1.5.1.tsv
-            releases/v1.5.1/supporting/protein_partners_v1.5.1.tsv
-            releases/v1.5.1/supporting/other_ptm_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/functional_experiments_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_residue_evidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/source_records_v1.5.1.tsv
-            releases/v1.5.1/studies_v1.5.1.tsv
-            releases/v1.5.1/supporting/carm1_ko_v1.5.1.tsv
-            releases/v1.5.1/supporting/maron2021_inhibitors_v1.5.1.tsv
-            releases/v1.5.1/supporting/writer_perturbations_v1.5.1.tsv
-            releases/v1.5.1/human_methylarginine_lower_confidence_sites_v1.5.1.tsv
-            releases/v1.5.1/statistics_with_lower_confidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/density_windows_v1.5.1.tsv
-            releases/v1.5.1/supporting/disease_ontology_v1.5.1.tsv
-            releases/v1.5.1/supporting/disease_terms_tested_v1.5.1.tsv
-            releases/v1.5.1/analyses_with_lower_confidence/disease/disease_ontology.tsv
-            releases/v1.5.1/analyses_with_lower_confidence/disease/disease_terms.tsv
+            releases/v1.6.0/human_methylarginine_sites_v1.6.0.tsv
+            releases/v1.6.0/statistics_v1.6.0.tsv
+            releases/v1.6.0/human_methylarginine_proteins_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv
+            releases/v1.6.0/supporting/eclip_v1.6.0.tsv
+            releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv
+            releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv
+            releases/v1.6.0/supporting/protein_partners_v1.6.0.tsv
+            releases/v1.6.0/supporting/other_ptm_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/functional_experiments_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_residue_evidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/source_records_v1.6.0.tsv
+            releases/v1.6.0/studies_v1.6.0.tsv
+            releases/v1.6.0/supporting/carm1_ko_v1.6.0.tsv
+            releases/v1.6.0/supporting/maron2021_inhibitors_v1.6.0.tsv
+            releases/v1.6.0/supporting/writer_perturbations_v1.6.0.tsv
+            releases/v1.6.0/human_methylarginine_lower_confidence_sites_v1.6.0.tsv
+            releases/v1.6.0/statistics_with_lower_confidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/density_windows_v1.6.0.tsv
+            releases/v1.6.0/supporting/disease_ontology_v1.6.0.tsv
+            releases/v1.6.0/supporting/disease_terms_tested_v1.6.0.tsv
+            releases/v1.6.0/analyses_with_lower_confidence/disease/disease_ontology.tsv
+            releases/v1.6.0/analyses_with_lower_confidence/disease/disease_terms.tsv
             inputs/interactions/capri_panhale2019_adj_peptides.tsv
             inputs/interactions/capri_panhale2019_measured_peptides.tsv
             inputs/interactions/capri_panhale2019_xl_peptides.tsv
@@ -392,11 +392,11 @@ jobs:
             inputs/interactions/trendel2025_mcf7_dna_interactome.tsv
             inputs/interactions/uniprot_human_dna_binding_regions_2026-10-16.tsv
             inputs/interactions/uniprot_human_regions_2026-10-16.tsv
-            releases/v1.5.1/supporting/arginine_nucleic_acid_distances_v1.5.1.tsv
-            releases/v1.5.1/supporting/complexes_v1.5.1.tsv
-            releases/v1.5.1/supporting/eclip_rna_compartments_v1.5.1.tsv
-            releases/v1.5.1/supporting/arginine_background_v1.5.1.tsv
-            releases/v1.5.1/supporting/htr_selex_v1.5.1.tsv
+            releases/v1.6.0/supporting/arginine_nucleic_acid_distances_v1.6.0.tsv
+            releases/v1.6.0/supporting/complexes_v1.6.0.tsv
+            releases/v1.6.0/supporting/eclip_rna_compartments_v1.6.0.tsv
+            releases/v1.6.0/supporting/arginine_background_v1.6.0.tsv
+            releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv
             inputs/interactions/string_v12.5_human_physical_links_score400.tsv
             inputs/interactions/complex_portal_human_complexes_2026-10-16.tsv
           sparse-checkout-cone-mode: false
@@ -455,28 +455,28 @@ jobs:
           path: reference
           sparse-checkout: |
             inputs/reference
-            releases/v1.5.1/release.json
-            releases/v1.5.1/human_methyllysine_sites_v1.5.1.tsv
-            releases/v1.5.1/human_phosphorylation_sites_v1.5.1.tsv
-            releases/v1.5.1/human_acetylation_sites_v1.5.1.tsv
-            releases/v1.5.1/human_lysine_acylation_sites_v1.5.1.tsv
-            releases/v1.5.1/human_ubiquitination_sites_v1.5.1.tsv
-            releases/v1.5.1/human_sumoylation_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/methyllysine_residue_evidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/lysine_residue_evidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/phospho_residue_evidence_v1.5.1.tsv
+            releases/v1.6.0/release.json
+            releases/v1.6.0/human_methyllysine_sites_v1.6.0.tsv
+            releases/v1.6.0/human_phosphorylation_sites_v1.6.0.tsv
+            releases/v1.6.0/human_acetylation_sites_v1.6.0.tsv
+            releases/v1.6.0/human_lysine_acylation_sites_v1.6.0.tsv
+            releases/v1.6.0/human_ubiquitination_sites_v1.6.0.tsv
+            releases/v1.6.0/human_sumoylation_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/methyllysine_residue_evidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/lysine_residue_evidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/phospho_residue_evidence_v1.6.0.tsv
             inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
             inputs/annotation/interpro_108.0_domain_intervals.tsv
             inputs/annotation/interpro_108.0_all_entry_intervals.tsv
@@ -531,33 +531,33 @@ jobs:
             releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/variant_changes_excluded_v1.6.0.tsv.gz
-            releases/v1.5.1/human_methylarginine_sites_v1.5.1.tsv
-            releases/v1.5.1/statistics_v1.5.1.tsv
-            releases/v1.5.1/human_methylarginine_proteins_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_nucleic_acid_contacts_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_nucleic_acid_near_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/dna_motifs_v1.5.1.tsv
-            releases/v1.5.1/supporting/eclip_v1.5.1.tsv
-            releases/v1.5.1/supporting/nucleic_acid_regions_v1.5.1.tsv
-            releases/v1.5.1/supporting/rna_bind_n_seq_v1.5.1.tsv
-            releases/v1.5.1/supporting/protein_partners_v1.5.1.tsv
-            releases/v1.5.1/supporting/other_ptm_sites_v1.5.1.tsv
-            releases/v1.5.1/supporting/functional_experiments_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_residue_evidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_site_interaction_records_v1.5.1.tsv
-            releases/v1.5.1/supporting/methylarginine_site_interactions_v1.5.1.tsv
-            releases/v1.5.1/supporting/source_records_v1.5.1.tsv
-            releases/v1.5.1/studies_v1.5.1.tsv
-            releases/v1.5.1/supporting/carm1_ko_v1.5.1.tsv
-            releases/v1.5.1/supporting/maron2021_inhibitors_v1.5.1.tsv
-            releases/v1.5.1/supporting/writer_perturbations_v1.5.1.tsv
-            releases/v1.5.1/human_methylarginine_lower_confidence_sites_v1.5.1.tsv
-            releases/v1.5.1/statistics_with_lower_confidence_v1.5.1.tsv
-            releases/v1.5.1/supporting/density_windows_v1.5.1.tsv
-            releases/v1.5.1/supporting/disease_ontology_v1.5.1.tsv
-            releases/v1.5.1/supporting/disease_terms_tested_v1.5.1.tsv
-            releases/v1.5.1/analyses_with_lower_confidence/disease/disease_ontology.tsv
-            releases/v1.5.1/analyses_with_lower_confidence/disease/disease_terms.tsv
+            releases/v1.6.0/human_methylarginine_sites_v1.6.0.tsv
+            releases/v1.6.0/statistics_v1.6.0.tsv
+            releases/v1.6.0/human_methylarginine_proteins_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_nucleic_acid_contacts_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_nucleic_acid_near_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv
+            releases/v1.6.0/supporting/eclip_v1.6.0.tsv
+            releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv
+            releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv
+            releases/v1.6.0/supporting/protein_partners_v1.6.0.tsv
+            releases/v1.6.0/supporting/other_ptm_sites_v1.6.0.tsv
+            releases/v1.6.0/supporting/functional_experiments_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_residue_evidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_site_interaction_records_v1.6.0.tsv
+            releases/v1.6.0/supporting/methylarginine_site_interactions_v1.6.0.tsv
+            releases/v1.6.0/supporting/source_records_v1.6.0.tsv
+            releases/v1.6.0/studies_v1.6.0.tsv
+            releases/v1.6.0/supporting/carm1_ko_v1.6.0.tsv
+            releases/v1.6.0/supporting/maron2021_inhibitors_v1.6.0.tsv
+            releases/v1.6.0/supporting/writer_perturbations_v1.6.0.tsv
+            releases/v1.6.0/human_methylarginine_lower_confidence_sites_v1.6.0.tsv
+            releases/v1.6.0/statistics_with_lower_confidence_v1.6.0.tsv
+            releases/v1.6.0/supporting/density_windows_v1.6.0.tsv
+            releases/v1.6.0/supporting/disease_ontology_v1.6.0.tsv
+            releases/v1.6.0/supporting/disease_terms_tested_v1.6.0.tsv
+            releases/v1.6.0/analyses_with_lower_confidence/disease/disease_ontology.tsv
+            releases/v1.6.0/analyses_with_lower_confidence/disease/disease_terms.tsv
             inputs/interactions/capri_panhale2019_adj_peptides.tsv
             inputs/interactions/capri_panhale2019_measured_peptides.tsv
             inputs/interactions/capri_panhale2019_xl_peptides.tsv
@@ -585,11 +585,11 @@ jobs:
             inputs/interactions/trendel2025_mcf7_dna_interactome.tsv
             inputs/interactions/uniprot_human_dna_binding_regions_2026-10-16.tsv
             inputs/interactions/uniprot_human_regions_2026-10-16.tsv
-            releases/v1.5.1/supporting/arginine_nucleic_acid_distances_v1.5.1.tsv
-            releases/v1.5.1/supporting/complexes_v1.5.1.tsv
-            releases/v1.5.1/supporting/eclip_rna_compartments_v1.5.1.tsv
-            releases/v1.5.1/supporting/arginine_background_v1.5.1.tsv
-            releases/v1.5.1/supporting/htr_selex_v1.5.1.tsv
+            releases/v1.6.0/supporting/arginine_nucleic_acid_distances_v1.6.0.tsv
+            releases/v1.6.0/supporting/complexes_v1.6.0.tsv
+            releases/v1.6.0/supporting/eclip_rna_compartments_v1.6.0.tsv
+            releases/v1.6.0/supporting/arginine_background_v1.6.0.tsv
+            releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv
             inputs/interactions/string_v12.5_human_physical_links_score400.tsv
             inputs/interactions/complex_portal_human_complexes_2026-10-16.tsv
           sparse-checkout-cone-mode: false

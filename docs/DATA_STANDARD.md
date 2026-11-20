@@ -1,8 +1,8 @@
 # Standard for adding data to PTMcontext and PTM_Pipeline
 
-Status: current practice as of PTM_Pipeline release v1.5.1 and ptmcontext `develop`. The versioning rule (section 7) and the contributor metadata sheet (section 3) are adopted. Anything still a proposal is marked "(proposed)". Where this page and PTM_Pipeline's `DECISIONS_v1.5.1.md` differ, the decisions file wins.
+Status: current practice as of PTM_Pipeline release v1.6.0 and ptmcontext `develop`. The versioning rule (section 7) and the contributor metadata sheet (section 3) are adopted. Anything still a proposal is marked "(proposed)". Where this page and PTM_Pipeline's `DECISIONS_v1.5.1.md` differ, the decisions file wins.
 
-Two repositories are involved. PTM_Pipeline stages, validates and merges source data into a versioned, checksummed release (CC BY-NC-SA 4.0). ptmcontext reads that release through `inputs.json` and `sites/*.inputs.json` (path, MD5, source, version, licence) and builds the website from `sites/*.yaml`. Data enter PTM_Pipeline first and ptmcontext second. Each ptmcontext manifest row pins the release file by MD5 and the PTM_Pipeline commit (the sites read release v1.5.1). The step-by-step recipe for ptmcontext is [ADDING_DATA.md](../ADDING_DATA.md).
+Two repositories are involved. PTM_Pipeline stages, validates and merges source data into a versioned, checksummed release (CC BY-NC-SA 4.0). ptmcontext reads that release through `inputs.json` and `sites/*.inputs.json` (path, MD5, source, version, licence) and builds the website from `sites/*.yaml`. Data enter PTM_Pipeline first and ptmcontext second. Each ptmcontext manifest row pins the release file by MD5 and the PTM_Pipeline commit (the sites read release v1.6.0). The step-by-step recipe for ptmcontext is [ADDING_DATA.md](../ADDING_DATA.md).
 
 ## 1. Scope
 
@@ -126,7 +126,7 @@ Required before merge, all checked by tests or `md5sum -c`:
 5. Release folder `releases/vX.Y.Z/`: `MD5SUMS` for every file, `release.json` (commit, carried-over files with `from_md5` and `md5`), `README.md` (counts table, licence and non-commercial notes), `CHANGES.md` (an entry for the source with counts and the effect on existing rows), `data_dictionary.tsv` (every new column with type and codes), `STUDIES.md` and `studies_<version>.tsv` (one section per study).
 6. ptmcontext: manifest entries in `inputs.json` or `sites/<site>.inputs.json` with `file`, `md5`, `source` (URL or commit), `version`, `licence`, `role`, and `note`; `ptmc inputs --root DATA` must list each as `ok`. A file with no traceable origin is marked `NOT TRUSTED` and cannot enter a committed result.
 
-Versioning. A published release folder is never rewritten (`CONTRIBUTING.md`). Policy: a **minor** release (v1.6.0) for new sources, marks or layers. A **patch** release (v1.5.2) for corrections and rebuilds that add no new content: a fix in text, a bug fix in a derived column, or metadata corrections. Removing a source for licence reasons is a minor release, or, before first publication, a rebuild in place (as for CPLM in v1.5.1).
+Versioning. A published release folder is never rewritten (`CONTRIBUTING.md`). Policy: a **minor** release (v1.6.0) for new sources, marks or layers. A **patch** release (v1.5.2) for corrections and rebuilds that add no new content: a fix in text, a bug fix in a derived column, or metadata corrections. Removing a source for licence reasons is a minor release, or, before first publication, a rebuild in place (as for CPLM in v1.6.0).
 
 ## 8. Checklists
 

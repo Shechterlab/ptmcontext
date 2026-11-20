@@ -2,7 +2,7 @@
 # file: edit it (and rebuild with ptmc web) to change the citation, the version or the date.
 cff-version: 1.2.0
 message: "Please cite the data sources: there is no paper for this site yet."
-title: "PTMcontext: human methyllysine sites (release v1.5.1 of PTM_Pipeline)"
+title: "PTMcontext: human methyllysine sites (release v1.6.0 of PTM_Pipeline)"
 version: "0.5.0"
 date-released: "2026-11-15"
 url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0"

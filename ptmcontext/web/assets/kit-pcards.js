@@ -695,6 +695,25 @@
       `<button type="button" class="linkish screen-only" data-excl-dl="${esc(x.id)}:${esc(p.acc)}">Download ${n === 1 ? 'it' : 'them'} (TSV)</button></p>`
     );
   }
+  // the same downloads in the protein's Download menu, one item a list with at least one excluded row (the counts come with the
+  // protein's table shard, so the items are added when it arrives and again after each render)
+  function excludedMenu(p, tb) {
+    const menu = document.querySelector('.prot-head [data-xm-page] .xm-items');
+    if (!menu || !tb) return;
+    menu.querySelectorAll('[data-excl-item]').forEach((b) => b.remove());
+    const xs = (D.protein_view?.card?.excluded || []).filter(
+      (x) => Object.values(tb._xc?.[x.id] || {}).reduce((a, v) => a + v, 0) > 0
+    );
+    for (const x of xs) {
+      const cfg = Object.values(PC).find((c) => c?.excluded === x.id),
+        label = xs.length > 1 ? `${cfg?.title || x.id}: changes not shown (TSV)` : 'Changes not shown (TSV)';
+      menu.insertAdjacentHTML(
+        'beforeend',
+        `<button type="button" class="exp-btn xm-item" role="menuitem" data-excl-item data-excl-dl="${esc(x.id)}:${esc(p.acc)}" ` +
+          `title="The changes of this protein that the page does not show, with the reason for each">${esc(label)}</button>`
+      );
+    }
+  }
   document.addEventListener('click', async (ev) => {
     const b = ev.target.closest?.('[data-excl-dl]');
     if (!b) return;
@@ -1607,6 +1626,7 @@
       if (s && r.sum != null && kind !== 'live') s.textContent = r.sum;
       if (fold?.id && r.pic != null) K.pfolds?.set(fold.id, r.pic);
     });
+    excludedMenu(p, TB[p.acc]);
     shownNow = nShown();
     if (shownNow !== shownBefore) K.rail?.(); // a card that appeared or hid is in the sidebar
   }
