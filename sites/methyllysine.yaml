@@ -54,6 +54,24 @@ inputs:                # role the layers read: manifest input that fills it
   intact_binding_regions: intact_binding_regions
   complexes: complex_portal_complexes
 
+  # RNA and DNA evidence in cells (the methylarginine site's roles, less RBDmap, pCLAP and the arginine-only distances)
+  rna_crosslinks: {all_of: [pepr_crosslinks, pepr_focused]}
+  rna_crosslinks_single: {all_of: [pepr_crosslinks_single, pepr_focused_single]}
+  capri_xl: capri_xl_peptides
+  capri_adj: capri_adj_peptides
+  capri_measured: capri_measured
+  capri_measured_adjacent: capri_measured_adjacent
+  rbrid_residues: rbrid_positive
+  rbrid_residues_published_rule: rbrid_positive_published_rule
+  rbrid_regions: rbrid_regions
+  rbrid_quantified: rbrid_quantified
+  dna_crosslinks: trendel_dna_crosslinks
+  dna_crosslink_candidates: trendel_dna_crosslink_candidates
+  dna_crosslinked_peptides: trendel_dna_peptides
+  dna_interactome: trendel_dna_interactome
+  uniprot_dna_binding: uniprot_dna_binding_regions
+  go_binding: quickgo_rna_dna_binding
+  eclip_maps: release_eclip_rna_compartments
 marks:
   # The release's own table: a row per lysine and methylation state. The main view counts the lysines with an
   # experimental record (UniProt, iPTMnet or Berryhill 2023) or an unspecified iPTMnet record. Behind the
@@ -874,6 +892,372 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {stratum: all}
       - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
       - {stratum: domain, covered_by: uniprot_domains, suffix: ", in domains"}
+  # RNA and DNA binding in cells and the cells' RNA maps, and aromatic neighbors: the methylarginine site's questions on this site's residues
+  # (no RBDmap, pCLAP or RG/GR tests: the release has no such data for these residues; no distance test: the release
+  # measures side-chain distances at the site set's own sites only, so there is no background of other residues)
+  - id: go_binding
+    test: protein_sets
+    title: RNA and DNA binding (GO)
+    question: Are methylated proteins more often annotated to bind RNA or DNA?
+    sub: Methylated proteins against every reviewed human protein, by Gene Ontology annotation to RNA binding (GO:0003723) or DNA binding (GO:0003677) or a term below them, any evidence or experimental evidence only (one-sided hypergeometric test)
+    section: RNA and DNA
+    sets:
+      each:
+      - set: rna_binding
+        name: RNA binding (GO)
+        table:
+          input: go_binding
+          protein: uniprot_accession
+          include:
+          - column: binding
+            equals: rna
+      - set: rna_binding_experimental
+        name: RNA binding (GO, experimental evidence)
+        table:
+          input: go_binding
+          protein: uniprot_accession
+          include:
+          - column: binding
+            equals: rna
+          - column: evidence_code
+            in:
+            - EXP
+            - IDA
+            - IPI
+            - IMP
+            - IGI
+            - IEP
+            - HTP
+            - HDA
+            - HMP
+            - HGI
+            - HEP
+      - set: dna_binding
+        name: DNA binding (GO)
+        table:
+          input: go_binding
+          protein: uniprot_accession
+          include:
+          - column: binding
+            equals: dna
+      - set: dna_binding_experimental
+        name: DNA binding (GO, experimental evidence)
+        table:
+          input: go_binding
+          protein: uniprot_accession
+          include:
+          - column: binding
+            equals: dna
+          - column: evidence_code
+            in:
+            - EXP
+            - IDA
+            - IPI
+            - IMP
+            - IGI
+            - IEP
+            - HTP
+            - HDA
+            - HMP
+            - HGI
+            - HEP
+    universe: snapshot
+    whole_universe: true
+    background: all reviewed human proteins
+    abundance:
+      input: abundance
+      protein: canonical_UniProtAC
+      value: percentile
+      label: ', each PaxDb abundance decile a stratum'
+    new: true
+  - id: binding_protein
+    test: protein_sets
+    title: Proteins found binding RNA or DNA in cells
+    question: Are methylated proteins among the proteins found binding RNA or DNA in cells?
+    sub: Methylated proteins among the proteins each in-cell experiment found binding RNA or DNA, against the other proteins the experiment measured where it lists them, else every reviewed human protein (one-sided hypergeometric test)
+    section: RNA and DNA
+    order: as_listed
+    sets:
+      each:
+      - set: rna_xl
+        name: RNA-crosslinked residue (pepR-MS compendium)
+        units: rna_crosslinks
+        background: other reviewed human proteins
+      - set: rna_capri
+        name: Peptide next to an RNA crosslink (CAPRI)
+        units:
+        - capri_measured_adjacent
+        - capri_adj
+        universe_units: capri_measured
+        background: other reviewed human proteins the experiment measured
+      - set: rna_rbrid
+        name: RBR-ID+ residue (RBR-ID)
+        units: rbrid_residues
+        universe_units: rbrid_quantified
+        background: other reviewed human proteins the experiment measured
+      - set: dna_xl
+        name: DNA-crosslinked residue or peptide (Trendel 2025)
+        units:
+        - dna_crosslink_candidates
+        - dna_crosslinked_peptides
+        background: other reviewed human proteins
+      - set: dna_interactome
+        name: DNA interactome protein (Trendel 2025)
+        table:
+          input: dna_interactome
+          protein: uniprot_accession
+        background: other reviewed human proteins
+    universe: snapshot
+    whole_universe: true
+    abundance:
+      input: abundance
+      protein: canonical_UniProtAC
+      value: percentile
+      label: ', each PaxDb abundance decile a stratum'
+    new: true
+  - id: crosslink
+    title: RNA and DNA crosslinks in cells
+    question: Are methyllysines where RNA or DNA crosslinks to proteins in cells?
+    sub: 'Methyllysines against the other lysines of the proteins with each kind of evidence: crosslinked residues, RNA-bound peptides, RBR-ID residues and regions, DNA crosslinks and DNA-binding regions'
+    section: RNA and DNA
+    counting: every_candidate
+    candidates_from: marks_and_left_out
+    background: other lysines of the same proteins (proteins with that evidence)
+    tests:
+    - category: rna_crosslink
+      inside: rna_crosslinks
+      proteins_with: rna_crosslinks
+      label: RNA-crosslinked residue
+    - category: rna_crosslink_single_residue
+      inside: rna_crosslinks_single
+      proteins_with: rna_crosslinks_single
+      label: RNA crosslink, one residue
+    - category: rna_crosslink_within_3
+      inside: rna_crosslinks
+      within: 3
+      proteins_with: rna_crosslinks
+      label: ≤3 aa from an RNA crosslink
+    - category: dna_crosslink
+      inside: dna_crosslinks
+      proteins_with: dna_crosslinks
+      label: DNA-crosslinked residue
+    - category: dna_crosslink_or_candidate
+      inside: dna_crosslink_candidates
+      proteins_with: dna_crosslink_candidates
+      label: DNA crosslink or candidate
+    - category: dna_crosslinked_peptide
+      inside: dna_crosslinked_peptides
+      proteins_with: dna_crosslinked_peptides
+      label: DNA-crosslinked peptide
+    - category: dna_binding_region
+      inside: uniprot_dna_binding
+      proteins_with: uniprot_dna_binding
+      label: DNA-binding region (UniProt)
+    - category: capri_xl_peptide
+      inside: capri_xl
+      proteins_with: capri_xl
+      label: CAPRI XL-peptide
+    - category: capri_adj_peptide
+      inside: capri_adj
+      proteins_with: capri_adj
+      label: CAPRI adjacent peptide
+    - category: rbrid_residue
+      inside: rbrid_residues
+      proteins_with: rbrid_residues
+      label: RBR-ID+ residue
+    - category: rbrid_residue_published_rule
+      inside: rbrid_residues_published_rule
+      proteins_with: rbrid_residues_published_rule
+      label: RBR-ID+ residue, published rule
+    - category: rbrid_region
+      inside: rbrid_regions
+      proteins_with: rbrid_regions
+      label: RBR-ID region
+    - category: capri_adj_peptide_among_measured
+      inside: capri_measured_adjacent
+      proteins_with: capri_measured_adjacent
+      covered_by: capri_measured
+      label: CAPRI adjacent peptide, among measured
+    - category: rbrid_residue_among_measured
+      inside: rbrid_residues
+      proteins_with: rbrid_residues
+      covered_by: rbrid_quantified
+      label: RBR-ID+ residue, among measured
+    new: true
+  - id: sequence_proximity
+    title: Distance along the chain to RNA evidence
+    question: Are methyllysines near RNA-crosslinked residues along the sequence?
+    sub: Methyllysines against the other lysines of the proteins with each kind of RNA evidence, within 0, 3, 5, 10 or 20 residues of it along the sequence
+    section: RNA and DNA
+    counting: every_candidate
+    candidates_from: marks_and_left_out
+    background: other lysines of the same proteins (proteins with that evidence)
+    tests:
+    - category: rna_crosslink
+      inside: rna_crosslinks
+      proteins_with: rna_crosslinks
+      label: RNA-crosslinked residue
+    - category: capri_adj_peptide
+      inside: capri_adj
+      proteins_with: capri_adj
+      label: CAPRI adjacent peptide
+    - category: capri_xl_peptide
+      inside: capri_xl
+      proteins_with: capri_xl
+      label: CAPRI XL-peptide
+    - category: rbrid_residue
+      inside: rbrid_residues
+      proteins_with: rbrid_residues
+      label: RBR-ID+ residue
+    strata:
+    - stratum: within_0_residues
+      within: 0
+    - stratum: within_3_residues
+      within: 3
+    - stratum: within_5_residues
+      within: 5
+    - stratum: within_10_residues
+      within: 10
+    - stratum: within_20_residues
+      within: 20
+    new: true
+  - id: sticker_context_3
+    family: Next to aromatic residues
+    layer: neighbours
+    with:
+      window: 3
+      noun: aromatic residue
+      residues: [Y, F, W]
+    new: true
+    title: Next to aromatic residues (within 3)
+    question: Are methyllysines more often next to aromatic residues than the other lysines of their protein?
+    sub: Methyllysines against the other lysines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) are within 3 residues on either side. Aromatic residues pair with lysine in condensates (cation–π), and methylation weakens that contact
+    section: Position in the protein
+  - id: sticker_context_5
+    family: Next to aromatic residues
+    layer: neighbours
+    with:
+      window: 5
+      noun: aromatic residue
+      residues: [Y, F, W]
+    new: true
+    title: Next to aromatic residues (within 5)
+    question: Are methyllysines more often next to aromatic residues than the other lysines of their protein?
+    sub: Methyllysines against the other lysines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) are within 5 residues on either side
+    section: Position in the protein
+  - id: sticker_context_3_idr
+    family: Next to aromatic residues
+    layer: neighbours
+    with:
+      window: 3
+      noun: aromatic residue
+      residues: [Y, F, W]
+    only_in: idr
+    new: true
+    title: Next to aromatic residues, in IDRs (within 3)
+    question: Inside disordered regions, are methyllysines more often next to aromatic residues than the other lysines there?
+    sub: 'Only lysines inside IDRs of 20 or more residues: methyllysines against the other lysines of the same proteins in IDRs, by how many aromatic residues are within 3 residues on either side'
+    section: Position in the protein
+  - id: sticker_context_5_idr
+    family: Next to aromatic residues
+    layer: neighbours
+    with:
+      window: 5
+      noun: aromatic residue
+      residues: [Y, F, W]
+    only_in: idr
+    new: true
+    title: Next to aromatic residues, in IDRs (within 5)
+    question: Inside disordered regions, are methyllysines more often next to aromatic residues than the other lysines there?
+    sub: 'Only lysines inside IDRs of 20 or more residues: methyllysines against the other lysines of the same proteins in IDRs, by how many aromatic residues are within 5 residues on either side'
+    section: Position in the protein
+  - id: eclip_rna_apexseq
+    test: protein_sets
+    title: Bound RNAs by APEX-seq
+    question: Where do the RNAs that methylated proteins bind gather in the cell, by APEX-seq?
+    sub: Proteins with eCLIP data whose bound RNAs localize to an APEX-seq compartment (HEK293T; Fazal et al. 2019), methylated against the others (one-sided hypergeometric test)
+    section: Location, chromatin and condensates
+    sets:
+      input: eclip_maps
+      set: compartment
+      protein: uniprot_accession
+      include:
+      - column: map
+        equals: apexseq
+      member_when:
+      - column: gathers
+        equals: 'true'
+    whole_universe: true
+    min_size: 5
+    background: the other proteins with eCLIP data that APEX-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment
+    abundance:
+      input: abundance
+      protein: canonical_UniProtAC
+      value: percentile
+      label: ', each PaxDb abundance decile a stratum'
+    sizes:
+      value: odds_ratio
+      log2: true
+      background: the log2 odds ratio of the bound RNAs of each other protein APEX-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared
+    new: true
+  - id: eclip_gene_tsaseq
+    test: protein_sets
+    title: Genes of bound RNAs by TSA-seq
+    question: Are the RNAs that methylated proteins bind transcribed from genes near nuclear speckles?
+    sub: Proteins with eCLIP data whose bound RNAs are transcribed from genes near nuclear speckles by TSA-seq (K562; Chen et al. 2018). TSA-seq measures the position of the genes in the nucleus, not of the RNAs, methylated against the others (one-sided hypergeometric test)
+    section: Location, chromatin and condensates
+    sets:
+      input: eclip_maps
+      set: compartment
+      protein: uniprot_accession
+      include:
+      - column: map
+        equals: tsaseq
+      member_when:
+      - column: gathers
+        equals: 'true'
+    whole_universe: true
+    min_size: 5
+    background: the other proteins with eCLIP data that TSA-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment
+    abundance:
+      input: abundance
+      protein: canonical_UniProtAC
+      value: percentile
+      label: ', each PaxDb abundance decile a stratum'
+    sizes:
+      value: odds_ratio
+      log2: true
+      background: the log2 odds ratio of the bound RNAs of each other protein TSA-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared
+    new: true
+  - id: eclip_gene_hic
+    test: protein_sets
+    title: Genes of bound RNAs by Hi-C subcompartment
+    question: Are the RNAs that methylated proteins bind transcribed from genes in one Hi-C subcompartment?
+    sub: Proteins with eCLIP data whose bound RNAs are transcribed from genes of a Hi-C subcompartment (GM12878; Rao et al. 2014). Hi-C measures contacts between genomic regions, not the position of the RNAs, methylated against the others (one-sided hypergeometric test)
+    section: Location, chromatin and condensates
+    sets:
+      input: eclip_maps
+      set: compartment
+      protein: uniprot_accession
+      include:
+      - column: map
+        equals: hic
+      member_when:
+      - column: gathers
+        equals: 'true'
+    whole_universe: true
+    min_size: 5
+    background: the other proteins with eCLIP data that Hi-C subcompartments tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment
+    abundance:
+      input: abundance
+      protein: canonical_UniProtAC
+      value: percentile
+      label: ', each PaxDb abundance decile a stratum'
+    sizes:
+      value: odds_ratio
+      log2: true
+      background: the log2 odds ratio of the bound RNAs of each other protein Hi-C subcompartments tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared
+    new: true
 marks_subsets:           # the key questions again on the lysines of one methylation degree (a lysine with a row of the degree counts; the
                          # others are other lysines): each adds '<question>_<id>' to the sidebar, under its question's entry (family)
   - id: me1
@@ -1331,11 +1715,11 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
     - {name: Histone and protein class, analyses: [histone, panther_group, panther_class, reactome_top_level], proteins: [marks]}
     - {name: Methylation state, attributes: [state, evidence_class]}
-    - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome]}
+    - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]}
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
-    - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
-    - {name: RNA and DNA, analyses: [pdb_interface_na]}
+    - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context, sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]}
+    - {name: RNA and DNA, analyses: [pdb_interface_na, go_binding, binding_protein, crosslink, sequence_proximity]}
     - {name: Studies and databases, attributes: [sources, berryhill_cell_lines, berryhill_enrichment, iptmnet_sources]}
   # TODO(v1.6.0 DOI): PTM_Pipeline v1.6.0 is untagged. Once it is tagged and archived, set the version DOI here (and `version`, `date`, `url` to the v1.6.0 tag); the all-versions DOI 10.5281/zenodo.22696798 stays. Do not use the v1.5.1 DOI for v1.6.0 data.
   dataset: {label: PTM_Pipeline data release, version: v1.5.1, date: "2026-11-19", doi: "10.5281/zenodo.24373077", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.5.1/releases/v1.5.1"}
@@ -1467,6 +1851,7 @@ website:                  # the look and words of the website (ptmc web); layout
     cluster: louvain
     min_coverage: 0.25   # a term names a cluster if it holds for this share of the cluster
     thin_term: best      # else the best significant term, written with its share ("..." · 18%); genes: its three busiest proteins
+    background: proteome  # the terms are tested against the annotated human proteome (site: every protein the network can draw; drawn: the view's own proteins)
     clusters: {default: auto, min: 4, max: 16}   # the page's Clusters menu: auto (Louvain at its default resolution) or a target number
     lead: "Methylated proteins joined by physical links and complexes, grouped into clusters named by GO biological process."   # the one line under the heading; the section Method has the rest
     controls: [clusters, colour, size, outline, find]   # the main row (others under More options): label, clusters, colour, size, outline, find, score, minc, sources, claim
