@@ -17,8 +17,9 @@
   // a lane: runs and single residues along the protein (items: { a, b, col, cls, tip })
   const lane = (len, items, o = {}) => {
     const h = o.h || 10,
-      x0 = (v) => Math.max(0, ((v - 1) / len) * VB),
-      x1 = (v) => Math.min(VB, (v / len) * VB);
+      d = o.d || 0, // residues left out at the start (the initiator methionine, where the page numbers without it)
+      x0 = (v) => Math.max(0, ((v - 1 - d) / (len - d)) * VB),
+      x1 = (v) => Math.min(VB, ((v - d) / (len - d)) * VB);
     const body = items
       .map((it) => {
         const a = x0(it.a),
@@ -36,9 +37,13 @@
       `role="img" aria-label="${esc(o.label || '')}"><line x1="0" x2="${VB}" y1="${h / 2}" y2="${h / 2}" class="fp-base"/>${body}</svg></span>`
     );
   };
-  const track = (len, lanes, key) =>
-    `<span class="fpic fp-track">${lanes.map((l) => lane(len, l.items, l)).join('')}<span class="fp-axis">` +
-    `<b></b><span>1</span><span>${int(len)} aa</span></span>${key ? `<span class="fp-key">${key}</span>` : ''}</span>`;
+  const track = (len, lanes, key, acc) => {
+    const d = (K.prot?.first?.(acc) || 1) - 1; // the initiator methionine is left out where the page numbers without it
+    return (
+      `<span class="fpic fp-track">${lanes.map((l) => lane(len, l.items, { ...l, d })).join('')}<span class="fp-axis">` +
+      `<b></b><span>1</span><span>${int(len - d)} aa</span></span>${key ? `<span class="fp-key">${key}</span>` : ''}</span>`
+    );
+  };
   const bigN = (pairs) =>
     `<span class="fpic fp-big">${pairs
       .filter(Boolean)
@@ -94,19 +99,24 @@
     if (EV?.status && SPECS[EV.status] && K.map?.attrColour) {
       set(
         'p-cc',
-        track(len, [
-          {
-            label: 'Sites',
-            items: rec.marks.map((m) => ({
-              a: m[0],
-              dot: true,
-              col: K.map.attrColour(EV.status, K.cols.markAttr(m, EV.status)),
-              tip: `${st.siteName?.(m[0]) || m[0]}: ${
-                K.sel?.valueLabel ? K.sel.valueLabel(EV.status, K.cols.markAttr(m, EV.status)) : ''
-              }`,
-            })),
-          },
-        ])
+        track(
+          len,
+          [
+            {
+              label: 'Sites',
+              items: rec.marks.map((m) => ({
+                a: m[0],
+                dot: true,
+                col: K.map.attrColour(EV.status, K.cols.markAttr(m, EV.status)),
+                tip: `${st.siteName?.(m[0]) || m[0]}: ${
+                  K.sel?.valueLabel ? K.sel.valueLabel(EV.status, K.cols.markAttr(m, EV.status)) : ''
+                }`,
+              })),
+            },
+          ],
+          undefined,
+          p.acc
+        )
       );
     }
     // RNA and DNA: the runs bound in structures, the residues crosslinked in cells and the sites flagged (never a peptide or its extent)
@@ -129,7 +139,7 @@
             ];
             return { label: K.prnaWord ? K.prnaWord(k) : k.toUpperCase(), items };
           });
-        set('p-na', lanes.length ? track(len, [...lanes, SITES_LANE(rec)]) : '');
+        set('p-na', lanes.length ? track(len, [...lanes, SITES_LANE(rec)], undefined, p.acc) : '');
       }
     }
     // regions: a lane per kind of region
@@ -137,17 +147,27 @@
     if (kinds.length)
       set(
         'p-regions',
-        track(len, [
-          ...kinds.map((t) => ({
-            label: String(t.title || t.kind)
-              .replace(/ regions?$/i, '')
-              .slice(0, 10),
-            items: rec.units
-              .filter((u) => u[0] === t.kind)
-              .map((u) => ({ a: u[1], b: u[2], cls: `fp-u fp-u${(D.tracks || []).indexOf(t) % 4}`, tip: u[3] || '' })),
-          })),
-          SITES_LANE(rec),
-        ])
+        track(
+          len,
+          [
+            ...kinds.map((t) => ({
+              label: String(t.title || t.kind)
+                .replace(/ regions?$/i, '')
+                .slice(0, 10),
+              items: rec.units
+                .filter((u) => u[0] === t.kind)
+                .map((u) => ({
+                  a: u[1],
+                  b: u[2],
+                  cls: `fp-u fp-u${(D.tracks || []).indexOf(t) % 4}`,
+                  tip: u[3] || '',
+                })),
+            })),
+            SITES_LANE(rec),
+          ],
+          undefined,
+          p.acc
+        )
       );
     // the sequence: the share of its residues that are marked
     if (p.cand)

@@ -36,6 +36,7 @@ from .glance import glance
 from . import seldata as SEL
 from . import structure as S3D
 from . import nucleic as NUC
+from . import genes as genes_mod
 from . import numbering
 
 FONTS = {
@@ -55,6 +56,7 @@ DEFAULT_BAND = ['#374151', '#111827']
 # before the rail, search, selection views and pages that read K.sel; kit-tabfig.js before the pages that export tables; kit-tile.js
 # before kit.js, which draws the tiles), and kit.js, last, runs them all. Add a module after the ones it reads, one per line.
 MODULES = (
+    'kit-names.js',
     'kit-export.js',
     'kit-busy.js',
     'kit-papers.js',
@@ -964,7 +966,9 @@ def is_partition(sets: dict) -> bool:
     return bool(rules) and sets.get('exclusive', True) and any(not r.get('when') for r in rules)
 
 
-def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list, list, list], dict]:
+def protein_data(
+    folder: Path, snapshot_fasta: Path | None, rules: list[dict] | None = None, position_attrs: set | None = None
+) -> tuple[tuple[list, list, list], dict]:
     """((the protein list for the Proteins tab, the mark columns, the regions' sources), the per-protein records by
     shard) from a run's per-protein outputs. A region is [kind, start, end, label, index of its source]."""
     import pandas as pd
@@ -1014,6 +1018,16 @@ def protein_data(folder: Path, snapshot_fasta: Path | None) -> tuple[tuple[list,
     for r in prot.to_dict('records'):
         a = r['accession']
         mg, cg, ug = m_by.get(a), c_by.get(a), u_by.get(a)
+        off = numbering.offset(a, r['gene'], r['name'], rules)
+        if off and mg is not None and 'a.ctx_near' in mg.columns:  # neighbors named as the page numbers this protein
+            mg = mg.assign(**{'a.ctx_near': [numbering.shift_tokens(v, off) for v in mg['a.ctx_near']]})
+        if off and mg is not None:  # change names (R4C) of the attributes the site file marks with position_tokens
+            fix = {
+                f'a.{n}': [numbering.shift_changes(v, off) for v in mg[f'a.{n}']]
+                for n in (position_attrs or ())
+                if f'a.{n}' in mg.columns
+            }
+            mg = mg.assign(**fix) if fix else mg
         rec = {
             'entry': r['entry'],
             'md5': r['sequence_md5'],
@@ -1447,6 +1461,7 @@ def protein_tables(
     log=print,
     records: dict | None = None,
     detail: dict | None = None,
+    multi: dict | None = None,
 ) -> tuple[dict, int]:
     """Pack the site's website.tables (tables.py) for the protein pages: each protein's rows into data/e/NN.json (D.e_shards files, by accession,
     like data/p but fewer, larger), the rows that name a protein without marks into its light page's record in data/u/NN.json (D.u_shards files; with its
@@ -1477,6 +1492,9 @@ def protein_tables(
     marked = {r[0] for r in listing}
     seqs = parse_fasta(fasta) if fasta and fasta.exists() else {}
     head = parse_fasta_headers(fasta) if fasta and fasta.exists() else {}
+    for a, g in (multi or {}).items():  # a protein several genes encode: its short name (website.protein.genes)
+        if a in head:
+            head[a] = {**head[a], 'gene': g['short']}
     header, rows, partner, lookups = T.pack(specs, paths, marked, set(seqs) | marked, log=log)
     data['tables'] = header
     data['lookups'] = lookups
@@ -1631,7 +1649,18 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     cit = data['citation']
     run = data['run']
     fasta = Path(run.get('inputs', {}).get(site['snapshot']['input'], {}).get('file', ''))
-    (listing, mark_columns, unit_sources, mark_attrs), shards = protein_data(folder, fasta)
+    (listing, mark_columns, unit_sources, mark_attrs), shards = protein_data(
+        folder,
+        fasta,
+        numbering.rules_for_page((web.get('protein') or {}).get('numbering')),
+        {n for n, a in (site['marks'].get('attributes') or {}).items() if a.get('position_tokens')},
+    )
+    # proteins several genes encode: the page names them by a short name and keeps the list (website.protein.genes)
+    multi, other_names = genes_mod.for_site(site, folder)
+    for row in listing:
+        if row[0] in multi:
+            row[1] = multi[row[0]]['short']
+    data['protein_genes'] = {a: g['genes'] for a, g in multi.items()}
     data['proteins'] = listing
     # per-protein facts (proteins.attributes), aligned with the protein list; numbers as numbers
     if listing and (folder / 'protein_attributes.tsv').exists() and site.get('proteins'):
@@ -1701,6 +1730,9 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
     data['structure'] = S3D.site_data(site, profile)
     # the marks shown and counted nowhere (marks.left_out): into the protein records and the page, never the selection
     shown = shown_data(folder, site, mark_attrs, shards, fasta) if listing else None
+    for row in (shown or {}).get('proteins', []):
+        if row[0] in multi:
+            row[1] = multi[row[0]]['short']
     if shown:
         data['shown_marks'], data['shown_view'] = shown, web.get('shown_marks') or {}
         log(
@@ -1766,11 +1798,18 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             log,
             {a: r for sh in shards.values() for a, r in sh.items()},
             g_files,
+            multi,
         )
         if listing
         else ({}, 0)
     )
     data['light_pages'] = light
+    shown_accs = {r[0] for r in (shown or {}).get('proteins', [])} | {r[0] for r in listing}
+    for a, names in other_names.items():  # old and alternative symbols (website.protein.genes.symbols): searchable
+        if a in shown_accs:
+            al = data.setdefault('protein_aliases', {})
+            have = [x for x in str(al.get(a, '')).split('; ') if x]
+            al[a] = '; '.join(dict.fromkeys(have + names))
     if listing:
         # the search's words and the filters that read more than the marks' classes (website.search): windows and
         # distances beside the marks, the partners in their own file
@@ -2178,7 +2217,7 @@ def pages(
     cards, lab, registry, first_built, root_last = [], None, [], None, Path('.')
     found: dict[
         str, list
-    ] = {}  # accession -> [gene, name, indexes of the listed sites that have it], for the landing search
+    ] = {}  # accession -> [gene, name, indexes of the listed sites that have it, genes, symbols], for the landing search
     listed_ids: list[dict] = []
     switcher_label = (cfg.get('switcher') or {}).get('label')
     for sp in site_paths:
@@ -2228,9 +2267,14 @@ def pages(
                 {'id': site['id'], 'label': landing.get('label') or profile.data.get('name') or site['id']}
             )
             ptab = pd.read_csv(plist, sep='\t', dtype=str, keep_default_na=False, usecols=['accession', 'gene', 'name'])
+            multi, other = genes_mod.for_site(
+                site, src.parent
+            )  # the readable name and every symbol, as the site shows them
             for acc, gene, name in zip(ptab['accession'], ptab['gene'], ptab['name']):
-                row = found.setdefault(acc, [gene, name, []])
+                m = multi.get(acc)
+                row = found.setdefault(acc, [m['short'] if m else gene, name, [], m['genes'] if m else [], []])
                 row[2].append(k)
+                row[4] = list(dict.fromkeys(row[4] + other.get(acc, [])))
 
         # the numbers and the striking result are the site's own build; a build without them gives a card without them
         def _read(name):
@@ -2292,7 +2336,7 @@ def pages(
             else:
                 favicon_href = name
     if found:  # read by the landing page's search box when it is first used (assets/land-search.js)
-        rows = [[acc, *v] for acc, v in sorted(found.items())]
+        rows = [[acc, *v[:3], *([v[3], v[4]] if v[3] or v[4] else [])] for acc, v in sorted(found.items())]
         (out / 'proteins.json').write_text(json.dumps({'sites': listed_ids, 'p': rows}, separators=(',', ':')))
     kit = kit_citation()
     lab_html = (

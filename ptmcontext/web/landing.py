@@ -18,11 +18,13 @@ import yaml
 
 _COLOUR = re.compile(r'^#[0-9a-fA-F]{3,8}$')
 
-SEARCH_JS = (Path(__file__).parent / 'assets' / 'land-search.js').read_text()
+SEARCH_JS = (Path(__file__).parent / 'assets' / 'kit-names.js').read_text() + (
+    Path(__file__).parent / 'assets' / 'land-search.js'
+).read_text()
 SEARCH_HTML = (
     '<section class="land-search" role="search" aria-label="Find a protein">'
     '<label for="land-q">Find a protein</label>'
-    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene name or UniProt accession" '
+    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene, old gene symbol or UniProt accession" '
     'aria-controls="land-hits">'
     '<p class="say" id="land-say" role="status"></p><ul id="land-hits" aria-label="Proteins found"></ul></section>'
 )

@@ -1718,8 +1718,17 @@ website:                  # the look and words of the website (ptmc web); layout
         site: [name, chips, nearby, click]
         chips: [sources, {attribute: pmids, count: PMIDs}]
         context: [mark, residue, detail, source, click]
+    genes:                 # one accession several genes encode: a short name for labels and titles, the full list on the page, every gene searchable
+      input: uniprot_entries
+      from: Entry
+      to: "Gene Names (primary)"
+      separator: ";"
+      symbols: sites/data/hgnc_symbols.tsv   # previous and alias symbols (HGNC, CC0): HIST1H4B finds H4
+      short:
+        - {pattern: "^H3-3[AB]$", replace: "H3.3"}
+        - {pattern: "^(H2A|H2B|H3|H4)[C-]\\d+[A-Z]?$", replace: "\\1"}
     numbering:             # proteins numbered without the initiator methionine in every label, link and search (histones; proteins UniProt records it removed for)
-      - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
+      - genes: "^(H1-\\d+P?|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
         names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"
         offset: -1
         label: histone numbering

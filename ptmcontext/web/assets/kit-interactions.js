@@ -236,10 +236,12 @@
 
   // ---- links and cells ---------------------------------------------------------------------------------------------
   const residueLetter = () => (D.residues || [''])[0];
-  const siteLink = (p, pos) =>
-    `<a href="${esc(
-      K.link('protein', `${prot(p)[0]}/${residueLetter()}${pos}`)
-    )}"><b>${esc(gene(p))}</b> ${esc(residueLetter())}${int(pos)}</a>`;
+  const siteLink = (p, pos) => {
+    const sh = K.prot?.shownPos ? K.prot.shownPos(prot(p)[0], pos) : pos; // as the protein page numbers it
+    return `<a href="${esc(
+      K.link('protein', `${prot(p)[0]}/${residueLetter()}${sh}`)
+    )}"><b>${esc(gene(p))}</b> ${esc(residueLetter())}${int(sh)}</a>`;
+  };
   const protLink = (p) => `<a href="${esc(K.link('protein', prot(p)[0]))}"><b>${esc(gene(p))}</b></a>`;
   const accLink = (acc, label) => {
     const a = String(acc).split('-')[0];

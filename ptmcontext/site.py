@@ -1201,6 +1201,17 @@ def card_problems(site: dict) -> list[str]:
         )
     if tb.get('nearest_domain'):
         table('table.nearest_domain', tb['nearest_domain']['table'], 'site_values')
+    sym = (prot.get('genes') or {}).get('symbols')
+    if sym and not any(
+        (Path(sym) if Path(sym).is_absolute() else b / sym).exists()
+        for b in (Path.cwd(), Path(__file__).resolve().parents[1])
+    ):
+        out.append(f'website.protein.genes.symbols: {sym} does not exist')
+    for k, n in enumerate((prot.get('genes') or {}).get('short') or []):
+        try:
+            re.sub(n['pattern'], n['replace'], '')
+        except (re.error, IndexError) as e:
+            out.append(f'website.protein.genes.short[{k}]: not a regular-expression substitution ({e})')
     for k, n in enumerate(prot.get('numbering') or []):
         for key in ('genes', 'names'):
             try:

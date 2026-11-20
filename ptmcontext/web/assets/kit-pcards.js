@@ -567,7 +567,7 @@
     const cellOf = (r, k) => {
       const v = r.cells[k];
       return v.length
-        ? esc(v.map((a) => seq[r.q - 1] + r.q + a.alt + (a.n > 1 ? ' ×' + a.n : '')).join(', ')) +
+        ? esc(v.map((a) => siteName(rec, r.q, p.acc) + a.alt + (a.n > 1 ? ' ×' + a.n : '')).join(', ')) +
             (flagOf(r, k) ? ' ' + CCK.flagTag(cn[k]) : '')
         : '<span class="muted">—</span>';
     };
@@ -1069,13 +1069,18 @@
           ? [{ a: +r.window_start, b: +r.window_end, cls: 'fp-u fp-u1', tip: 'top window' }]
           : [];
     const pic = K.pfolds
-      ? K.pfolds.track(len0, [
-          {
-            label: 'Clusters',
-            items: [...clusters.map((c) => ({ a: c[0], b: c[c.length - 1], cls: 'fp-u fp-u0' })), ...bw],
-          },
-          { label: 'Sites', items: rec.marks.map((m) => ({ a: m[0], dot: true, cls: 'fp-site' })) },
-        ])
+      ? K.pfolds.track(
+          len0,
+          [
+            {
+              label: 'Clusters',
+              items: [...clusters.map((c) => ({ a: c[0], b: c[c.length - 1], cls: 'fp-u fp-u0' })), ...bw],
+            },
+            { label: 'Sites', items: rec.marks.map((m) => ({ a: m[0], dot: true, cls: 'fp-site' })) },
+          ],
+          undefined,
+          p.acc
+        )
       : '';
     return {
       pic,
@@ -1156,13 +1161,18 @@
     const len1 = p.len || (rec.seq || '').length || 1;
     return {
       pic: K.pfolds
-        ? K.pfolds.track(len1, [
-            ...body.slice(0, 2).map((b) => ({
-              label: b.label.slice(0, 9),
-              items: rs.filter((r) => r.kind === b.k).map((r) => ({ a: r.start, dot: true, cls: 'fp-ptm' })),
-            })),
-            { label: 'Sites', items: rec.marks.map((m) => ({ a: m[0], dot: true, cls: 'fp-site' })) },
-          ])
+        ? K.pfolds.track(
+            len1,
+            [
+              ...body.slice(0, 2).map((b) => ({
+                label: b.label.slice(0, 9),
+                items: rs.filter((r) => r.kind === b.k).map((r) => ({ a: r.start, dot: true, cls: 'fp-ptm' })),
+              })),
+              { label: 'Sites', items: rec.marks.map((m) => ({ a: m[0], dot: true, cls: 'fp-site' })) },
+            ],
+            undefined,
+            p.acc
+          )
         : '',
       html: `` + body.map((b) => b.html).join('') + (cfg.note ? `` : ''),
       sum:

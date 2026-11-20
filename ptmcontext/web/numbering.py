@@ -51,3 +51,20 @@ def offset(acc: str, gene: str, name: str, rules: list[dict] | None) -> int:
             if hit:
                 return int(r['offset'])
     return 0
+
+
+_NEAR = re.compile(r'\b([A-Z])(\d+)( \([+\u2212-]\d+\))')
+
+
+def shift_tokens(text: str, off: int) -> str:
+    """The residues named in a list of neighbors ('Acetylation K9 (-4); ...') moved by an offset: the page names a
+    protein's neighbors in the numbering the protein is shown in; the distances in parentheses do not change."""
+    return _NEAR.sub(lambda m: f'{m[1]}{int(m[2]) + off}{m[3]}', str(text))
+
+
+_CHANGE = re.compile(r'\b([A-Z])(\d+)(?=[A-Z*]|\b)')
+
+
+def shift_changes(text: str, off: int) -> str:
+    """The residue positions of change names ('R4C; R80*') moved by an offset (an attribute with position_tokens)."""
+    return _CHANGE.sub(lambda m: f'{m[1]}{int(m[2]) + off}', str(text))

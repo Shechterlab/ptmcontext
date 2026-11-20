@@ -37,13 +37,16 @@
     return byGene[u] || (byAcc[a] ? [byAcc[a]] : byEntry[u] ? [byEntry[u]] : null);
   };
   const byGene = {};
-  P.forEach((p) =>
+  // a protein several genes encode shows a short name (p.gene); D.protein_genes keeps every gene, and each finds it
+  const genesOf = (p) =>
+    D.protein_genes?.[p.acc] ||
     String(p.gene || '')
       .split(/[\s;]+/)
-      .filter(Boolean)
-      .forEach((g) => {
-        (byGene[g.toUpperCase()] ||= []).push(p);
-      })
+      .filter(Boolean);
+  P.forEach((p) =>
+    [...new Set([...String(p.gene || '').split(/[\s;]+/), ...genesOf(p)])].filter(Boolean).forEach((g) => {
+      (byGene[g.toUpperCase()] ||= []).push(p);
+    })
   );
   // other names: the aliases of the site's protein_values table (synonyms, the symbols the sources used), the names
   // papers use (website.search.shorthand: H4), and any of these, or a gene, without hyphens, spaces and dots
@@ -62,12 +65,9 @@
     if (!l.includes(p)) l.push(p);
   };
   P.forEach((p) =>
-    String(p.gene || '')
-      .split(/[\s;]+/)
-      .filter(Boolean)
-      .forEach((g) => {
-        if (norm(g).length >= 3) addTo(byNorm, norm(g), p);
-      })
+    [...new Set([...String(p.gene || '').split(/[\s;]+/), ...genesOf(p)])].filter(Boolean).forEach((g) => {
+      if (norm(g).length >= 3) addTo(byNorm, norm(g), p);
+    })
   );
   Object.entries(D.protein_aliases || {}).forEach(([acc, al]) => {
     const p = byAcc[acc];
@@ -106,7 +106,7 @@
   const numOf = (p) => {
     if (!NUMR.length || !p) return null;
     if (p._num === undefined) {
-      const g = String(p.gene || '').split(/[\s;,]+/)[0];
+      const g = genesOf(p)[0] || '';
       p._num = NUMR.find((n) => n.a?.has(p.acc) || (g ? n.g?.test(g) : n.nm?.test(p.name || ''))) || null;
     }
     return p._num;
