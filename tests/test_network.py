@@ -931,3 +931,14 @@ def test_the_background_decides_which_terms_are_broad_and_what_is_enriched():
     assert NW.background(full, {'background': 'drawn'}) is None
     assert NW.background(full, {'background': 'proteome'}) == bg
     assert NW.background(full, {'background': 'site'}) == {'N': [200], 'M': [20]}
+
+
+def test_a_cluster_keeps_its_three_best_terms_for_the_tooltip_and_the_page_can_highlight_a_term():
+    comm = [0] * 10 + [1] * 10
+    ann = [[0, 1, 2, 3] for _ in range(10)] + [[3] for _ in range(10)]
+    terms = [[f'term {i}', 0, f'T{i}'] for i in range(4)]
+    lab = NW.label_clusters(comm, ann, terms, {**NW.DEFAULTS, 'min_term': 3, 'background': 'drawn', 'max_fraction': 1})
+    assert len(lab[0]['top']) == 3 and all(len(x) == 4 for x in lab[0]['top'])
+    assert [x[3] for x in lab[0]['top']] == sorted(x[3] for x in lab[0]['top'])
+    js = (ASSETS / 'kit-network.js').read_text()
+    assert 'data-nw-term' in js and 'data-nw-termclear' in js and 'termHits(M)' in js and 'const topTerms' in js

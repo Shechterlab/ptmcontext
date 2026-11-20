@@ -116,6 +116,7 @@
     mode: 'network',
     hi: -1,
     find: '',
+    term: -1, // the term to highlight (an index in the full file's terms), -1 for none
     vz: null, // the window on the drawing: { k, fx, fy } (zoom, centre as shares of the width and height), null for all of it
     xf: 'fit', // what an export frames: fit (the pinned proteins), view (what is on screen), whole
     pins: [], // the accessions pinned (the address's p=, up to five)
@@ -330,6 +331,16 @@
   const share = (l) =>
     l.thin ? ` \u00b7 ${Math.round((100 * l.k) / l.n)}%` : l.weak ? ` \u00b7 q ${l.q.toFixed(2)}` : '';
   const unnamed = (l, c) => ((l.genes || []).length ? `Unnamed: ${l.genes.join(', ')}` : `Cluster ${c + 1}`);
+  // a cluster's three best terms, the chosen one marked: "term · k of n · q"
+  const topTerms = (l) => {
+    const rows = (l.top || []).map(([name, k, M, q]) => ({ name, k, M, q, chosen: name === l.term }));
+    if (l.term && !rows.some((r) => r.chosen)) rows.push({ name: l.term, k: l.k, M: l.M, q: l.q, chosen: true });
+    return rows;
+  };
+  const topText = (l, n) =>
+    topTerms(l)
+      .map((r) => `${r.chosen ? '\u2713 ' : ''}${r.name} \u00b7 ${int(r.k)} of ${int(n)} \u00b7 q ${K.fq(r.q)}`)
+      .join('\n');
   function clusters(M) {
     const shown = M.labels
         .map((l, c) => c)
@@ -447,7 +458,22 @@
     UI.find = v;
     S.nf = String(v).trim().split(/\s+/).filter(Boolean).join(' ');
   };
-  const hit = (M) => (UI.find.trim() ? findIn(UI.find, M.nodes).hits : new Set());
+  // the term to highlight: the drawn proteins that carry it (needs the full file, which holds each protein's terms)
+  const termHits = (M) => {
+    const f = M.full || fullNow();
+    if (UI.term < 0 || !f || !f.terms?.[UI.term]) return null;
+    const out = new Set();
+    M.nodes.forEach((nd, i) => {
+      const g = nd.g >= 0 ? nd.g : f.byAcc?.get(nd.acc);
+      if (g != null && f.ann[g]?.includes(UI.term)) out.add(i);
+    });
+    return out;
+  };
+  const hit = (M) => {
+    const a = UI.find.trim() ? findIn(UI.find, M.nodes).hits : new Set(),
+      b = termHits(M);
+    return b ? new Set([...a, ...b]) : a;
+  };
   // the neighbours of a protein, and what a cluster is joined to: the nodes and the clusters to light
   const lightNode = (M, i) => {
     const nodes = new Set([i, ...M.adj[i].map(([j]) => j)]);
@@ -933,8 +959,17 @@
         .map((c) => {
           const x = CL.list[c];
           return (
-            `<li><button type="button" data-nw-row="${c}" class="${UI.hi === c ? 'on' : ''}" aria-pressed="${UI.hi === c}"><span class="nw-bdg" style="background:${catVar(x.slot)};color:var(--nw-on-${x.slot + 1})">${x.rank + 1}</span>` +
-            `<span class="nw-nm">${esc(x.label)}</span><span class="nw-ct">${int(x.n)}</span></button></li>`
+            `<li><button type="button" data-nw-row="${c}" class="${UI.hi === c ? 'on' : ''}" aria-pressed="${UI.hi === c}" title="${esc(topText(x.l, x.n))}"><span class="nw-bdg" style="background:${catVar(x.slot)};color:var(--nw-on-${x.slot + 1})">${x.rank + 1}</span>` +
+            `<span class="nw-nm">${esc(x.label)}</span><span class="nw-ct">${int(x.n)}</span></button>${
+              UI.hi === c && topTerms(x.l).length
+                ? `<ul class="nw-top small muted">${topTerms(x.l)
+                    .map(
+                      (r) =>
+                        `<li>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} · ${int(r.k)} of ${int(x.n)} · q ${esc(K.fq(r.q))}</li>`
+                    )
+                    .join('')}</ul>`
+                : ''
+            }</li>`
           );
         })
         .join('') +
@@ -945,13 +980,25 @@
   function tableHtml(M, CL) {
     const by = M.labels.map(() => []);
     M.nodes.forEach((nd, i) => by[nd.c].push(i));
+    const T = termHits(M); // a term to highlight filters the table to the proteins that carry it
     const rows = CL.list
+      .filter((x) => !T || by[x.c].some((i) => T.has(i)))
       .map((x) => {
         const ps = by[x.c]
+          .filter((i) => !T || T.has(i))
           .slice()
           .sort((a, b) => M.nodes[b].sites - M.nodes[a].sites || (M.nodes[a].gene < M.nodes[b].gene ? -1 : 1));
         return (
-          `<tr><th scope="row">${x.other ? 'Smaller cluster: ' : ''}${esc(x.name)}${x.l.q != null ? ` <span class="muted">· ${int(x.l.k)} of ${int(x.n)}</span>` : ''}</th><td class="num">${int(x.n)}</td><td class="num">${
+          `<tr><th scope="row">${x.other ? 'Smaller cluster: ' : ''}${esc(x.name)}${x.l.q != null ? ` <span class="muted">· ${int(x.l.k)} of ${int(x.n)}</span>` : ''}${
+            topTerms(x.l).length
+              ? `<ul class="nw-top small muted">${topTerms(x.l)
+                  .map(
+                    (r) =>
+                      `<li>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} · ${int(r.k)} of ${int(x.n)} · q ${esc(K.fq(r.q))}</li>`
+                  )
+                  .join('')}</ul>`
+              : ''
+          }</th><td class="num">${int(x.n)}</td><td class="num">${
             x.l.q != null ? esc(K.fq(x.l.q)) : '–'
           }</td><td>${esc(x.l.source != null ? NC.labels[x.l.source]?.label || '' : '')}</td><td class="nw-ps">` +
           ps
@@ -1008,7 +1055,19 @@
       .join('')}</select></label>`;
   const claimOf = (n) => String(NC.claim || `The proteins with ${W.marks} form {n} clusters`).replace('{n}', n);
   // every control by id; the site file's `controls` lists the ones in the main row, the rest are under "More options"
-  const CONTROL_ORDER = ['clusters', 'colour', 'size', 'outline', 'find', 'label', 'score', 'minc', 'sources', 'claim'];
+  const CONTROL_ORDER = [
+    'clusters',
+    'colour',
+    'size',
+    'outline',
+    'find',
+    'term',
+    'label',
+    'score',
+    'minc',
+    'sources',
+    'claim',
+  ];
   const controls = (CL) => {
     const counts = [];
     for (let v = CR[0]; v <= CR[1]; v += Math.max(1, CR[2])) counts.push([v, v]);
@@ -1064,6 +1123,19 @@
         ),
       find: () =>
         `<div class="nw-f nw-find" data-nw-find><span>Find genes</span><textarea name="g" rows="1" spellcheck="false" placeholder="${esc(EG ? 'e.g. ' + EG + ', or a list' : 'Gene symbols or accessions')}" aria-label="Genes to highlight: symbols or accessions, separated by commas, spaces or line breaks">${esc(UI.find)}</textarea></div>`,
+      term: () => {
+        const f = fullNow(),
+          M0 = cache?.M,
+          seen = new Set();
+        if (f && M0)
+          M0.nodes.forEach((nd) => (f.ann[nd.g >= 0 ? nd.g : f.byAcc?.get(nd.acc)] || []).forEach((t) => seen.add(t)));
+        const names = [...seen].map((t) => f.terms[t][0]).sort();
+        return (
+          `<div class="nw-f nw-term" data-nw-term><span>Highlight a term</span><input type="text" list="nw-term-list" name="t" autocomplete="off" spellcheck="false" ` +
+          `value="${esc(UI.term >= 0 && f?.terms?.[UI.term] ? f.terms[UI.term][0] : '')}" placeholder="e.g. a ${esc((NC.labels[0] || {}).label || 'term')}" aria-label="Term to highlight: the ${esc((NC.labels[0] || {}).label || 'annotation')} terms of the proteins drawn">` +
+          `<datalist id="nw-term-list">${names.map((n) => `<option value="${esc(n)}">`).join('')}</datalist></div>`
+        );
+      },
       sources: () =>
         `<fieldset class="nw-f nw-srcs"><legend>Links from</legend>${SRC.map(
           (s, i) =>
@@ -1072,7 +1144,10 @@
       claim: () =>
         `<label class="nw-f nw-claim"><span>Export title</span><input type="text" data-nw-claim value="${esc(UI.claim)}" placeholder="${esc(claimOf(CL ? CL.nShown : 'N'))}" aria-label="Title of the exported figure"></label>`,
     };
-    const want = new Set(NC.controls || ['clusters', 'colour', 'find']),
+    const want = new Set([
+        ...(NC.controls || ['clusters', 'colour', 'find']),
+        ...(NC.controls?.includes('find') || !NC.controls ? ['term'] : []),
+      ]),
       phone = phoneNow(),
       main = phone ? [] : CONTROL_ORDER.filter((id) => want.has(id)),
       rest = CONTROL_ORDER.filter((id) => !main.includes(id));
@@ -1285,10 +1360,25 @@
       (x.l.q != null
         ? `<br>${esc(NC.labels[x.l.source]?.label || 'Term')}: ${int(x.l.k)} of ${int(x.n)} cluster proteins, ${int(x.l.M)} of ${int(x.l.N)} in the network · q ${esc(K.fq(x.l.q))}`
         : '') +
+      (topTerms(x.l).length
+        ? `<br><span class="muted">Best terms (cluster proteins with the term, q):</span>` +
+          topTerms(x.l)
+            .map(
+              (r) =>
+                `<br>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} <span class="muted">· ${int(r.k)} of ${int(x.n)} · q ${esc(K.fq(r.q))}</span>`
+            )
+            .join('')
+        : '') +
       `<br><span class="muted">Click to keep its links lit.</span>`
     );
   }
   // what a pasted list found: how many distinct proteins, the ones the network does not hold, and a way to make them the selection
+  function termNote(M) {
+    const f = M.full || fullNow(),
+      hits = termHits(M);
+    if (!hits) return UI.term >= 0 ? 'Loading the terms…' : '';
+    return `<b>${int(hits.size)} of ${int(M.nodes.length)}</b> drawn proteins carry <b>${esc(f.terms[UI.term][0])}</b>. <button type="button" class="btn small" data-nw-termclear>Clear</button>`;
+  }
   function findNote(M) {
     if (!UI.find.trim()) return '';
     const g = findIn(UI.find, M.nodes);
@@ -1386,7 +1476,9 @@
       slot.push(
         `Your selection: ${int(M.picked)} of its proteins have a link in these sources; ${int(M.nodes.length)} are drawn.`
       );
-    const fn = findNote(M);
+    const fn = findNote(M),
+      tn = termNote(M);
+    if (tn) slot.push(tn);
     if (fn) slot.push(fn);
     // one slot above the figure for every note, so that the figure moves only when a note first appears
     const note = slot.length
@@ -2083,6 +2175,18 @@
   document.addEventListener('input', (e) => {
     if (e.target.dataset?.nwClaim != null) UI.claim = e.target.value;
   });
+  // a term to highlight: chosen from the drawn proteins' terms (the full file is read when the box takes focus)
+  document.addEventListener('focusin', (e) => {
+    if (e.target.closest?.('[data-nw-term] input')) load('full');
+  });
+  document.addEventListener('change', (e) => {
+    const el = e.target.closest?.('[data-nw-term] input');
+    if (!el) return;
+    const f = fullNow(),
+      v = el.value.trim().toLowerCase();
+    UI.term = f && v ? f.terms.findIndex((t) => t[0].toLowerCase() === v) : -1;
+    K.render();
+  });
   // genes to find: applied when the box loses focus, on Enter (a line break with Shift) and after a paste
   const applyFind = (el) => {
     if (el.value === UI.find) return;
@@ -2637,6 +2741,13 @@
         setFind('');
         S.q = g.tokens.join(' ');
         K.writeHash(true);
+        K.render();
+      },
+    ],
+    [
+      '[data-nw-termclear]',
+      () => {
+        UI.term = -1;
         K.render();
       },
     ],

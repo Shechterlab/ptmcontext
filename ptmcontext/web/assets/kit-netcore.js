@@ -149,7 +149,7 @@
     });
     const usedIds = new Set(),
       usedNames = new Set();
-    return members.map((mem) => {
+    const rows = members.map((mem) => {
       const n = mem.length,
         kOf = new Map();
       mem.forEach((i) => ann[i].forEach((t) => ok.has(t) && kOf.set(t, (kOf.get(t) || 0) + 1)));
@@ -275,6 +275,22 @@
       }
       return { n, term: null };
     });
+    // the three terms of the smallest q each cluster was tested on (term, proteins of the cluster, proteins of the background, q),
+    // for the cluster's tooltip: the chosen term is among them or is named by the row
+    members.forEach((mem, c) => {
+      const kOf = new Map();
+      mem.forEach((i) => ann[i].forEach((t) => ok.has(t) && kOf.set(t, (kOf.get(t) || 0) + 1)));
+      const tested = [...kOf.keys()].filter((t) => kOf.get(t) >= opt.min_overlap).sort((a, b) => a - b);
+      if (!tested.length) return;
+      const ps = tested.map((t) => window.PTMC_STATS.hyperSF(kOf.get(t), Nt(t), count.get(t), mem.length)),
+        qs = window.PTMC_STATS.bh(ps);
+      rows[c].top = tested
+        .map((t, j) => j)
+        .sort((x, y) => qs[x] - qs[y] || ps[x] - ps[y] || (terms[tested[x]][0] < terms[tested[y]][0] ? -1 : 1))
+        .slice(0, 3)
+        .map((j) => [terms[tested[j]][0], kOf.get(tested[j]), count.get(tested[j]), qs[j]]);
+    });
+    return rows;
   }
   // the sources a view uses until the reader chooses (all but those marked off), and the bits of the scored ones
   const defaultSources = (cfg) => cfg.map((s, i) => (s.off ? -1 : i)).filter((i) => i >= 0);

@@ -329,6 +329,9 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
                         'N': Nt(t),
                         'weak': True,
                     }
+        if tested:  # the three terms of the smallest q the cluster was tested on, for its tooltip
+            near = sorted(range(len(tested)), key=lambda j: (qs[j], ps[j], terms[tested[j]][0]))[:3]
+            row['top'] = [[terms[tested[j]][0], k_of[tested[j]], count[tested[j]], qs[j]] for j in near]
         out.append(row)
     return out
 
