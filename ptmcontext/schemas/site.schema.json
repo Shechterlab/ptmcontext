@@ -2716,7 +2716,13 @@
             },
             "thin_term": {
               "enum": ["best", "genes"],
-              "description": "what names a cluster that no term holds for a fair share of (`min_coverage`): \"best\" (default) the significant term of the smallest q, a tie going to the larger share of the cluster, written with that share (\"chromatin organization · 18%\"); \"genes\" its three busiest proteins. A cluster with no significant term is always named by its three busiest proteins"
+              "description": "what names a cluster that no term holds for a fair share of (`min_coverage`): \"best\" (default) the significant term of the smallest q, a tie going to the larger share of the cluster, written with that share (\"chromatin organization · 18%\"); \"genes\" its three busiest proteins. A cluster with no significant term gets the `weak_p` term, and without one is called \"Unnamed:\" with its three busiest proteins"
+            },
+            "weak_p": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "a cluster that no term names at `max_q` is named by its term of the smallest p when that p is at most this (default 0.05; 0 turns it off) and the term holds for `min_coverage` of the cluster; the name carries its q (\"heterochromatin formation · q 0.11\")"
             },
             "claim": {
               "type": "string",

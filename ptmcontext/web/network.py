@@ -37,6 +37,7 @@ DEFAULTS = {
     'max_q': 0.05,
     'min_coverage': 0.25,
     'thin_term': 'best',
+    'weak_p': 0.05,
     'min_overlap': 3,
     'min_term': 5,
     'max_fraction': 0.2,
@@ -188,7 +189,9 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
     cluster's proteins (the best term that does is taken, the next best when the first would be too thin). When no term
     does, `thin_term: best` (default) takes the significant term of the smallest q (a tie going to the larger share of the
     cluster) and the label carries its share; `thin_term: genes` leaves the cluster to its busiest proteins. No term
-    names two clusters (larger clusters choose first; two terms with one short name count as one). With `opt['label']` set,
+    names two clusters (larger clusters choose first; two terms with one short name count as one). A cluster still without a
+    name takes, when `weak_p` is above 0, the term of the smallest p (p <= weak_p, coverage as above) although its q is above
+    `max_q`; the row carries `weak: True` and the label its q. With `opt['label']` set,
     only the terms of that source (the second number of a term) are used."""
     N = len(comm)
     members = defaultdict(list)
@@ -283,6 +286,42 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
                         'M': count[t],
                         'N': N,
                         'thin': True,
+                    }
+            if row['term'] is None and opt.get('weak_p', 0) > 0:
+                # nothing is significant after correction (a selection's own background is rich in what it is about): the term of
+                # the smallest p that holds for a fair share and has p <= weak_p, written with its q
+                cand = [
+                    j
+                    for j in range(len(tested))
+                    if ps[j] <= opt['weak_p']
+                    and k_of[tested[j]] / n >= opt['min_coverage']
+                    and terms[tested[j]][2] not in used_ids
+                    and short_name(terms[tested[j]][0]) not in used_names
+                ]
+                if cand:
+                    j = min(
+                        cand,
+                        key=lambda j: (
+                            ps[j],
+                            -(terms[tested[j]][3] if len(terms[tested[j]]) > 3 else 0),
+                            count[tested[j]],
+                            terms[tested[j]][0],
+                        ),
+                    )
+                    t = tested[j]
+                    used_ids.add(terms[t][2])
+                    used_names.add(short_name(terms[t][0]))
+                    row = {
+                        'n': n,
+                        'term': terms[t][0],
+                        'id': terms[t][2],
+                        'source': terms[t][1],
+                        'p': ps[j],
+                        'q': qs[j],
+                        'k': k_of[t],
+                        'M': count[t],
+                        'N': N,
+                        'weak': True,
                     }
         out.append(row)
     return out

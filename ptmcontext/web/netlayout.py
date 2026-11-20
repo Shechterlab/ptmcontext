@@ -508,9 +508,12 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
     for c in sorted(shown, key=lambda c: (-size[c], c)):
         ci = pos_c[c]
         full = labels[c].get('term')
-        term = short_name(full) or ', '.join(labels[c].get('genes') or []) or f'Cluster {c + 1}'
+        genes = ', '.join(labels[c].get('genes') or [])
+        term = short_name(full) or (f'Unnamed: {genes}' if genes else f'Cluster {c + 1}')
         if full and labels[c].get('thin'):  # a term that holds for a small share: the name says how small
             term += f' \u00b7 {round(100 * labels[c]["k"] / size[c])}%'
+        elif full and labels[c].get('weak'):  # a term that is not significant after correction: the name says its q
+            term += f' \u00b7 q {labels[c]["q"]:.2f}'
         if not phone:
             lines = wrap2(term, 22)
             k_t = labels[c].get('k') if full else None

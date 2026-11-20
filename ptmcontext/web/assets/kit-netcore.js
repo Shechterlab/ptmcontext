@@ -215,6 +215,49 @@
           };
         }
       }
+      if (opt.weak_p > 0) {
+        // nothing is significant after correction (a selection's own background is rich in what it is about): the term of
+        // the smallest p that holds for a fair share and has p <= weak_p, written with its q
+        const cand = tested
+          .map((_, j) => j)
+          .filter(
+            (j) =>
+              ps[j] <= opt.weak_p &&
+              kOf.get(tested[j]) / n >= opt.min_coverage &&
+              !usedIds.has(terms[tested[j]][2]) &&
+              !usedNames.has(shortTerm(terms[tested[j]][0]))
+          );
+        if (cand.length) {
+          let j = cand[0];
+          for (const x of cand.slice(1)) {
+            if (
+              ps[x] !== ps[j]
+                ? ps[x] < ps[j]
+                : dp(x) !== dp(j)
+                  ? dp(x) > dp(j)
+                  : cnt(x) !== cnt(j)
+                    ? cnt(x) < cnt(j)
+                    : nm(x) < nm(j)
+            )
+              j = x;
+          }
+          const t = tested[j];
+          usedIds.add(terms[t][2]);
+          usedNames.add(shortTerm(terms[t][0]));
+          return {
+            n,
+            term: terms[t][0],
+            id: terms[t][2],
+            source: terms[t][1],
+            p: ps[j],
+            q: qs[j],
+            k: kOf.get(t),
+            M: count.get(t),
+            N,
+            weak: true,
+          };
+        }
+      }
       return { n, term: null };
     });
   }
