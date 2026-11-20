@@ -82,10 +82,17 @@ jobs:
             inputs/layers/depmap_24q4_arginine_changes.tsv
             inputs/layers/tcga_mc3_arginine_changes.tsv
             releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/tcga_mc3_changes_R_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv
+            releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv
+            releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv
+            releases/v1.6.0/supporting/eclip_v1.6.0.tsv
+            releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv
             releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz
+            releases/v1.6.0/supporting/depmap_24q4_changes_R_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz
             releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz
