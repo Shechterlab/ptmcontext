@@ -79,6 +79,16 @@ def test_the_blocks_are_checked():
     )
 
 
+def test_other_ptms_needs_a_table_only_without_context_marks():
+    """The Other PTMs card counts a site's context marks, as the map's legend does; its table is the fallback."""
+    cards = {'other_ptms': {'title': 'Other PTMs', 'near': 5}}
+    bare = _site(cards)
+    assert any('other_ptms.table: names no table' in x for x in pcards.problems(bare))
+    with_marks = {**bare, 'context_marks': [{'id': 'ph', 'label': 'Phospho'}]}
+    assert pcards.problems(with_marks) == []
+    assert any("no table 'nope'" in x for x in pcards.problems(_site({'other_ptms': {'table': 'nope'}})))
+
+
 def test_the_schema_takes_the_blocks_and_the_bundled_sites_pass():
     schema = json.loads((ROOT / 'ptmcontext' / 'schemas' / 'site.schema.json').read_text())
     for name in ('methylarginine', 'yeast_phospho'):

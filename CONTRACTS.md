@@ -825,7 +825,7 @@ in the module. Live parts are asked by accession and fall back to a line saying 
 | `perturbations` (`p-pert`) | none of its own: `website.protein.card.calls` (its `tables`, `attributes`, `conditions`, `marks`, `words`) | a mark per call, a row per mark, a column per experiment the protein has |
 | `experiments` (`p-exp`) | `table`: `position`, `region`, `perturbation`, `system`, `species`, `readout`, `direction` (`decreased`, `increased`, `no_change`), `finding`, `figure`, `reference`, `doi`, `read_from`, `in_release` | the curated experiments on the protein |
 | `clustering` (`p-cluster`) | `table`: `spacing_min`, `spacing_median`, `max_<n>` for each of `windows`, `window_size`, `window_start`, `window_end`, `window_sites`, `window_log2`, `window_q`, `architecture`, `clusters` (`; ` between clusters, `,` between positions) | median spacing, the most marks within n residues, the top window, the architecture |
-| `other_ptms` (`p-ptm`) | `table`: a `residue_evidence` table whose `kind` is the modification (`kinds` labels them, in order) | the count of each kind, and those within `near` residues of a mark |
+| `other_ptms` (`p-ptm`) | `table`: a `residue_evidence` table whose `kind` is the modification (`kinds` labels them, in order); optional on a site with `context_marks`, whose marks the card counts instead, as the map's legend does | the count of each kind, and those within `near` residues of a mark |
 
 The Disease card is the protein-set card of `website.protein.sets`; an entry may take an `id` (the fold's), `live`
 (`uniprot: true` lists the diseases UniProt curates for the entry; `open_targets: {graphql, size, page}` the Open Targets

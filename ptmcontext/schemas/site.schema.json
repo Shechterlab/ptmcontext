@@ -5361,10 +5361,7 @@
                 "other_ptms": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "table"
-                  ],
-                  "description": "Other PTMs: a residue_evidence table of the protein's other modifications (kind = the modification)",
+                  "description": "Other PTMs: the site's context marks, or else a residue_evidence table of the protein's other modifications (kind = the modification)",
                   "properties": {
                     "title": {
                       "type": "string"

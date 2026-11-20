@@ -86,8 +86,8 @@ def problems(site: dict) -> list[str]:
         need('experiments', 'table', cards['experiments'].get('table'), 'protein_records', ('reference', 'finding'))
     if 'clustering' in cards:
         need('clustering', 'table', cards['clustering'].get('table'), 'protein_records', ('spacing_median',))
-    if 'other_ptms' in cards:
-        need('other_ptms', 'table', cards['other_ptms'].get('table'), 'residue_evidence')
+    if 'other_ptms' in cards and (cards['other_ptms'].get('table') or not site.get('context_marks')):
+        need('other_ptms', 'table', cards['other_ptms'].get('table'), 'residue_evidence')  # context marks replace it
     for k, x in enumerate((cfg.get('card') or {}).get('change_counts') or []):
         w = f'website.protein.card.change_counts[{k}]'
         if not x.get('tables'):
