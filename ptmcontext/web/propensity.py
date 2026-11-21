@@ -117,9 +117,26 @@ def decode(blk: dict) -> list[dict]:
     low = dict(zip(blk.get('l', [])[::2], blk.get('l', [])[1::2]))
     for i, d in enumerate(pos):
         last += d
-        r = {'pos': last, 'k': blk['k'][i], 'e': blk['e'][i], 'o': blk['o'][i], 'q': blk['q'][i], 'pu': blk['pu'][i], 'u': i in u}
+        r = {
+            'pos': last,
+            'k': blk['k'][i],
+            'e': blk['e'][i],
+            'o': blk['o'][i],
+            'q': blk['q'][i],
+            'pu': blk['pu'][i],
+            'u': i in u,
+        }
         if 'k2' in blk:
-            r.update({'k2': blk['k2'][i], 'e2': blk['e2'][i], 'o2': blk['o2'][i], 'q2': blk['q2'][i], 'pu2': blk['pu2'][i], 'u2': i in u2})
+            r.update(
+                {
+                    'k2': blk['k2'][i],
+                    'e2': blk['e2'][i],
+                    'o2': blk['o2'][i],
+                    'q2': blk['q2'][i],
+                    'pu2': blk['pu2'][i],
+                    'u2': i in u2,
+                }
+            )
         if 'pl' in blk:
             r['pl'] = blk['pl'][i]
         if i in low:
@@ -129,12 +146,32 @@ def decode(blk: dict) -> list[dict]:
 
 
 def read_source(path: Path, residues: list[str], somatic: bool, lower: bool) -> pd.DataFrame:
-    want = ['canonical_UniProtAC', 'position', 'residue', 'k', 'expected', 'oe', 'q_upper', 'p_upper', 'expected_unweighted', 'oe_unweighted']
+    want = [
+        'canonical_UniProtAC',
+        'position',
+        'residue',
+        'k',
+        'expected',
+        'oe',
+        'q_upper',
+        'p_upper',
+        'expected_unweighted',
+        'oe_unweighted',
+    ]
     if somatic:
-        want += [f'{c}_no_hypermutated' for c in ('k', 'expected', 'oe', 'q_upper', 'p_upper', 'expected_unweighted', 'oe_unweighted')]
+        want += [
+            f'{c}_no_hypermutated'
+            for c in ('k', 'expected', 'oe', 'q_upper', 'p_upper', 'expected_unweighted', 'oe_unweighted')
+        ]
     if lower:
         want += ['q_lower', 'p_lower']
-    df = pd.read_csv(path, sep='\t', usecols=lambda c: c in want or c in ('oe_status', 'site_sets', 'samples_profiled', 'samples_profiled_no_hypermutated'))
+    df = pd.read_csv(
+        path,
+        sep='\t',
+        usecols=lambda c: (
+            c in want or c in ('oe_status', 'site_sets', 'samples_profiled', 'samples_profiled_no_hypermutated')
+        ),
+    )
     return df[df['residue'].isin(residues)]
 
 
@@ -185,7 +222,9 @@ def frequency_payload(
         d = den[den['source'] == fs].fillna({'group': ''})
         groups = d['group'].tolist()
         out['groups'][s['id']] = groups
-        out['den'][s['id']] = [[int(a), int(b)] for a, b in zip(d['samples_profiled'], d['samples_profiled_no_hypermutated'])]
+        out['den'][s['id']] = [
+            [int(a), int(b)] for a, b in zip(d['samples_profiled'], d['samples_profiled_no_hypermutated'])
+        ]
         out['all'][s['id']] = [int(d['samples_profiled'].sum()), int(d['samples_profiled_no_hypermutated'].sum())]
     sites: dict[str, dict[int, list]] = {}
     for si, s in enumerate(sources):
@@ -198,8 +237,12 @@ def frequency_payload(
         f['isite'] = [p in marks.get(a, ()) for a, p in zip(f['canonical_UniProtAC'], f['position'])]
         on = f[f['isite']]
         for a, p, r, g, m1, m2 in zip(
-            on['canonical_UniProtAC'], on['position'], on['residue'], on['group'],
-            on['samples_mutated'], on['samples_mutated_no_hypermutated'],
+            on['canonical_UniProtAC'],
+            on['position'],
+            on['residue'],
+            on['group'],
+            on['samples_mutated'],
+            on['samples_mutated_no_hypermutated'],
         ):
             per = sites.setdefault(a, {}).setdefault(int(p), [r] + [[] for _ in sources])
             per[1 + si] += [gi[g], int(m1), int(m2)]
@@ -207,7 +250,10 @@ def frequency_payload(
         bg: dict = {'all': {}, 'no_hypermutated': {}}
         non = f[~f['isite']]
         den_by = {g: out['den'][s['id']][i] for g, i in gi.items()}
-        for cohort, mcol, k in (('all', 'samples_mutated', 0), ('no_hypermutated', 'samples_mutated_no_hypermutated', 1)):
+        for cohort, mcol, k in (
+            ('all', 'samples_mutated', 0),
+            ('no_hypermutated', 'samples_mutated_no_hypermutated', 1),
+        ):
             for res, n_total in totals.items():
                 sub = non[non['residue'] == res]
                 per_g: dict = {}
@@ -218,14 +264,18 @@ def frequency_payload(
                 # pooled over every group: the propensity table's own counts
                 pt = pooled[s['id']]
                 pt = pt[(pt['residue'] == res) & ~pt['isite']]
-                col, dcol = ('k', 'samples_profiled') if k == 0 else ('k_no_hypermutated', 'samples_profiled_no_hypermutated')
+                col, dcol = (
+                    ('k', 'samples_profiled') if k == 0 else ('k_no_hypermutated', 'samples_profiled_no_hypermutated')
+                )
                 dd = pt[dcol]
                 per_g[''] = curve((pt[col] / dd.where(dd > 0)).fillna(0).tolist(), n_total)
                 bg[cohort][res] = per_g
         out['bg'][s['id']] = bg
         # O/E and q of each known site with a change, in both cohorts: the colors and rings of the waterfall's points
         pt = pooled[s['id']]
-        on_ = pt[pt['isite'] & ((pt['k'] > 0) | (pt['k_no_hypermutated'] > 0))].sort_values(['canonical_UniProtAC', 'position'])
+        on_ = pt[pt['isite'] & ((pt['k'] > 0) | (pt['k_no_hypermutated'] > 0))].sort_values(
+            ['canonical_UniProtAC', 'position']
+        )
         a_, b_ = _numbers(on_, False), _numbers(on_, True)
         st: dict[str, list] = {}
         for i, (acc_, pos_) in enumerate(zip(on_['canonical_UniProtAC'], on_['position'])):
@@ -233,11 +283,19 @@ def frequency_payload(
         out.setdefault('stats', {})[s['id']] = st
         # the known sites with no change that a table can list: the ZERO_ROWS with the most expected changes, per cohort
         zero = {}
-        for cohort, kc, ec in (('all', 'k', 'expected'), ('no_hypermutated', 'k_no_hypermutated', 'expected_no_hypermutated')):
+        for cohort, kc, ec in (
+            ('all', 'k', 'expected'),
+            ('no_hypermutated', 'k_no_hypermutated', 'expected_no_hypermutated'),
+        ):
             z = pt[pt['isite'] & (pt[kc] == 0) & pt[ec].notna()].sort_values(ec, ascending=False).head(ZERO_ROWS)
-            zero[cohort] = [[a_, int(p_), r_, sig(float(e_))] for a_, p_, r_, e_ in zip(z['canonical_UniProtAC'], z['position'], z['residue'], z[ec])]
+            zero[cohort] = [
+                [a_, int(p_), r_, sig(float(e_))]
+                for a_, p_, r_, e_ in zip(z['canonical_UniProtAC'], z['position'], z['residue'], z[ec])
+            ]
         out.setdefault('zero', {})[s['id']] = zero
-    out['sites'] = {a: [[p, *per] for p, per in sorted(v.items())] for a, v in sites.items()}  # [pos, residue, per source...]
+    out['sites'] = {
+        a: [[p, *per] for p, per in sorted(v.items())] for a, v in sites.items()
+    }  # [pos, residue, per source...]
     return out
 
 
@@ -264,7 +322,18 @@ def germline_payload(changes: list[pd.DataFrame], prop: pd.DataFrame, totals: di
     sites: dict[str, list] = {}
     for i, (a, p, r) in enumerate(zip(on['canonical_UniProtAC'], on['position'], on['residue'])):
         sites.setdefault(a, []).append(
-            [int(p), r, nums['k'][i], sig(float(on['sum_af'].iat[i]), 3), nums['o'][i], nums['q'][i], ql[i], nums['e'][i], pl[i], nums['pu'][i]]
+            [
+                int(p),
+                r,
+                nums['k'][i],
+                sig(float(on['sum_af'].iat[i]), 3),
+                nums['o'][i],
+                nums['q'][i],
+                ql[i],
+                nums['e'][i],
+                pl[i],
+                nums['pu'][i],
+            ]
         )
     return {'sites': sites, 'bg': bg}
 
@@ -293,7 +362,10 @@ def onco_payload(burden: pd.DataFrame, changes: list[pd.DataFrame], marks: dict[
     return {
         'projects': projects,
         'samples': samples,
-        'sites': {a: [[p, [i * 2 + st for i, st in sorted(cells.items())]] for p, cells in sorted(v.items())] for a, v in sites.items()},
+        'sites': {
+            a: [[p, [i * 2 + st for i, st in sorted(cells.items())]] for p, cells in sorted(v.items())]
+            for a, v in sites.items()
+        },
     }
 
 
@@ -317,9 +389,25 @@ def summaries(site_id: str, run: dict, cfg: dict, log) -> dict:
     if f:
         d = pd.read_csv(f, sep='\t')
         d = d[d['site_set'] == (cfg.get('set') or site_id)]
-        keep = ['residue', 'source', 'cohort', 'proteins', 'sites', 'observed', 'expected', 'oe', 'p_upper', 'p_lower', 'oe_status']
+        keep = [
+            'residue',
+            'source',
+            'cohort',
+            'proteins',
+            'sites',
+            'observed',
+            'expected',
+            'oe',
+            'p_upper',
+            'p_lower',
+            'oe_status',
+        ]
         out['sets'] = [
-            {k: (sig(v, 4) if isinstance(v, float) else v) for k, v in r.items() if not (isinstance(v, float) and math.isnan(v))}
+            {
+                k: (sig(v, 4) if isinstance(v, float) else v)
+                for k, v in r.items()
+                if not (isinstance(v, float) and math.isnan(v))
+            }
             for r in d[keep].to_dict('records')
         ]
         if len(d):
@@ -333,7 +421,17 @@ def summaries(site_id: str, run: dict, cfg: dict, log) -> dict:
     f = _path(run, cfg.get('validation'), log, 'validation')
     if f:
         d = pd.read_csv(f, sep='\t')
-        keep = ['source', 'cohort', 'units', 'residues', 'binomial_p05', 'permutation_p05', 'both_p05', 'agreement_p05', 'iterations']
+        keep = [
+            'source',
+            'cohort',
+            'units',
+            'residues',
+            'binomial_p05',
+            'permutation_p05',
+            'both_p05',
+            'agreement_p05',
+            'iterations',
+        ]
         out['validation'] = [
             {k: (sig(v, 4) if isinstance(v, float) else v) for k, v in r.items()} for r in d[keep].to_dict('records')
         ]
@@ -362,7 +460,9 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         lower = s.get('kind') == 'germline' and s.get('lower_tail', False)
         full = read_source(f, residues, somatic, lower)
         descriptive = bool(len(full) and 'oe_status' in full and (full['oe_status'] == 'descriptive').all())
-        df = full[full['canonical_UniProtAC'].isin(acc)]  # the proteins with a mark: the only cards that show a lollipop
+        df = full[
+            full['canonical_UniProtAC'].isin(acc)
+        ]  # the proteins with a mark: the only cards that show a lollipop
         for a, g in df.groupby('canonical_UniProtAC'):
             blocks.setdefault(a, {})[s['id']] = block(g, somatic, lower)
         n_rows += len(df)
@@ -384,7 +484,9 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
     for k, f in files.items():
         (out / DIR / f'{k:03d}.json').write_text(json.dumps(f, separators=(',', ':')))
     size = sum(p.stat().st_size for p in (out / DIR).glob('*.json'))
-    log(f'  mutation propensity: {n_rows:,} residues of {len(blocks):,} proteins in {n} files ({size / 1e6:.1f} MB), read when a card is opened')
+    log(
+        f'  mutation propensity: {n_rows:,} residues of {len(blocks):,} proteins in {n} files ({size / 1e6:.1f} MB), read when a card is opened'
+    )
     res: dict = {
         'shards': n,
         'residues': residues,
@@ -432,7 +534,9 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
     gc = [p for p in (_path(run, c, log, c) for c in cfg.get('germline_changes') or []) if p]
     if gc and germ:
         sid, prop = next(iter(germ.items()))
-        gn = germline_payload([pd.read_csv(p, sep='\t', usecols=['canonical_UniProtAC', 'position', 'af']) for p in gc], prop, totals)
+        gn = germline_payload(
+            [pd.read_csv(p, sep='\t', usecols=['canonical_UniProtAC', 'position', 'af']) for p in gc], prop, totals
+        )
         text = json.dumps(gn, separators=(',', ':'))
         (out / 'data' / 'gn.json').write_text(text)
         res['gn'] = {'file': 'data/gn.json', 'source': sid}

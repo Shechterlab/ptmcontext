@@ -34,6 +34,10 @@ def _v143(rel: str) -> str:
 def test_methylarginine_files_of_v1_6_0_are_those_of_v1_4_3(reference_root):
     if not (reference_root / 'releases' / 'v1.4.3' / 'human_methylarginine_sites_v1.4.3.tsv').exists():
         pytest.skip('the v1.4.3 files are not in the checkout (add releases/v1.4.3 to its sparse list)')
+    if not (reference_root / 'releases' / 'v1.6.0' / 'human_methylarginine_sites_v1.6.0.tsv').exists():
+        pytest.skip(
+            'the v1.6.0 files are not in the checkout (the sites read v1.7.0; add releases/v1.6.0 to its sparse list)'
+        )
     inputs = json.loads((REPO / 'inputs.json').read_text())['inputs']
     compared = 0
     for entry in inputs.values():

@@ -83,7 +83,14 @@ def _toy_propensity(tmp_path):
         data / 'prop_clinvar.tsv', sep='\t', index=False
     )
     _prop_rows(
-        [('P1', 2, 2, 2.0, 1.0, 0.4, 0, 0, 0, 0.9), ('P1', 5, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.01), ('P1', 11, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.5), ('P2', 25, 0, 3.0, 1.0, 1.0, 0, 0, 0, 0.001)], nh=False, lower=True
+        [
+            ('P1', 2, 2, 2.0, 1.0, 0.4, 0, 0, 0, 0.9),
+            ('P1', 5, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.01),
+            ('P1', 11, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.5),
+            ('P2', 25, 0, 3.0, 1.0, 1.0, 0, 0, 0, 0.001),
+        ],
+        nh=False,
+        lower=True,
     ).to_csv(data / 'prop_gnomad.tsv', sep='\t', index=False)
     pd.DataFrame(
         {
@@ -99,8 +106,17 @@ def _toy_propensity(tmp_path):
             ('P1', 11, 'R', 'tcga_mc3', 'TCGA-AA', 1, 60, 1, 50),  # not a site
             ('P1', 2, 'R', 'depmap_24q4', 'Lung', 0, 10, 0, 8),
         ],
-        columns=['canonical_UniProtAC', 'position', 'residue', 'source', 'group', 'samples_mutated', 'samples_profiled',
-                 'samples_mutated_no_hypermutated', 'samples_profiled_no_hypermutated'],
+        columns=[
+            'canonical_UniProtAC',
+            'position',
+            'residue',
+            'source',
+            'group',
+            'samples_mutated',
+            'samples_profiled',
+            'samples_mutated_no_hypermutated',
+            'samples_profiled_no_hypermutated',
+        ],
     )
     freq.to_csv(data / 'freq.tsv', sep='\t', index=False)
     pd.DataFrame(
@@ -126,7 +142,13 @@ def _toy_propensity(tmp_path):
             'canonical_UniProtAC': ['P1', 'P1', 'P1', 'P1', 'P2'],
             'position': [2, 2, 2, 11, 25],
             'alt': ['H', 'C', '*', 'K', 'Q'],
-            'sample_id': ['TCGA-01-0001-01', 'TCGA-01-0002-01', 'TCGA-01-0003-01', 'TCGA-01-0001-01', 'TCGA-01-0004-01'],
+            'sample_id': [
+                'TCGA-01-0001-01',
+                'TCGA-01-0002-01',
+                'TCGA-01-0003-01',
+                'TCGA-01-0001-01',
+                'TCGA-01-0004-01',
+            ],
         }
     ).to_csv(data / 'chg.tsv', sep='\t', index=False)
     pd.DataFrame(
@@ -200,8 +222,22 @@ def _toy_propensity(tmp_path):
         'residues': ['R'],
         'set': 'toy',
         'sources': [
-            {'id': 'tcga', 'label': 'TCGA', 'long': 'TCGA tumors', 'kind': 'somatic', 'table': 'toy_prop_tcga', 'frequency_source': 'tcga_mc3', 'unit': ['tumor', 'tumors']},
-            {'id': 'depmap', 'label': 'DepMap', 'kind': 'somatic', 'table': 'toy_prop_depmap', 'frequency_source': 'depmap_24q4'},
+            {
+                'id': 'tcga',
+                'label': 'TCGA',
+                'long': 'TCGA tumors',
+                'kind': 'somatic',
+                'table': 'toy_prop_tcga',
+                'frequency_source': 'tcga_mc3',
+                'unit': ['tumor', 'tumors'],
+            },
+            {
+                'id': 'depmap',
+                'label': 'DepMap',
+                'kind': 'somatic',
+                'table': 'toy_prop_depmap',
+                'frequency_source': 'depmap_24q4',
+            },
             {'id': 'clinvar', 'label': 'ClinVar', 'kind': 'germline', 'table': 'toy_prop_clinvar'},
             {'id': 'gnomad', 'label': 'gnomAD', 'kind': 'germline', 'table': 'toy_prop_gnomad', 'lower_tail': True},
         ],
@@ -283,11 +319,22 @@ def test_an_entry_without_weights_falls_back_to_the_unweighted_expectation_and_h
 def test_the_waterfall_file_counts_sites_per_group_and_keeps_a_group_without_changes(built):
     root, sp, index, data = built
     wf = json.loads((index.parent / 'data' / 'wf.json').read_text())
-    assert wf['groups']['tcga'] == ['TCGA-AA', 'TCGA-BB', 'TCGA-CC']  # TCGA-CC has no changed sample and is still a group
+    assert wf['groups']['tcga'] == [
+        'TCGA-AA',
+        'TCGA-BB',
+        'TCGA-CC',
+    ]  # TCGA-CC has no changed sample and is still a group
     assert wf['den']['tcga'] == [[60, 50], [40, 30], [5, 5]] and wf['all']['tcga'] == [105, 85]
     # only the sites (P1:2) are listed with their changed samples: [group, changed, changed without hypermutated] triples
     entry = wf['sites']['P1'][0]
-    assert entry[:2] == [2, 'R'] and entry[2] == [0, 2, 1, 1, 1, 0]  # TCGA-AA 2 of 1 (without hypermutated), TCGA-BB 1 of 0
+    assert entry[:2] == [2, 'R'] and entry[2] == [
+        0,
+        2,
+        1,
+        1,
+        1,
+        0,
+    ]  # TCGA-AA 2 of 1 (without hypermutated), TCGA-BB 1 of 0
     assert 'P2' not in wf['sites']  # P2:25 has no row of the frequency table
     # the curve of the residues that are not sites: P1:11 is the only one with a change, among 8 (11 arginines less 3 sites)
     m, n, ranks, vals = wf['bg']['tcga']['all']['R']['0']
@@ -328,9 +375,17 @@ def test_the_germline_file_counts_variants_and_lists_the_depleted_sites_with_non
     gn = json.loads((index.parent / 'data' / 'gn.json').read_text())
     # [position, residue, k (variants), summed af, O/E, q (more), q (fewer), expected, raw p (fewer), raw p (more)]: P1:2 has two variants (af 1e-5 + 2e-5) and
     # q_lower 0.9; P1:5 one variant and q_lower 0.01; P2:25 has none and q_lower 0.001, so it is listed (the most depleted)
-    assert gn['sites']['P1'] == [[2, 'R', 2, 3e-05, 1, 0.4, 0.9, 2, 0.9, 0.4], [5, 'R', 1, 1e-06, 0.5, 1, 0.01, 2, 0.01, 1]]
+    assert gn['sites']['P1'] == [
+        [2, 'R', 2, 3e-05, 1, 0.4, 0.9, 2, 0.9, 0.4],
+        [5, 'R', 1, 1e-06, 0.5, 1, 0.01, 2, 0.01, 1],
+    ]
     assert gn['sites']['P2'] == [[25, 'R', 0, 0, 0, 1, 0.001, 3, 0.001, 1]]
-    assert gn['bg']['R'] == [1, 8, [1], [1]]  # the curve of k: P1:11 has one variant, among the 8 arginines that are not sites
+    assert gn['bg']['R'] == [
+        1,
+        8,
+        [1],
+        [1],
+    ]  # the curve of k: P1:11 has one variant, among the 8 arginines that are not sites
 
 
 def test_the_oncoprint_file_joins_samples_to_their_burden_and_marks_a_stop(built):
@@ -398,7 +453,13 @@ def _node(body, data):
     return json.loads(run.stdout)
 
 
-PR_DATA = {'propensity': {'shards': 7, 'sources': [{'id': 'tcga', 'label': 'TCGA', 'kind': 'somatic'}], 'hypermutated': {'per_mb': 10}}}
+PR_DATA = {
+    'propensity': {
+        'shards': 7,
+        'sources': [{'id': 'tcga', 'label': 'TCGA', 'kind': 'somatic'}],
+        'hypermutated': {'per_mb': 10},
+    }
+}
 
 
 def test_the_file_of_a_protein_is_the_same_in_python_and_the_page():
@@ -420,7 +481,19 @@ def test_a_block_reads_back_as_the_same_rows_in_python_and_the_page(built):
 
 
 def test_the_page_reads_the_cohort_the_reader_chose():
-    blk = {'p': [2, 3], 'k': [3, 0], 'e': [0.5, 0.4], 'o': [6, 0], 'q': [0.01, 1], 'pu': [0.004, 1], 'k2': [1, 0], 'e2': [0.3, 0.3], 'o2': [3.3, 0], 'q2': [0.2, 1], 'pu2': [0.08, 1]}
+    blk = {
+        'p': [2, 3],
+        'k': [3, 0],
+        'e': [0.5, 0.4],
+        'o': [6, 0],
+        'q': [0.01, 1],
+        'pu': [0.004, 1],
+        'k2': [1, 0],
+        'e2': [0.3, 0.3],
+        'o2': [3.3, 0],
+        'q2': [0.2, 1],
+        'pu2': [0.08, 1],
+    }
     got = _node(
         f"""
 global.fetch = async () => ({{ ok: true, json: async () => ({json.dumps({'P1': {'tcga': blk}})}) }});
@@ -452,7 +525,7 @@ def test_the_three_times_flag_is_gone_from_every_page_module_and_the_docs():
 def test_both_protein_cards_draw_a_lollipop_for_each_source_of_the_site():
     cards = (ASSETS / 'kit-pcards.js').read_text()
     assert cards.count('lollipopFor(') == 3  # the definition, the cancer card and the germline card
-    assert 'K.prop.lollipop' in cards and "K.prop.siteLine" in (ASSETS / 'kit-proteins.js').read_text()
+    assert 'K.prop.lollipop' in cards and 'K.prop.siteLine' in (ASSETS / 'kit-proteins.js').read_text()
 
 
 def test_the_oncoprint_colors_are_three_different_validated_hues_in_both_themes():

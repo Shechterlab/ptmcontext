@@ -627,7 +627,9 @@ def propensity_problems(site: dict) -> list[str]:
     except (OSError, ValueError, KeyError):
         have = None  # no manifest to read here: the names are checked by ptmc inputs
     names = [s['table'] for s in cfg.get('sources') or []]
-    names += [cfg[k] for k in ('frequency', 'denominators', 'burden', 'site_sets', 'controls', 'validation') if cfg.get(k)]
+    names += [
+        cfg[k] for k in ('frequency', 'denominators', 'burden', 'site_sets', 'controls', 'validation') if cfg.get(k)
+    ]
     names += list(cfg.get('changes') or []) + list(cfg.get('germline_changes') or [])
     if have is not None:
         out += [f'website.propensity: no manifest input {n!r}' for n in names if n not in have]
@@ -638,7 +640,9 @@ def propensity_problems(site: dict) -> list[str]:
     cards = {x.get('id') for k in ('change_counts', 'variant_counts') for x in card.get(k) or []}
     for s in cfg.get('sources') or []:
         if s.get('card') and s['card'] not in cards:
-            out.append(f'website.propensity, source {s["id"]!r}: card {s["card"]!r} is no change_counts or variant_counts entry')
+            out.append(
+                f'website.propensity, source {s["id"]!r}: card {s["card"]!r} is no change_counts or variant_counts entry'
+            )
         if s.get('frequency_source') and not (cfg.get('frequency') and cfg.get('denominators')):
             out.append(f'website.propensity, source {s["id"]!r}: frequency_source needs `frequency` and `denominators`')
     return out

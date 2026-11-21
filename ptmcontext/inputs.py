@@ -85,7 +85,9 @@ def site_input_names(site: dict) -> list[str]:
     # the tables of the mutation propensity (website.propensity): checked and recorded like every input, read by ptmc web
     prop = (site.get('website') or {}).get('propensity') or {}
     names += [s['table'] for s in prop.get('sources') or []]
-    names += [prop[k] for k in ('frequency', 'denominators', 'burden', 'site_sets', 'controls', 'validation') if prop.get(k)]
+    names += [
+        prop[k] for k in ('frequency', 'denominators', 'burden', 'site_sets', 'controls', 'validation') if prop.get(k)
+    ]
     names += list(prop.get('changes') or []) + list(prop.get('germline_changes') or [])
     names += [x['input'] for x in (site.get('reference', {}).get('tables') or {}).values()]
     if site.get('reference', {}).get('background'):
