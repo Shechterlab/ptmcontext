@@ -693,7 +693,7 @@
             )
             .join(' ')}</p>` +
           `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Source</th><th>k</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th><th>Adjusted p (more)</th><th>Adjusted p (fewer)</th></tr></thead><tbody>${body}</tbody></table></div>` +
-          `${K.expBar(['tsv'], 'muchosen', 'tested sites', 'propensity')}</div>`
+          `${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muchosen', 'tested sites', 'propensity')}</div>`
         : '') +
       `</section>`
     );
@@ -770,7 +770,20 @@
         b.disabled = true;
       },
     ],
-    ['[data-muchosen]', (b) => K.exportFigure(b.dataset.muchosen, null, `${D.site.id}_tested_sites`, b, chosenTsv)]
+    [
+      '[data-muchosen]',
+      (b) =>
+        b.dataset.muchosen === 'tsv'
+          ? K.exportFigure('tsv', null, `${D.site.id}_tested_sites`, b, chosenTsv)
+          : K.tableExport(
+              b.dataset.muchosen,
+              b,
+              b.closest('section'),
+              { title: 'Tested sites' },
+              `${D.site.id}_tested_sites`,
+              chosenTsv
+            ),
+    ]
   );
   // for a site card: a button that adds the site to the tested sites
   K.mut = {
@@ -805,7 +818,7 @@
             `<tr><td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteName(r.acc, r.pos, r.res))}</a></td><td>${K.prop.fe(r.e)}</td>${hasP ? `<td>${fpv(r.p)}</td>` : ''}</tr>`
         )
         .join('') +
-      `</tbody></table></div>${K.expBar(['tsv'], 'muzero', 'sites with no change', 'propensity')}</div>` +
+      `</tbody></table></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muzero', 'sites with no change', 'propensity')}</div>` +
       (rows.length > ZERO_SHOWN
         ? `<p class="small muted">${int(ZERO_SHOWN)} of ${int(rows.length)} shown; the download has all.</p>`
         : '') +
@@ -826,7 +839,17 @@
   };
   K.clicks.push([
     '[data-muzero]',
-    (b) => K.exportFigure(b.dataset.muzero, null, `${D.site.id}_sites_with_no_change`, b, zeroTsv),
+    (b) =>
+      b.dataset.muzero === 'tsv'
+        ? K.exportFigure('tsv', null, `${D.site.id}_sites_with_no_change`, b, zeroTsv)
+        : K.tableExport(
+            b.dataset.muzero,
+            b,
+            b.closest('section'),
+            { title: 'Sites with no change' },
+            `${D.site.id}_sites_with_no_change`,
+            zeroTsv
+          ),
   ]);
 
   function view() {
