@@ -20,12 +20,13 @@
   const byAcc = Object.fromEntries((D.proteins || []).map((p) => [p[0], p]));
 
   // ---- the choices (kept in the address: ms source, mg cancer type, mv view, mz zoom; hyper is kit-propensity's) -------------
-  const M = { src: SRC[0].id, group: '', view: 'waterfall', zoom: 0 };
+  const M = { src: SRC[0].id, group: '', view: 'waterfall', zoom: 0, linear: false };
   K.paramsIn.push((p) => {
     M.src = SRC.some((s) => s.id === p.get('ms')) ? p.get('ms') : SRC[0].id;
     M.group = p.get('mg') || '';
     M.view = p.get('mv') === 'oncoprint' ? 'oncoprint' : 'waterfall';
     M.zoom = [100, 1000].includes(+p.get('mz')) ? +p.get('mz') : 0;
+    M.linear = p.get('mx') === 'linear';
   });
   K.paramsOut.push((p) => {
     if (S.view !== 'mutations') return;
@@ -33,6 +34,7 @@
     if (M.group) p.set('mg', M.group);
     if (M.view !== 'waterfall') p.set('mv', M.view);
     if (M.zoom) p.set('mz', String(M.zoom));
+    if (M.linear) p.set('mx', 'linear');
   });
   const sourceOf = () => SRC.find((s) => s.id === M.src) || SRC[0];
 
@@ -95,10 +97,10 @@
   const hyper = () => K.prop.state.hyper;
   // changed samples of a site in the chosen group and cohort: the entry is [position, residue, per source ([group, changed,
   // changed without hypermutated] triples)]
-  function changed(entry, si, gi) {
+  function changed(entry, si, gi, hy = hyper()) {
     const a = entry?.[2 + si] || [];
     let m = 0;
-    for (let i = 0; i < a.length; i += 3) if (gi === '' || a[i] === gi) m += a[i + (hyper() ? 1 : 2)];
+    for (let i = 0; i < a.length; i += 3) if (gi === '' || a[i] === gi) m += a[i + (hy ? 1 : 2)];
     return m;
   }
   function model() {
@@ -112,7 +114,13 @@
     const g = gi === -1 ? '' : gi;
     const den = g === '' ? wf.all[s.id][hyper() ? 0 : 1] : wf.den[s.id][g][hyper() ? 0 : 1];
     const idx = siteIdx(wf);
-    const rows = sites.map(([acc, pos, res]) => ({ acc, pos, res, m: changed(idx.get(acc + ':' + pos), si, g) }));
+    const rows = sites.map(([acc, pos, res]) => ({
+      acc,
+      pos,
+      res,
+      m: changed(idx.get(acc + ':' + pos), si, g),
+      mAll: changed(idx.get(acc + ':' + pos), si, g, true),
+    }));
     rows.sort((a, b) => b.m - a.m || (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos));
     const letters = [...new Set(rows.map((r) => r.res).filter((r) => PR.residues.includes(r)))];
     return { wf, s, si, g, den, rows, letters: letters.length ? letters : PR.residues, n: rows.length };
@@ -167,10 +175,10 @@
     muted: 'var(--muted)',
     line: 'var(--line-strong)',
     site: 'var(--accent)',
-    bg: 'var(--muted)',
+    bg: 'var(--ink-2)',
     cap: 'var(--surface)',
   };
-  const LIGHT = { ink: '#1f2937', muted: '#6b7280', line: '#cbd5e1', site: '#0f766e', bg: '#9ca3af', cap: '#ffffff' };
+  const LIGHT = { ink: '#1f2937', muted: '#6b7280', line: '#cbd5e1', site: '#0f766e', bg: '#4b5563', cap: '#ffffff' };
   function waterfallSvg(m, c, w) {
     const ml = 54,
       mr = 16,
@@ -185,29 +193,29 @@
     const bgAt = (rank) => bg(Math.min(1, rank / m.n));
     const top = Math.max(fr[0] || 0, bgAt(1));
     const ymax = niceMax(top * 1.05);
-    const X = (rank) => ml + ((rank - 0.5) / shown) * pw,
+    // x: the rank, on a log axis (1 to the number shown) unless the reader asks for a linear one
+    const lg = !M.linear && shown > 1,
+      L = Math.log(shown);
+    const X = (rank) => ml + (lg ? Math.log(Math.max(1, rank)) / L : (rank - 0.5) / shown) * pw,
       Y = (f) => mt + ph * (1 - f / ymax);
-    const cols = Math.min(shown, Math.floor(pw)),
-      per = shown / cols;
+    // the first rank (1-based, fractional) of pixel column i of `cols`
+    const cols = Math.max(1, Math.floor(pw)),
+      rankAtCol = (i) => (lg ? Math.exp((L * i) / cols) : 1 + (i * shown) / cols);
     let area = `M${ml},${Y(0).toFixed(1)}`,
-      line = '';
+      line = '',
+      b = '';
     for (let i = 0; i < cols; i++) {
-      const r = Math.floor(i * per),
+      const r0 = Math.min(shown, Math.floor(rankAtCol(i) + 1e-9)),
+        mid = lg ? Math.sqrt(rankAtCol(i) * rankAtCol(i + 1)) : (rankAtCol(i) + rankAtCol(i + 1)) / 2,
         x0 = ml + (i / cols) * pw,
         x1 = ml + ((i + 1) / cols) * pw,
-        y = Y(fr[r] || 0).toFixed(1);
+        y = Y(fr[r0 - 1] || 0).toFixed(1),
+        yb = Y(bgAt(mid)).toFixed(1);
       area += `L${x0.toFixed(1)},${y}L${x1.toFixed(1)},${y}`;
       line += `${i ? 'L' : 'M'}${x0.toFixed(1)},${y}L${x1.toFixed(1)},${y}`;
+      b += `${i ? 'L' : 'M'}${x0.toFixed(1)},${yb}L${x1.toFixed(1)},${yb}`;
     }
     area += `L${ml + pw},${Y(0).toFixed(1)}Z`;
-    let b = '';
-    for (let i = 0; i < cols; i++) {
-      const rank = (i + 0.5) * per + 1,
-        x0 = ml + (i / cols) * pw,
-        x1 = ml + ((i + 1) / cols) * pw,
-        y = Y(bgAt(rank)).toFixed(1);
-      b += `${i ? 'L' : 'M'}${x0.toFixed(1)},${y}L${x1.toFixed(1)},${y}`;
-    }
     let ax = `<line x1="${ml}" x2="${ml + pw}" y1="${Y(0)}" y2="${Y(0)}" stroke="${c.line}"/><line x1="${ml}" x2="${ml}" y1="${mt}" y2="${Y(0)}" stroke="${c.line}"/>`;
     const mant = ymax / 10 ** Math.floor(Math.log10(ymax)),
       ticks = mant === 2 ? 4 : 5; // steps of 0.2, 0.5 or 1 times a power of ten
@@ -215,30 +223,33 @@
       const v = (ymax * i) / ticks;
       ax += `<line x1="${ml - 4}" x2="${ml}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${c.line}"/><text x="${ml - 7}" y="${(Y(v) + 3.5).toFixed(1)}" text-anchor="end" font-size="11" fill="${c.muted}">${pct(v)}</text>`;
     }
-    const xt = [1, ...[0.25, 0.5, 0.75, 1].map((f) => Math.round(f * shown))].filter((v, i, a) => a.indexOf(v) === i);
-    xt.forEach((r) => {
+    const xt = lg
+      ? [...Array(Math.floor(Math.log10(shown)) + 1).keys()].map((k) => 10 ** k).concat(shown)
+      : [1, ...[0.25, 0.5, 0.75, 1].map((f) => Math.round(f * shown))];
+    xt.filter((v, i, a) => a.indexOf(v) === i && !(lg && v !== shown && X(shown) - X(v) < 28)).forEach((r) => {
       ax += `<line x1="${X(r).toFixed(1)}" x2="${X(r).toFixed(1)}" y1="${Y(0)}" y2="${Y(0) + 4}" stroke="${c.line}"/><text x="${X(r).toFixed(1)}" y="${Y(0) + 16}" text-anchor="${r === shown ? 'end' : r === 1 ? 'start' : 'middle'}" font-size="11" fill="${c.muted}">${int(r)}</text>`;
     });
-    ax += `<text x="${ml + pw / 2}" y="${H - 6}" text-anchor="middle" font-size="11.5" fill="${c.muted}">${esc(W.marks)} ranked by frequency, highest first${shown < m.n ? ` (top ${int(shown)} of ${int(m.n)})` : ''}</text>`;
+    ax += `<text x="${ml + pw / 2}" y="${H - 6}" text-anchor="middle" font-size="11.5" fill="${c.muted}">${esc(W.marks)} ranked by frequency, highest first (${lg ? 'log scale' : 'linear'})${shown < m.n ? `, top ${int(shown)} of ${int(m.n)}` : ''}</text>`;
     ax += `<text transform="translate(13,${mt + ph / 2}) rotate(-90)" text-anchor="middle" font-size="11.5" fill="${c.muted}">samples with a change</text>`;
-    // the tail of sites with no change: a bracket under the flat part
+    // the tail of sites with no change: a bracket over the flat part
     const nz = m.rows.filter((r) => r.m > 0).length;
     let tail = '';
     if (nz < shown) {
       const x0 = X(nz + 1),
-        x1 = X(shown) + 0.5 * (pw / shown);
+        x1 = X(shown) + (lg ? 0 : 0.5 * (pw / shown));
       tail = `<path d="M${x0.toFixed(1)},${Y(0) - 12}v-5h${(x1 - x0).toFixed(1)}v5" fill="none" stroke="${c.muted}"/><text x="${((x0 + x1) / 2).toFixed(1)}" y="${Y(0) - 22}" text-anchor="middle" font-size="11" fill="${c.ink}">${int(m.n - nz)} ${esc(W.marks)} with no change</text>`;
     }
-    // names for the top few
-    // names for the top few, each at least 13 px under the one before (the others are in the hover)
-    let names = '',
-      lastY = -99;
-    m.rows.slice(0, 8).forEach((r, i) => {
+    // names for the top sites: a dot on the point and the name beside it, each label at least 14 px from the others
+    let names = '';
+    const placed = [];
+    m.rows.slice(0, 12).forEach((r, i) => {
       if (!r.m || i >= shown) return;
-      const y = Y(fr[i]) + 4;
-      if (y - lastY < 13) return;
-      lastY = y;
-      names += `<text x="${(X(i + 1) + 6).toFixed(1)}" y="${y.toFixed(1)}" font-size="11" fill="${c.ink}">${esc(siteName(r.acc, r.pos, r.res))}</text>`;
+      const x = X(i + 1),
+        y = Y(fr[i]),
+        w2 = siteName(r.acc, r.pos, r.res).length * 6.2;
+      if (placed.some((q) => Math.abs(q.y - y) < 14 && x + 8 < q.x1 && x + 8 + w2 > q.x0)) return;
+      placed.push({ y, x0: x + 8, x1: x + 8 + w2 });
+      names += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${c.site}"/><text x="${(x + 8).toFixed(1)}" y="${(y + 4).toFixed(1)}" font-size="11" fill="${c.ink}">${esc(siteName(r.acc, r.pos, r.res))}</text>`;
     });
     return {
       H,
@@ -247,7 +258,7 @@
       shown,
       ymax,
       body:
-        `<path d="${b}" fill="none" stroke="${c.bg}" stroke-width="1.6" stroke-dasharray="4 3"/>` +
+        `<path d="${b}" fill="none" stroke="${c.bg}" stroke-width="2.2" stroke-dasharray="5 3"/>` +
         `<path d="${area}" fill="${c.site}" fill-opacity="0.25"/><path d="${line}" fill="none" stroke="${c.site}" stroke-width="1.4"/>` +
         ax +
         tail +
@@ -278,8 +289,9 @@
       for (const [pos, cells] of list) idx.set(acc + ':' + pos, cells);
     const rows = [];
     for (const [acc, pos, res] of sites) {
-      const cells = (idx.get(acc + ':' + pos) || []).filter((v) => ok(v >> 1));
-      if (cells.length) rows.push({ acc, pos, res, cells });
+      const all = (idx.get(acc + ':' + pos) || []).filter((v) => proj < 0 || oc.samples[v >> 1][1] === proj),
+        cells = all.filter((v) => ok(v >> 1));
+      if (cells.length) rows.push({ acc, pos, res, cells, nAll: all.length });
     }
     rows.sort((a, b) => b.cells.length - a.cells.length || (a.acc < b.acc ? -1 : 1) || a.pos - b.pos);
     const top = rows.slice(0, TOP);
@@ -298,7 +310,7 @@
   // the oncoprint's frame: left margin, width, a column's width, where the rows start and their height
   const oncoGeo = (o, w) => {
     const ml = 128,
-      mr = 70,
+      mr = 150,
       mt = 12,
       burdenH = 34,
       gap = 8,
@@ -327,10 +339,11 @@
     const yb = (v) => mt + burdenH - (Math.min(v, CAP) / CAP) * burdenH;
     o.cols.forEach((i, k) => {
       const smp = o.oc.samples[i];
-      s += `<rect x="${(ml + k * cw).toFixed(2)}" y="${yb(smp[3]).toFixed(1)}" width="${Math.max(0.6, cw - (cw > 3 ? 0.6 : 0)).toFixed(2)}" height="${(mt + burdenH - yb(smp[3])).toFixed(1)}" fill="${smp[2] ? c.stop : c.muted}"/>`;
+      s += `<rect x="${(ml + k * cw).toFixed(2)}" y="${yb(smp[3]).toFixed(1)}" width="${Math.max(0.6, cw - (cw > 3 ? 0.6 : 0)).toFixed(2)}" height="${(mt + burdenH - yb(smp[3])).toFixed(1)}" fill="${smp[2] ? c.hyp : c.muted}"/>`;
     });
     s += `<line x1="${ml}" x2="${ml + pw}" y1="${yb(th).toFixed(1)}" y2="${yb(th).toFixed(1)}" stroke="${c.line}" stroke-dasharray="3 3"/><text x="${ml - 6}" y="${(yb(th) + 3.5).toFixed(1)}" text-anchor="end" font-size="10.5" fill="${c.muted}">${th} per Mb</text>`;
     s += `<text x="${ml - 6}" y="${mt + 8}" text-anchor="end" font-size="10.5" fill="${c.muted}">calls per Mb</text>`;
+    s += `<text x="${ml + pw + 6}" y="${mt + burdenH + 4}" font-size="10.5" fill="${c.muted}">${hyper() ? 'tumors' : 'tumors, without hypermutated'}</text>`;
     const y0 = geo.y0;
     o.top.forEach((r, j) => {
       const y = y0 + j * rowH;
@@ -341,7 +354,7 @@
         s += `<rect x="${(ml + k * cw).toFixed(2)}" y="${y}" width="${Math.max(0.8, cw - (cw > 3 ? 0.6 : 0)).toFixed(2)}" height="${rowH - 2}" fill="${cellColors[st]}"/>`;
       });
       s += `<text x="${ml - 6}" y="${y + rowH - 4}" text-anchor="end" font-size="11" fill="${c.ink}">${esc(siteName(r.acc, r.pos, r.res))}</text>`;
-      s += `<text x="${ml + pw + 6}" y="${y + rowH - 4}" font-size="11" fill="${c.muted}">${int(r.cells.length)}</text>`;
+      s += `<text x="${ml + pw + 6}" y="${y + rowH - 4}" font-size="11" fill="${c.ink}">${int(r.cells.length)}${!hyper() && r.nAll > r.cells.length ? `<tspan fill="${c.muted}" font-size="10.5"> (${int(r.nAll)} in all)</tspan>` : ''}</text>`;
     });
     s += `<text x="${ml + pw / 2}" y="${H - 8}" text-anchor="middle" font-size="11.5" fill="${c.muted}">${int(o.cols.length)} TCGA tumors with a change at one of these ${esc(W.marks)}</text>`;
     return { svg: s, H, ml, pw, cw, y0, rowH };
@@ -350,7 +363,9 @@
     `The ${int(o.top.length)} ${esc(W.marks)} with the most TCGA tumors changed, of ${int(o.nSites)} with at least one${
       M.group ? ` in ${esc(M.group)}` : ''
     }. Each column is a tumor sample, joined by its sample id to its coding calls per Mb (the bar above, capped at 40; the dashed line is the hypermutated threshold). ${
-      hyper() ? 'Hypermutated tumors (red bars) are included.' : 'Hypermutated tumors are left out.'
+      hyper()
+        ? 'Hypermutated tumors (teal bars) are included.'
+        : 'Hypermutated tumors are left out, so the counts at the right are without them, with the count in all tumors beside each.'
     }`;
 
   // ---- the page ------------------------------------------------------------------------------------------------------------------
@@ -442,9 +457,18 @@
         ],
         M.zoom
       );
+      const axis = seg(
+        'data-mu-axis',
+        'Rank axis',
+        [
+          ['log', 'Log'],
+          ['linear', 'Linear'],
+        ],
+        M.linear ? 'linear' : 'log'
+      );
       body =
         `<section class="mu-card"><div class="mu-top"><p class="small muted">${waterfallNote(m)}</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muwf', 'mutation frequency', 'propensity')}</div>` +
-        `<p class="small">${int(m.n)} ${esc(W.marks)}; ${int(m.rows.filter((r) => r.m > 0).length)} with a change in ${esc(m.s.long || m.s.label)}.</p>${zoom}` +
+        `<p class="small">${int(m.n)} ${esc(W.marks)}; ${int(m.rows.filter((r) => r.m > 0).length)} with a change in ${esc(m.s.long || m.s.label)}${hyper() ? '' : ` without hypermutated samples (${int(m.rows.filter((r) => r.mAll > 0).length)} in all)`}.</p><div class="mu-bar">${axis}${zoom}</div>` +
         `<svg id="mu-svg" class="mu-svg" viewBox="0 0 760 ${f.H}" role="img" aria-label="Waterfall of the frequency of each site, ranked">${f.body}` +
         `<rect id="mu-hover" x="${f.ml}" y="0" width="${f.pw}" height="${f.H - 40}" fill="transparent" data-prtip=""/></svg>` +
         `<p class="pr-key small muted"><span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 8H26" stroke="var(--accent)" stroke-width="2"/></svg>${esc(W.marks)} of the selection, ranked</span>` +
@@ -455,15 +479,15 @@
       if (!o.top.length)
         body = `<p class="muted">No ${esc(W.mark)} of the selection has a tumor with a change${hyper() ? '' : ' (hypermutated tumors left out)'}.</p>`;
       else {
-        const f = oncoprintSvg(o, { ...ONC_THEME }, 760, ['var(--accent)', 'var(--onc-stop)']);
+        const f = oncoprintSvg(o, { ...ONC_THEME }, 760, ['var(--onc-1)', 'var(--onc-2)']);
         body =
           `<section class="mu-card"><div class="mu-top"><p class="small muted">${oncoNote(o)}</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muon', 'oncoprint', 'propensity')}</div>` +
           `<svg id="mu-svg" class="mu-svg" viewBox="0 0 760 ${f.H}" role="img" aria-label="Oncoprint of the top sites across TCGA tumors">${f.svg}` +
           `<rect id="mu-hover" x="${f.ml}" y="0" width="${f.pw}" height="${f.H}" fill="transparent" data-prtip=""/></svg>` +
-          `<p class="pr-key small muted"><span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--accent)"/></svg>missense change</span>` +
-          `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-stop)"/></svg>stop gained</span>` +
+          `<p class="pr-key small muted"><span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-1)"/></svg>missense change</span>` +
+          `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-2)"/></svg>stop gained</span>` +
           `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--muted)"/></svg>burden, below the threshold</span>` +
-          `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-stop)"/></svg>burden, hypermutated</span></p></section>`;
+          `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-3)"/></svg>burden, hypermutated</span></p></section>`;
       }
     }
     return `${head}${note}<div class="mu-bar">${tabs}${controls(wf)}</div>${body}${M.view === 'waterfall' ? setSummary() : ''}`;
@@ -472,10 +496,10 @@
     ink: 'var(--ink)',
     muted: 'var(--muted)',
     line: 'var(--line-strong)',
-    stop: 'var(--onc-stop)',
+    hyp: 'var(--onc-3)',
     track: 'var(--surface-2)',
   };
-  const ONC_LIGHT = { ink: '#1f2937', muted: '#9ca3af', line: '#cbd5e1', stop: '#6d28d9', track: '#f1f5f9' };
+  const ONC_LIGHT = { ink: '#1f2937', muted: '#9ca3af', line: '#cbd5e1', hyp: '#1baf7a', track: '#f1f5f9' };
 
   // ---- hovering ------------------------------------------------------------------------------------------------------------------
   document.addEventListener('mousemove', (e) => {
@@ -487,11 +511,12 @@
       const m = model();
       if (!m) return;
       const shown = Math.min(m.n, M.zoom || m.n),
-        i = Math.min(shown - 1, Math.max(0, Math.floor(f * shown))),
+        rank = M.linear || shown < 2 ? Math.floor(f * shown) + 1 : Math.floor(Math.exp(f * Math.log(shown) + 1e-9)),
+        i = Math.min(shown - 1, Math.max(0, rank - 1)),
         row = m.rows[i];
       const fr = m.den ? row.m / m.den : 0;
       const bg = backdrop(m)(Math.min(1, (i + 1) / m.n));
-      let t = `${siteName(row.acc, row.pos, row.res)} · rank ${int(i + 1)} of ${int(m.n)}\n${int(row.m)} of ${int(m.den)} ${m.s.unit?.[1] || 'samples'} with a change (${pct(fr)})`;
+      let t = `${siteName(row.acc, row.pos, row.res)} · rank ${int(i + 1)} of ${int(m.n)}\n${int(row.m)} of ${int(m.den)} ${m.s.unit?.[1] || 'samples'} with a change (${pct(fr)})${!hyper() && row.mAll > row.m ? `\n${int(row.m)} without hypermutated tumors; ${int(row.mAll)} in all` : ''}`;
       if (!K.prop.peek(row.acc)) K.prop.load(row.acc);
       const v = K.prop.at(row.acc, m.s.id, row.pos);
       if (v && v.o != null)
@@ -519,6 +544,7 @@
   K.clicks.push(
     ['[data-mu-view]', (b) => ((M.view = b.dataset.muView), K.render())],
     ['[data-mu-src]', (b) => ((M.src = b.dataset.muSrc), (M.group = ''), K.render())],
+    ['[data-mu-axis]', (b) => ((M.linear = b.dataset.muAxis === 'linear'), K.render())],
     ['[data-mu-zoom]', (b) => ((M.zoom = +b.dataset.muZoom), K.render())]
   );
   document.addEventListener('change', (e) => {
@@ -551,12 +577,18 @@
         'Mutation frequency of the sites',
         `${m.s.long || m.s.label}${M.group ? ', ' + gname(M.group) : ', all cancer types'}; ${hyper() ? 'with' : 'without'} hypermutated samples; frequency = samples with a change / samples profiled (group_denominators)`
       ) +
-      'rank\taccession\tsite\tchanged_samples\tsamples_profiled\tfrequency\n' +
+      'rank\taccession\tsite\tchanged_samples\tchanged_samples_with_hypermutated\tsamples_profiled\tfrequency\n' +
       m.rows
         .map((r, i) =>
-          [i + 1, r.acc, siteName(r.acc, r.pos, r.res), r.m, m.den, m.den ? +(r.m / m.den).toPrecision(4) : ''].join(
-            '\t'
-          )
+          [
+            i + 1,
+            r.acc,
+            siteName(r.acc, r.pos, r.res),
+            r.m,
+            r.mAll,
+            m.den,
+            m.den ? +(r.m / m.den).toPrecision(4) : '',
+          ].join('\t')
         )
         .join('\n') +
       '\n'
@@ -564,7 +596,7 @@
   };
   function oncoFigure() {
     const o = onco(),
-      f = oncoprintSvg(o, ONC_LIGHT, 720, ['#0f766e', '#6d28d9']);
+      f = oncoprintSvg(o, ONC_LIGHT, 720, ['#2a78d6', '#eb6834']);
     return K.figureFrame({
       title: 'Oncoprint of the top sites in TCGA',
       sub: `${K.sel.describe() || 'every ' + W.mark}: ${int(o.top.length)} ${W.marks}, ${int(o.cols.length)} tumors`,
@@ -667,7 +699,7 @@
   const st = document.createElement('style');
   st.id = 'kit-mutations-css';
   st.textContent = [
-    ':root{--onc-stop:#6d28d9}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--onc-stop:#c4b5fd}}:root[data-theme="dark"]{--onc-stop:#c4b5fd}',
+    ':root{--onc-1:#2a78d6;--onc-2:#eb6834;--onc-3:#1baf7a}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--onc-1:#3987e5;--onc-2:#d95926;--onc-3:#199e70}}:root[data-theme="dark"]{--onc-1:#3987e5;--onc-2:#d95926;--onc-3:#199e70}',
     '.mu-bar{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin:.8rem 0}.mu-ctl{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center}',
     '.mu-ct{display:inline-flex;align-items:center;gap:.4rem}.mu-ct select{font:inherit;padding:.25rem .4rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);max-width:14rem}',
     '.mu-card{margin:.6rem 0;max-width:800px}.mu-top{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:flex-start;justify-content:space-between}.mu-top p{flex:1 1 24rem;margin:0}',

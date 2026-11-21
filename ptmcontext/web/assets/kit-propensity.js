@@ -140,10 +140,10 @@
       v = at(acc, id, pos),
       u = s.unit || ['sample', 'samples'];
     const lines = [`${site} · ${s.label}`];
-    const k = v ? v.k : n;
-    lines.push(
-      `${int(n ?? k ?? 0)} ${(n ?? k) === 1 ? u[0] : u[1]}${v?.nh && v.kAll > v.k ? ` (${int(v.kAll)} with hypermutated)` : ''}`
-    );
+    const all = n ?? v?.kAll ?? 0,
+      one = (x) => `${int(x)} ${x === 1 ? u[0] : u[1]}`;
+    // a count without hypermutated samples says so, with the count in all samples beside it
+    lines.push(v?.nh && v.k !== all ? `${one(v.k)} without hypermutated samples; ${int(all)} in all` : one(all));
     const w = words(id, v);
     lines.push(w.head);
     if (w.note) lines.push(w.note);
@@ -269,7 +269,7 @@
         const q = desc(s.id) ? 'descriptive' : v.q == null ? 'not tested' : `q ${fq(v.q)}`;
         const text = tip(acc, s.id, pos, '', v.k).replace(/^ · /, '');
         return (
-          `<span class="pr-s" title="${esc(text)}"><b>${esc(s.label)}</b> ${fo(v.o)}` +
+          `<span class="pr-s" title="${esc(text)}"><b>${esc(s.label)}</b> O/E ${fo(v.o)}` +
           `<span class="muted"> (${esc(q)}${v.u && !desc(s.id) ? ', unweighted' : ''})</span></span>`
         );
       })
