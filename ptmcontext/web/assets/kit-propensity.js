@@ -285,11 +285,12 @@
             ? 'not tested'
             : `${v.p != null ? `p ${fq(v.p)}, ` : ''}q ${fq(v.q)}`;
         // gnomAD, fewer than expected: the lower tail too
-        const low = v.pl != null && v.o < 1 ? `; fewer: p ${fq(v.pl)}${v.ql != null ? `, q ${fq(v.ql)}` : ''}` : '';
+        const low =
+          v.pl != null && v.o < 1 ? `; fewer than expected: p ${fq(v.pl)}${v.ql != null ? `, q ${fq(v.ql)}` : ''}` : '';
         const text = tip(acc, s.id, pos, '', v.k).replace(/^ · /, '');
         return (
           `<span class="pr-s" title="${esc(text)}"><b>${esc(s.label)}</b> O/E ${fo(v.o)}` +
-          `<span class="muted"> (${esc(q)}${low}${v.u && !desc(s.id) ? ', unweighted' : ''})</span></span>`
+          `<span class="muted"> (${esc(q)}${low}${v.u && !desc(s.id) ? ', no matching coding sequence' : ''})</span></span>`
         );
       })
       .join(' · ');

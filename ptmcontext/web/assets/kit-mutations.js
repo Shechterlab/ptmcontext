@@ -410,11 +410,11 @@
   }
   const waterfallNote = (m) =>
     (m.germ
-      ? `Each ${W.mark} of the selection is one place on the x axis, ranked by the number of its missense and stop variants in ${esc(m.s.long || m.s.label)}, the count k that the O/E test uses. `
-      : `Each ${W.mark} of the selection is one place on the x axis, ranked by the share of ${esc(m.s.long || m.s.label)} samples with a change${
+      ? `The x axis ranks the ${esc(W.marks)} of the selection by their number of missense and stop variants in ${esc(m.s.long || m.s.label)}, the count k of the O/E test. `
+      : `The x axis ranks the ${esc(W.marks)} of the selection by the share of ${esc(m.s.long || m.s.label)} samples with a change${
           M.group ? ` in ${esc(gname(M.group))}` : ''
         } (changed samples over the ${int(m.den)} profiled). `) +
-    `The dashed gray curve is the other ${esc(W.residues)} of the same type that are not sites, with ranks scaled to the number of sites. ` +
+    `The dashed gray curve is the same ranking for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. ` +
     (m.germ
       ? ''
       : hyper()
@@ -515,7 +515,7 @@
     }. Each column is a tumor. The bar above it is the tumor's coding calls per Mb (capped at 40); the dashed line is the hypermutated threshold. ${
       hyper()
         ? 'Hypermutated tumors are included (teal bars).'
-        : 'Hypermutated tumors are left out. The counts at the right are without them, with the count in all tumors in parentheses. A tumor with two changes at one site counts once, so a table that counts changes can show one more.'
+        : 'Hypermutated tumors are left out. The counts at the right are without them, with the count in all tumors in parentheses. A tumor with two changes at one site counts once, so a table that counts changes can show a higher number.'
     }`;
 
   // ---- the page ------------------------------------------------------------------------------------------------------------------
@@ -833,9 +833,9 @@
     const hasP = m.germ;
     return (
       `<section class="mu-zero"><h3>Sites with no ${m.germ ? 'variant' : 'change'}</h3>` +
-      `<p class="small muted">${esc(m.s.long || m.s.label)}, the ${esc(W.marks)} of the selection with none, most expected first: a site that should have shown ${m.germ ? 'variants' : 'changes'} and has none is the most surprising. ` +
+      `<p class="small muted">${esc(m.s.long || m.s.label)}: the ${esc(W.marks)} of the selection with none, most expected first. The top rows are the most surprising, since they should have shown ${m.germ ? 'variants' : 'changes'}. ` +
       `${hasP ? 'p is the release’s raw p of the lower tail (no variant or fewer). ' : 'The release gives no p for this tail in a somatic source. '}` +
-      `The release payload lists the ${int(PR.zero_rows || 1000)} sites with the most expected per source${hasP ? ', and every site with a raw p below 0.05' : ''}.</p>` +
+      `The table lists the ${int(PR.zero_rows || 1000)} sites with the most expected per source${hasP ? ', and every site with a raw p below 0.05' : ''}.</p>` +
       `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Expected</th>${hasP ? '<th>p (fewer)</th>' : ''}</tr></thead><tbody>` +
       rows
         .slice(0, ZERO_SHOWN)
@@ -931,7 +931,7 @@
         `<svg id="mu-svg" class="mu-svg" viewBox="0 0 760 ${f.H}" role="img" aria-label="Waterfall of the frequency of each site, ranked">${f.body}` +
         `<rect id="mu-hover" x="${f.ml}" y="0" width="${f.pw}" height="${f.H - 40}" fill="transparent" data-prtip=""/></svg>` +
         `<p class="pr-key small muted"><span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 8H26" stroke="var(--accent)" stroke-width="2"/></svg>${esc(W.marks)} of the selection, ranked</span>` +
-        `<span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 5H26" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/></svg>other ${esc(W.residues)} of the same type, ranks scaled to the number of ${esc(W.marks)}</span>` +
+        `<span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 5H26" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/></svg>${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}</span>` +
         `<span class="pr-k"><span class="mu-grad" aria-hidden="true"></span>point color: O/E, from 1/8 (blue) through 1 (gray) to 8 (red)</span>` +
         `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/><circle cx="9" cy="9" r="4" fill="var(--wf-hot)" stroke="var(--ink)" stroke-width="0.8"/></svg>solid ring: q &lt; 0.05, more than expected</span>` +
         (m.germ
@@ -994,7 +994,7 @@
         t += `\nO/E ${K.prop.fo(row.o)}${row.q != null ? ', q ' + K.prop.fq(row.q) : ''}`;
         if (row.ql != null && row.ql < 0.05) t += `\nfewer than expected: q ${K.prop.fq(row.ql)}`;
       }
-      t += `\nother ${W.residues} at this place in their ranking: ${pct(bg)}`;
+      t += `\n${W.residues} that are not ${W.marks}, at this relative rank: ${pct(bg)}`;
       r.setAttribute('data-prtip', t);
     } else {
       const o = onco();
@@ -1161,14 +1161,14 @@
       `k is tested against Binomial(n, w / Σw). O/E is k over the expected count. q is the Benjamini–Hochberg value over every residue tested for the source and residue type. ` +
       `The weights need a coding sequence that translates to the UniProt sequence (18,717 of 20,416 reviewed entries). For any other entry, O/E treats every residue of the type as equally likely and there is no q. ` +
       `The release's data dictionary defines every column (<a href="https://github.com/Shechterlab/PTM_Pipeline/blob/v1.7.0/releases/v1.7.0/README.md" target="_blank" rel="noopener">PTM_Pipeline v1.7.0, README</a>). The site adds no method of its own.</p>` +
-      `<p><b>Rates.</b> TCGA and DepMap use each source's own spectrum: the residue-changing single-base changes in the coding sequences, per trinucleotide class. ClinVar and gnomAD use gnomAD's germline rates (mutation_rate_methylation_bins, from <a href="https://doi.org/10.1038/s41586-020-2308-7" target="_blank" rel="noopener">Karczewski et al., Nature 581:434 (2020)</a>, gnomAD v2.1.1).</p>` +
-      `<p><b>Hypermutated samples</b> have more than ${PR.hypermutated.per_mb} coding calls per Mb (<a href="https://pubmed.ncbi.nlm.nih.gov/29056344/" target="_blank" rel="noopener">Campbell et al., Cell 171:1042 (2017)</a>). The cards and pages leave them out by default. The release repeats the test without them, using the spectrum of the remaining samples. A switch puts them back.</p>` +
-      `<p><b>Sites you chose.</b> A q value corrects across about 650,000 residues, which a site picked beforehand does not need. For those sites the raw p is the number to read. The Holm p corrects only for the sites you chose, over their tails and sources. Choose the sites before you look at the results.</p>` +
-      `<p><b>ClinVar</b> variants reflect clinical testing and submission more than mutation, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
-      `<p><b>Cards.</b> On the cancer and germline cards, each source is drawn along the protein. Stick height is the count in the card's table. Circle size grows with O/E. A ring marks q &lt; 0.05. The site card has one line with O/E and q for each source.</p>` +
-      `<p><b>Mutation frequency page.</b> The waterfall ranks the sites of the selection by the share of samples with a change (changed samples over the samples profiled in the chosen group, from the release's group_denominators). Sites with no change form the flat tail. Circles are colored by O/E, and a solid ring marks q &lt; 0.05. The gray curve is the same ranking for the other residues of the same type, with ranks scaled to the number of sites. For gnomAD, a site's height is its number of variants (k, the count the O/E test uses); the tooltip adds the summed allele frequency. A dashed ring marks q &lt; 0.05 for fewer variants than expected, including the sites with none, which sit in the flat tail. The page uses the sites this explorer counts. A count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example). The oncoprint shows the sites with the most changed TCGA tumors against those tumors, joined by sample id to the release's sample_burden.</p>` +
+      `<p>TCGA and DepMap use each source's own spectrum: the residue-changing single-base changes in the coding sequences, per trinucleotide class. ClinVar and gnomAD use gnomAD's germline rates (mutation_rate_methylation_bins, from <a href="https://doi.org/10.1038/s41586-020-2308-7" target="_blank" rel="noopener">Karczewski et al., Nature 581:434 (2020)</a>, gnomAD v2.1.1).</p>` +
+      `<p>Hypermutated samples have more than ${PR.hypermutated.per_mb} coding calls per Mb (<a href="https://pubmed.ncbi.nlm.nih.gov/29056344/" target="_blank" rel="noopener">Campbell et al., Cell 171:1042 (2017)</a>). The cards and pages leave them out by default. The release repeats the test without them, using the spectrum of the remaining samples. A switch puts them back.</p>` +
+      `<p>For a site you picked beforehand, read the raw p. The q value corrects across about 650,000 residues, which such a site does not need. The Holm p corrects only for the sites you chose, over their tails and sources. Choose the sites before you look at the results.</p>` +
+      `<p>ClinVar variants reflect clinical testing and submission more than mutation, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
+      `<p>On the cancer and germline cards, stick height is the count in the card's table, circle size grows with O/E, and a ring marks q &lt; 0.05.</p>` +
+      `<p>On the Mutation frequency page, the waterfall ranks the sites of the selection by the share of samples with a change: changed samples over the samples profiled in the chosen group (the release's group_denominators). Sites with no change form the flat tail. Circles are colored by O/E and a solid ring marks q &lt; 0.05. The gray curve is the same ranking for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. For gnomAD, height is the number of variants (k, the count of the O/E test) and the tooltip adds the summed allele frequency. A dashed ring marks q &lt; 0.05 for fewer variants than expected, including the sites with none in the flat tail. The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example). The oncoprint joins the sites with the most changed TCGA tumors to those tumors' sample_burden by sample id.</p>` +
       (ctl.length
-        ? `<p><b>Positive controls</b> (H3 oncohistone residues and recurrent cancer hotspots; <a href="https://doi.org/10.1038/nbt.3391" target="_blank" rel="noopener">Chang et al., Nat Biotechnol 34:155 (2016)</a>). A control passes when q &lt; 0.05. A failed control is reported here and does not block the release.</p>` +
+        ? `<p>Positive controls (H3 oncohistone residues and recurrent cancer hotspots; <a href="https://doi.org/10.1038/nbt.3391" target="_blank" rel="noopener">Chang et al., Nat Biotechnol 34:155 (2016)</a>). A control passes when q &lt; 0.05. A failed control is reported here and does not block the release.</p>` +
           `<div class="tbl-card"><table class="tbl"><thead><tr><th>Controls</th><th>Source</th><th>Samples</th><th>Pass</th><th>Fail</th><th>Not tested</th></tr></thead><tbody>` +
           ctl
             .map(
@@ -1179,7 +1179,7 @@
           `</tbody></table></div>`
         : '') +
       (val.length
-        ? `<p><b>Check against permutation.</b> On up to 1,000 protein and residue-type units per source, the binomial p and a permutation p (each unit's changes redrawn over its residues by mutability, ${int(val[0].iterations || 10000)} draws) agree on whether p &lt; 0.05 for ${val
+        ? `<p>As a check, on up to 1,000 protein and residue-type units per source, the binomial p and a permutation p (each unit's changes redrawn over its residues by mutability, ${int(val[0].iterations || 10000)} draws) agree on whether p &lt; 0.05 for ${val
             .map(
               (v) =>
                 `${(100 * v.agreement_p05).toFixed(1)}% of ${int(v.residues)} residues (${esc({ tcga_mc3: 'TCGA', depmap_24q4: 'DepMap', clinvar: 'ClinVar', gnomad_v4_1: 'gnomAD' }[v.source] || v.source)})`

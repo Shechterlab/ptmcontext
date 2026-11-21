@@ -1729,7 +1729,7 @@ website:                  # the look and words of the website (ptmc web); layout
     title: What’s new in v1.7.0
     items:
       - "Mutation propensity: O/E and q for every candidate residue in TCGA, DepMap, ClinVar and gnomAD, from the release."
-      - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old 3-times flag."
+      - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old flag for counts at least 3 times the protein's average."
       - "A Mutation frequency page: a waterfall of site frequencies (TCGA, DepMap, gnomAD) and an oncoprint of the top sites in TCGA tumors."
       - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
     doi: ""   # TODO(v1.7.0 DOI): the data DOI, once the release is tagged

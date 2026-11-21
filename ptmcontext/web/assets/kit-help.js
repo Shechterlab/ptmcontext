@@ -322,8 +322,8 @@
               `Stick height is the count: tumors, cell lines or variants with a change at the residue. Circle size is O/E, the ` +
               `changes seen over the changes the residue's codon predicts, among the protein's residues of the same type. A ring ` +
               `means q is below 0.05. Hover or focus a circle for the numbers. ClinVar's O/E is descriptive, with no ring, because its ` +
-              `variants reflect clinical testing more than mutation. A residue of a protein with no matching coding sequence has no q; ` +
-              `its O/E treats every residue of the type as equally likely.</p>` +
+              `variants reflect clinical testing more than mutation. A protein with no matching coding sequence has no q, and ` +
+              `its O/E assumes every residue of the type is equally likely.</p>` +
               `<p>The site card has one line with the site's O/E and q in each source. ` +
               (K.views.mutations
                 ? `The <a href="${esc(K.link('mutations'))}">Mutation frequency</a> page ranks the sites of your selection by how ` +
