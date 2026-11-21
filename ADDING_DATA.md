@@ -365,6 +365,23 @@ repository's code into this one without the owner's review; do not run another r
 - The kit's own version lives in `pyproject.toml`, `ptmcontext/__init__.py` and `CITATION.cff`; a test fails if they
   differ.
 
+### Adding an explorer
+
+A new published site needs these steps and no edit to a workflow or to a test's list of sites:
+
+1. Write the mark profile (`sites/marks/<mark>.yaml`), the manifest (`sites/<site>.inputs.json`), the site file
+   (`sites/<site>.yaml`) and the citation file (`sites/<site>.citation.cff`).
+2. Add `website.ci` to the site file (`order`, and `lower_confidence`, `audit.*` where they differ from the defaults;
+   CONTRACTS.md, "Site CI parameters"). This is what publishes it: the Pages build, the link and export audits, the
+   sparse checkout of the data repository and the `ptmc pages` list follow from it.
+3. Run `ptmc check sites/<site>.yaml --root <data>`: it reports an unknown layer parameter, an input missing from the
+   manifest and a `marks.attributes` column the marks table does not have.
+4. Run `python tools/ci_plan.py` and read the matrices and file lists it gives for the site.
+5. Add the site to the landing page's `order` in `sites/landing.yml`, and run `pytest -q`: the tests that hold for every
+   published site (`tests/ci_sites.py`, `PUBLISHED`) now run on it.
+6. Update `tests/ci_expected.json` only for a deliberate change to the first four sites' CI lists; a new site does not
+   need it.
+
 ## 8. Write down what you did
 
 In the pull request: what was added, its license, its coverage, the checks run and their output, and anything that

@@ -1,0 +1,37 @@
+# Files of the data repository the tests read that no published site reads: the v1.4.3 release the parity checks
+# compare against (tests/test_parity_v1_4_3.py, tests/test_release_v*_matches_v1_4_3.py). One path per line.
+releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv
+releases/v1.4.3/statistics_v1.4.3.tsv
+releases/v1.4.3/human_methylarginine_proteins_v1.4.3.tsv
+releases/v1.4.3/supporting/nucleic_acid_contacts_v1.4.3.tsv
+releases/v1.4.3/supporting/nucleic_acid_near_sites_v1.4.3.tsv
+releases/v1.4.3/supporting/dna_motifs_v1.4.3.tsv
+releases/v1.4.3/supporting/eclip_v1.4.3.tsv
+releases/v1.4.3/supporting/nucleic_acid_regions_v1.4.3.tsv
+releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv
+releases/v1.4.3/supporting/protein_partners_v1.4.3.tsv
+releases/v1.4.3/supporting/other_ptm_sites_v1.4.3.tsv
+releases/v1.4.3/supporting/functional_experiments_v1.4.3.tsv
+releases/v1.4.3/supporting/residue_evidence_v1.4.3.tsv
+releases/v1.4.3/supporting/site_interaction_records_v1.4.3.tsv
+releases/v1.4.3/supporting/site_interactions_v1.4.3.tsv
+releases/v1.4.3/supporting/source_records_v1.4.3.tsv
+releases/v1.4.3/studies_v1.4.3.tsv
+releases/v1.4.3/supporting/carm1_ko_v1.4.3.tsv
+releases/v1.4.3/supporting/maron2021_inhibitors_v1.4.3.tsv
+releases/v1.4.3/supporting/writer_perturbations_v1.4.3.tsv
+releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv
+releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv
+releases/v1.4.3/supporting/density_windows_v1.4.3.tsv
+releases/v1.4.3/supporting/disease_ontology_v1.4.3.tsv
+releases/v1.4.3/supporting/disease_terms_tested_v1.4.3.tsv
+releases/v1.4.3/analyses_with_lower_confidence/disease/disease_ontology.tsv
+releases/v1.4.3/analyses_with_lower_confidence/disease/disease_terms.tsv
+releases/v1.4.3/supporting/arginine_nucleic_acid_distances_v1.4.3.tsv
+releases/v1.4.3/supporting/complexes_v1.4.3.tsv
+releases/v1.4.3/supporting/dna_motifs_v1.4.3.tsv
+releases/v1.4.3/supporting/eclip_v1.4.3.tsv
+releases/v1.4.3/supporting/eclip_rna_compartments_v1.4.3.tsv
+releases/v1.4.3/supporting/arginine_background_v1.4.3.tsv
+releases/v1.4.3/supporting/htr_selex_v1.4.3.tsv
+releases/v1.4.3/supporting/rna_bind_n_seq_v1.4.3.tsv

@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import yaml
+from ci_sites import PUBLISHED
 
 from ptmcontext import context_marks as CM
 from ptmcontext import layers as L
@@ -374,7 +375,7 @@ def test_the_kit_reads_the_combined_row_and_hover_settings_and_keeps_the_pieces_
     assert "HV.site || ['name', 'chips', 'nearby', 'click']" in prot and 'K.map?.nearby' in prot
 
 
-@pytest.mark.parametrize('name', ['methylarginine', 'methyllysine', 'phospho', 'lysine'])
+@pytest.mark.parametrize('name', PUBLISHED)
 def test_the_site_files_set_the_combined_row_and_the_hovers(name):
     m = S.load_site(Path(__file__).resolve().parents[1] / 'sites' / f'{name}.yaml')['website']['protein']['map']
     assert m['combined_marks']['default'] == 'folded'
@@ -421,7 +422,7 @@ def test_same_residue_question_and_columns(table):
     assert list(a['a.ctx_near_phos']) == ['yes', 'yes']  # the same residue is not "near": R12 sees S11 and K17
 
 
-@pytest.mark.parametrize('name', ['methylarginine', 'methyllysine', 'phospho', 'lysine'])
+@pytest.mark.parametrize('name', PUBLISHED)
 def test_each_mark_file_names_its_lane(name):
     prof = yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'marks' / f'{name}.yaml').read_text())
     assert prof['short']

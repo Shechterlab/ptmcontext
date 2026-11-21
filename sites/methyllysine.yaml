@@ -1448,6 +1448,7 @@ outputs: {folder: out/methyllysine}
 citation: sites/methyllysine.citation.cff   # the citation, data sources, version and date: edit there
 
 website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
+  ci: {order: 2, lower_confidence: true, audit: {proteins: "P68431,P04637", selection: "f=p:histone~histone|f=p:panther_group~Transcription, chromatin and DNA"}}   # CI: published by pages.yml, in this order; the audits' parameters (CONTRACTS.md, Site CI parameters)
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methyllysine Site Explorer
   tagline: "Human lysine methylation sites from public databases and studies."
