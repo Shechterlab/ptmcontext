@@ -86,11 +86,9 @@
       ? '–'
       : f === 0
         ? '0%'
-        : f < 0.001
-          ? (100 * f).toFixed(2) + '%'
-          : f < 0.1
-            ? (100 * f).toFixed(1) + '%'
-            : (100 * f).toFixed(0) + '%';
+        : f < 0.1
+          ? +(100 * f).toPrecision(2) + '%'
+          : (100 * f).toFixed(f < 0.1 ? 1 : 0) + '%';
   const gname = (g) => g || '(no lineage)';
 
   // ---- the waterfall's numbers ------------------------------------------------------------------------------------------------
@@ -211,7 +209,8 @@
       b += `${i ? 'L' : 'M'}${x0.toFixed(1)},${y}L${x1.toFixed(1)},${y}`;
     }
     let ax = `<line x1="${ml}" x2="${ml + pw}" y1="${Y(0)}" y2="${Y(0)}" stroke="${c.line}"/><line x1="${ml}" x2="${ml}" y1="${mt}" y2="${Y(0)}" stroke="${c.line}"/>`;
-    const ticks = 4;
+    const mant = ymax / 10 ** Math.floor(Math.log10(ymax)),
+      ticks = mant === 2 ? 4 : 5; // steps of 0.2, 0.5 or 1 times a power of ten
     for (let i = 0; i <= ticks; i++) {
       const v = (ymax * i) / ticks;
       ax += `<line x1="${ml - 4}" x2="${ml}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${c.line}"/><text x="${ml - 7}" y="${(Y(v) + 3.5).toFixed(1)}" text-anchor="end" font-size="11" fill="${c.muted}">${pct(v)}</text>`;

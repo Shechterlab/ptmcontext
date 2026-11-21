@@ -130,6 +130,16 @@ jobs:
             releases/v1.7.0/supporting/clinvar_protein_background_v1.7.0.tsv.gz
             releases/v1.7.0/supporting/gnomad_protein_background_v1.7.0.tsv.gz
             releases/v1.7.0/supporting/variant_changes_excluded_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_tcga_mc3_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_depmap_24q4_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_clinvar_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_gnomad_v4_1_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_frequency_by_group_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/group_denominators_v1.7.0.tsv
+            releases/v1.7.0/supporting/sample_burden_v1.7.0.tsv
+            releases/v1.7.0/supporting/site_set_propensity_v1.7.0.tsv
+            releases/v1.7.0/supporting/propensity_controls_v1.7.0.tsv
+            releases/v1.7.0/supporting/propensity_validation_v1.7.0.tsv
             releases/v1.7.0/human_methylarginine_sites_v1.7.0.tsv
             releases/v1.7.0/statistics_v1.7.0.tsv
             releases/v1.7.0/human_methylarginine_proteins_v1.7.0.tsv
@@ -338,6 +348,16 @@ jobs:
             releases/v1.7.0/supporting/clinvar_protein_background_v1.7.0.tsv.gz
             releases/v1.7.0/supporting/gnomad_protein_background_v1.7.0.tsv.gz
             releases/v1.7.0/supporting/variant_changes_excluded_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_tcga_mc3_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_depmap_24q4_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_clinvar_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_gnomad_v4_1_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_frequency_by_group_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/group_denominators_v1.7.0.tsv
+            releases/v1.7.0/supporting/sample_burden_v1.7.0.tsv
+            releases/v1.7.0/supporting/site_set_propensity_v1.7.0.tsv
+            releases/v1.7.0/supporting/propensity_controls_v1.7.0.tsv
+            releases/v1.7.0/supporting/propensity_validation_v1.7.0.tsv
             releases/v1.7.0/human_methylarginine_sites_v1.7.0.tsv
             releases/v1.7.0/statistics_v1.7.0.tsv
             releases/v1.7.0/human_methylarginine_proteins_v1.7.0.tsv
@@ -531,6 +551,16 @@ jobs:
             releases/v1.7.0/supporting/clinvar_protein_background_v1.7.0.tsv.gz
             releases/v1.7.0/supporting/gnomad_protein_background_v1.7.0.tsv.gz
             releases/v1.7.0/supporting/variant_changes_excluded_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_tcga_mc3_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_depmap_24q4_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_clinvar_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_propensity_gnomad_v4_1_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/site_frequency_by_group_v1.7.0.tsv.gz
+            releases/v1.7.0/supporting/group_denominators_v1.7.0.tsv
+            releases/v1.7.0/supporting/sample_burden_v1.7.0.tsv
+            releases/v1.7.0/supporting/site_set_propensity_v1.7.0.tsv
+            releases/v1.7.0/supporting/propensity_controls_v1.7.0.tsv
+            releases/v1.7.0/supporting/propensity_validation_v1.7.0.tsv
             releases/v1.7.0/human_methylarginine_sites_v1.7.0.tsv
             releases/v1.7.0/statistics_v1.7.0.tsv
             releases/v1.7.0/human_methylarginine_proteins_v1.7.0.tsv
