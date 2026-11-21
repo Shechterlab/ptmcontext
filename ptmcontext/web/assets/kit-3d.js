@@ -3992,7 +3992,7 @@
       `<div class="s3d" id="s3d"><div class="s3d-head card-head">` +
       (`<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep">` +
         `</span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where ` +
-        `the structures, the placing of the ${esc(NOUNS)} and the colors come from">Method</a><a class="exp-btn" ` +
+        `the structures, the placing of the ${esc(NOUNS)} and the colors come from">Methods</a><a class="exp-btn" ` +
         `id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a ` +
         `page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>`) +
       `<div class="s3d-src" id="s3d-src"></div>` +

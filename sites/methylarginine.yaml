@@ -1896,7 +1896,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Studies and databases, attributes: [studies, n_studies, localised_by]}
-  dataset: {label: data release, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
+  dataset: {label: Data release, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
   methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
   whats_new:               # what v1.7.0 added (the Help page)
@@ -2250,7 +2250,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: ix, label: Interaction evidence, show: [status, tags], default: true,
          help: "Experimental: an RNA or DNA crosslink at the residue, an RBDmap fragment covering it, or a PDB interface. Predicted only: an AlphaFold-Multimer interface or a confident predicted contact. Click a tag for the tables"}
       - {id: na, label: RNA/DNA contacts, menu: "RNA/DNA contacts (structures) and crosslinks (cells)", show: [sequences, around], sort: [nucleic_acid, evidence], default: true, hide: xs,
-         help: "RNA or DNA within 4 Å of the side chain in PDB structures (within 8 Å, or at a residue i ± 1–5, without direct contact), or UV-crosslinked or RNA-bound within i ± 3 in cells. Hover for sequences"}
+         help: "RNA or DNA within 4 Å of the side chain in PDB structures (within 8 Å, or at a residue i ± 1–5, without direct contact), or UV-crosslinked or RNA-bound within i ± 3 in cells. Tap or hover for sequences"}
       - {id: prmt, label: PRMT perturbation, menu: "PRMT inhibitors, knockouts and knockdowns", show: [calls], sort: [gsk591, ms023, perturbation], default: true,
          help: "Change after GSK591 (PRMT5i) or MS023 (type I PRMTi), Maron 2021 Table S3, adj. p ≤ 0.05, or in the release's knockouts, knockdowns and inhibitors by the rule each names"}
       - {id: src, label: Reported by, attribute: studies, default: true, hide: sm}

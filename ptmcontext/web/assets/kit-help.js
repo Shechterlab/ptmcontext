@@ -290,6 +290,12 @@
             'h',
             'The size of a difference between two shares, used on the cell maps: 0.2 is small, 0.5 medium and 0.8 large (Cohen’s h). Unlike a fold, it does not grow just because a share is small.'
           ) +
+          (D.propensity
+            ? term(
+                'O/E',
+                `Changes seen over changes expected from the residue's codons and base-change rates. 1 is as expected, above 1 more, below 1 fewer.`
+              )
+            : '') +
           term(
             'Within each protein',
             `Each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein.`
@@ -319,10 +325,10 @@
         ? sec(
             'h-mutations',
             `<p>On a protein's cancer and germline cards, each source is drawn along the protein. ` +
-              `Stick height is the count: tumors, cell lines or variants with a change at the residue. Circle size is O/E, the ` +
+              `Stick height is the count: tumors, cell lines or variants at the residue. Circle size is O/E, the ` +
               `changes seen over the changes the residue's codon predicts, among the protein's residues of the same type. A ring ` +
-              `means q is below 0.05. Hover or focus a circle for the numbers. ClinVar's O/E is descriptive, with no ring, because its ` +
-              `variants reflect clinical testing more than mutation. A protein with no matching coding sequence has no q, and ` +
+              `means q is below 0.05. Tap, hover or focus a circle for the numbers. ClinVar's O/E is descriptive, with no ring, because its ` +
+              `variants reflect clinical testing more than how often residues change. A protein with no matching coding sequence has no q, and ` +
               `its O/E assumes every residue of the type is equally likely.</p>` +
               `<p>The site card has one line with the site's O/E and q in each source. ` +
               (K.views.mutations

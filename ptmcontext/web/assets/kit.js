@@ -135,7 +135,8 @@
           .replace(/^CC-/, 'CC ')
           .replace(/-(\d[\d.]*)$/, ' $1')
       : l || '';
-  const fq = (q) => (q == null ? '–' : q === 0 ? '< 1e-300' : q < 1e-3 ? q.toExponential(1) : q.toFixed(3));
+  const fq = (q) =>
+    q == null ? '–' : q === 0 ? '< 1e-300' : q < 1e-3 ? q.toExponential(1).replace('e-', 'e−') : q.toFixed(3);
   const PADJ = 0.05,
     MIN_EFFECT = 1.1;
   // what a row shows: the fold (share among the marks over share among the comparison) where it has one, else its
@@ -2052,7 +2053,7 @@
     const keyP =
       `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less ` +
       `often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>` +
-      `<span>no difference (${gloss('q')} > ${PADJ})</span></span>${
+      `<span>no difference (${gloss('q')} > ${PADJ}; q: p adjusted for many tests)</span></span>${
         vsOn()
           ? `<span><i class="kd more"></i> your ` +
             `selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>`
@@ -2068,7 +2069,7 @@
               esc(W.marked) +
               ' proteins in the set over the share of all proteins'
             : ''
-        }. Beneath it is the test: the odds ratio with its 95% interval, and q. The hover gives the counts. A row ` +
+        }. Beneath it is the test: the odds ratio with its 95% interval, and q. Tapping or hovering a row gives the counts. A row ` +
         `differs when q ≤ ${PADJ}, the fold is at least 1.1× either way and the test points the same way. Within ` +
         `each protein, each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein ` +
         `(Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} lie from which proteins were found ${esc(W.marked)}. Across ` +
@@ -2080,7 +2081,7 @@
             : ''
         }Red: more ` +
         `often (q ≤ 0.05 and at least 1.1×). Slate: less often. Gray: significant but within 1.1×. Hollow: no ` +
-        `significant difference. A tile shows the classes that differ most and opens to every class. Hover a row ` +
+        `significant difference. A tile shows the classes that differ most and opens to every class. Tap or hover a row ` +
         `for its counts.</p>`
       : '';
     const key = keyP + howP;
@@ -2482,8 +2483,9 @@
     return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings</h3><ol>${pick
       .map(
         (e) =>
-          `<li><a href="${esc(link('overview', e.a.id))}" data-jump="tile-${esc(e.a.id)}" title="Go to the tile">${sentence(e)}</a> ` +
-          `<span class="muted">${esc(e.card.title || FR.short?.[e.a.id] || e.a.title)}, q ${esc(fq(e.q))}</span></li>`
+          `<li><span class="muted">${esc(e.card.title || FR.short?.[e.a.id] || e.a.title)}:</span> ` +
+          `<a href="${esc(link('overview', e.a.id))}" data-jump="tile-${esc(e.a.id)}" title="Go to the tile">${sentence(e)}</a> ` +
+          `<span class="muted">q ${esc(fq(e.q))}</span></li>`
       )
       .join('')}</ol></section>`;
   }
@@ -4923,7 +4925,7 @@
   const methodLink = (aid, sec) =>
     `<a class="exp-btn" href="${esc(
       link('method', aid ? 'q-' + aid : sec || '')
-    )}" title="How ${aid ? 'this question was' : 'these were'} made and ` + `tested, and from what data">Method</a>`;
+    )}" title="How ${aid ? 'this question was' : 'these were'} made and ` + `tested, and from what data">Methods</a>`;
   // a figure's download menu (kit-export.js): the formats it makes, a button each with data-<attrs>="<format>"
   const expBar = (kinds, attrs, label, method, o) =>
     K.exp.menu(kinds, attrs, label, method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : '', o);
@@ -5866,7 +5868,7 @@
   $('#credit').innerHTML =
     `${esc(D.site.name)}${
       CIT.version
-        ? ` · <a href="#method/cite">version ${esc(CIT.version)}</a>${CIT.date ? ` (${esc(hdate(CIT.date))})` : ''}`
+        ? ` · <a href="#method/cite">App version ${esc(CIT.version)}</a>${CIT.date ? ` (${esc(hdate(CIT.date))})` : ''}`
         : upd
           ? ` · updated ` + `<time datetime="${esc(upd)}">${esc(hdate(upd))}</time>`
           : ''

@@ -780,7 +780,7 @@
     }, with Benjamini–Hochberg q across the parts shown; the overdispersion adjustment across compartments (φ, Spiegelhalter 2005) is ${
       DISP
         ? 'on'
-        : 'off, because it asks whether a compartment is unusual among compartments that are expected to be alike, which they are not by design, while abundance deciles handle detectability, the confounder that matters; φ is still given on hover'
+        : 'off, because it asks whether a compartment is unusual among compartments that are expected to be alike, which they are not by design, while abundance deciles handle detectability, the confounder that matters; φ is still given on hover or tap'
     }.`;
   function pctScale(P, within, scoped, view) {
     if (view === 'z') {
@@ -3218,7 +3218,7 @@
       `<p class="tans cell-ans">Found in${esc(more)}: ` +
       `${sets.length ? esc(and(sets.slice(0, 8))) : 'no compartment of these maps'}.</p>` +
       oneDrawings(p) +
-      `<p class="tkey">Only the selection is drawn; no statistics. Hover a compartment for the proteins and maps behind it.</p></article>`
+      `<p class="tkey">Only the selection is drawn; no statistics. Tap, hover or focus a compartment for the proteins and maps behind it.</p></article>`
     );
   }
   function bigTile(card) {

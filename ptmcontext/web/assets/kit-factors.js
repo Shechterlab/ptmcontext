@@ -12,7 +12,8 @@
   if (!IDS.length) return;
   const Z95 = 1.959963984540054;
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  const fp = (p) => (p == null ? '–' : p === 0 ? '< 1e-300' : p < 1e-3 ? p.toExponential(1) : p.toFixed(3));
+  const fp = (p) =>
+    p == null ? '–' : p === 0 ? '< 1e-300' : p < 1e-3 ? p.toExponential(1).replace('e-', 'e−') : p.toFixed(3);
 
   // ---- the model's rows, by factor, strongest evidence first ---------------------------------------------------------
   const zOf = (r) =>

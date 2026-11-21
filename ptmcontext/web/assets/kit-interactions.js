@@ -524,7 +524,7 @@
   function forestNote(rows, m) {
     if (!selOn())
       return (
-        `<details class="ix-meth"><summary>Method</summary><p class="muted small">${
+        `<details class="ix-meth"><summary>Methods</summary><p class="muted small">${
           m === 'mantel_haenszel'
             ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI ' +
               '(Robins–Breslow–Greenland), each protein analyzed separately'
@@ -702,7 +702,7 @@
       seg(bkey(pg, sec, bi), s.m) +
       (`<div class="ix-plot"><svg viewBox="0 0 760 ${L.H}" role="img" ` +
         `aria-label="${esc(sec.title)}">${L.body}</svg></div><p class="muted small">${say}. Filled: q ≤ 0.05; the ` +
-        `band is the 95% CI (within each protein). Hover a point for its test.</p>`)
+        `band is the 95% CI (within each protein). Tap, hover or focus a point for its test.</p>`)
     );
   }
   function linesTsv(b, m) {

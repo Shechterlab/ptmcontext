@@ -1428,7 +1428,7 @@
   }
   function viewInner() {
     if ((S.nf || '') !== UI.find.trim().split(/\s+/).filter(Boolean).join(' ')) UI.find = S.nf || ''; // an address names the genes
-    const head = `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(leadOf())} <a href="${esc(location.hash)}" data-jump="nw-how">Method</a></p></div></div>`;
+    const head = `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(leadOf())} <a href="${esc(location.hash)}" data-jump="nw-how">Methods</a></p></div></div>`;
     let M = model();
     if (M.error) return `${head}<p class="muted">The network could not be read (${esc(M.error)}).</p>`;
     if (M.wait) return head + K.loading('Loading the network…');
@@ -1491,7 +1491,7 @@
         ? `<p class="nw-count" role="status">${sum} ${topSelect()}</p>${tableHtml(M, CL)}`
         : `<div class="nw-main">${keyHtml(M, CL, { variant: phoneNow() ? 'phone' : 'desktop' }, sum)}<div class="nw-row2">${figureBox(M, CL)}${pinHtml(M, CL)}</div>${phoneNow() ? listHtml(CL) : ''}</div>`;
     const names = `<datalist id="nw-genes">${M.nodes.map((n) => `<option value="${esc(n.gene)}"></option>`).join('')}</datalist>`;
-    return head + controls(CL) + note + body + names + K.fold('nw-how', 'Method', '', methodHtml(), false);
+    return head + controls(CL) + note + body + names + K.fold('nw-how', 'Methods', '', methodHtml(), false);
   }
   // ---- exports ----------------------------------------------------------------------------------------------------------------
   // the figure in the style guide's frame: a title that is a claim, one sentence, a key, the drawing, a caption and the credit.

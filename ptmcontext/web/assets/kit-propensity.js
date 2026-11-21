@@ -130,7 +130,9 @@
       return { head: 'no O/E', note: `${s.label}: this protein has no change at its residues of this type` };
     const parts = [`O/E ${fo(v.o)}`, `expected ${fe(v.e)}`];
     let status = '';
-    if (desc(id)) status = 'descriptive: ClinVar reflects clinical testing more than mutation, so there is no test';
+    if (desc(id))
+      status =
+        'descriptive: ClinVar reflects clinical testing more than how often residues change, so there is no test';
     else if (v.q == null)
       status = 'no test: no coding sequence matches UniProt, so O/E treats every residue of the type as equally likely';
     else {
@@ -278,7 +280,8 @@
     return PR.sources
       .map((s) => {
         const v = at(acc, s.id, pos);
-        if (!v || v.o == null) return `<span class="pr-s"><b>${esc(s.label)}</b> <span class="muted">–</span></span>`;
+        if (!v || v.o == null)
+          return `<span class="pr-s"><b>${esc(s.label)}</b> <span class="muted" title="No data for this source">–</span></span>`;
         const q = desc(s.id)
           ? 'descriptive'
           : v.q == null
