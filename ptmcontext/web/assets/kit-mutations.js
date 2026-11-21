@@ -249,7 +249,7 @@
         w2 = siteName(r.acc, r.pos, r.res).length * 6.2;
       if (placed.some((q) => Math.abs(q.y - y) < 14 && x + 8 < q.x1 && x + 8 + w2 > q.x0)) return;
       placed.push({ y, x0: x + 8, x1: x + 8 + w2 });
-      names += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${c.site}"/><text x="${(x + 8).toFixed(1)}" y="${(y + 4).toFixed(1)}" font-size="11" fill="${c.ink}">${esc(siteName(r.acc, r.pos, r.res))}</text>`;
+      names += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${c.site}"/><text x="${(x + 8).toFixed(1)}" y="${(y - 5).toFixed(1)}" font-size="11" fill="${c.ink}" stroke="${c.cap}" stroke-width="3" paint-order="stroke">${esc(siteName(r.acc, r.pos, r.res))}</text>`;
     });
     return {
       H,
@@ -343,7 +343,7 @@
     });
     s += `<line x1="${ml}" x2="${ml + pw}" y1="${yb(th).toFixed(1)}" y2="${yb(th).toFixed(1)}" stroke="${c.line}" stroke-dasharray="3 3"/><text x="${ml - 6}" y="${(yb(th) + 3.5).toFixed(1)}" text-anchor="end" font-size="10.5" fill="${c.muted}">${th} per Mb</text>`;
     s += `<text x="${ml - 6}" y="${mt + 8}" text-anchor="end" font-size="10.5" fill="${c.muted}">calls per Mb</text>`;
-    s += `<text x="${ml + pw + 6}" y="${mt + burdenH + 4}" font-size="10.5" fill="${c.muted}">${hyper() ? 'tumors' : 'tumors, without hypermutated'}</text>`;
+    s += `<text x="${ml + pw + 6}" y="${mt + burdenH + 4}" font-size="10.5" fill="${c.muted}">${hyper() ? 'tumors' : 'tumors (in all)'}</text>`;
     const y0 = geo.y0;
     o.top.forEach((r, j) => {
       const y = y0 + j * rowH;
@@ -365,7 +365,7 @@
     }. Each column is a tumor sample, joined by its sample id to its coding calls per Mb (the bar above, capped at 40; the dashed line is the hypermutated threshold). ${
       hyper()
         ? 'Hypermutated tumors (teal bars) are included.'
-        : 'Hypermutated tumors are left out, so the counts at the right are without them, with the count in all tumors beside each.'
+        : 'Hypermutated tumors are left out, so the counts at the right are without them, with the count in all tumors beside each. A tumor with two changes at one site counts once, so a table that counts changes can show one more.'
     }`;
 
   // ---- the page ------------------------------------------------------------------------------------------------------------------

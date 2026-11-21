@@ -397,3 +397,16 @@ def test_both_protein_cards_draw_a_lollipop_for_each_source_of_the_site():
     cards = (ASSETS / 'kit-pcards.js').read_text()
     assert cards.count('lollipopFor(') == 3  # the definition, the cancer card and the germline card
     assert 'K.prop.lollipop' in cards and "K.prop.siteLine" in (ASSETS / 'kit-proteins.js').read_text()
+
+
+def test_the_oncoprint_colors_are_three_different_validated_hues_in_both_themes():
+    """missense, stop gained and a hypermutated tumor's burden are categorical slots 1 to 3 of the dataviz palette (checked with
+    its validate_palette.js: light #2a78d6 #eb6834 #1baf7a, dark #3987e5 #d95926 #199e70); no two share a color."""
+    import re
+
+    text = (ASSETS / 'kit-mutations.js').read_text()
+    light = re.findall(r':root\{--onc-1:(#\w+);--onc-2:(#\w+);--onc-3:(#\w+)\}', text)[0]
+    dark = re.findall(r'--onc-1:(#\w+);--onc-2:(#\w+);--onc-3:(#\w+)\}\}', text)[0]
+    assert light == ('#2a78d6', '#eb6834', '#1baf7a') and dark == ('#3987e5', '#d95926', '#199e70')
+    assert len(set(light)) == 3 and len(set(dark)) == 3
+    assert "['#2a78d6', '#eb6834']" in text  # the exports use the light slots too
