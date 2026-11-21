@@ -226,21 +226,25 @@ def frequency_payload(
 
 
 def germline_payload(changes: list[pd.DataFrame], prop: pd.DataFrame, totals: dict[str, int]) -> dict:
-    """The germline waterfall's file (data/gn.json). A residue's frequency is the sum of the allele frequencies (`af`: allele
-    count over allele number) of its missense and stop variants in the release's change table. sites[acc]: [[position, residue,
-    variants, summed af, O/E, q (more), q (fewer)], ...] for the known sites with a variant; bg[residue]: the curve of the
-    other residues (`curve`)."""
+    """The germline waterfall's file (data/gn.json). A residue's height is k, the number of gnomAD variants with a missense or
+    stop change there (the count the O/E test uses); its summed allele frequency (`af`: allele count over allele number, added
+    over the variants) is kept for the tooltip. sites[acc]: [[position, residue, k, summed af, O/E, q (more), q (fewer),
+    expected], ...] for the known sites with a variant and for those with none and q_lower < 0.05 (the most depleted); bg[residue]:
+    the curve of k over the other residues (`curve`)."""
     ch = pd.concat([c[['canonical_UniProtAC', 'position', 'af']] for c in changes])
     af = ch.groupby(['canonical_UniProtAC', 'position'])['af'].sum().rename('sum_af').reset_index()
     d = prop.merge(af, on=['canonical_UniProtAC', 'position'], how='left')
     d['sum_af'] = d['sum_af'].fillna(0.0)
-    bg = {res: curve(d[(~d['isite']) & (d['residue'] == res)]['sum_af'].tolist(), n) for res, n in totals.items()}
-    on = d[d['isite'] & (d['k'] > 0)].sort_values(['canonical_UniProtAC', 'position'])
+    bg = {res: curve(d[(~d['isite']) & (d['residue'] == res)]['k'].tolist(), n) for res, n in totals.items()}
+    low = d['q_lower'] < 0.05 if 'q_lower' in d else pd.Series(False, index=d.index)
+    on = d[d['isite'] & ((d['k'] > 0) | low)].sort_values(['canonical_UniProtAC', 'position'])
     nums = _numbers(on, False)
     ql = [sig(x) if pd.notna(x) else None for x in on['q_lower']] if 'q_lower' in on else [None] * len(on)
     sites: dict[str, list] = {}
     for i, (a, p, r) in enumerate(zip(on['canonical_UniProtAC'], on['position'], on['residue'])):
-        sites.setdefault(a, []).append([int(p), r, nums['k'][i], sig(float(on['sum_af'].iat[i]), 3), nums['o'][i], nums['q'][i], ql[i]])
+        sites.setdefault(a, []).append(
+            [int(p), r, nums['k'][i], sig(float(on['sum_af'].iat[i]), 3), nums['o'][i], nums['q'][i], ql[i], nums['e'][i]]
+        )
     return {'sites': sites, 'bg': bg}
 
 

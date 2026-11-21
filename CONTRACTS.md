@@ -1403,7 +1403,7 @@ website:
 |---|---|---|
 | `data/m/NNN.json` | per protein with a mark, `{source id: block}`, a few proteins to a file (about 150 KB). The file of a protein is `variants.hash_shard` (`hashOf` in `kit-propensity.js` is its twin). A block is columnar, one entry per residue of the site's types that is a known site or has a change: `p` position deltas, `k`, `e` (expected), `o` (O/E), `q` (null: not tested). Somatic sources repeat `k2 e2 o2 q2` without hypermutated samples. `u` lists the rows that fell back to the unweighted expectation (no coding sequence matches UniProt, so q is null). `l` is `[row, q_lower, ...]` where q_lower < 0.05 (gnomAD). Numbers keep two significant digits | a protein page's cards (the lollipops) and the site card's line |
 | `data/wf.json` | `groups`, `den` (samples profiled, and not hypermutated, per group), `all`, each known site's changed samples per group (`sites`: `[position, residue, per source [group, changed, changed without hypermutated]...]`), `stats` (O/E and q of the known sites with a change, both cohorts) and `bg`, the ranked frequencies of the residues that are not sites, as `[M, N, ranks, values]` | the Mutation frequency page (waterfall) |
-| `data/gn.json` | `sites`: for each known site with a gnomAD variant, `[position, residue, variants, summed af, O/E, q (more), q (fewer)]`; `bg`: the same curve for the other residues. A residue's frequency is the sum of the `af` of its variants | the waterfall, source gnomAD |
+| `data/gn.json` | `sites`: for each known site with a gnomAD variant, and each with none and q_lower < 0.05, `[position, residue, k, summed af, O/E, q (more), q (fewer), expected]`; `bg`: the curve of k over the other residues. A site's height is k, the number of variants; the summed `af` is for the tooltip | the waterfall, source gnomAD |
 | `data/onco.json` | `projects`, every TCGA sample `[id without "TCGA-", project, hypermutated, coding calls per Mb]`, and `sites`: for each known site the samples with a change (`sample index * 2 + 1` for a stop) | the oncoprint |
 
 Lollipop (protein cancer and germline cards): stick height is the count the card's table shows, circle size grows with O/E,
@@ -1416,7 +1416,7 @@ list when nothing is selected:
   colored by O/E, a solid ring marks q < 0.05, and for gnomAD a dashed ring marks q_lower < 0.05 (fewer than expected). The
   gray curve is the other residues of the same type, with ranks scaled to the number of sites. The rank axis is log by
   default (`mx=linear` for a linear one). The source menu has the sources with a `frequency_source`, and gnomAD when
-  `germline_changes` is set. gnomAD has no hypermutated switch and no cancer-type menu. Over the whole list, one line gives
+  `germline_changes` is set. gnomAD's height is the number of variants at the site (k). gnomAD has no hypermutated switch and no cancer-type menu. Over the whole list, one line gives
   the release's test for the site set (`site_set_propensity`, matched by set, residue, source and cohort).
 - An oncoprint shows the sites with the most changed TCGA tumors against those tumors. A row's name, or a click on the row,
   opens that site's card.

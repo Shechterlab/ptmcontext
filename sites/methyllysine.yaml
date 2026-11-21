@@ -2084,7 +2084,7 @@ website:                  # the look and words of the website (ptmc web); layout
     denominators: group_denominators
     burden: sample_burden
     changes: [tcga_changes_K]
-    germline_changes: [gnomad_changes_K]   # gnomAD change tables: the germline waterfall sums each residue's allele frequencies
+    germline_changes: [gnomad_changes_K]   # gnomAD change tables: the germline waterfall's tooltip sums each residue's allele frequencies
     site_sets: site_set_propensity
     controls: propensity_controls
     validation: propensity_validation

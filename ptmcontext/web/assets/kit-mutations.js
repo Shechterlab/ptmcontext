@@ -138,13 +138,16 @@
           res,
           m: e ? e[2] : 0,
           mAll: e ? e[2] : 0,
-          f: e ? e[3] : 0,
+          f: e ? e[2] : 0,
+          af: e ? e[3] : 0,
           o: e ? e[4] : 0,
           q: e ? e[5] : null,
           ql: e ? e[6] : null,
+          e: e ? e[7] : 0,
         };
       });
-      rows.sort((a, b) => b.f - a.f || (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos));
+      // sites with the same count (the many with none) are ranked by expected variants, highest first
+      rows.sort((a, b) => b.f - a.f || b.e - a.e || (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos));
       const letters = [...new Set(rows.map((r) => r.res).filter((r) => PR.residues.includes(r)))];
       return {
         gn,
@@ -155,6 +158,7 @@
         letters: letters.length ? letters : PR.residues,
         n: rows.length,
         germ: true,
+        nFewer: rows.filter((r) => r.ql != null && r.ql < 0.05).length,
       };
     }
     const wf = wfData();
@@ -275,11 +279,11 @@
     const t = Math.max(-3, Math.min(3, Math.log2(Math.max(o, 1 / 64)))) / 3;
     return c.mix(t >= 0 ? c.hot : c.cold, c.mid, Math.round(Math.abs(t) * 100));
   };
-  const POINTS = 60; // the top ranks that get a point, with every site below q 0.05
+  const POINTS = 40; // the top ranks that get a point, with every site below q 0.05
   // a frequency on the axis or in a tooltip: a percent for samples, a plain or exponent number for allele frequencies
   const afText = (v) =>
     v === 0 ? '0' : v >= 0.01 ? String(+v.toPrecision(2)) : v.toExponential(1).replace('.0e', 'e').replace('e-', 'e−');
-  const fAxis = (m, v) => (m.germ ? afText(v) : pct(v));
+  const fAxis = (m, v) => (m.germ ? int(Math.round(v)) : pct(v));
   function waterfallSvg(m, c, w) {
     const ml = 54,
       mr = 16,
@@ -331,7 +335,7 @@
       ax += `<line x1="${X(r).toFixed(1)}" x2="${X(r).toFixed(1)}" y1="${Y(0)}" y2="${Y(0) + 4}" stroke="${c.line}"/><text x="${X(r).toFixed(1)}" y="${Y(0) + 16}" text-anchor="${r === shown ? 'end' : r === 1 ? 'start' : 'middle'}" font-size="11" fill="${c.muted}">${int(r)}</text>`;
     });
     ax += `<text x="${ml + pw / 2}" y="${H - 6}" text-anchor="middle" font-size="11.5" fill="${c.muted}">${esc(W.marks)} ranked by frequency, highest first (${lg ? 'log scale' : 'linear'})${shown < m.n ? `, top ${int(shown)} of ${int(m.n)}` : ''}</text>`;
-    ax += `<text transform="translate(13,${mt + ph / 2}) rotate(-90)" text-anchor="middle" font-size="11.5" fill="${c.muted}">${m.germ ? 'summed allele frequency' : 'samples with a change'}</text>`;
+    ax += `<text transform="translate(13,${mt + ph / 2}) rotate(-90)" text-anchor="middle" font-size="11.5" fill="${c.muted}">${m.germ ? esc(m.s.label) + ' variants at the site' : 'samples with a change'}</text>`;
     // the tail of sites with no change: a bracket over the flat part
     const nz = m.rows.filter((r) => r.f > 0).length;
     let tail = '';
@@ -345,17 +349,19 @@
     let pts = '';
     let drawn = 0;
     m.rows.forEach((r, i) => {
-      if (i >= shown || !(r.f > 0) || drawn >= 500) return;
+      if (i >= shown) return;
       const more = r.q != null && r.q < 0.05,
         fewer = r.ql != null && r.ql < 0.05;
-      if (i >= POINTS && !more && !fewer) return;
-      drawn++;
+      // a ring is always drawn (a depleted site is often one with no variant, in the flat tail); a plain point only for the top ranks
+      if (!more && !fewer && (i >= POINTS || !(r.f > 0))) return;
+      if (drawn++ >= 800) return;
       const x = X(i + 1).toFixed(1),
-        y = Y(r.f).toFixed(1);
-      if (more) pts += `<circle cx="${x}" cy="${y}" r="7.5" fill="none" stroke="${c.ink}" stroke-width="1.5"/>`;
+        y = Y(r.f).toFixed(1),
+        ringed = more || fewer;
+      if (more) pts += `<circle cx="${x}" cy="${y}" r="7" fill="none" stroke="${c.ink}" stroke-width="1.5"/>`;
       if (fewer)
-        pts += `<circle cx="${x}" cy="${y}" r="7.5" fill="none" stroke="${c.ink}" stroke-width="1.5" stroke-dasharray="2.5 2"/>`;
-      pts += `<circle cx="${x}" cy="${y}" r="4" fill="${oeFill(r.o, c)}" stroke="${c.ink}" stroke-width="0.8"/>`;
+        pts += `<circle cx="${x}" cy="${y}" r="7" fill="none" stroke="${c.ink}" stroke-width="1.5" stroke-dasharray="2.5 2"/>`;
+      pts += `<circle cx="${x}" cy="${y}" r="${ringed ? 4 : 2.8}" fill="${oeFill(r.o, c)}" stroke="${c.ink}" stroke-width="${ringed ? 0.8 : 0.6}"/>`;
     });
     // names for the top sites, each at least 14 px from the others
     let names = '';
@@ -388,7 +394,7 @@
   }
   const waterfallNote = (m) =>
     (m.germ
-      ? `Each ${W.mark} of the selection is one place on the x axis, ranked by the summed allele frequency of its missense and stop variants in ${esc(m.s.long || m.s.label)} (allele count over allele number, added over the variants). `
+      ? `Each ${W.mark} of the selection is one place on the x axis, ranked by the number of its missense and stop variants in ${esc(m.s.long || m.s.label)}, the count k that the O/E test uses. `
       : `Each ${W.mark} of the selection is one place on the x axis, ranked by the share of ${esc(m.s.long || m.s.label)} samples with a change${
           M.group ? ` in ${esc(gname(M.group))}` : ''
         } (changed samples over the ${int(m.den)} profiled). `) +
@@ -586,7 +592,7 @@
       return head + '<p class="muted">The frequencies could not be read.</p>';
     const note = K.sel.active()
       ? ''
-      : `<div class="filter-note">Nothing is selected, so this shows every ${esc(W.mark)} of the site.</div>`;
+      : `<div class="filter-note">Nothing is selected, so this shows every ${esc(W.mark)}.</div>`;
     const tabs = seg(
       'data-mu-view',
       'View',
@@ -631,7 +637,7 @@
         `<span class="pr-k"><span class="mu-grad" aria-hidden="true"></span>point color: O/E, from 1/8 (blue) through 1 (gray) to 8 (red)</span>` +
         `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/><circle cx="9" cy="9" r="4" fill="var(--wf-hot)" stroke="var(--ink)" stroke-width="0.8"/></svg>solid ring: q &lt; 0.05, more than expected</span>` +
         (m.germ
-          ? `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="2.5 2"/><circle cx="9" cy="9" r="4" fill="var(--wf-cold)" stroke="var(--ink)" stroke-width="0.8"/></svg>dashed ring: q &lt; 0.05, fewer than expected</span>`
+          ? `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="2.5 2"/><circle cx="9" cy="9" r="4" fill="var(--wf-cold)" stroke="var(--ink)" stroke-width="0.8"/></svg>dashed ring: q &lt; 0.05, fewer than expected (${int(m.nFewer)} ${esc(W.marks)})</span>`
           : '') +
         `</p></section>`;
     } else {
@@ -680,7 +686,7 @@
       const bg = backdrop(m)(Math.min(1, (i + 1) / m.n));
       let t = `${siteName(row.acc, row.pos, row.res)} · rank ${int(i + 1)} of ${int(m.n)}`;
       if (m.germ)
-        t += `\n${int(row.m)} ${row.m === 1 ? 'variant' : 'variants'}, summed allele frequency ${fAxis(m, fr)}`;
+        t += `\n${int(row.m)} ${row.m === 1 ? 'variant' : 'variants'}${row.af ? `, summed allele frequency ${afText(row.af)}` : ''}${row.e ? `; expected ${K.prop.fe(row.e)}` : ''}`;
       else {
         t += `\n${int(row.m)} of ${int(m.den)} ${m.s.unit?.[1] || 'samples'} with a change (${pct(fr)})`;
         if (!hyper() && row.mAll > row.m) t += `\n${int(row.m)} without hypermutated tumors; ${int(row.mAll)} in all`;
@@ -756,16 +762,16 @@
       K.preamble(
         'Mutation frequency of the sites',
         m.germ
-          ? `${m.s.long || m.s.label}; frequency = the sum of the allele frequencies (ac / an) of the residue's missense and stop variants`
+          ? `${m.s.long || m.s.label}; height = the number of the residue's missense and stop variants (k); summed_allele_frequency = the sum of their allele frequencies (ac / an)`
           : `${m.s.long || m.s.label}${M.group ? ', ' + gname(M.group) : ', all cancer types'}; ${hyper() ? 'with' : 'without'} hypermutated samples; frequency = samples with a change / samples profiled (group_denominators)`
       ) +
       (m.germ
-        ? 'rank\taccession\tsite\tvariants\tsummed_allele_frequency\toe\tq_more\tq_fewer\n'
+        ? 'rank\taccession\tsite\tvariants\tsummed_allele_frequency\texpected\toe\tq_more\tq_fewer\n'
         : 'rank\taccession\tsite\tchanged_samples\tchanged_samples_with_hypermutated\tsamples_profiled\tfrequency\n') +
       m.rows
         .map((r, i) =>
           (m.germ
-            ? [i + 1, r.acc, siteName(r.acc, r.pos, r.res), r.m, r.f, r.o ?? '', r.q ?? '', r.ql ?? '']
+            ? [i + 1, r.acc, siteName(r.acc, r.pos, r.res), r.m, r.af, r.e, r.o ?? '', r.q ?? '', r.ql ?? '']
             : [
                 i + 1,
                 r.acc,
@@ -860,7 +866,7 @@
       `<p><b>Hypermutated samples</b> have more than ${PR.hypermutated.per_mb} coding calls per Mb (<a href="https://pubmed.ncbi.nlm.nih.gov/29056344/" target="_blank" rel="noopener">Campbell et al., Cell 171:1042 (2017)</a>). The cards and pages leave them out by default. The release repeats the test without them, using the spectrum of the remaining samples. A switch puts them back.</p>` +
       `<p><b>ClinVar</b> variants reflect clinical testing and submission more than mutation, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
       `<p><b>Cards.</b> On the cancer and germline cards, each source is drawn along the protein. Stick height is the count in the card's table. Circle size grows with O/E. A ring marks q &lt; 0.05. The site card has one line with O/E and q for each source.</p>` +
-      `<p><b>Mutation frequency page.</b> The waterfall ranks the sites of the selection by the share of samples with a change (changed samples over the samples profiled in the chosen group, from the release's group_denominators). Sites with no change form the flat tail. Circles are colored by O/E, and a solid ring marks q &lt; 0.05. The gray curve is the same ranking for the other residues of the same type, with ranks scaled to the number of sites. For gnomAD, a site's frequency is the sum of the allele frequencies of its variants. The oncoprint shows the sites with the most changed TCGA tumors against those tumors, joined by sample id to the release's sample_burden.</p>` +
+      `<p><b>Mutation frequency page.</b> The waterfall ranks the sites of the selection by the share of samples with a change (changed samples over the samples profiled in the chosen group, from the release's group_denominators). Sites with no change form the flat tail. Circles are colored by O/E, and a solid ring marks q &lt; 0.05. The gray curve is the same ranking for the other residues of the same type, with ranks scaled to the number of sites. For gnomAD, a site's height is its number of variants (k, the count the O/E test uses); the tooltip adds the summed allele frequency. A dashed ring marks q &lt; 0.05 for fewer variants than expected, including the sites with none, which sit in the flat tail. The oncoprint shows the sites with the most changed TCGA tumors against those tumors, joined by sample id to the release's sample_burden.</p>` +
       (ctl.length
         ? `<p><b>Positive controls</b> (H3 oncohistone residues and recurrent cancer hotspots; <a href="https://doi.org/10.1038/nbt.3391" target="_blank" rel="noopener">Chang et al., Nat Biotechnol 34:155 (2016)</a>). A control passes when q &lt; 0.05. A failed control is reported here and does not block the release.</p>` +
           `<div class="tbl-card"><table class="tbl"><thead><tr><th>Controls</th><th>Source</th><th>Samples</th><th>Pass</th><th>Fail</th><th>Not tested</th></tr></thead><tbody>` +

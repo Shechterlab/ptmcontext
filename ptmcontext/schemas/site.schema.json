@@ -6397,7 +6397,7 @@
               "items": {
                 "type": "string"
               },
-              "description": "manifest inputs: the gnomAD change tables of the site's residues (a row per variant, with af); a residue's germline frequency on the waterfall is the sum of its variants' af"
+              "description": "manifest inputs: the gnomAD change tables of the site's residues (a row per variant, with af); the waterfall's tooltip shows the sum of a residue's variants' af"
             },
             "site_sets": {
               "type": "string",

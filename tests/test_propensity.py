@@ -80,7 +80,7 @@ def _toy_propensity(tmp_path):
         data / 'prop_clinvar.tsv', sep='\t', index=False
     )
     _prop_rows(
-        [('P1', 2, 2, 2.0, 1.0, 0.4, 0, 0, 0, 0.9), ('P1', 5, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.01), ('P1', 11, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.5)], nh=False, lower=True
+        [('P1', 2, 2, 2.0, 1.0, 0.4, 0, 0, 0, 0.9), ('P1', 5, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.01), ('P1', 11, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.5), ('P2', 25, 0, 3.0, 1.0, 1.0, 0, 0, 0, 0.001)], nh=False, lower=True
     ).to_csv(data / 'prop_gnomad.tsv', sep='\t', index=False)
     pd.DataFrame(
         {
@@ -301,13 +301,15 @@ def test_the_waterfall_file_has_o_e_and_q_of_the_sites_with_a_change_in_both_coh
     assert 'P2' in wf['stats']['tcga'] and wf['stats']['tcga']['P2'][0][2] is None  # no weights: no q
 
 
-def test_the_germline_file_sums_the_allele_frequencies_of_a_residue(built):
+def test_the_germline_file_counts_variants_and_lists_the_depleted_sites_with_none(built):
     root, sp, index, data = built
     assert data['propensity']['gn'] == {'file': 'data/gn.json', 'source': 'gnomad'}
     gn = json.loads((index.parent / 'data' / 'gn.json').read_text())
-    # P1:2 has two variants (1e-5 + 2e-5) and q_lower 0.9; P1:5 one variant and q_lower 0.01 (fewer than expected)
-    assert gn['sites']['P1'] == [[2, 'R', 2, 3e-05, 1, 0.4, 0.9], [5, 'R', 1, 1e-06, 0.5, 1, 0.01]]
-    assert gn['bg']['R'] == [1, 8, [1], [5e-05]]  # P1:11, among the 8 arginines that are not sites
+    # [position, residue, k (variants), summed af, O/E, q (more), q (fewer), expected]: P1:2 has two variants (af 1e-5 + 2e-5) and
+    # q_lower 0.9; P1:5 one variant and q_lower 0.01; P2:25 has none and q_lower 0.001, so it is listed (the most depleted)
+    assert gn['sites']['P1'] == [[2, 'R', 2, 3e-05, 1, 0.4, 0.9, 2], [5, 'R', 1, 1e-06, 0.5, 1, 0.01, 2]]
+    assert gn['sites']['P2'] == [[25, 'R', 0, 0, 0, 1, 0.001, 3]]
+    assert gn['bg']['R'] == [1, 8, [1], [1]]  # the curve of k: P1:11 has one variant, among the 8 arginines that are not sites
 
 
 def test_the_oncoprint_file_joins_samples_to_their_burden_and_marks_a_stop(built):
