@@ -613,20 +613,46 @@
     }
     return SEQ[acc];
   };
+  // the other explorers (sites.json beside the sites' folders), for a chosen site this explorer does not cover
+  let SIBS;
+  const sibs = () => {
+    if (SIBS === undefined) {
+      SIBS = null;
+      fetch('../sites.json')
+        .then((r) => (r.ok ? r.json() : { sites: [] }))
+        .catch(() => ({ sites: [] }))
+        .then((j) => {
+          SIBS = j.sites || [];
+          if (S.view === 'mutations') K.render();
+        });
+    }
+    return SIBS;
+  };
+  const coversWords = () =>
+    PR.residues.map((l) => (D.residue_names?.[l] ? D.residue_names[l] + 's' : l + ' residues')).join(', ');
+  // 'not in this explorer', with a link that carries the site to each explorer that covers its residue
+  function notHere(key) {
+    const [acc, pos] = key.split(':'),
+      sq = seqOf(acc),
+      letter = sq ? sq[pos - 1] : '',
+      here = D.site.id,
+      list = (sibs() || []).filter((s) => s.id !== here && letter && (s.residues || []).includes(letter));
+    return (
+      `not in this explorer (it covers ${esc(coversWords())}).` +
+      (list.length
+        ? ` Test it in the ${list
+            .map(
+              (s) =>
+                `<a href="../${encodeURIComponent(s.id)}/#mutations?mt=${encodeURIComponent(key)}">${esc(s.id)}</a>`
+            )
+            .join(' or ')} explorer.`
+        : '')
+    );
+  }
   const chosenName = (key) => {
     const [acc, pos] = key.split(':'),
       sq = seqOf(acc);
     return siteName(acc, +pos, sq ? sq[pos - 1] : '');
-  };
-  const holm = (ps) => {
-    const order = ps.map((p, i) => [p, i]).sort((a, b) => a[0] - b[0]),
-      out = new Array(ps.length);
-    let run = 0;
-    order.forEach(([p, i], j) => {
-      run = Math.max(run, Math.min(1, (ps.length - j) * p));
-      out[i] = run;
-    });
-    return out;
   };
   const fpv = (v) => (v == null ? '–' : K.prop.fq(v));
   // the rows of the table: per chosen site and source, k, expected, O/E, the raw p of each tail and the Holm p
@@ -651,7 +677,7 @@
       if (r.v.p != null) ps.push([r, 'more', r.v.p]);
       if (r.s.lower_tail && r.v.pl != null) ps.push([r, 'fewer', r.v.pl]);
     });
-    holm(ps.map((x) => x[2])).forEach((a, i) => (ps[i][0][ps[i][1]] = a));
+    K.prop.holm(ps.map((x) => x[2])).forEach((a, i) => (ps[i][0][ps[i][1]] = a));
     return { rows, n: ps.length };
   }
   function chosenSection() {
@@ -668,7 +694,7 @@
         r.wait
           ? `<tr><td>${esc(chosenName(r.key))}</td><td colspan="8" class="muted">Loading…</td></tr>`
           : none.has(r.key)
-            ? `<tr><td>${esc(chosenName(r.key))}</td><td colspan="8" class="muted">not tested here: this site covers ${esc(PR.residues.join(', '))}</td></tr>`
+            ? `<tr><td>${esc(chosenName(r.key))}</td><td colspan="8" class="muted">${notHere(r.key)}</td></tr>`
             : !r.v
               ? `<tr><td>${esc(chosenName(r.key))}</td><td>${esc(r.s.label)}</td><td colspan="7" class="muted">no row in the release</td></tr>`
               : `<tr><td>${esc(chosenName(r.key))}</td><td>${esc(r.s.label)}</td><td>${int(r.v.k ?? 0)}</td><td>${K.prop.fe(r.v.e)}</td><td>${K.prop.fo(r.v.o)}</td>` +

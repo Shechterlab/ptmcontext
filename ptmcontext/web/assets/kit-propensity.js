@@ -316,7 +316,21 @@
     });
   });
 
+  // Holm's step-down adjustment of a list of p values (any order): the smallest p times the number of tests, the next times one
+  // fewer, ..., each at least the one before, none above 1
+  const holm = (ps) => {
+    const order = ps.map((p, i) => [p, i]).sort((a, b) => a[0] - b[0]),
+      out = new Array(ps.length);
+    let run = 0;
+    order.forEach(([p, i], j) => {
+      run = Math.max(run, Math.min(1, (ps.length - j) * p));
+      out[i] = run;
+    });
+    return out;
+  };
+
   K.prop = {
+    holm,
     cfg: PR,
     sources: PR.sources,
     state,

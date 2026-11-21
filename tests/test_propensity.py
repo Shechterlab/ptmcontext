@@ -466,3 +466,31 @@ def test_the_oncoprint_colors_are_three_different_validated_hues_in_both_themes(
     assert light == ('#2a78d6', '#eb6834', '#1baf7a') and dark == ('#3987e5', '#d95926', '#199e70')
     assert len(set(light)) == 3 and len(set(dark)) == 3
     assert "['#2a78d6', '#eb6834']" in text  # the exports use the light slots too
+
+
+def test_rounding_never_carries_a_p_below_0_05_up_to_0_05():
+    """Q8WXF1 R520 has a lower-tail p of 0.04986: two digits would write 0.05 and the page would miss it (13 sites in the
+    release, 12 on the page)."""
+    assert PR.sig(0.04986) == 0.0499 and PR.sig(0.0499) == 0.0499 and PR.sig(0.05) == 0.05 and PR.sig(0.0504) == 0.05
+    assert PR.sig(0.0123456) == 0.012 and PR.sig(0.99) == 0.99 and PR.sig(0.04986, 3) == 0.0499
+
+
+HOLM_CASES = [
+    ([0.01, 0.04, 0.03], [0.03, 0.06, 0.06]),  # 3 × 0.01; 2 × 0.03 = 0.06; 1 × 0.04 = 0.04, held at the 0.06 before it
+    ([0.5, 0.02, 0.02], [0.5, 0.06, 0.06]),  # a tie: both get the larger of 3 × 0.02 and 2 × 0.02
+    ([0.001, 0.9, 0.021, 0.02], [0.004, 0.9, 0.06, 0.06]),  # the monotonic step: 2 × 0.021 = 0.042 is raised to 0.06
+    ([0.6, 0.7], [1.0, 1.0]),  # capped at 1
+    ([0.2], [0.2]),
+    ([], []),
+]
+
+
+@pytest.mark.parametrize('ps, want', HOLM_CASES)
+def test_holm_adjustment_in_the_page_matches_hand_values_and_statsmodels(ps, want):
+    got = _node(f'console.log(JSON.stringify(K.prop.holm({json.dumps(ps)})));', PR_DATA)
+    assert [round(x, 12) for x in got] == pytest.approx(want, abs=1e-12)
+    if ps:
+        from statsmodels.stats.multitest import multipletests
+
+        ref = multipletests(ps, method='holm')[1]
+        assert got == pytest.approx(list(ref), abs=1e-12)

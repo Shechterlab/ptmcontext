@@ -44,12 +44,14 @@ HYPER_PER_MB = 10  # coding calls per Mb: the release's threshold (Campbell et a
 
 
 def sig(x, digits: int = 2):
-    """A number to `digits` significant digits, None for a missing one."""
+    """A number to `digits` significant digits, None for a missing one; a value under 0.05 stays under it."""
     if x is None or (isinstance(x, float) and math.isnan(x)):
         return None
     if x == 0:
         return 0
-    return float(f'{x:.{digits}g}')
+    r = float(f'{x:.{digits}g}')
+    # rounding never carries a value below 0.05 up to 0.05 (a ring, a count of sites with p < 0.05): 0.04986 stays under it
+    return 0.0499 if x < Q_RING <= r else r
 
 
 def _cols(src: dict, cohort: bool) -> dict:

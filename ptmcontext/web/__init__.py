@@ -2285,6 +2285,7 @@ def pages(
                 or site['id'],  # the name of the landing card
                 'listed': not landing.get('unlisted'),
                 'in_switcher': bool(landing.get('in_switcher')),
+                'residues': list((web.get('propensity') or {}).get('residues') or []),  # the residues its tables cover
             }
         )
         if landing.get('unlisted'):  # its folder is published; its card is not on the landing page
