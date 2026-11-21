@@ -567,3 +567,9 @@ def test_holm_adjustment_in_the_page_matches_hand_values_and_statsmodels(ps, wan
 
         ref = multipletests(ps, method='holm')[1]
         assert got == pytest.approx(list(ref), abs=1e-12)
+
+
+def test_q_just_under_the_ring_is_not_printed_as_0_050():
+    """A q of 0.04996 keeps its ring (q < 0.05), so it must not read 'q 0.050'."""
+    got = _node("console.log(JSON.stringify([0.04996, 0.0499, 0.05, 0.0512, 0.2].map(K.prop.fq)));", PR_DATA)
+    assert got == ['< 0.05', '< 0.05', '0.050', '0.051', '0.20']

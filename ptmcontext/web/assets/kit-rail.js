@@ -977,7 +977,7 @@
       (innerWidth >= PIN_MIN
         ? `<button type="button" class="btn small" data-rail-pin title="${
             pinned() ? 'Show the sidebar only when asked (☰)' : 'Keep the sidebar beside the page'
-          }">${pinned() ? 'Unpin' : 'Pin'}</button>`
+          }">${pinned() ? 'Unpin sidebar' : 'Pin sidebar'}</button>`
         : '') +
       `${
         pinned() ? '' : '<button type="button" class="btn small" data-rail-close aria-label="Close">×</button>'

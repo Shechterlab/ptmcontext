@@ -85,6 +85,8 @@
   const regionNo = (cls) => +(/(\d+)$/.exec(String(cls))?.[1] || 0);
   const colour = (cls) => (TR.colours || {})[cls] || FALLBACK[(regionNo(cls) || 6) - 1] || FALLBACK[5];
   const clsLabel = (cls) => (QA?.labels || {})[cls] || DP[regionNo(cls)]?.[0] || String(cls);
+  // one short name for a class in the table, the figure and the legend
+  const shortCls = (cls) => DP[regionNo(cls)]?.[3] || clsLabel(cls);
   const STK = D.stickers || null; // the profile's sticker residues (Martin et al. 2020: aromatic patterning)
   // one descriptive line per IDR: how many sticker residues, how far apart, the longest stretch without one (no test)
   const patterning = (x) =>
@@ -365,7 +367,7 @@
     let lx = ML,
       ly = 14;
     V.classes.forEach((c) => {
-      const t = `R${regionNo(c)} ${DP[regionNo(c)]?.[3] || clsLabel(c)} (${int(n[c] || 0)})`,
+      const t = `R${regionNo(c)} ${shortCls(c)} (${int(n[c] || 0)})`,
         w = 20 + K.tw(t, 10.5);
       if (lx + w > DW - MR) {
         lx = ML;
@@ -905,8 +907,8 @@
           const d = DP[regionNo(r.cls)];
           return (
             `<tr data-idr-reg="${esc(r.cls)}" tabindex="0" title="List the IDRs of this region"><td ` +
-            `class="idr-rname" data-label=""><i class="idr-sw" style="--c:${colour(r.cls)}"></i><b>R${regionNo(r.cls)}</b> ${esc(clsLabel(r.cls))}${
-              d ? `<br><span ` + `class="muted small">${esc(d[2])}</span>` : ''
+            `class="idr-rname" data-label=""><i class="idr-sw" style="--c:${colour(r.cls)}"></i><b>R${regionNo(r.cls)}</b> ${esc(shortCls(r.cls))}${
+              d ? `<br><span ` + `class="muted small">${esc(clsLabel(r.cls))}; ${esc(d[2])}</span>` : ''
             }</td>${cells(r, true, testCell(TT[r.cls]))}</tr>`
           );
         })
@@ -1012,7 +1014,7 @@
       if (!r.cls) parts.push(`<line x1="20" x2="${X.val}" y1="${y}" y2="${y}" stroke="${P.line}"/>`);
       if (r.cls) {
         parts.push(`<circle cx="${X.lab + 5}" cy="${yc - 1}" r="5" fill="${colour(r.cls)}"/>`);
-        T(X.lab + 15, yc + (d ? -2 : 3), `R${regionNo(r.cls)} ${clsLabel(r.cls)}`, { weight: 'bold' });
+        T(X.lab + 15, yc + (d ? -2 : 3), `R${regionNo(r.cls)} ${shortCls(r.cls)}`, { weight: 'bold' });
         if (d) T(X.lab + 15, yc + 11, d[2], { size: 9.5, fill: P.muted });
       } else T(X.lab, yc + 3, 'All IDRs', { weight: 'bold' });
       if (r.cls)
@@ -1089,7 +1091,7 @@
       row: (x) => [
         gene(x) + (outside(x) ? ' (outside your selection)' : ''),
         rg(x),
-        `R${regionNo(x.cls)} ${DP[regionNo(x.cls)]?.[3] || clsLabel(x.cls)}`,
+        `R${regionNo(x.cls)} ${shortCls(x.cls)}`,
         f2(x.fcr),
         s2(x.ncpr),
         String(hlMarks(x)),
@@ -1214,7 +1216,7 @@
       (x) => x.reg,
       (x) =>
         `<span title="${esc(clsLabel(x.cls))}"><i class="idr-sw" style="--c:${colour(x.cls)}"></i>R${regionNo(x.cls)} <span class="muted ` +
-        `small">${esc(DP[regionNo(x.cls)]?.[3] || clsLabel(x.cls))}</span></span>`,
+        `small">${esc(shortCls(x.cls))}</span></span>`,
       false,
     ],
     [
@@ -1354,7 +1356,7 @@
           : '';
     return (
       `<b>${esc(gene(x))}</b> <span class="muted mono">${esc(pr(x)[0])}</span> ${rg(x)} <span class="muted">(${int(x.len)} aa)</span>` +
-      `<br><i class="idr-sw" style="--c:${colour(x.cls)}"></i>R${regionNo(x.cls)} ${esc(clsLabel(x.cls))}` +
+      `<br><i class="idr-sw" style="--c:${colour(x.cls)}"></i>R${regionNo(x.cls)} ${esc(shortCls(x.cls))}` +
       `<br>FCR ${f2(x.fcr)} · NCPR ${s2(x.ncpr)} · f+ ${f2(x.fp)} · f− ${f2(x.fm)} · κ ${
         x.kappa == null ? 'none (no charged residue)' : f2(x.kappa)
       }` +
@@ -1387,8 +1389,9 @@
       `<div class="${SECTION ? '' : 'page-head '}results-head"><div>${
         SECTION ? `<h3>${esc(K.tabName('idrs', 'IDRs'))}</h3>` : `<h2>${esc(K.tabName('idrs', 'IDRs'))}</h2>`
       }<p class="cx">${int(xs.length)} IDRs on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</p></div></div>` +
-      (`<p class="page-sub">By charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. <button ` +
-        `type="button" class="idr-goto" data-idr-goto="idr-refs">Method</button></p>`) +
+      (`<p class="page-sub">By charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. Candidate residues are the ` +
+        `${esc(W.residues)} in these IDRs, ${esc(W.marks)} included. <button ` +
+        `type="button" class="idr-goto" data-idr-goto="idr-refs">Methods</button></p>`) +
       (`<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.marked))} ${esc(W.residues)}, by region</h3>` +
         `</div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-rexp', 'the regions')}</div>${regionsHtml()}</section>`) +
       (`<section class="idr-card" id="idr-diagram"><div class="card-head"><div><h3>Charge diagram</h3><p ` +
@@ -1420,7 +1423,7 @@
       `<label><input type="checkbox" id="idr-only"${T.only ? ' checked' : ''}> Only IDRs with ${sw}${esc(W.marks)}</label></div>` +
       (`<div class="quick" id="idr-rchips"><span class="flabel">Region</span>${chips('reg')}</div><div ` +
         `id="idr-list-body">${listHtml()}</div></details>`) +
-      `<details class="idr-card idr-fold idr-refs" id="idr-refs"><summary><h3>Method</h3></summary>` +
+      `<details class="idr-card idr-fold idr-refs" id="idr-refs"><summary><h3>Methods</h3></summary>` +
       (`<p class="sub">Every IDR of the ${esc(W.marked)} proteins${SC.on ? ' in your selection' : ''}, with charge ` +
         `(FCR, fraction of residues charged; NCPR, net charge per residue), how evenly the charges are mixed (κ) ` +
         `and the ${esc(W.marks)} inside it. These are the row “${esc(TR.title)}” of the protein maps: ${esc(TR.help || '')}. The diagram’s ` +
@@ -1458,7 +1461,7 @@
       .map(
         (c) =>
           `<button type="button" class="fchip" data-idr-chip="${key}" data-v="${esc(c)}" aria-pressed="${T[key] === c}"><i class="idr-sw" ` +
-          `style="--c:${colour(c)}"></i>R${regionNo(c)} <span class="muted">${esc(DP[regionNo(c)]?.[3] || clsLabel(c))}</span></button>`
+          `style="--c:${colour(c)}"></i>R${regionNo(c)} <span class="muted">${esc(shortCls(c))}</span></button>`
       )
       .join('');
   const kappaScope = (few) =>
@@ -1540,7 +1543,7 @@
       ['idr-diagram', 'Charge diagram', 1],
       ...(POLY3() ? [['idr-kappa', 'Charge mixing (κ)', 1]] : []),
       ['idr-list', 'Every IDR', 1],
-      ['idr-refs', 'Method', 1],
+      ['idr-refs', 'Methods', 1],
     ];
   }
   K.tips.push(['[data-di]', (el) => (V ? tipHtml(V.idrs[+el.dataset.di]) : '')]);

@@ -552,13 +552,15 @@
       `</div>`
     );
   }
+  // a residue letter spelled out: "Serine (S)"
+  const resLabel = (l) => (D.residue_names?.[l] ? `${cap1(D.residue_names[l])} (${l})` : l);
   // one line for the whole list when it is the site set of the release (site_set_propensity): the set's own test
   function setLine(m) {
     const rows = PR.summary?.sets || [];
     if (K.sel.active() || !rows.length || !m.s.set_source) return '';
     const cohort = m.germ || hyper() ? 'all' : 'no_hypermutated';
     const num = (v) => (v == null ? '–' : v >= 100 ? int(Math.round(v)) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
-    const fp = (v) => (v == null ? '–' : v < 0.001 ? v.toExponential(1) : v.toPrecision(2));
+    const fp = (v) => (v == null ? '–' : v < 0.001 ? v.toExponential(1).replace('e-', 'e−') : v.toPrecision(2));
     const lines = rows
       .filter((r) => r.source === m.s.set_source && r.cohort === cohort)
       .map((r) => {
@@ -568,7 +570,7 @@
           t += `; fewer than expected, p = ${fp(r.p_lower)} (permutation, ${int(PR.summary.iterations || 0)} draws)`;
         else if (r.oe > 1)
           t += `; more than expected, p = ${fp(r.p_upper)} (permutation, ${int(PR.summary.iterations || 0)} draws)`;
-        return `${PR.residues.length > 1 ? esc(r.residue) + ': ' : ''}${esc(t)}`;
+        return `${PR.residues.length > 1 ? esc(resLabel(r.residue)) + ': ' : ''}${esc(t)}`;
       });
     return lines.length ? `<p class="small mu-setline"><b>This set:</b> ${lines.join('<br>')}</p>` : '';
   }
@@ -578,15 +580,15 @@
     const pick = rows.filter((r) => ['tcga_mc3', 'depmap_24q4', 'clinvar', 'gnomad_v4_1'].includes(r.source));
     const lab = { tcga_mc3: 'TCGA', depmap_24q4: 'DepMap', clinvar: 'ClinVar', gnomad_v4_1: 'gnomAD' };
     const fo = (v) => (v == null ? '–' : v >= 10 ? v.toFixed(0) : v.toFixed(2));
-    const fp = (v) => (v == null ? '–' : v < 0.001 ? v.toExponential(1) : v.toFixed(3));
+    const fp = (v) => (v == null ? '–' : v < 0.001 ? v.toExponential(1).replace('e-', 'e−') : v.toFixed(3));
     return (
       `<details class="mu-set"><summary>Whole list against expectation (the release's site set test)</summary>` +
-      `<p class="small muted">${esc(PR.summary.set_label || '')}: the observed changes at the ${esc(W.marks)} against the expected changes, summed over their proteins (each protein's changes at its residues of the type, times the ${esc(W.marks)}' share of its mutability). p comes from ${int(PR.summary.iterations || 10000)} permutation draws; the smallest possible p is about 1e−4. This table does not change with your selection.</p>` +
+      `<p class="small muted">${esc(PR.summary.set_label || '')}: the observed changes at the ${esc(W.marks)} against the expected changes, summed over their proteins (each protein's changes at its residues of the type, times the ${esc(W.marks)}' share of its expected rate of change). p comes from ${int(PR.summary.iterations || 10000)} permutation draws; the smallest possible p is about 1e−4. This table does not change with your selection.</p>` +
       `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Source</th><th>Residue</th><th>Samples</th><th>${esc(cap1(W.marks))}</th><th>Observed</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th></tr></thead><tbody>` +
       pick
         .map(
           (r) =>
-            `<tr><td>${esc(lab[r.source] || r.source)}${r.oe_status === 'descriptive' ? ' <span class="muted">(descriptive)</span>' : ''}</td><td>${esc(r.residue)}</td><td>${r.cohort === 'no_hypermutated' ? 'without hypermutated' : 'all'}</td><td>${int(r.sites)}</td><td>${int(r.observed)}</td><td>${fo(r.expected)}</td><td>${fo(r.oe)}</td><td>${fp(r.p_upper)}</td><td>${fp(r.p_lower)}</td></tr>`
+            `<tr><td>${esc(lab[r.source] || r.source)}${r.oe_status === 'descriptive' ? ' <span class="muted">(descriptive)</span>' : ''}</td><td>${esc(resLabel(r.residue))}</td><td>${r.cohort === 'no_hypermutated' ? 'without hypermutated' : 'all'}</td><td>${int(r.sites)}</td><td>${int(r.observed)}</td><td>${fo(r.expected)}</td><td>${fo(r.oe)}</td><td>${r.oe_status === 'descriptive' ? '–' : fp(r.p_upper)}</td><td>${r.oe_status === 'descriptive' ? '–' : fp(r.p_lower)}</td></tr>`
         )
         .join('') +
       `</tbody></table></div></details>`
@@ -706,7 +708,7 @@
       .join('');
     return (
       `<section class="mu-chosen" id="mu-chosen"><h3>Test the sites you chose</h3>` +
-      `<p class="small muted">Choose sites before looking at the results. The adjusted p corrects only for the sites you chose (Holm, over ${int(n)} p values here). ` +
+      `<p class="small muted">Choose sites before looking at the results. The adjusted p corrects only for the sites you chose (Holm, over ${int(n)} p values here), not for sites tried and removed. ` +
       `Up to ${MAX_CHOSEN} sites; they are kept in the address. Samples follow the hypermutated switch above.</p>` +
       `<form class="mu-add" data-mu-form>` +
       `<input id="mu-site" type="text" autocomplete="off" placeholder="H4 R3" data-mu-site aria-label="Add a site, as a gene and a position"> ` +
@@ -718,7 +720,7 @@
                 `<span class="mu-chip">${esc(chosenName(k))} <button type="button" data-mu-del="${esc(k)}" aria-label="Remove ${esc(chosenName(k))}">×</button></span>`
             )
             .join(' ')}</p>` +
-          `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Source</th><th>k</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th><th>Adjusted p (more)</th><th>Adjusted p (fewer)</th></tr></thead><tbody>${body}</tbody></table></div>` +
+          `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Source</th><th>k</th><th>Expected</th><th>O/E</th><th>Raw p (more)</th><th>Raw p (fewer)</th><th>Adjusted p (more)</th><th>Adjusted p (fewer)</th></tr></thead><tbody>${body}</tbody></table></div>` +
           `${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muchosen', 'tested sites', 'propensity')}</div>`
         : '') +
       `</section>`
@@ -789,7 +791,7 @@
       (b) => {
         const ok = addSite(b.dataset.muAdd);
         b.textContent = ok
-          ? 'Added to tested sites'
+          ? 'Added to my tested sites'
           : M.chosen.includes(b.dataset.muAdd)
             ? 'Already added'
             : `At most ${MAX_CHOSEN}`;
@@ -814,7 +816,7 @@
   // for a site card: a button that adds the site to the tested sites
   K.mut = {
     addButton: (acc, pos) =>
-      `<button type="button" class="btn small" data-mu-add="${esc(acc)}:${pos}"${M.chosen.includes(`${acc}:${pos}`) ? ' disabled' : ''}>${M.chosen.includes(`${acc}:${pos}`) ? 'Already in tested sites' : 'Add to tested sites'}</button>`,
+      `<button type="button" class="btn small" data-mu-add="${esc(acc)}:${pos}"${M.chosen.includes(`${acc}:${pos}`) ? ' disabled' : ''}>${M.chosen.includes(`${acc}:${pos}`) ? 'Already in my tested sites' : 'Add to my tested sites'}</button>`,
   };
 
   // ---- sites with no change, the most expected first ------------------------------------------------------------------------------
@@ -1156,15 +1158,15 @@
     const val = (PR.summary?.validation || []).filter((v) => v.cohort === 'all');
     return (
       `<section id="m-propensity"><h3>Mutation propensity</h3>` +
-      `<p>For each candidate residue (every known ${esc(W.mark)}, and every other residue of the same type with a change), the release counts the tumor samples, cell lines, ClinVar variations or gnomAD variants with a missense or stop change there (k). It compares k with the count the residue's codon predicts. ` +
-      `The expected count is n × w / Σw. Here n is the number of changes at the protein's residues of the same type, w is the residue's mutability (the rate of each base change that alters the residue, summed over its codon, each in its trinucleotide context), and Σw is the sum of w over those residues. ` +
+      `<p>For each candidate residue (every known ${esc(W.mark)}, and every other residue of the same type with a change), the release counts the tumor samples and cell lines with a missense or stop change there, and the ClinVar and gnomAD variants that cause one (k). It compares k with the count the residue's codon predicts. ` +
+      `The expected count is n × w / Σw. Here n is the number of changes or variants at the protein's residues of the same type, w is the residue's expected rate of change (the rate of each base change that alters the residue, summed over its codon, each in its trinucleotide context), and Σw is the sum of w over those residues. ` +
       `k is tested against Binomial(n, w / Σw). O/E is k over the expected count. q is the Benjamini–Hochberg value over every residue tested for the source and residue type. ` +
       `The weights need a coding sequence that translates to the UniProt sequence (18,717 of 20,416 reviewed entries). For any other entry, O/E treats every residue of the type as equally likely and there is no q. ` +
       `The release's data dictionary defines every column (<a href="https://github.com/Shechterlab/PTM_Pipeline/blob/v1.7.0/releases/v1.7.0/README.md" target="_blank" rel="noopener">PTM_Pipeline v1.7.0, README</a>). The site adds no method of its own.</p>` +
       `<p>TCGA and DepMap use each source's own spectrum: the residue-changing single-base changes in the coding sequences, per trinucleotide class. ClinVar and gnomAD use gnomAD's germline rates (mutation_rate_methylation_bins, from <a href="https://doi.org/10.1038/s41586-020-2308-7" target="_blank" rel="noopener">Karczewski et al., Nature 581:434 (2020)</a>, gnomAD v2.1.1).</p>` +
       `<p>Hypermutated samples have more than ${PR.hypermutated.per_mb} coding calls per Mb (<a href="https://pubmed.ncbi.nlm.nih.gov/29056344/" target="_blank" rel="noopener">Campbell et al., Cell 171:1042 (2017)</a>). The cards and pages leave them out by default. The release repeats the test without them, using the spectrum of the remaining samples. A switch puts them back.</p>` +
-      `<p>For a site you picked beforehand, read the raw p. The q value corrects across about 650,000 residues, which such a site does not need. The Holm p corrects only for the sites you chose, over their tails and sources. Choose the sites before you look at the results.</p>` +
-      `<p>ClinVar variants reflect clinical testing and submission more than mutation, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
+      `<p>For a site you picked beforehand, read the raw p. q corrects across every residue of that type tested in that source, which such a site does not need. The Holm p corrects only for the sites you chose, over their tails and sources. Choose the sites before you look at the results.</p>` +
+      `<p>ClinVar variants reflect clinical testing and submission more than how often residues change, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
       `<p>On the cancer and germline cards, stick height is the count in the card's table, circle size grows with O/E, and a ring marks q &lt; 0.05.</p>` +
       `<p>On the Mutation frequency page, the waterfall ranks the sites of the selection by the share of samples with a change: changed samples over the samples profiled in the chosen group (the release's group_denominators). Sites with no change form the flat tail. Circles are colored by O/E and a solid ring marks q &lt; 0.05. The gray curve is the same ranking for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. For gnomAD, height is the number of variants (k, the count of the O/E test) and the tooltip adds the summed allele frequency. A dashed ring marks q &lt; 0.05 for fewer variants than expected, including the sites with none in the flat tail. The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example). The oncoprint joins the sites with the most changed TCGA tumors to those tumors' sample_burden by sample id.</p>` +
       (ctl.length

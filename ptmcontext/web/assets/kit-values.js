@@ -15,7 +15,8 @@
   const pcT = (k, n) => (n ? ((100 * k) / n).toFixed(k / n < 0.1 ? 1 : 0) : '–');
   const num = (v) =>
     (v == null || !Number.isFinite(v) ? '–' : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2)).replace(/^-/, '−');
-  const fp = (p) => (p == null ? '–' : p === 0 ? '< 1e-300' : p < 1e-3 ? p.toExponential(1) : p.toFixed(3));
+  const fp = (p) =>
+    p == null ? '–' : p === 0 ? '< 1e-300' : p < 1e-3 ? p.toExponential(1).replace('e-', 'e−') : p.toFixed(3);
   const gene = (p) => D.proteins[p][1] || D.proteins[p][0];
   const scopedNow = () => K.selOn() && !K.vsOn() && !!K.sel.data() && K.sel.testable();
   const who = (scoped) => (scoped ? 'proteins of your selection' : `${W.marked} proteins`);

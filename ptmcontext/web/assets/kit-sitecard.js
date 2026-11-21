@@ -143,7 +143,7 @@
     if (v === '' || v == null) return '–';
     const x = +v;
     if (!isFinite(x)) return esc(v);
-    if (f === 'p') return x === 0 ? '< 1e-300' : x < 1e-3 ? x.toExponential(1) : x.toFixed(3);
+    if (f === 'p') return x === 0 ? '< 1e-300' : x < 1e-3 ? x.toExponential(1).replace('e-', 'e−') : x.toFixed(3);
     if (f === 'l2') return (x > 0 ? '+' : '') + x.toFixed(2);
     return Number.isInteger(x) ? int(x) : x.toFixed(2);
   };
@@ -702,7 +702,7 @@
       .join('')}<span><span ` +
     `class="muted">${esc(CL.quiet || 'n.s.')}</span> measured, no significant change</span><span><span ` +
     `class="muted">–</span> not measured</span><span class="muted">a number beside a site: how many experiments ` +
-    `· hover for the numbers</span></p>`;
+    `· tap or hover for the numbers</span></p>`;
   function calls(c, compact) {
     if (!(CL.tables || []).some(has) && !Object.keys(CL.attributes || {}).some((a) => SPECS[a])) return '';
     const rs = callRows(c);

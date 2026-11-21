@@ -1963,14 +1963,14 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         links = ''.join(
             f'<a href="{html.escape(x["url"])}">{html.escape(x["label"])}</a>' for x in web.get('links', [])
         )
-        # the header's citation line is one short line; "How to cite" and "Version" open the detail in Method
+        # the header's citation line is one short line; "How to cite" and "App version" open the detail in Method
         cite_html = ''
         version = ''
         if cit:
             detail = '#method/download' if web.get('downloads') and web.get('dataset') else '#method/cite'
             version = (
                 '<a href="#method/cite">How to cite</a> · '
-                + f'<a href="{detail}">Version {html.escape(cit["version"])}</a>'
+                + f'<a href="{detail}">App version {html.escape(cit["version"])}</a>'
                 + (f' ({human_date(cit["date"])})' if cit.get('date') else '')
             )
         if inline:
