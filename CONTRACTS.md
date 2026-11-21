@@ -1561,7 +1561,7 @@ The Overview's start panel and each landing-page card draw three pictures from t
 in the site file they are computed; `website.start` (`share: {analysis, classes, labels}`, `findings: [{analysis, class}]`,
 `protein`) names them, and `website.landing` (`share`, `findings`, `tagline`) overrides them for the landing card; `website.landing.from_section: <Overview section>` chooses the landing card's result from that section's questions only (the card that draws the cell stands for the `website.cell` maps), so the card's result (`landing_findings` in `glance.json`) matches what the Overview opens with; the start panel keeps its own. `website.landing.unlisted: true` builds the
 site's folder with `ptmc pages` but leaves its card off the landing page. `ptmc pages` also writes `sites.json` beside the folders
-(`{sites: [{id, label, listed, in_switcher}]}`, the label being `landing.label` or the mark profile's name): the header's "Mark" menu
+(`{sites: [{id, label, listed, in_switcher, residues}]}`, `residues` the letters of `website.propensity.residues`, which the Mutation frequency page uses to send a chosen site to the explorer that covers its residue; the label being `landing.label` or the mark profile's name): the header's "Mark" menu
 (kit-switch.js) reads it, lists the listed sites, lists an unlisted site only in the menu of an unlisted site or where its own
 `landing.in_switcher` is true, and opens the chosen site with the reader's search (`q=`), highlight (`hl=`) and filters (`f=`); the
 filters the target does not have are dropped, and the target says how many in a short notice. A site served alone has no
