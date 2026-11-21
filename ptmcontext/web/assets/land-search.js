@@ -57,7 +57,16 @@
       if (say && !say.querySelector('.ld-spin')) say.textContent = 'Searching…';
       return;
     }
-    const rows = find(q);
+    // several names (TP53 S15, EGFR,TP53): the first one is searched, and the line says so
+    let rows = find(q),
+      first = '';
+    if (!rows.length) {
+      const names = q.split(/[\s,;]+/).filter(Boolean);
+      if (names.length > 1) {
+        first = names[0];
+        rows = find(first);
+      }
+    }
     out.innerHTML = rows
       .map((h) => {
         const { acc, ids } = h.row,
@@ -76,10 +85,12 @@
         );
       })
       .join('');
-    if (say)
+    if (say) {
+      const lead = first ? `Searched the first name only, ${first}; search each name on its own. ` : '';
       say.textContent = rows.length
-        ? `${rows.length} protein${rows.length === 1 ? '' : 's'}; choose a site to open it in.`
-        : 'No protein with that name or accession in these sites.';
+        ? `${lead}${rows.length} protein${rows.length === 1 ? '' : 's'}; choose a site to open it in.`
+        : `${lead}No protein with that name or accession in these sites.`;
+    }
   };
   box.addEventListener('focus', load, { once: true });
   box.addEventListener('input', () => {

@@ -24,7 +24,7 @@
   const byAcc = Object.fromEntries((D.proteins || []).map((p) => [p[0], p]));
 
   // ---- the choices (kept in the address: ms source, mg cancer type, mv view, mz zoom; hyper is kit-propensity's) -------------
-  const M = { src: SRC[0].id, group: '', view: 'waterfall', zoom: 0, linear: false, chosen: [] };
+  const M = { src: SRC[0].id, group: '', view: 'waterfall', zoom: 0, linear: false, chosen: [], res: {}, note: '' };
   const MAX_CHOSEN = 20;
   K.paramsIn.push((p) => {
     M.src = SRC.some((s) => s.id === p.get('ms')) ? p.get('ms') : SRC[0].id;
@@ -32,13 +32,25 @@
     M.view = p.get('mv') === 'oncoprint' ? 'oncoprint' : 'waterfall';
     M.zoom = [100, 1000].includes(+p.get('mz')) ? +p.get('mz') : 0;
     M.linear = p.get('mx') === 'linear';
-    M.chosen = (p.get('mt') || '')
+    M.chosen = [];
+    M.res = {};
+    (p.get('mt') || '')
       .split(',')
-      .filter((x) => /^[A-Z0-9-]+:\d+$/i.test(x))
-      .slice(0, MAX_CHOSEN);
+      .map((x) => K.sel.siteKey(x))
+      .filter(Boolean)
+      .forEach((x) => {
+        if (M.chosen.length >= MAX_CHOSEN || M.chosen.includes(x.key)) return;
+        M.chosen.push(x.key);
+        if (x.res) M.res[x.key] = x.res;
+      });
   });
+  const keyOut = (key) => {
+    const [acc, pos] = key.split(':'),
+      sq = SEQ[acc];
+    return `${acc}:${M.res[key] || (sq ? sq[pos - 1] : '') || ''}${pos}`;
+  };
   K.paramsOut.push((p) => {
-    if (M.chosen.length) p.set('mt', M.chosen.join(','));
+    if (M.chosen.length) p.set('mt', M.chosen.map(keyOut).join(','));
     if (S.view !== 'mutations') return;
     if (M.src !== SRC[0].id) p.set('ms', M.src);
     if (M.group) p.set('mg', M.group);
@@ -637,6 +649,7 @@
     const [acc, pos] = key.split(':'),
       sq = seqOf(acc),
       letter = sq ? sq[pos - 1] : '',
+      keyR = `${acc}:${letter}${pos}`,
       here = D.site.id,
       list = (sibs() || []).filter((s) => s.id !== here && letter && (s.residues || []).includes(letter));
     return (
@@ -645,7 +658,7 @@
         ? ` Test it in the ${list
             .map(
               (s) =>
-                `<a href="../${encodeURIComponent(s.id)}/#mutations?mt=${encodeURIComponent(key)}">${esc(s.id)}</a>`
+                `<a href="../${encodeURIComponent(s.id)}/#mutations?mt=${encodeURIComponent(keyR)}">${esc(s.id)}</a>`
             )
             .join(' or ')} explorer.`
         : '')
@@ -712,7 +725,7 @@
       `Up to ${MAX_CHOSEN} sites; they are kept in the address. Samples follow the hypermutated switch above.</p>` +
       `<form class="mu-add" data-mu-form>` +
       `<input id="mu-site" type="text" autocomplete="off" placeholder="H4 R3" data-mu-site aria-label="Add a site, as a gene and a position"> ` +
-      `<button type="submit" class="btn small"${M.chosen.length >= MAX_CHOSEN ? ' disabled' : ''}>Add</button> <span class="small muted" data-mu-msg role="status"></span></form>` +
+      `<button type="submit" class="btn small"${M.chosen.length >= MAX_CHOSEN ? ' disabled' : ''}>Add</button> <span class="small muted" data-mu-msg role="status">${esc(M.note)}</span></form>` +
       (M.chosen.length
         ? `<p class="mu-chips">${M.chosen
             .map(
@@ -762,7 +775,7 @@
     K.writeHash?.();
     return true;
   }
-  document.addEventListener('submit', (e) => {
+  document.addEventListener('submit', async (e) => {
     if (!e.target.matches?.('[data-mu-form]')) return;
     e.preventDefault();
     const input = e.target.querySelector('[data-mu-site]'),
@@ -770,12 +783,28 @@
     const q = K.sel.parse(input.value);
     const hit = (q.sites || [])[0];
     if (!hit) {
-      msg.textContent = 'Not found. Type a gene and a residue, as in H4 R3.';
+      msg.textContent = q.rejected[0] || 'Not found. Type a gene and a residue, as in H4 R3.';
       return;
     }
-    const key = `${D.proteins[hit[0]][0]}:${hit[1]}`;
+    // the sequence settles the residue typed (and the end of the protein); a position with no residue typed takes the sequence's
+    const p = K.sel.byAcc[D.proteins[hit[0]][0]],
+      sq = await K.sel.seqReady(p),
+      letter = hit[2] || '';
+    const bad = K.sel.siteProblem(p, hit[1] + (K.numbering?.(p)?.offset || 0), letter);
+    if (bad) {
+      msg.textContent = bad;
+      return;
+    }
+    const key = `${p.acc}:${hit[1]}`;
     if (!addSite(key)) msg.textContent = M.chosen.includes(key) ? 'Already added.' : `At most ${MAX_CHOSEN} sites.`;
-    else K.render();
+    else {
+      const r = letter || sq[hit[1] - 1] || '';
+      if (r) M.res[key] = r;
+      SEQ[p.acc] ??= sq || null;
+      M.note = K.sel.notesOf(q).join(' ');
+      K.writeHash?.();
+      K.render();
+    }
   });
   K.clicks.push(
     [

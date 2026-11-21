@@ -124,9 +124,9 @@
             .join(', ')}.</p>`
         : '',
       L.notFound.length
-        ? `<p class="gl-note"><b>Not found</b> (no ${esc(W.mark)} in this dataset, or a name it ` +
-          `does not know), left out of the test: ${L.notFound.map((w) => esc(w) + typo(w)).join(', ')}.</p>`
+        ? `<p class="gl-note">${K.sel.leftOut(L.notFound.map((w) => `<b>${esc(w)}</b>` + typo(w)).join(', '))}</p>`
         : '',
+      K.sel.notesOf(L.q).length ? `<p class="gl-note">${K.sel.notesOf(L.q).map(esc).join(' ')}</p>` : '',
       L.terms.length
         ? `<p class="gl-note">Filters in the search (${L.terms
             .map(([k, v, bare]) => esc(bare ? k : k + ':' + v))

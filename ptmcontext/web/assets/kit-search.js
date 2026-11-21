@@ -551,8 +551,9 @@
           ` name the protein (${EXGENE} ${aa}${pos}${to}) to open its site.`
       )
     );
+    K.sel.notesOf(q).forEach((t) => out.push(esc(t)));
     if (prots.size || q.sites.length) {
-      const missing = [...(q.absent || [])];
+      const missing = [...(q.absent || []), ...(q.ignored || [])];
       if (q.nWords > 1 && (prots.size > 1 || missing.length))
         out.push(
           `<b>${int(prots.size)}</b> protein${prots.size === 1 ? '' : 's'} from ${int(q.nWords - missing.length)} of ${int(q.nWords)} search words.`
@@ -564,17 +565,11 @@
             .map(([t, g]) => `${esc(t)} → ${esc(g.join('/'))}`)
             .join(', ')}.`
         );
-      if (missing.length)
-        out.push(`Not in this dataset: ${list_(missing)}.${missing.length === 1 ? typo(q, missing[0]) : ''}`);
+      if (missing.length) out.push(K.sel.leftOut(list_(missing)) + (missing.length === 1 ? typo(q, missing[0]) : ''));
       if (q.missing.length) out.push(`No ${esc(W.mark)} reported at ${list_(q.missing, 10)}.`);
       q.numbered.forEach(([g, typed, u, rule]) =>
         out.push(`${esc(rule.note || rule.label || 'Numbered as papers do')}: ${esc(g)} ${typed} is UniProt ${u}.`)
       );
-      if (q.ignored?.length)
-        out.push(
-          `<span title="In a list of proteins, words are not searched in protein ` +
-            `names: search them on their own to do that">Not a protein, left out of the list: ${list_(q.ignored)}.</span>`
-        );
       if (q.ambiguous?.length)
         out.push(
           q.ambiguous
