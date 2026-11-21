@@ -9,7 +9,9 @@ Three kinds of file, all read only when something asks for them:
                     of the site's residue types that is a known site or has a change, the positions as differences:
                       p   position deltas      k   changes seen (samples or variants)    e   expected changes
                       o   O/E (k / e)          q   Benjamini-Hochberg q of the upper tail (null: not tested)
-                    TCGA and DepMap repeat k, e, o, q without the hypermutated samples (k2, e2, o2, q2). `u`: the rows
+                      pu  raw p of the upper tail (null: not tested)
+                    TCGA and DepMap repeat k, e, o, q, pu without the hypermutated samples (k2, e2, o2, q2, pu2); gnomAD
+                    adds `pl`, the raw p of the lower tail (fewer than expected). `u`: the rows
                     that had no weighted expectation (the entry has no coding sequence that matches its UniProt sequence),
                     written with the unweighted expectation and a null q; gnomAD `l`: [row, q, ...] for the rows with
                     q_lower < 0.05 (fewer variants than expected). Numbers keep two significant digits.
@@ -35,6 +37,7 @@ from . import variants as V
 
 DIR = 'data/m'
 G_BYTES = V.G_SHARD_BYTES
+ZERO_ROWS = 1000  # the sites with no change listed per source (the most expected changes first)
 CURVE_POINTS = 64  # points of the curve of the other residues (log-spaced ranks)
 Q_RING = 0.05
 HYPER_PER_MB = 10  # coding calls per Mb: the release's threshold (Campbell et al., Cell 171:1042 (2017))
@@ -59,6 +62,7 @@ def _cols(src: dict, cohort: bool) -> dict:
         'q': f'q_upper{s}',
         'eu': f'expected_unweighted{s}',
         'ou': f'oe_unweighted{s}',
+        'pu': f'p_upper{s}',
     }
 
 
@@ -77,6 +81,7 @@ def _numbers(df: pd.DataFrame, cohort: bool) -> dict:
         'e': [sig(x) for x in e],
         'o': [sig(x) for x in o],
         'q': [sig(x) for x in q],
+        'pu': [sig(x) for x in df[c['pu']].where(weighted)],
         'u': fallback,
     }
 
@@ -87,18 +92,19 @@ def block(df: pd.DataFrame, somatic: bool, lower: bool = False) -> dict:
     pos = df['position'].astype(int).tolist()
     p = [pos[0]] + [b - a for a, b in zip(pos, pos[1:])]
     a = _numbers(df, False)
-    out = {'p': p, 'k': a['k'], 'e': a['e'], 'o': a['o'], 'q': a['q']}
+    out = {'p': p, 'k': a['k'], 'e': a['e'], 'o': a['o'], 'q': a['q'], 'pu': a['pu']}
     if a['u']:
         out['u'] = a['u']
     if somatic:
         b = _numbers(df, True)
-        out.update({'k2': b['k'], 'e2': b['e'], 'o2': b['o'], 'q2': b['q']})
+        out.update({'k2': b['k'], 'e2': b['e'], 'o2': b['o'], 'q2': b['q'], 'pu2': b['pu']})
         if b['u'] and b['u'] != a['u']:
             out['u2'] = b['u']
     if lower and 'q_lower' in df:
         low = [(i, sig(x)) for i, x in enumerate(df['q_lower'].tolist()) if pd.notna(x) and x < Q_RING]
         if low:
             out['l'] = [v for i, x in low for v in (i, x)]
+        out['pl'] = [None if pd.isna(x) else sig(x) for x in df['p_lower']]
     return out
 
 
@@ -109,9 +115,11 @@ def decode(blk: dict) -> list[dict]:
     low = dict(zip(blk.get('l', [])[::2], blk.get('l', [])[1::2]))
     for i, d in enumerate(pos):
         last += d
-        r = {'pos': last, 'k': blk['k'][i], 'e': blk['e'][i], 'o': blk['o'][i], 'q': blk['q'][i], 'u': i in u}
+        r = {'pos': last, 'k': blk['k'][i], 'e': blk['e'][i], 'o': blk['o'][i], 'q': blk['q'][i], 'pu': blk['pu'][i], 'u': i in u}
         if 'k2' in blk:
-            r.update({'k2': blk['k2'][i], 'e2': blk['e2'][i], 'o2': blk['o2'][i], 'q2': blk['q2'][i], 'u2': i in u2})
+            r.update({'k2': blk['k2'][i], 'e2': blk['e2'][i], 'o2': blk['o2'][i], 'q2': blk['q2'][i], 'pu2': blk['pu2'][i], 'u2': i in u2})
+        if 'pl' in blk:
+            r['pl'] = blk['pl'][i]
         if i in low:
             r['ql'] = low[i]
         rows.append(r)
@@ -119,11 +127,11 @@ def decode(blk: dict) -> list[dict]:
 
 
 def read_source(path: Path, residues: list[str], somatic: bool, lower: bool) -> pd.DataFrame:
-    want = ['canonical_UniProtAC', 'position', 'residue', 'k', 'expected', 'oe', 'q_upper', 'expected_unweighted', 'oe_unweighted']
+    want = ['canonical_UniProtAC', 'position', 'residue', 'k', 'expected', 'oe', 'q_upper', 'p_upper', 'expected_unweighted', 'oe_unweighted']
     if somatic:
-        want += [f'{c}_no_hypermutated' for c in ('k', 'expected', 'oe', 'q_upper', 'expected_unweighted', 'oe_unweighted')]
+        want += [f'{c}_no_hypermutated' for c in ('k', 'expected', 'oe', 'q_upper', 'p_upper', 'expected_unweighted', 'oe_unweighted')]
     if lower:
-        want += ['q_lower']
+        want += ['q_lower', 'p_lower']
     df = pd.read_csv(path, sep='\t', usecols=lambda c: c in want or c in ('oe_status', 'site_sets', 'samples_profiled', 'samples_profiled_no_hypermutated'))
     return df[df['residue'].isin(residues)]
 
@@ -221,6 +229,12 @@ def frequency_payload(
         for i, (acc_, pos_) in enumerate(zip(on_['canonical_UniProtAC'], on_['position'])):
             st.setdefault(acc_, []).append([int(pos_), a_['o'][i], a_['q'][i], b_['o'][i], b_['q'][i]])
         out.setdefault('stats', {})[s['id']] = st
+        # the known sites with no change that a table can list: the ZERO_ROWS with the most expected changes, per cohort
+        zero = {}
+        for cohort, kc, ec in (('all', 'k', 'expected'), ('no_hypermutated', 'k_no_hypermutated', 'expected_no_hypermutated')):
+            z = pt[pt['isite'] & (pt[kc] == 0) & pt[ec].notna()].sort_values(ec, ascending=False).head(ZERO_ROWS)
+            zero[cohort] = [[a_, int(p_), r_, sig(float(e_))] for a_, p_, r_, e_ in zip(z['canonical_UniProtAC'], z['position'], z['residue'], z[ec])]
+        out.setdefault('zero', {})[s['id']] = zero
     out['sites'] = {a: [[p, *per] for p, per in sorted(v.items())] for a, v in sites.items()}  # [pos, residue, per source...]
     return out
 
@@ -229,21 +243,26 @@ def germline_payload(changes: list[pd.DataFrame], prop: pd.DataFrame, totals: di
     """The germline waterfall's file (data/gn.json). A residue's height is k, the number of gnomAD variants with a missense or
     stop change there (the count the O/E test uses); its summed allele frequency (`af`: allele count over allele number, added
     over the variants) is kept for the tooltip. sites[acc]: [[position, residue, k, summed af, O/E, q (more), q (fewer),
-    expected], ...] for the known sites with a variant and for those with none and q_lower < 0.05 (the most depleted); bg[residue]:
+    expected], ...] for the known sites with a variant, those with none and raw p_lower < 0.05, and the ZERO_ROWS with none and the most expected
+    (p_lower: raw p of the lower tail; the last is the raw upper p); bg[residue]:
     the curve of k over the other residues (`curve`)."""
     ch = pd.concat([c[['canonical_UniProtAC', 'position', 'af']] for c in changes])
     af = ch.groupby(['canonical_UniProtAC', 'position'])['af'].sum().rename('sum_af').reset_index()
     d = prop.merge(af, on=['canonical_UniProtAC', 'position'], how='left')
     d['sum_af'] = d['sum_af'].fillna(0.0)
     bg = {res: curve(d[(~d['isite']) & (d['residue'] == res)]['k'].tolist(), n) for res, n in totals.items()}
-    low = d['q_lower'] < 0.05 if 'q_lower' in d else pd.Series(False, index=d.index)
-    on = d[d['isite'] & ((d['k'] > 0) | low)].sort_values(['canonical_UniProtAC', 'position'])
+    low = d['p_lower'] < 0.05 if 'p_lower' in d else pd.Series(False, index=d.index)
+    zero = d[d['isite'] & (d['k'] == 0)]
+    top0 = zero.sort_values('expected', ascending=False).head(ZERO_ROWS).index
+    keep = d['isite'] & ((d['k'] > 0) | low | d.index.isin(top0))
+    on = d[keep].sort_values(['canonical_UniProtAC', 'position'])
     nums = _numbers(on, False)
     ql = [sig(x) if pd.notna(x) else None for x in on['q_lower']] if 'q_lower' in on else [None] * len(on)
+    pl = [sig(x) if pd.notna(x) else None for x in on['p_lower']] if 'p_lower' in on else [None] * len(on)
     sites: dict[str, list] = {}
     for i, (a, p, r) in enumerate(zip(on['canonical_UniProtAC'], on['position'], on['residue'])):
         sites.setdefault(a, []).append(
-            [int(p), r, nums['k'][i], sig(float(on['sum_af'].iat[i]), 3), nums['o'][i], nums['q'][i], ql[i], nums['e'][i]]
+            [int(p), r, nums['k'][i], sig(float(on['sum_af'].iat[i]), 3), nums['o'][i], nums['q'][i], ql[i], nums['e'][i], pl[i], nums['pu'][i]]
         )
     return {'sites': sites, 'bg': bg}
 
@@ -369,6 +388,7 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         'residues': residues,
         'sources': sources,
         'hypermutated': {'per_mb': HYPER_PER_MB},
+        'zero_rows': ZERO_ROWS,
         'summary': summaries(site['id'], run, cfg, log),
     }
     # the waterfall and oncoprint files

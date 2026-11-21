@@ -24,15 +24,21 @@
   const byAcc = Object.fromEntries((D.proteins || []).map((p) => [p[0], p]));
 
   // ---- the choices (kept in the address: ms source, mg cancer type, mv view, mz zoom; hyper is kit-propensity's) -------------
-  const M = { src: SRC[0].id, group: '', view: 'waterfall', zoom: 0, linear: false };
+  const M = { src: SRC[0].id, group: '', view: 'waterfall', zoom: 0, linear: false, chosen: [] };
+  const MAX_CHOSEN = 20;
   K.paramsIn.push((p) => {
     M.src = SRC.some((s) => s.id === p.get('ms')) ? p.get('ms') : SRC[0].id;
     M.group = p.get('mg') || '';
     M.view = p.get('mv') === 'oncoprint' ? 'oncoprint' : 'waterfall';
     M.zoom = [100, 1000].includes(+p.get('mz')) ? +p.get('mz') : 0;
     M.linear = p.get('mx') === 'linear';
+    M.chosen = (p.get('mt') || '')
+      .split(',')
+      .filter((x) => /^[A-Z0-9-]+:\d+$/i.test(x))
+      .slice(0, MAX_CHOSEN);
   });
   K.paramsOut.push((p) => {
+    if (M.chosen.length) p.set('mt', M.chosen.join(','));
     if (S.view !== 'mutations') return;
     if (M.src !== SRC[0].id) p.set('ms', M.src);
     if (M.group) p.set('mg', M.group);
@@ -144,6 +150,8 @@
           q: e ? e[5] : null,
           ql: e ? e[6] : null,
           e: e ? e[7] : 0,
+          pl: e ? e[8] : null,
+          pu: e ? e[9] : null,
         };
       });
       // sites with the same count (the many with none) are ranked by expected variants, highest first
@@ -159,6 +167,7 @@
         n: rows.length,
         germ: true,
         nFewer: rows.filter((r) => r.ql != null && r.ql < 0.05).length,
+        nZeroP: rows.filter((r) => r.f === 0 && r.pl != null && r.pl < 0.05).length,
       };
     }
     const wf = wfData();
@@ -353,6 +362,13 @@
       const more = r.q != null && r.q < 0.05,
         fewer = r.ql != null && r.ql < 0.05;
       // a ring is always drawn (a depleted site is often one with no variant, in the flat tail); a plain point only for the top ranks
+      // and, for gnomAD, a small dashed circle for each site with no variant and a raw p below 0.05 (fewer than expected)
+      const zeroLow = m.germ && r.f === 0 && r.pl != null && r.pl < 0.05;
+      if (zeroLow && !fewer) {
+        if (drawn++ < 800)
+          pts += `<circle cx="${X(i + 1).toFixed(1)}" cy="${Y(0).toFixed(1)}" r="3" fill="none" stroke="${c.ink}" stroke-width="1" stroke-dasharray="2 1.5"/>`;
+        return;
+      }
       if (!more && !fewer && (i >= POINTS || !(r.f > 0))) return;
       if (drawn++ >= 800) return;
       const x = X(i + 1).toFixed(1),
@@ -580,6 +596,232 @@
     String(t || '')
       .charAt(0)
       .toUpperCase() + String(t || '').slice(1);
+  // ---- the sites you chose: a test of sites picked in advance ------------------------------------------------------------------
+  // For a site chosen beforehand the raw p is the right number: q corrects across every residue of the release. The Holm p
+  // corrects across the sites chosen here (their tails and sources shown), and nothing else.
+  const SEQ = {};
+  const seqOf = (acc) => {
+    if (!(acc in SEQ)) {
+      SEQ[acc] = null;
+      K.loadProtein?.(acc).then(
+        (rec) => {
+          SEQ[acc] = rec.seq || '';
+          if (S.view === 'mutations') K.render();
+        },
+        () => {}
+      );
+    }
+    return SEQ[acc];
+  };
+  const chosenName = (key) => {
+    const [acc, pos] = key.split(':'),
+      sq = seqOf(acc);
+    return siteName(acc, +pos, sq ? sq[pos - 1] : '');
+  };
+  const holm = (ps) => {
+    const order = ps.map((p, i) => [p, i]).sort((a, b) => a[0] - b[0]),
+      out = new Array(ps.length);
+    let run = 0;
+    order.forEach(([p, i], j) => {
+      run = Math.max(run, Math.min(1, (ps.length - j) * p));
+      out[i] = run;
+    });
+    return out;
+  };
+  const fpv = (v) => (v == null ? '–' : K.prop.fq(v));
+  // the rows of the table: per chosen site and source, k, expected, O/E, the raw p of each tail and the Holm p
+  function chosenRows() {
+    const rows = [];
+    for (const key of M.chosen) {
+      const [acc, pos] = key.split(':');
+      if (K.prop.peek(acc) === undefined) {
+        K.prop.load(acc).then(() => S.view === 'mutations' && K.render());
+        rows.push({ key, wait: true });
+        continue;
+      }
+      for (const s of PR.sources) {
+        const v = K.prop.at(acc, s.id, +pos);
+        rows.push({ key, s, v, more: null, fewer: null });
+      }
+    }
+    // the family: every p shown (upper tail of each source with a test, lower tail of the sources that have one)
+    const ps = [];
+    rows.forEach((r) => {
+      if (!r.v || r.s.descriptive) return;
+      if (r.v.p != null) ps.push([r, 'more', r.v.p]);
+      if (r.s.lower_tail && r.v.pl != null) ps.push([r, 'fewer', r.v.pl]);
+    });
+    holm(ps.map((x) => x[2])).forEach((a, i) => (ps[i][0][ps[i][1]] = a));
+    return { rows, n: ps.length };
+  }
+  function chosenSection() {
+    const have = new Set(M.chosen);
+    const { rows, n } = chosenRows();
+    const body = rows
+      .map((r) =>
+        r.wait
+          ? `<tr><td>${esc(chosenName(r.key))}</td><td colspan="8" class="muted">Loading…</td></tr>`
+          : !r.v
+            ? `<tr><td>${esc(chosenName(r.key))}</td><td>${esc(r.s.label)}</td><td colspan="7" class="muted">no row in the release</td></tr>`
+            : `<tr><td>${esc(chosenName(r.key))}</td><td>${esc(r.s.label)}${r.v.nh ? '' : ''}</td><td>${int(r.v.k ?? 0)}</td><td>${K.prop.fe(r.v.e)}</td><td>${K.prop.fo(r.v.o)}</td>` +
+              (r.s.descriptive
+                ? `<td colspan="4" class="muted">descriptive: no test</td>`
+                : `<td>${fpv(r.v.p)}</td><td>${r.s.lower_tail ? fpv(r.v.pl) : '–'}</td><td>${fpv(r.more)}</td><td>${r.s.lower_tail ? fpv(r.fewer) : '–'}</td>`) +
+              `</tr>`
+      )
+      .join('');
+    return (
+      `<section class="mu-chosen" id="mu-chosen"><h3>Test the sites you chose</h3>` +
+      `<p class="small muted">Choose sites before looking at the results. The adjusted p corrects only for the sites you chose (Holm, over ${int(n)} p values here). ` +
+      `Up to ${MAX_CHOSEN} sites; they are kept in the address. Samples follow the hypermutated switch above.</p>` +
+      `<form class="mu-add" data-mu-form>` +
+      `<input id="mu-site" type="text" autocomplete="off" placeholder="H4 R3" data-mu-site aria-label="Add a site, as a gene and a position"> ` +
+      `<button type="submit" class="btn small"${M.chosen.length >= MAX_CHOSEN ? ' disabled' : ''}>Add</button> <span class="small muted" data-mu-msg role="status"></span></form>` +
+      (M.chosen.length
+        ? `<p class="mu-chips">${M.chosen
+            .map(
+              (k) =>
+                `<span class="mu-chip">${esc(chosenName(k))} <button type="button" data-mu-del="${esc(k)}" aria-label="Remove ${esc(chosenName(k))}">×</button></span>`
+            )
+            .join(' ')}</p>` +
+          `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Source</th><th>k</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th><th>Adjusted p (more)</th><th>Adjusted p (fewer)</th></tr></thead><tbody>${body}</tbody></table></div>` +
+          `${K.expBar(['tsv'], 'muchosen', 'tested sites', 'propensity')}</div>`
+        : '') +
+      (have.size ? '' : '') +
+      `</section>`
+    );
+  }
+  const chosenTsv = () => {
+    const { rows } = chosenRows();
+    return (
+      K.preamble(
+        'Sites chosen for a test',
+        `k, expected and O/E from the release's propensity tables; p = the release's raw binomial p (more: upper tail; fewer: lower tail, gnomAD); adjusted p = Holm over the p values listed, which corrects only for the sites chosen`
+      ) +
+      'site\taccession\tposition\tsource\tk\texpected\toe\tp_more\tp_fewer\tadjusted_p_more\tadjusted_p_fewer\n' +
+      rows
+        .filter((r) => r.v)
+        .map((r) =>
+          [
+            chosenName(r.key),
+            r.key.split(':')[0],
+            r.key.split(':')[1],
+            r.s.label,
+            r.v.k ?? '',
+            r.v.e ?? '',
+            r.v.o ?? '',
+            r.s.descriptive ? '' : (r.v.p ?? ''),
+            r.s.descriptive || !r.s.lower_tail ? '' : (r.v.pl ?? ''),
+            r.more ?? '',
+            r.fewer ?? '',
+          ].join('\t')
+        )
+        .join('\n') +
+      '\n'
+    );
+  };
+  // adding a site: a name and a position as the page numbers them (H4 R3), or a site card's button
+  function addSite(key) {
+    if (M.chosen.includes(key) || M.chosen.length >= MAX_CHOSEN) return false;
+    M.chosen.push(key);
+    K.writeHash?.();
+    return true;
+  }
+  document.addEventListener('submit', (e) => {
+    if (!e.target.matches?.('[data-mu-form]')) return;
+    e.preventDefault();
+    const input = e.target.querySelector('[data-mu-site]'),
+      msg = e.target.querySelector('[data-mu-msg]');
+    const q = K.sel.parse(input.value);
+    const hit = (q.sites || [])[0];
+    if (!hit) {
+      msg.textContent = 'Not found. Type a gene and a residue, as in H4 R3.';
+      return;
+    }
+    const key = `${D.proteins[hit[0]][0]}:${hit[1]}`;
+    if (!addSite(key)) msg.textContent = M.chosen.includes(key) ? 'Already added.' : `At most ${MAX_CHOSEN} sites.`;
+    else K.render();
+  });
+  K.clicks.push(
+    [
+      '[data-mu-del]',
+      (b) => {
+        M.chosen = M.chosen.filter((k) => k !== b.dataset.muDel);
+        K.writeHash?.();
+        K.render();
+      },
+    ],
+    [
+      '[data-mu-add]',
+      (b) => {
+        const ok = addSite(b.dataset.muAdd);
+        b.textContent = ok
+          ? 'Added to tested sites'
+          : M.chosen.includes(b.dataset.muAdd)
+            ? 'Already added'
+            : `At most ${MAX_CHOSEN}`;
+        b.disabled = true;
+      },
+    ],
+    ['[data-muchosen]', (b) => K.exportFigure(b.dataset.muchosen, null, `${D.site.id}_tested_sites`, b, chosenTsv)]
+  );
+  // for a site card: a button that adds the site to the tested sites
+  K.mut = {
+    addButton: (acc, pos) =>
+      `<button type="button" class="btn small" data-mu-add="${esc(acc)}:${pos}"${M.chosen.includes(`${acc}:${pos}`) ? ' disabled' : ''}>${M.chosen.includes(`${acc}:${pos}`) ? 'Already in tested sites' : 'Add to tested sites'}</button>`,
+  };
+
+  // ---- sites with no change, the most expected first ------------------------------------------------------------------------------
+  function zeroRows(m) {
+    if (m.germ) return m.rows.filter((r) => r.f === 0 && r.e > 0).map((r) => ({ ...r, p: r.pl }));
+    const cohort = hyper() ? 'all' : 'no_hypermutated',
+      sel = new Map(m.rows.map((r) => [r.acc + ':' + r.pos, r]));
+    return ((m.wf.zero?.[m.s.id] || {})[cohort] || [])
+      .filter(([acc, pos]) => sel.has(acc + ':' + pos))
+      .map(([acc, pos, res, e]) => ({ acc, pos, res, e, p: null }));
+  }
+  const ZERO_SHOWN = 200;
+  function zeroSection(m) {
+    const rows = zeroRows(m);
+    if (!rows.length) return '';
+    const hasP = m.germ;
+    return (
+      `<section class="mu-zero"><h3>Sites with no ${m.germ ? 'variant' : 'change'}</h3>` +
+      `<p class="small muted">${esc(m.s.long || m.s.label)}, the ${esc(W.marks)} of the selection with none, most expected first: a site that should have shown ${m.germ ? 'variants' : 'changes'} and has none is the most surprising. ` +
+      `${hasP ? 'p is the release’s raw p of the lower tail (no variant or fewer). ' : 'The release gives no p for this tail in a somatic source. '}` +
+      `The release payload lists the ${int(PR.zero_rows || 1000)} sites with the most expected per source${hasP ? ', and every site with a raw p below 0.05' : ''}.</p>` +
+      `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Expected</th>${hasP ? '<th>p (fewer)</th>' : ''}</tr></thead><tbody>` +
+      rows
+        .slice(0, ZERO_SHOWN)
+        .map(
+          (r) =>
+            `<tr><td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteName(r.acc, r.pos, r.res))}</a></td><td>${K.prop.fe(r.e)}</td>${hasP ? `<td>${fpv(r.p)}</td>` : ''}</tr>`
+        )
+        .join('') +
+      `</tbody></table></div>${K.expBar(['tsv'], 'muzero', 'sites with no change', 'propensity')}</div>` +
+      (rows.length > ZERO_SHOWN
+        ? `<p class="small muted">${int(ZERO_SHOWN)} of ${int(rows.length)} shown; the download has all.</p>`
+        : '') +
+      `</section>`
+    );
+  }
+  const zeroTsv = () => {
+    const m = model(),
+      rows = zeroRows(m);
+    return (
+      K.preamble('Sites with no change', `${m.s.long || m.s.label}; sorted by expected, highest first`) +
+      `site\taccession\tposition\texpected${m.germ ? '\tp_fewer' : ''}\n` +
+      rows
+        .map((r) => [siteName(r.acc, r.pos, r.res), r.acc, r.pos, r.e, ...(m.germ ? [r.p ?? ''] : [])].join('\t'))
+        .join('\n') +
+      '\n'
+    );
+  };
+  K.clicks.push([
+    '[data-muzero]',
+    (b) => K.exportFigure(b.dataset.muzero, null, `${D.site.id}_sites_with_no_change`, b, zeroTsv),
+  ]);
+
   function view() {
     const head =
       `<div class="page-head results-head"><div><h2>Mutation frequency</h2><p class="cx">How often each ${esc(W.mark)} of the selection is changed ` +
@@ -637,7 +879,8 @@
         `<span class="pr-k"><span class="mu-grad" aria-hidden="true"></span>point color: O/E, from 1/8 (blue) through 1 (gray) to 8 (red)</span>` +
         `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/><circle cx="9" cy="9" r="4" fill="var(--wf-hot)" stroke="var(--ink)" stroke-width="0.8"/></svg>solid ring: q &lt; 0.05, more than expected</span>` +
         (m.germ
-          ? `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="2.5 2"/><circle cx="9" cy="9" r="4" fill="var(--wf-cold)" stroke="var(--ink)" stroke-width="0.8"/></svg>dashed ring: q &lt; 0.05, fewer than expected (${int(m.nFewer)} ${esc(W.marks)})</span>`
+          ? `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="2.5 2"/><circle cx="9" cy="9" r="4" fill="var(--wf-cold)" stroke="var(--ink)" stroke-width="0.8"/></svg>dashed ring: q &lt; 0.05, fewer than expected (${int(m.nFewer)} ${esc(W.marks)})</span>` +
+            `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="3" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 1.5"/></svg>small dashed circle: no variant, raw p &lt; 0.05 (${int(m.nZeroP)} ${esc(W.marks)})</span>`
           : '') +
         `</p></section>`;
     } else {
@@ -658,7 +901,7 @@
           `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-3)"/></svg>burden, hypermutated</span></p></section>`;
       }
     }
-    return `${head}${note}<div class="mu-bar">${tabs}${controls(wf)}</div>${body}${M.view === 'waterfall' ? setSummary() : ''}`;
+    return `${head}${note}<div class="mu-bar">${tabs}${controls(wf)}</div>${body}${M.view === 'waterfall' ? (model() ? zeroSection(model()) : '') + setSummary() : ''}${chosenSection()}`;
   }
   const ONC_THEME = {
     ink: 'var(--ink)',
@@ -864,6 +1107,7 @@
       `The release's data dictionary defines every column (<a href="https://github.com/Shechterlab/PTM_Pipeline/blob/v1.7.0/releases/v1.7.0/README.md" target="_blank" rel="noopener">PTM_Pipeline v1.7.0, README</a>). The site adds no method of its own.</p>` +
       `<p><b>Rates.</b> TCGA and DepMap use each source's own spectrum: the residue-changing single-base changes in the coding sequences, per trinucleotide class. ClinVar and gnomAD use gnomAD's germline rates (mutation_rate_methylation_bins, from <a href="https://doi.org/10.1038/s41586-020-2308-7" target="_blank" rel="noopener">Karczewski et al., Nature 581:434 (2020)</a>, gnomAD v2.1.1).</p>` +
       `<p><b>Hypermutated samples</b> have more than ${PR.hypermutated.per_mb} coding calls per Mb (<a href="https://pubmed.ncbi.nlm.nih.gov/29056344/" target="_blank" rel="noopener">Campbell et al., Cell 171:1042 (2017)</a>). The cards and pages leave them out by default. The release repeats the test without them, using the spectrum of the remaining samples. A switch puts them back.</p>` +
+      `<p><b>Sites you chose.</b> A q value corrects across about 650,000 residues, which a site picked beforehand does not need. For those sites the raw p is the number to read. The Holm p corrects only for the sites you chose, over their tails and sources. Choose the sites before you look at the results.</p>` +
       `<p><b>ClinVar</b> variants reflect clinical testing and submission more than mutation, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
       `<p><b>Cards.</b> On the cancer and germline cards, each source is drawn along the protein. Stick height is the count in the card's table. Circle size grows with O/E. A ring marks q &lt; 0.05. The site card has one line with O/E and q for each source.</p>` +
       `<p><b>Mutation frequency page.</b> The waterfall ranks the sites of the selection by the share of samples with a change (changed samples over the samples profiled in the chosen group, from the release's group_denominators). Sites with no change form the flat tail. Circles are colored by O/E, and a solid ring marks q &lt; 0.05. The gray curve is the same ranking for the other residues of the same type, with ranks scaled to the number of sites. For gnomAD, a site's height is its number of variants (k, the count the O/E test uses); the tooltip adds the summed allele frequency. A dashed ring marks q &lt; 0.05 for fewer variants than expected, including the sites with none, which sit in the flat tail. The oncoprint shows the sites with the most changed TCGA tumors against those tumors, joined by sample id to the release's sample_burden.</p>` +
@@ -896,7 +1140,7 @@
     '.mu-bar{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin:.8rem 0}.mu-ctl{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center}',
     '.mu-ct{display:inline-flex;align-items:center;gap:.4rem}.mu-ct select{font:inherit;padding:.25rem .4rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);max-width:14rem}',
     '.mu-card{margin:.6rem 0;max-width:800px}.mu-top{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:flex-start;justify-content:space-between}.mu-top p{flex:1 1 24rem;margin:0}',
-    '.mu-grad{display:inline-block;width:56px;height:10px;border:1px solid var(--line-strong);background:linear-gradient(90deg,var(--wf-cold),var(--wf-mid),var(--wf-hot))}.mu-setline{margin:.4rem 0}.mu-link{cursor:pointer}.mu-link text{fill:var(--ink)}.mu-link:hover text,.mu-link:focus text{text-decoration:underline}.mu-link:focus{outline:2px solid var(--accent);outline-offset:1px}.mu-svg{width:100%;height:auto;display:block;margin:.4rem 0}.mu-set{margin:1rem 0}.mu-set summary{cursor:pointer}',
+    '.mu-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0}.mu-chip{border:1px solid var(--line-strong);border-radius:999px;padding:.1rem .2rem .1rem .6rem;font-size:.85rem}.mu-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem}.mu-add{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:.5rem 0}.mu-add input{font:inherit;padding:.3rem .5rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);width:10rem}.mu-chosen,.mu-zero{margin:1.2rem 0;max-width:900px}.mu-grad{display:inline-block;width:56px;height:10px;border:1px solid var(--line-strong);background:linear-gradient(90deg,var(--wf-cold),var(--wf-mid),var(--wf-hot))}.mu-setline{margin:.4rem 0}.mu-link{cursor:pointer}.mu-link text{fill:var(--ink)}.mu-link:hover text,.mu-link:focus text{text-decoration:underline}.mu-link:focus{outline:2px solid var(--accent);outline-offset:1px}.mu-svg{width:100%;height:auto;display:block;margin:.4rem 0}.mu-set{margin:1rem 0}.mu-set summary{cursor:pointer}',
   ].join('');
   document.head.appendChild(st);
 });

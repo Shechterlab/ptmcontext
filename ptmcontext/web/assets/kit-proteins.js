@@ -825,7 +825,7 @@
       (K.prop
         ? kv(
             'Mutation propensity',
-            K.prop.siteLine({ acc: p.acc, pos: m[0] }),
+            K.prop.siteLine({ acc: p.acc, pos: m[0] }) + (K.mut ? ' ' + K.mut.addButton(p.acc, m[0]) : ''),
             'O/E: changes seen at this residue over the changes its codon predicts, with the q of the test; descriptive for ClinVar'
           )
         : '') +

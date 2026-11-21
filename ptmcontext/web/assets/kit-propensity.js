@@ -72,8 +72,9 @@
     let pos = 0;
     return b.p.map((d, i) => {
       pos += d;
-      const r = { pos, k: b.k[i], e: b.e[i], o: b.o[i], q: b.q[i], u: u.has(i) };
-      if (b.k2) Object.assign(r, { k2: b.k2[i], e2: b.e2[i], o2: b.o2[i], q2: b.q2[i], u2: u2.has(i) });
+      const r = { pos, k: b.k[i], e: b.e[i], o: b.o[i], q: b.q[i], pu: b.pu[i], u: u.has(i) };
+      if (b.k2) Object.assign(r, { k2: b.k2[i], e2: b.e2[i], o2: b.o2[i], q2: b.q2[i], pu2: b.pu2[i], u2: u2.has(i) });
+      if (b.pl) r.pl = b.pl[i];
       if (low.has(i)) r.ql = low.get(i);
       return r;
     });
@@ -103,8 +104,8 @@
     if (!r) return null;
     const nh = somatic(id) && !hyper && r.k2 !== undefined;
     return nh
-      ? { k: r.k2, e: r.e2, o: r.o2, q: r.q2, u: r.u2, kAll: r.k, nh: true }
-      : { k: r.k, e: r.e, o: r.o, q: r.q, u: r.u, ql: r.ql, kAll: r.k, nh: false };
+      ? { k: r.k2, e: r.e2, o: r.o2, q: r.q2, p: r.pu2, u: r.u2, kAll: r.k, nh: true }
+      : { k: r.k, e: r.e, o: r.o, q: r.q, p: r.pu, pl: r.pl, u: r.u, ql: r.ql, kAll: r.k, nh: false };
   }
   const desc = (id) => !!SRC[id]?.descriptive;
   const fo = (o) =>
@@ -132,7 +133,10 @@
     if (desc(id)) status = 'descriptive: ClinVar reflects clinical testing more than mutation, so there is no test';
     else if (v.q == null)
       status = 'no test: no coding sequence matches UniProt, so O/E treats every residue of the type as equally likely';
-    else parts.push(`q ${fq(v.q)}`);
+    else {
+      if (v.p != null) parts.push(`p ${fq(v.p)}`);
+      parts.push(`q ${fq(v.q)}`);
+    }
     return { head: parts.join(' · '), note: status, unit };
   }
   function tip(acc, id, pos, site, n) {
@@ -147,7 +151,9 @@
     const w = words(id, v);
     lines.push(w.head);
     if (w.note) lines.push(w.note);
-    if (v?.ql != null) lines.push(`fewer than expected: q ${fq(v.ql)}`);
+    if (v?.pl != null && v.o != null && v.o < 1)
+      lines.push(`fewer than expected: p ${fq(v.pl)}${v.ql != null ? `, q ${fq(v.ql)}` : ''}`);
+    else if (v?.ql != null) lines.push(`fewer than expected: q ${fq(v.ql)}`);
     if (v && somatic(id)) lines.push(v.nh ? 'without hypermutated samples' : 'with hypermutated samples');
     return lines.join('\n');
   }
@@ -229,7 +235,8 @@
         const x = X(i.pos),
           y = y0 - hy(i.n),
           site = o.site(i.pos),
-          ring = sig({ id: o.id, q: i.v?.q });
+          ring = sig({ id: o.id, q: i.v?.q }),
+          fewer = i.v?.ql != null && i.v.ql < RING;
         const text = tip(o.acc, o.id, i.pos, site, i.n);
         const known = o.known?.has(i.pos);
         return (
@@ -237,6 +244,9 @@
           `<line class="pr-stick" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${y0}" y2="${y.toFixed(1)}"/>` +
           (ring
             ? `<circle class="pr-ring" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(i.r + 3.4).toFixed(1)}"/>`
+            : '') +
+          (fewer
+            ? `<circle class="pr-ring dash" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(i.r + 3.4).toFixed(1)}"/>`
             : '') +
           `<circle class="pr-head ${known ? 'known' : 'other'}${i.v?.o == null ? ' none' : ''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${i.r.toFixed(1)}"/></g>`
         );
@@ -252,6 +262,9 @@
       (desc(o.id)
         ? `<span class="pr-k">ClinVar is descriptive: no ring, no q</span>`
         : `<span class="pr-k"><svg width="30" height="30" aria-hidden="true"><circle class="pr-ring" cx="15" cy="15" r="12"/><circle class="pr-head known" cx="15" cy="15" r="7"/></svg>ring: q &lt; ${RING}</span>`) +
+      (s.lower_tail && !desc(o.id)
+        ? `<span class="pr-k"><svg width="30" height="30" aria-hidden="true"><circle class="pr-ring dash" cx="15" cy="15" r="12"/><circle class="pr-head known" cx="15" cy="15" r="7"/></svg>dashed ring: q &lt; ${RING}, fewer than expected</span>`
+        : '') +
       `<span class="pr-k"><svg width="14" height="14" aria-hidden="true"><circle class="pr-head known" cx="7" cy="7" r="5"/></svg>known ${esc(K.W.mark)}</span>` +
       `<span class="pr-k"><svg width="14" height="14" aria-hidden="true"><circle class="pr-head other" cx="7" cy="7" r="5"/></svg>other residue</span></p>`;
     return (
@@ -266,11 +279,17 @@
       .map((s) => {
         const v = at(acc, s.id, pos);
         if (!v || v.o == null) return `<span class="pr-s"><b>${esc(s.label)}</b> <span class="muted">–</span></span>`;
-        const q = desc(s.id) ? 'descriptive' : v.q == null ? 'not tested' : `q ${fq(v.q)}`;
+        const q = desc(s.id)
+          ? 'descriptive'
+          : v.q == null
+            ? 'not tested'
+            : `${v.p != null ? `p ${fq(v.p)}, ` : ''}q ${fq(v.q)}`;
+        // gnomAD, fewer than expected: the lower tail too
+        const low = v.pl != null && v.o < 1 ? `; fewer: p ${fq(v.pl)}${v.ql != null ? `, q ${fq(v.ql)}` : ''}` : '';
         const text = tip(acc, s.id, pos, '', v.k).replace(/^ · /, '');
         return (
           `<span class="pr-s" title="${esc(text)}"><b>${esc(s.label)}</b> O/E ${fo(v.o)}` +
-          `<span class="muted"> (${esc(q)}${v.u && !desc(s.id) ? ', unweighted' : ''})</span></span>`
+          `<span class="muted"> (${esc(q)}${low}${v.u && !desc(s.id) ? ', unweighted' : ''})</span></span>`
         );
       })
       .join(' · ');
@@ -328,7 +347,7 @@
     '.pr-stick{stroke:var(--muted);stroke-width:1.1}',
     '.pr-head{stroke-width:1.2;fill-opacity:.9}.pr-head.known{fill:var(--accent);stroke:var(--surface)}',
     '.pr-head.other{fill:var(--surface);stroke:var(--muted)}.pr-head.none{stroke-dasharray:2 2}',
-    '.pr-ring{fill:none;stroke:var(--ink);stroke-width:1.5}',
+    '.pr-ring{fill:none;stroke:var(--ink);stroke-width:1.5}.pr-ring.dash{stroke-dasharray:3 2}',
     '.pr-pt{cursor:default;outline:none}.pr-pt:hover .pr-stick,.pr-pt:focus .pr-stick{stroke:var(--ink)}',
     '.pr-pt:focus .pr-head{stroke:var(--ink);stroke-width:2}',
     '.pr-key{display:flex;flex-wrap:wrap;gap:.3rem 1rem;align-items:center;margin:.2rem 0}.pr-k{display:inline-flex;align-items:center;gap:.3rem}',

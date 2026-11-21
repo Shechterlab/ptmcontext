@@ -40,6 +40,7 @@ def _prop_rows(rows, nh=True, lower=False, status='test'):
             'expected_unweighted': eu,
             'oe_unweighted': k / eu,
             'q_upper': q,
+            'p_upper': q,
             'samples_profiled': 100,
             'samples_profiled_no_hypermutated': 80,
             'oe_status': status,
@@ -53,10 +54,12 @@ def _prop_rows(rows, nh=True, lower=False, status='test'):
                     'expected_unweighted_no_hypermutated': eu,
                     'oe_unweighted_no_hypermutated': k2 / eu,
                     'q_upper_no_hypermutated': q2,
+                    'p_upper_no_hypermutated': q2,
                 }
             )
         if lower:
             r['q_lower'] = ql
+            r['p_lower'] = ql
         out.append(r)
     return pd.DataFrame(out)
 
@@ -301,14 +304,32 @@ def test_the_waterfall_file_has_o_e_and_q_of_the_sites_with_a_change_in_both_coh
     assert 'P2' in wf['stats']['tcga'] and wf['stats']['tcga']['P2'][0][2] is None  # no weights: no q
 
 
+def test_the_frequency_file_lists_the_known_sites_with_no_change_by_expected(built):
+    root, sp, index, data = built
+    wf = json.loads((index.parent / 'data' / 'wf.json').read_text())
+    # known sites only (P1:5; P1:2 has changes), the cohort's own expected count
+    assert wf['zero']['tcga']['all'] == [['P1', 5, 'R', 0.4]]
+    assert wf['zero']['tcga']['no_hypermutated'] == [['P1', 5, 'R', 0.3]]
+    assert data['propensity']['zero_rows'] == 1000
+
+
+def test_a_block_has_the_raw_p_of_the_upper_tail_and_gnomad_the_lower(built):
+    root, sp, index, data = built
+    sh = _shard(index, 'P1', data['propensity']['shards'])
+    t = {r['pos']: r for r in PR.decode(sh['P1']['tcga'])}
+    assert t[2]['pu'] == 0.01 and t[2]['pu2'] == 0.2
+    g = {r['pos']: r for r in PR.decode(sh['P1']['gnomad'])}
+    assert g[2]['pl'] == 0.9 and g[5]['pl'] == 0.01 and 'pl' not in t[2]
+
+
 def test_the_germline_file_counts_variants_and_lists_the_depleted_sites_with_none(built):
     root, sp, index, data = built
     assert data['propensity']['gn'] == {'file': 'data/gn.json', 'source': 'gnomad'}
     gn = json.loads((index.parent / 'data' / 'gn.json').read_text())
-    # [position, residue, k (variants), summed af, O/E, q (more), q (fewer), expected]: P1:2 has two variants (af 1e-5 + 2e-5) and
+    # [position, residue, k (variants), summed af, O/E, q (more), q (fewer), expected, raw p (fewer), raw p (more)]: P1:2 has two variants (af 1e-5 + 2e-5) and
     # q_lower 0.9; P1:5 one variant and q_lower 0.01; P2:25 has none and q_lower 0.001, so it is listed (the most depleted)
-    assert gn['sites']['P1'] == [[2, 'R', 2, 3e-05, 1, 0.4, 0.9, 2], [5, 'R', 1, 1e-06, 0.5, 1, 0.01, 2]]
-    assert gn['sites']['P2'] == [[25, 'R', 0, 0, 0, 1, 0.001, 3]]
+    assert gn['sites']['P1'] == [[2, 'R', 2, 3e-05, 1, 0.4, 0.9, 2, 0.9, 0.4], [5, 'R', 1, 1e-06, 0.5, 1, 0.01, 2, 0.01, 1]]
+    assert gn['sites']['P2'] == [[25, 'R', 0, 0, 0, 1, 0.001, 3, 0.001, 1]]
     assert gn['bg']['R'] == [1, 8, [1], [1]]  # the curve of k: P1:11 has one variant, among the 8 arginines that are not sites
 
 
@@ -341,6 +362,7 @@ def test_blocks_round_trip_and_keep_two_digits():
             'expected': [0.123456, 12.3456, 0.0],
             'oe': [8.1000, 0.16, 0.0],
             'q_upper': [0.00012345, 1.0, 1.0],
+            'p_upper': [0.00005, 1.0, 1.0],
             'expected_unweighted': [0.2, 0.2, 0.2],
             'oe_unweighted': [5.0, 10.0, 0.0],
         }
@@ -398,19 +420,23 @@ def test_a_block_reads_back_as_the_same_rows_in_python_and_the_page(built):
 
 
 def test_the_page_reads_the_cohort_the_reader_chose():
-    blk = {'p': [2, 3], 'k': [3, 0], 'e': [0.5, 0.4], 'o': [6, 0], 'q': [0.01, 1], 'k2': [1, 0], 'e2': [0.3, 0.3], 'o2': [3.3, 0], 'q2': [0.2, 1]}
+    blk = {'p': [2, 3], 'k': [3, 0], 'e': [0.5, 0.4], 'o': [6, 0], 'q': [0.01, 1], 'pu': [0.004, 1], 'k2': [1, 0], 'e2': [0.3, 0.3], 'o2': [3.3, 0], 'q2': [0.2, 1], 'pu2': [0.08, 1]}
     got = _node(
         f"""
 global.fetch = async () => ({{ ok: true, json: async () => ({json.dumps({'P1': {'tcga': blk}})}) }});
 (async () => {{
   await K.prop.load('P1');
-  const pick = (v) => v && {{ k: v.k, o: v.o, q: v.q, nh: v.nh }};
+  const pick = (v) => v && {{ k: v.k, o: v.o, q: v.q, p: v.p, nh: v.nh }};
   console.log(JSON.stringify([pick(K.prop.at('P1', 'tcga', 2, false)), pick(K.prop.at('P1', 'tcga', 2, true)), K.prop.at('P1', 'tcga', 3, true)]));
 }})();
 """,
         PR_DATA,
     )
-    assert got == [{'k': 1, 'o': 3.3, 'q': 0.2, 'nh': True}, {'k': 3, 'o': 6, 'q': 0.01, 'nh': False}, None]
+    assert got == [
+        {'k': 1, 'o': 3.3, 'q': 0.2, 'p': 0.08, 'nh': True},
+        {'k': 3, 'o': 6, 'q': 0.01, 'p': 0.004, 'nh': False},
+        None,
+    ]
 
 
 def test_the_three_times_flag_is_gone_from_every_page_module_and_the_docs():
