@@ -2528,6 +2528,23 @@ website:                  # the look and words of the website (ptmc web); layout
       values: [source, source_id, gene, source_ref, canonical_ref, alt, reason]
       include: [{column: source, in: [clinvar, gnomad_v4_1]}]
       include_any: [{column: source_ref, in: [R]}, {column: canonical_ref, in: [R]}]
+  # Mutation propensity (CONTRACTS.md, "Mutation propensity"): for every candidate residue, the changes seen in each source against
+  # the changes its codon predicts (PTM_Pipeline v1.7.0 supporting tables, joined on accession and position). It draws the lollipops
+  # on the protein cards, the line on the site card and the Mutation frequency page (waterfall and oncoprint).
+  propensity:
+    residues: [R]
+    sources:
+      - {id: tcga, label: TCGA, long: "TCGA tumors (MC3)", kind: somatic, table: site_propensity_tcga_mc3, frequency_source: tcga_mc3, card: tcga, unit: [tumor, tumors]}
+      - {id: depmap, label: DepMap, long: "DepMap 24Q4 cell lines", kind: somatic, table: site_propensity_depmap_24q4, frequency_source: depmap_24q4, card: depmap, unit: [cell line, cell lines]}
+      - {id: clinvar, label: ClinVar, long: "ClinVar variations", kind: germline, table: site_propensity_clinvar, card: clinvar, unit: [variant, variants]}
+      - {id: gnomad, label: gnomAD, long: "gnomAD v4.1 exomes", kind: germline, table: site_propensity_gnomad_v4_1, card: gnomad, unit: [variant, variants], lower_tail: true}
+    frequency: site_frequency_by_group
+    denominators: group_denominators
+    burden: sample_burden
+    changes: [tcga_changes_R]
+    site_sets: site_set_propensity
+    controls: propensity_controls
+    validation: propensity_validation
   protein:                 # the protein page
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
     order: [p-map, p-cell, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologs after the sites

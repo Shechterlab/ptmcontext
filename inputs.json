@@ -1855,6 +1855,96 @@
         "position": "position"
       },
       "note": "DepMap somatic missense and stop changes at every R of reviewed canonical proteins (OmicsSomaticMutations), one row per cell line and change. From the PTM_Pipeline v1.7.0 release folder; its site_sets column names the sets with a site there. this repository checks the bytes."
+    },
+    "site_propensity_tcga_mc3": {
+      "file": "releases/v1.7.0/supporting/site_propensity_tcga_mc3_v1.7.0.tsv.gz",
+      "md5": "d9a3dad9dab086ccbe864840bda4c26c",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_propensity_tcga_mc3_v1.7.0.tsv.gz",
+      "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
+      "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
+      "role": "input",
+      "note": "Mutation propensity of every known site and every changed candidate residue (R, K, S, T, Y) in TCGA MC3 tumors: samples with a change (k), expected changes from the codon's mutability, O/E, binomial p and Benjamini-Hochberg q, also without hypermutated samples (more than 10 coding calls per Mb; Campbell et al., Cell 171:1042 (2017), https://pubmed.ncbi.nlm.nih.gov/29056344/). Joined to the sites on canonical_UniProtAC and position. Columns as in the release's data dictionary. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+    },
+    "site_propensity_depmap_24q4": {
+      "file": "releases/v1.7.0/supporting/site_propensity_depmap_24q4_v1.7.0.tsv.gz",
+      "md5": "30890b37de4d4c40e2b74017cb86ae23",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_propensity_depmap_24q4_v1.7.0.tsv.gz",
+      "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
+      "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
+      "role": "input",
+      "note": "The same for DepMap 24Q4 cancer cell lines (also without hypermutated lines). From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+    },
+    "site_propensity_clinvar": {
+      "file": "releases/v1.7.0/supporting/site_propensity_clinvar_v1.7.0.tsv.gz",
+      "md5": "ee4e83add6b9c3c0bb80d454d9c980bf",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_propensity_clinvar_v1.7.0.tsv.gz",
+      "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
+      "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
+      "role": "input",
+      "note": "The same for ClinVar variations, with gnomAD's germline rates. Descriptive (oe_status = descriptive): ClinVar's variants reflect clinical testing and submission more than mutation, so its O/E describes and does not test. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+    },
+    "site_propensity_gnomad_v4_1": {
+      "file": "releases/v1.7.0/supporting/site_propensity_gnomad_v4_1_v1.7.0.tsv.gz",
+      "md5": "50803fa53cb343d3c177bff23ddfce05",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_propensity_gnomad_v4_1_v1.7.0.tsv.gz",
+      "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
+      "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
+      "role": "input",
+      "note": "The same for gnomAD v4.1 exome variants, with gnomAD's germline rates (mutation_rate_methylation_bins, the gnomAD v2.1.1 flagship paper, Karczewski et al., Nature 581:434 (2020), doi:10.1038/s41586-020-2308-7), and the lower tail (depletion): p_lower and q_lower. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+    },
+    "site_frequency_by_group": {
+      "file": "releases/v1.7.0/supporting/site_frequency_by_group_v1.7.0.tsv.gz",
+      "md5": "21a96268066cb3201aae0d3b65b044f8",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_frequency_by_group_v1.7.0.tsv.gz",
+      "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
+      "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
+      "role": "input",
+      "note": "Samples changed and profiled per residue and TCGA project or DepMap lineage, all and without hypermutated samples: the numbers of the Mutation frequency page's waterfall. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+    },
+    "group_denominators": {
+      "file": "releases/v1.7.0/supporting/group_denominators_v1.7.0.tsv",
+      "md5": "616f018232a9bd42f31c817b1ee96085",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/group_denominators_v1.7.0.tsv",
+      "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
+      "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
+      "role": "input",
+      "note": "Samples profiled per TCGA project and DepMap lineage, all and not hypermutated, every group included (so a group without a changed sample shows k = 0): the denominators of the waterfall's frequencies. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+    },
+    "sample_burden": {
+      "file": "releases/v1.7.0/supporting/sample_burden_v1.7.0.tsv",
+      "md5": "53b848b583f3f936d2684635b256257d",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/sample_burden_v1.7.0.tsv",
+      "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
+      "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
+      "role": "input",
+      "note": "Every TCGA sample and DepMap line with its coding calls, burden per Mb and whether it is hypermutated (more than 10 coding calls per Mb; Campbell et al., Cell 171:1042 (2017)): the columns of the oncoprint. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+    },
+    "site_set_propensity": {
+      "file": "releases/v1.7.0/supporting/site_set_propensity_v1.7.0.tsv",
+      "md5": "2da4aabc358b729659f551aa34179127",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_set_propensity_v1.7.0.tsv",
+      "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
+      "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
+      "role": "input",
+      "note": "Per site set, residue, source and cohort: the changes at the set's sites within its proteins against expectation (10,000 draws, fixed seed). From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+    },
+    "propensity_controls": {
+      "file": "releases/v1.7.0/supporting/propensity_controls_v1.7.0.tsv",
+      "md5": "efc62a64c21d6e55d74a5bbd8cb2b855",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/propensity_controls_v1.7.0.tsv",
+      "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
+      "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
+      "role": "input",
+      "note": "Positive controls of the propensity test: the oncohistone residues of H3 and recurrent cancer hotspots (Chang et al., Nat Biotechnol 34:155 (2016), doi:10.1038/nbt.3391), with pass or fail. A failed control is reported, not blocking. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+    },
+    "propensity_validation": {
+      "file": "releases/v1.7.0/supporting/propensity_validation_v1.7.0.tsv",
+      "md5": "d23ba41d8765944f47203c5cecd66b62",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/propensity_validation_v1.7.0.tsv",
+      "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
+      "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
+      "role": "input",
+      "note": "The binomial test against a permutation test on up to 1,000 protein and residue-type units per source. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
     }
   }
 }

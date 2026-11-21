@@ -821,6 +821,14 @@
         ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait)
         : '') +
       ((CC.variant_counts || []).length ? kv(esc(CL_WORDS.germline), ready ? K.card.variants(c) : wait) : '') +
+      // one line: this site's O/E (changes seen over changes expected from its codon) and q in each source
+      (K.prop
+        ? kv(
+            'Mutation propensity',
+            K.prop.siteLine({ acc: p.acc, pos: m[0] }),
+            'O/E: changes seen at this residue over the changes its codon predicts, with the q of the test; descriptive for ClinVar'
+          )
+        : '') +
       '</dl></section>';
     return (
       `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.mark)}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)}${

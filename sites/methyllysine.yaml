@@ -2070,6 +2070,23 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
       - {id: cl, label: Cell line (Berryhill), attribute: berryhill_cell_lines, hide: sm}
       - {id: tcga, label: Changes in cancers, menu: "Changes in tumors (TCGA) and cell lines (DepMap)", show: [changes], hide: sm}
+  # Mutation propensity (CONTRACTS.md, "Mutation propensity"): for every candidate residue, the changes seen in each source against
+  # the changes its codon predicts (PTM_Pipeline v1.7.0 supporting tables, joined on accession and position). It draws the lollipops
+  # on the protein cards, the line on the site card and the Mutation frequency page (waterfall and oncoprint).
+  propensity:
+    residues: [K]
+    sources:
+      - {id: tcga, label: TCGA, long: "TCGA tumors (MC3)", kind: somatic, table: site_propensity_tcga_mc3, frequency_source: tcga_mc3, card: tcga, unit: [tumor, tumors]}
+      - {id: depmap, label: DepMap, long: "DepMap 24Q4 cell lines", kind: somatic, table: site_propensity_depmap_24q4, frequency_source: depmap_24q4, card: depmap, unit: [cell line, cell lines]}
+      - {id: clinvar, label: ClinVar, long: "ClinVar variations", kind: germline, table: site_propensity_clinvar, card: clinvar, unit: [variant, variants]}
+      - {id: gnomad, label: gnomAD, long: "gnomAD v4.1 exomes", kind: germline, table: site_propensity_gnomad_v4_1, card: gnomad, unit: [variant, variants], lower_tail: true}
+    frequency: site_frequency_by_group
+    denominators: group_denominators
+    burden: sample_burden
+    changes: [tcga_changes_K]
+    site_sets: site_set_propensity
+    controls: propensity_controls
+    validation: propensity_validation
   protein:                 # the protein page
     conservation:          # orthologs live from Ensembl Compara, and the selection's logo (CONTRACTS.md, Conservation across species)
       reference: Human

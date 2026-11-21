@@ -80,6 +80,7 @@ MODULES = (
     'kit-columns.js',
     'kit-tablefit.js',
     'kit-sitecard.js',
+    'kit-propensity.js',
     'kit-pagepdf.js',
     'kit-proteins.js',
     'kit-tables.js',
@@ -109,6 +110,7 @@ MODULES = (
     'kit-network.js',
     'kit-tile.js',
     'kit-figures.js',
+    'kit-mutations.js',
     'kit.js',
 )
 # scripts a module starts in a worker: copied beside the others, never put in the page
@@ -1819,6 +1821,23 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         else ({}, 0)
     )
     data['light_pages'] = light
+    # the mutation propensity (website.propensity): per-protein files read when a card opens, and the frequency and oncoprint files
+    data.pop('propensity', None)
+    if listing and (web.get('propensity') or None):
+        from ..snapshot import parse_fasta as _pf
+        from . import propensity as PR
+
+        pr = PR.build(
+            site,
+            run,
+            listing,
+            {a: r for sh in shards.values() for a, r in sh.items()},
+            _pf(fasta) if fasta and fasta.exists() else {},
+            out,
+            log,
+        )
+        if pr:
+            data['propensity'] = pr
     shown_accs = {r[0] for r in (shown or {}).get('proteins', [])} | {r[0] for r in listing}
     for a, names in other_names.items():  # old and alternative symbols (website.protein.genes.symbols): searchable
         if a in shown_accs:

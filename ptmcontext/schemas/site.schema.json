@@ -6290,6 +6290,118 @@
             }
           }
         },
+        "propensity": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Mutation propensity (CONTRACTS.md, 'Mutation propensity'): per-residue tables of the release that give, for each source, the changes seen at a residue (k), the changes its codon predicts (expected), O/E and a binomial q. Draws lollipops on the protein cards (stick: count, head: O/E, ring: q < 0.05), a line on the site card and the Mutation frequency page (waterfall, oncoprint). Every name is a manifest input.",
+          "required": [
+            "residues",
+            "sources"
+          ],
+          "properties": {
+            "residues": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "description": "the residue letters of the site (the propensity tables have a row for every R, K, S, T, Y)"
+            },
+            "set": {
+              "type": "string",
+              "description": "the site's name in site_set_propensity (default: the site id)"
+            },
+            "sources": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "label",
+                  "kind",
+                  "table"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "long": {
+                    "type": "string",
+                    "description": "the source's name in running text"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "somatic",
+                      "germline"
+                    ],
+                    "description": "somatic: TCGA and DepMap (also without hypermutated samples); germline: ClinVar, gnomAD"
+                  },
+                  "table": {
+                    "type": "string",
+                    "description": "manifest input: the release's site_propensity_<source> table"
+                  },
+                  "frequency_source": {
+                    "type": "string",
+                    "description": "the value of `source` in site_frequency_by_group and group_denominators; only a source with one is on the waterfall"
+                  },
+                  "card": {
+                    "type": "string",
+                    "description": "the id of the change_counts or variant_counts entry of the protein card whose lollipop shows this source"
+                  },
+                  "unit": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "lower_tail": {
+                    "type": "boolean",
+                    "description": "the table has p_lower and q_lower (fewer changes than expected): kept for the tooltip"
+                  }
+                }
+              }
+            },
+            "frequency": {
+              "type": "string",
+              "description": "manifest input: site_frequency_by_group"
+            },
+            "denominators": {
+              "type": "string",
+              "description": "manifest input: group_denominators (samples profiled per group, the frequencies' denominators)"
+            },
+            "burden": {
+              "type": "string",
+              "description": "manifest input: sample_burden (coding calls per Mb and hypermutated, per sample)"
+            },
+            "changes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "manifest inputs: the TCGA change tables of the site's residues (a row per sample and change), the oncoprint's samples"
+            },
+            "site_sets": {
+              "type": "string",
+              "description": "manifest input: site_set_propensity"
+            },
+            "controls": {
+              "type": "string",
+              "description": "manifest input: propensity_controls"
+            },
+            "validation": {
+              "type": "string",
+              "description": "manifest input: propensity_validation"
+            }
+          }
+        },
         "overlap": {
           "type": "object",
           "additionalProperties": false,

@@ -614,6 +614,36 @@ def export_problems(site: dict) -> list[str]:
     return out
 
 
+def propensity_problems(site: dict) -> list[str]:
+    """What website.propensity names that the site file does not have: an input that is not in the manifest, a source whose
+    `card` is no change_counts or variant_counts entry of the protein card, a repeated source id, a source on the waterfall
+    without the frequency and denominator tables."""
+    cfg = (site.get('website') or {}).get('propensity')
+    if not cfg:
+        return []
+    out = []
+    try:
+        have = set(I.load(manifest_of(site)))
+    except (OSError, ValueError, KeyError):
+        have = None  # no manifest to read here: the names are checked by ptmc inputs
+    names = [s['table'] for s in cfg.get('sources') or []]
+    names += [cfg[k] for k in ('frequency', 'denominators', 'burden', 'site_sets', 'controls', 'validation') if cfg.get(k)]
+    names += list(cfg.get('changes') or [])
+    if have is not None:
+        out += [f'website.propensity: no manifest input {n!r}' for n in names if n not in have]
+    ids = [s['id'] for s in cfg.get('sources') or []]
+    if len(ids) != len(set(ids)):
+        out.append('website.propensity: a source id is used twice')
+    card = ((site.get('website') or {}).get('protein') or {}).get('card') or {}
+    cards = {x.get('id') for k in ('change_counts', 'variant_counts') for x in card.get(k) or []}
+    for s in cfg.get('sources') or []:
+        if s.get('card') and s['card'] not in cards:
+            out.append(f'website.propensity, source {s["id"]!r}: card {s["card"]!r} is no change_counts or variant_counts entry')
+        if s.get('frequency_source') and not (cfg.get('frequency') and cfg.get('denominators')):
+            out.append(f'website.propensity, source {s["id"]!r}: frequency_source needs `frequency` and `denominators`')
+    return out
+
+
 def network_problems(site: dict) -> list[str]:
     """What website.network names that the site file does not have: an input role it reads, a second scored source, a
     tile in an Overview section that does not exist, a repeated colour-by id."""
@@ -672,6 +702,7 @@ def website_problems(site: dict) -> list[str]:
         + set_view_problems(site)
         + table_view_problems(site)
         + network_problems(site)
+        + propensity_problems(site)
         + export_problems(site)
     )
     if (web.get('cell') or {}).get('id'):

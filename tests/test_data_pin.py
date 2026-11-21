@@ -40,5 +40,5 @@ def test_a_tag_must_resolve_to_the_pinned_commit(tmp_path):
 def test_a_workflow_at_another_commit_is_named(tmp_path):
     _copy(tmp_path, 'TODO(tag)')
     wf = tmp_path / '.github' / 'workflows' / 'pages.yml'
-    wf.write_text(wf.read_text().replace('f042367da8aac9746559f64a597ce031a2b6c05f', 'a' * 40))
+    wf.write_text(wf.read_text().replace('7fd0c2bd5f7618bebf99975dcf1012b3abcd293e', 'a' * 40))
     assert any('pages.yml' in x for x in mod.problems(root=tmp_path))

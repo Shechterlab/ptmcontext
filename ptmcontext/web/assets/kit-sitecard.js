@@ -563,14 +563,6 @@
     const n = r ? +r.residues : 0;
     return r && n ? { per: (+r[x.count] || 0) / n, residues: n, changes: +r[x.count] || 0 } : null;
   }
-  // a count of at least flag_ratio (default 3) times the protein's average for that residue kind
-  const flagRatio = (x) => (+x.flag_ratio > 0 ? +x.flag_ratio : 3);
-  const flagged = (tb, x, letter, n) => {
-    const b = changeAvg(tb, x, letter);
-    return !!(b && b.per > 0 && n > 0 && n >= flagRatio(x) * b.per);
-  };
-  const flagTag = (x) =>
-    `<span class="tag cc-flag" title="At least ${flagRatio(x)} times the protein's average for this residue kind">≥${flagRatio(x)}× protein average</span>`;
   const avgText = (v) =>
     v == null ? '–' : v === 0 ? '0' : v < 0.1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : int(Math.round(v));
   const residueName = (l) => D.residue_names?.[l] || ((D.residues || []).length === 1 ? W.residue : l);
@@ -589,9 +581,8 @@
             .map((r) => `<b>${esc(letter + c.shown(c.pos) + r.alt)}</b>${r.n > 1 ? ' ×' + int(r.n) : ''}`)
             .join(', ')} <span class="muted">in ${int(t)} ${esc(t === 1 ? unit[0] : unit[1])} (${esc(x.label)})</span>`
         : `<span class="muted">no change in ${esc(unit[1])} (${esc(x.label)})</span>`;
-      const flag = flagged(c.tb, x, letter, t) ? ' ' + flagTag(x) : '';
       return (
-        `<div>${head}${flag}<br><span class="muted small">changes at this ${esc(nm)}: ${int(t)} · ` +
+        `<div>${head}<br><span class="muted small">changes at this ${esc(nm)}: ${int(t)} · ` +
         `protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`
       );
     }).join('');
@@ -664,8 +655,7 @@
       const head = `<b>${esc(x.label)}</b>: ${n ? int(n) : 'no'} ${esc(n === 1 ? unit[0] : unit[1])}${
         hot && x.highlight.label ? ` <span class="muted">(${int(hot)} ${esc(x.highlight.label)})</span>` : ''
       }`;
-      const flag = flagged(c.tb, x, letter, n) ? ' ' + flagTag(x) : '';
-      return `<div>${head}${flag} <span class="muted small">· protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`;
+      return `<div>${head} <span class="muted small">· protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`;
     }).join('');
   }
   function changes(c) {
@@ -1604,8 +1594,6 @@
       avgText,
       residueName,
       residueNames,
-      flagged,
-      flagTag,
     },
     variants: variantCounts,
     cc: {
@@ -1617,8 +1605,6 @@
       avgText,
       residueName,
       residueNames,
-      flagged,
-      flagTag,
     },
     calls,
     callsKey,

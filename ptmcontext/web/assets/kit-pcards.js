@@ -515,13 +515,45 @@
     },
     true
   );
-  let CFLAG = false; // show only the sites flagged at least flag_ratio times the protein's average
-  document.addEventListener('click', (ev) => {
-    if (!ev.target.closest?.('[data-cc-flag]')) return;
-    CFLAG = !CFLAG;
-    document.querySelectorAll('[data-pc="dependency"]').forEach((el) => delete el.dataset.pcOk);
+  // the mutation propensity (kit-propensity.js, data/m): read once a protein, then the cards are painted again
+  const pAsked = new Set();
+  function propOf(acc) {
+    if (!K.prop) return null;
+    const v = K.prop.peek(acc);
+    if (v === undefined && !pAsked.has(acc)) {
+      pAsked.add(acc);
+      K.prop.load(acc).then(() => paintAll());
+    }
+    return v;
+  }
+  K.prop?.onHyper(() => {
+    document.querySelectorAll('[data-pc="dependency"], [data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
     paintAll();
   });
+  // a protein's residues as lollipops for one source (card.change_counts or variant_counts entry `x`): stick = the count the
+  // card shows, head = O/E, ring = q < 0.05. '' when the site has no propensity for the entry; `wait` while data/m is read
+  function lollipopFor(p, rec, x, counts, known, altsAt) {
+    const s = K.prop?.sources.find((q) => q.card === x.id);
+    if (!s) return { html: '', wait: false };
+    const v = propOf(p.acc);
+    if (v === undefined) return { html: K.loading('Loading the mutation propensity…'), wait: true };
+    if (v === null || !v[s.id]) return { html: '', wait: false };
+    return {
+      wait: false,
+      html:
+        `<h5 class="pr-h">${esc(s.label)}: where the changes are, and how likely they are by chance</h5>` +
+        K.prop.lollipop({
+          acc: p.acc,
+          id: s.id,
+          seq: rec.seq || '',
+          counts,
+          known,
+          shown: (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, q) : q),
+          site: (q) => siteName(rec, q, p.acc) + (altsAt?.(q) || ''),
+          unit: x.unit,
+        }),
+    };
+  }
   function changeCountsSection(p, rec, tb) {
     const cn = K.card.cc.entries,
       CCK = K.card.cc,
@@ -558,12 +590,10 @@
       )
       .join('');
     // one row per residue with a change, most changes first
-    const flagOf = (r, k) => CCK.flagged(tb, cn[k], seq[r.q - 1], CCK.total(r.cells[k]));
     const all = pool
       .map((q) => ({ q, cells: cn.map((x) => CCK.at(tb, x, q)) }))
       .filter((r) => r.cells.some((v) => v.length));
-    const nFlag = all.filter((r) => cn.some((x, k) => flagOf(r, k))).length;
-    const per = CFLAG ? all.filter((r) => cn.some((x, k) => flagOf(r, k))) : all;
+    const per = all;
     const sumOf = (r) => r.cells.reduce((a, v) => a + CCK.total(v), 0);
     per.sort((a, b) => sumOf(b) - sumOf(a) || a.q - b.q);
     const nSites = cn.map((x, k) => per.filter((r) => r.cells[k].length).length);
@@ -577,8 +607,7 @@
       ]
         .map(([k, t]) => `<button type="button" data-cc-mode="${k}" aria-pressed="${CMODE === k}">${t}</button>`)
         .join('') +
-      `</div> <span class="seg" role="group" aria-label="Flagged sites"><button type="button" class="cc-chip" data-cc-flag aria-pressed="${CFLAG}" title="Show only the sites with at ` +
-      `least ${cn.map((x) => x.flag_ratio || 3).join(' or ')} times the protein's average">Flagged only <span class="muted">${int(nFlag)}</span></button></span>`;
+      `</div>${K.prop && K.prop.sources.some((s) => s.kind === 'somatic' && cn.some((x) => x.id === s.card)) ? ' ' + K.prop.hyperSwitch('Tumors and cell lines') : ''}`;
     // a protein several genes encode lists a residue once a gene, with a Gene column (a lone gene is the page's title)
     const geneOn = cn.some((x) => CCK.showGene(p.acc, tb, x));
     const genesAt = (r) => {
@@ -595,10 +624,21 @@
     const cellOf = (r, k, g, first) => {
       const v = g ? r.cells[k].map((a) => ({ alt: a.alt, n: a.by?.[g] || 0 })).filter((a) => a.n) : r.cells[k];
       return v.length
-        ? esc(v.map((a) => siteName(rec, r.q, p.acc) + a.alt + (a.n > 1 ? ' ×' + a.n : '')).join(', ')) +
-            (first && flagOf(r, k) ? ' ' + CCK.flagTag(cn[k]) : '')
+        ? esc(v.map((a) => siteName(rec, r.q, p.acc) + a.alt + (a.n > 1 ? ' ×' + a.n : '')).join(', '))
         : '<span class="muted">—</span>';
     };
+    // each source's residues as lollipops: the count the card shows, O/E and q from the release's propensity tables
+    const lol = cn.map((x) => {
+      const counts = new Map();
+      pool.forEach((q) => {
+        const n = tot(x, q);
+        if (n) counts.set(q, n);
+      });
+      return lollipopFor(p, rec, x, counts, known, (q) => {
+        const v = CCK.at(tb, x, q);
+        return v.length ? ' → ' + v.map((a) => a.alt + (a.n > 1 ? ' ×' + a.n : '')).join(', ') : '';
+      });
+    });
     const html =
       `<section class="pc-sec pc-cc"><h4>Changes at ${esc(CMODE === 'known' ? W.marks : W.residues)}</h4>${seg}` +
       `<p class="small muted">${
@@ -607,6 +647,7 @@
           : `Every ${esc(W.residue)} of the protein, a known ${esc(W.mark)} or not.`
       }</p>` +
       `<ul class="small pc-cc-lines">${lines || ''}</ul>` +
+      lol.map((l) => l.html).join('') +
       `<p class="small">${cn
         .map(
           (x, k) =>
@@ -636,11 +677,16 @@
         ? `<p class="small screen-only"><button type="button" class="linkish" data-vc-dl="cc:${esc(p.acc)}">Download every change of the protein (TSV)</button></p>`
         : '') +
       `</section>`;
-    return { html, nSites, nKnown: cn.map((x) => rec.marks.filter((m) => tot(x, m[0])).length) };
+    return {
+      html,
+      nSites,
+      nKnown: cn.map((x) => rec.marks.filter((m) => tot(x, m[0])).length),
+      wait: lol.some((l) => l.wait),
+    };
   }
   // ---- germline variants (card.variant_counts, cards.germline): one section a source, each from a table with a row per
-  // variant. The same switch as the change counts (known sites only, or every candidate residue); a count of at least
-  // flag_ratio times the protein's average per residue of that kind is flagged; a variant the entry highlights comes first.
+  // variant. The same switch as the change counts (known sites only, or every candidate residue); a variant the entry
+  // highlights comes first.
   const VMORE = new Set(); // the sources whose whole list is shown
   document.addEventListener('click', (ev) => {
     const b = ev.target.closest?.('[data-vc-more]');
@@ -903,29 +949,36 @@
       return a.q - b.q;
     });
     const open = VMORE.has(x.id),
-      list1 = open ? all : all.slice(0, limit),
-      flagSeen = new Set();
+      list1 = open ? all : all.slice(0, limit);
     const fields = x.fields || [];
     const geneOn = VCK.showGene(p.acc, tb, x);
     const row = ({ q, r }) => {
       const l = seq[q - 1],
-        fl = VCK.flagged(tb, x, l, byQ.get(q) || 0) && !flagSeen.has(q) ? (flagSeen.add(q), ' ' + VCK.flagTag(x)) : '',
         hot = VCK.hot(x, r),
         link =
           x.link && r[x.link.column]
             ? ext(x.link.url.replace('{}', encodeURIComponent(r[x.link.column])), `${esc(x.label)} ↗`)
             : '';
       return (
-        `<tr${hot ? ' class="vc-hot"' : ''}><td>${known.has(q) ? siteLink(p, rec, q) : esc(siteName(rec, q, p.acc))}${fl}</td>` +
+        `<tr${hot ? ' class="vc-hot"' : ''}><td>${known.has(q) ? siteLink(p, rec, q) : esc(siteName(rec, q, p.acc))}</td>` +
         `<td>${esc(l + shown(q) + r[alt])}${hot && x.highlight.label ? ` <span class="tag vc-hot-tag" title="${esc(x.highlight.title || '')}">${esc(x.highlight.label)}</span>` : ''}</td>` +
         (geneOn ? `<td>${r[x.gene] ? geneHtml(r[x.gene]) : '<span class="muted">–</span>'}</td>` : '') +
         fields.map((f) => `<td>${fieldCell(f, r)}</td>`).join('') +
         `<td>${link}</td></tr>`
       );
     };
+    const counts = new Map();
+    pool.forEach((q) => {
+      if (byQ.get(q)) counts.set(q, byQ.get(q));
+    });
+    const lol = lollipopFor(p, rec, x, counts, known, (q) => {
+      const v = VCK.at(tb, x, q);
+      return v.length ? ' → ' + [...new Set(v.map((r) => r[alt]))].join(', ') : '';
+    });
     const html =
       `<section class="pc-sec pc-vc"><h4>${esc(x.label)}</h4>` +
       `<ul class="small pc-cc-lines">${lines}</ul>` +
+      lol.html +
       `<p class="small">${int(byQ.size)} of ${esc(what)} ${byQ.size === 1 ? 'has' : 'have'} a variant${hotWord}.</p>` +
       (all.length
         ? `<div class="tbl-wrap"><table class="pc-tbl"><thead><tr><th>${known1 ? 'Site' : 'Residue'}</th><th>Change</th>${geneOn ? '<th>Gene</th>' : ''}${fields
@@ -941,7 +994,13 @@
         ? `<p class="small screen-only"><button type="button" class="linkish" data-vc-dl="vc:${esc(x.id)}:${esc(p.acc)}">Download every ${esc(unit[0])} of the protein (TSV)</button></p>`
         : '') +
       `</section>`;
-    return { html, nHot, nSites: byQ.size, nKnown: rec.marks.filter((m) => VCK.at(tb, x, m[0]).length).length };
+    return {
+      html,
+      nHot,
+      nSites: byQ.size,
+      nKnown: rec.marks.filter((m) => VCK.at(tb, x, m[0]).length).length,
+      wait: lol.wait,
+    };
   }
   function germlineBuild(p, rec, tb, el) {
     const VCK = K.card.vc,
@@ -987,7 +1046,7 @@
     const sum = VCK.entries
       .map((x, k) => `${x.label}: ${secs[k].nKnown ? plural(secs[k].nKnown, 'site') : 'no site'}`)
       .join(' · ');
-    return { html, sum };
+    return { html, sum, wait: secs.some((s) => s.wait) };
   }
   function dependencyBuild(p, rec, tb) {
     const cfg = PC.dependency,
@@ -1120,7 +1179,7 @@
             `${int(num(r.dependent))} of ${int(num(r.lines))} lines`
           )
         : '';
-    return { html, sum, pic: depPic };
+    return { html, sum, pic: depPic, wait: !!cnSec?.wait };
   }
 
   // ---- inhibitors, knockouts and knockdowns of the mark's enzymes: a site against each experiment, a mark per call -----------------------

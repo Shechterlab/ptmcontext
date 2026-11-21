@@ -25,7 +25,7 @@ def _md5(path) -> str:
 
 
 def _v143(rel: str) -> str:
-    m = re.fullmatch(r'supporting/methylarginine_(.+)_v1\.6\.0\.tsv', rel)
+    m = re.fullmatch(r'supporting/methylarginine_(.+)_v1\.7\.0\.tsv', rel)
     if m and m.group(1) in MA6:
         rel = f'supporting/{m.group(1)}_v1.7.0.tsv'
     return 'releases/v1.4.3/' + rel.replace('_v1.7.0.', '_v1.4.3.')
