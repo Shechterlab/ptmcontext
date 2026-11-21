@@ -41,7 +41,7 @@
       .map(
         ([v, t]) =>
           `<button type="button" data-pr-hyper="${v}" aria-pressed="${state.hyper === !!v}"` +
-          ` title="Hypermutated: more than ${PR.hypermutated.per_mb} coding calls per Mb (Campbell et al., Cell 171:1042 (2017))">${t}</button>`
+          ` title="Hypermutated: more than ${PR.hypermutated.per_mb} coding calls per Mb (Campbell et al., Cell 171:1042 (2017)). Switching shows a second test, run without them.">${t}</button>`
       )
       .join('') +
     `</div>`;
@@ -120,7 +120,9 @@
         : q < 0.001
           ? q.toExponential(1).replace('e-', 'e−')
           : q < 0.1
-            ? q.toFixed(3)
+            ? q < RING && q.toFixed(3) === '0.050'
+              ? '< 0.05'
+              : q.toFixed(3)
             : q.toFixed(2);
   const sig = (v) => v != null && !desc(v.id) && v.q != null && v.q < RING;
   // the words for one source at one residue, for a tooltip (lines) or the site card (one line)
@@ -129,7 +131,8 @@
     if (!v || v.o == null)
       return { head: 'no O/E', note: `${s.label}: this protein has no change at its residues of this type` };
     const parts = [`O/E ${fo(v.o)}`, `expected ${fe(v.e)}`];
-    let status = '';
+    let status = '',
+      note = '';
     if (desc(id))
       status =
         'descriptive: ClinVar reflects clinical testing more than how often residues change, so there is no test';
@@ -138,8 +141,9 @@
     else {
       if (v.p != null) parts.push(`p ${fq(v.p)}`);
       parts.push(`q ${fq(v.q)}`);
+      note = 'p: binomial, not corrected; q: corrected (Benjamini–Hochberg)';
     }
-    return { head: parts.join(' · '), note: status, unit };
+    return { head: parts.join(' · '), note: status || note, unit };
   }
   function tip(acc, id, pos, site, n) {
     const s = SRC[id],

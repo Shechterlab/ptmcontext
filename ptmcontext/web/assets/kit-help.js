@@ -268,7 +268,7 @@
         `<p>Each tile is a question and each row a class. The dot and the number are the fold on a log scale: the share ` +
           `of ${esc(W.marks)} in the class over the share of the comparison (1× is no difference). The line under it is ` +
           `the test: odds ratio, 95% interval and q. Hover a row, or tap it, for the counts.</p>` +
-          (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and a fold of at least 1.1×</li><li><i ` +
+          (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and an odds ratio (or fold, where the test gives one) of at least 1.1×</li><li><i ` +
             `class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: significant, but ` +
             `within 1.1×</li><li><i class="kd ns"></i> no difference (q > 0.05), or too few to test</li></ul>`) +
           `<p>The Test switch changes how the tiles marked ⇄ compare ${esc(W.marks)}; the tiles about protein classes keep ` +
@@ -284,7 +284,7 @@
           ) +
           term(
             'q',
-            'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and a fold of at least 1.1×.'
+            'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and an odds ratio (or fold, where the test gives one) of at least 1.1×.'
           ) +
           term(
             'h',

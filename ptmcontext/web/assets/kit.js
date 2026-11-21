@@ -213,7 +213,7 @@
   const GLOSS = {
     fold: 'The share in the class divided by the share in the comparison group. 1× means no difference.',
     'odds ratio': 'How many times higher the odds are inside the class than outside it. 2× means twice the odds.',
-    q: 'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and at least 1.1×.',
+    q: 'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and an odds ratio (or fold, where the test gives one) of at least 1.1×.',
     'within each protein':
       `Each ${W.mark} is compared only with the other ${W.residues} of the same protein, so a ` +
       `protein with many sites does not dominate.`,
@@ -2047,7 +2047,8 @@
       ? `<button type="button" class="linkish" data-go-compare title="Compare with a saved ` +
         `selection">a saved selection…</button>`
       : '') +
-    `</span></p>`;
+    `</span></p>` +
+    (S.vs === 'cmp' ? `<p class="muted small">Exploratory: not adjusted for other selections tried.</p>` : '');
   function lead() {
     const q = OV.question || `Which parts of proteins are ${W.marked_long}?`;
     const keyP =
@@ -2070,7 +2071,7 @@
               ' proteins in the set over the share of all proteins'
             : ''
         }. Beneath it is the test: the odds ratio with its 95% interval, and q. Tapping or hovering a row gives the counts. A row ` +
-        `differs when q ≤ ${PADJ}, the fold is at least 1.1× either way and the test points the same way. Within ` +
+        `differs when q ≤ ${PADJ}, the odds ratio (or fold) is at least 1.1× either way and the test points the same way. Within ` +
         `each protein, each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein ` +
         `(Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} lie from which proteins were found ${esc(W.marked)}. Across ` +
         `all proteins puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact ` +

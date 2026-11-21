@@ -27,7 +27,8 @@
       (K.sel.active()
         ? `<p>Or <button class="linkish" type="button" data-go-apart>compare the current selection ` +
           `with the other ${esc(W.marks)}</button>.</p>`
-        : '')
+        : '') +
+      `<p class="muted small">Exploratory: not adjusted for other selections tried.</p>`
     );
   }
   K.views.comparesaved = { render: chooser, title: () => 'Compare two selections' };
