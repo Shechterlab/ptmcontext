@@ -276,7 +276,10 @@
     return c.mix(t >= 0 ? c.hot : c.cold, c.mid, Math.round(Math.abs(t) * 100));
   };
   const POINTS = 60; // the top ranks that get a point, with every site below q 0.05
-  const fAxis = (m, v) => (m.germ ? (v === 0 ? '0' : v.toExponential(0).replace('e-', 'e−')) : pct(v));
+  // a frequency on the axis or in a tooltip: a percent for samples, a plain or exponent number for allele frequencies
+  const afText = (v) =>
+    v === 0 ? '0' : v >= 0.01 ? String(+v.toPrecision(2)) : v.toExponential(1).replace('.0e', 'e').replace('e-', 'e−');
+  const fAxis = (m, v) => (m.germ ? afText(v) : pct(v));
   function waterfallSvg(m, c, w) {
     const ml = 54,
       mr = 16,
@@ -335,7 +338,7 @@
     if (nz < shown) {
       const x0 = X(nz + 1),
         x1 = X(shown) + (lg ? 0 : 0.5 * (pw / shown));
-      tail = `<path d="M${x0.toFixed(1)},${Y(0) - 12}v-5h${(x1 - x0).toFixed(1)}v5" fill="none" stroke="${c.muted}"/><text x="${((x0 + x1) / 2).toFixed(1)}" y="${Y(0) - 22}" text-anchor="middle" font-size="11" fill="${c.ink}">${int(m.n - nz)} ${esc(W.marks)} with no ${m.germ ? 'variant' : 'change'}</text>`;
+      tail = `<path d="M${x0.toFixed(1)},${Y(0) - 12}v-5h${(x1 - x0).toFixed(1)}v5" fill="none" stroke="${c.muted}"/><text x="${x1.toFixed(1)}" y="${Y(0) - 22}" text-anchor="end" font-size="11" fill="${c.ink}">${int(m.n - nz)} ${esc(W.marks)} with no ${m.germ ? 'variant' : 'change'}</text>`;
     }
     // a point for each of the top ranks and for every site below q 0.05 (more or fewer than expected), colored by O/E;
     // a solid ring: more than expected; a dashed ring: fewer (germline only). The hover has every site.
