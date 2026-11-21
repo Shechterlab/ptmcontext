@@ -763,7 +763,7 @@ count}`. `tables` are `residue_changes` tables (one per residue type when the in
 by `count` (the changes at them); the protein average per residue is `count / residues` for the residue's letter. The site
 card shows the site's changes with its count beside the protein's average for the same residue type. The protein's card has
 a switch between the known sites only (the default) and every candidate residue (`profile.residues`), and keeps the
-reader's choice in the browser. The old "≥3× protein average" flag (`flag_ratio`) is gone: head size and a ring on the lollipop (Mutation propensity, below) say how unusual a residue is. Words for a residue come from `residue_names` of the profile, else its `words.residue`.
+reader's choice in the browser. The old "≥3× protein average" flag (`flag_ratio`) is gone: circle size and a ring on the lollipop (Mutation propensity, below) say how unusual a residue is. Words for a residue come from `residue_names` of the profile, else its `words.residue`.
 
 `website.protein.card.variant_counts` lists sources of variants counted at every candidate residue (the site card's line
 and the Germline variants card, `website.protein.cards.germline`): each entry is `{id, label, unit: [one, many], tables,
@@ -1372,45 +1372,57 @@ files; anything that tests a selection, filters, sorts another way, downloads or
 
 ## Mutation propensity
 
-`website.propensity` reads the release's per-residue propensity tables (PTM_Pipeline v1.7.0 `supporting/`; every name is a
+`website.propensity` reads the release's per-residue propensity tables (PTM_Pipeline v1.7.0 `supporting/`). Every name is a
 manifest input, joined to the sites on `canonical_UniProtAC` and `position`; the release's data dictionary defines each
-column). For every known site and every other candidate residue with a change, a source table holds k (samples or variants
-with a missense or stop change), the expected count from the residue's codon mutability, O/E, a binomial p and a
-Benjamini-Hochberg q; TCGA and DepMap also without the hypermutated samples (more than 10 coding calls per Mb); gnomAD also
-the lower tail. ClinVar's `oe_status` is `descriptive`: its O/E is drawn and told, never ringed or tested.
+column. For every known site and every other candidate residue with a change, a source table has k (samples or variants with
+a missense or stop change), the expected count from the residue's codon mutability, O/E, a binomial p and a
+Benjamini-Hochberg q. TCGA and DepMap also come without the hypermutated samples (more than 10 coding calls per Mb); gnomAD
+also has the lower tail. ClinVar's `oe_status` is `descriptive`: its O/E is drawn and told, never ringed.
 
 ```yaml
 website:
   propensity:
     residues: [R]                      # the site's residue letters
     set: methylarginine                # its name in site_set_propensity (default: the site id)
-    sources:                           # a row per source: card = the id of its change_counts / variant_counts entry
-      - {id: tcga, label: TCGA, long: "TCGA tumors (MC3)", kind: somatic, table: site_propensity_tcga_mc3, frequency_source: tcga_mc3, card: tcga, unit: [tumor, tumors]}
-      - {id: gnomad, label: gnomAD, kind: germline, table: site_propensity_gnomad_v4_1, card: gnomad, lower_tail: true}
+    sources:                           # card: the id of its change_counts or variant_counts entry
+      - {id: tcga, set_source: tcga_mc3, label: TCGA, long: "TCGA tumors (MC3)", kind: somatic, table: site_propensity_tcga_mc3, frequency_source: tcga_mc3, card: tcga, unit: [tumor, tumors]}
+      - {id: gnomad, set_source: gnomad_v4_1, label: gnomAD, kind: germline, table: site_propensity_gnomad_v4_1, card: gnomad, lower_tail: true}
     frequency: site_frequency_by_group # the waterfall
-    denominators: group_denominators   # samples profiled per group, the frequencies' denominators
+    denominators: group_denominators   # samples profiled per group: the frequencies' denominators
     burden: sample_burden              # the oncoprint's samples
     changes: [tcga_changes_R]          # TCGA change tables (a row per sample and change)
-    site_sets: site_set_propensity     # the Method and the waterfall's whole-list table
+    germline_changes: [gnomad_changes_R]  # gnomAD change tables (a row per variant, with af)
+    site_sets: site_set_propensity     # the Mutation frequency page's line for the whole list
     controls: propensity_controls
     validation: propensity_validation
 ```
 
-`ptmc web` (`ptmcontext/web/propensity.py`) writes three kinds of file, each read when something asks for it:
+`ptmc web` (`ptmcontext/web/propensity.py`) writes four kinds of file. Each is read when something asks for it.
 
 | File | Holds | Read by |
 |---|---|---|
-| `data/m/NNN.json` | per protein with a mark, `{source id: block}`; a few proteins to a file (about 150 KB), the file of a protein by `variants.hash_shard` (`hashOf` in `kit-propensity.js` is its twin). A block is columnar, one entry per residue of the site's types that is a known site or has a change: `p` position deltas, `k`, `e` (expected), `o` (O/E), `q` (null: not tested); somatic sources repeat `k2 e2 o2 q2` without hypermutated samples; `u` the rows that fell back to the unweighted expectation (no coding sequence matches UniProt: null q); `l` `[row, q_lower, ...]` where q_lower < 0.05 (gnomAD). Numbers keep two significant digits | a protein page's cards (the lollipops) and the site card's line |
-| `data/wf.json` | `groups`, `den` (samples profiled and not hypermutated per group), `all`, each known site's changed samples per group (`sites`: `[position, residue, per source [group, changed, changed without hypermutated]...]`) and `bg`, the ranked frequencies of the residues that are not sites, as `[M, N, ranks, values]` | the Mutation frequency page (waterfall) |
-| `data/onco.json` | `projects`, every TCGA sample `[id without "TCGA-", project, hypermutated, coding calls per Mb]` and `sites`: for each known site the samples with a change (`sample index * 2 + 1` for a stop) | the Mutation frequency page (oncoprint) |
+| `data/m/NNN.json` | per protein with a mark, `{source id: block}`, a few proteins to a file (about 150 KB). The file of a protein is `variants.hash_shard` (`hashOf` in `kit-propensity.js` is its twin). A block is columnar, one entry per residue of the site's types that is a known site or has a change: `p` position deltas, `k`, `e` (expected), `o` (O/E), `q` (null: not tested). Somatic sources repeat `k2 e2 o2 q2` without hypermutated samples. `u` lists the rows that fell back to the unweighted expectation (no coding sequence matches UniProt, so q is null). `l` is `[row, q_lower, ...]` where q_lower < 0.05 (gnomAD). Numbers keep two significant digits | a protein page's cards (the lollipops) and the site card's line |
+| `data/wf.json` | `groups`, `den` (samples profiled, and not hypermutated, per group), `all`, each known site's changed samples per group (`sites`: `[position, residue, per source [group, changed, changed without hypermutated]...]`), `stats` (O/E and q of the known sites with a change, both cohorts) and `bg`, the ranked frequencies of the residues that are not sites, as `[M, N, ranks, values]` | the Mutation frequency page (waterfall) |
+| `data/gn.json` | `sites`: for each known site with a gnomAD variant, `[position, residue, variants, summed af, O/E, q (more), q (fewer)]`; `bg`: the same curve for the other residues. A residue's frequency is the sum of the `af` of its variants | the waterfall, source gnomAD |
+| `data/onco.json` | `projects`, every TCGA sample `[id without "TCGA-", project, hypermutated, coding calls per Mb]`, and `sites`: for each known site the samples with a change (`sample index * 2 + 1` for a stop) | the oncoprint |
 
-Lollipop (protein cancer and germline cards): stick height is the count the card's table shows, head size grows with O/E,
-and a ring marks q < 0.05; the tooltip gives O/E, expected and q. The site card has one line per site (O/E and q per source).
-The Mutation frequency page (`#mutations`, `kit-mutations.js`) draws two views of the current selection (the whole list when
-nothing is selected): a waterfall (sites ranked by the share of samples with a change; sites with no change are the flat tail;
-a gray curve for the other residues of the same type, their ranks scaled to the number of sites) and an oncoprint (the sites
-with the most changed TCGA tumors against those tumors, with their burden). Hypermutated samples are left out by default
-(`hyper=1` in the address puts them back), a cancer-type menu limits the groups (`mg=`), and `ms=` picks the source.
+Lollipop (protein cancer and germline cards): stick height is the count the card's table shows, circle size grows with O/E,
+and a ring marks q < 0.05. The tooltip gives O/E, expected and q. The site card has one line per site (O/E and q per source).
+
+The Mutation frequency page (`#mutations`, `kit-mutations.js`) draws two views of the current selection, or of the whole
+list when nothing is selected:
+
+- A waterfall ranks the sites by the share of samples with a change. Sites with no change are the flat tail. Circles are
+  colored by O/E, a solid ring marks q < 0.05, and for gnomAD a dashed ring marks q_lower < 0.05 (fewer than expected). The
+  gray curve is the other residues of the same type, with ranks scaled to the number of sites. The rank axis is log by
+  default (`mx=linear` for a linear one). The source menu has the sources with a `frequency_source`, and gnomAD when
+  `germline_changes` is set. gnomAD has no hypermutated switch and no cancer-type menu. Over the whole list, one line gives
+  the release's test for the site set (`site_set_propensity`, matched by set, residue, source and cohort).
+- An oncoprint shows the sites with the most changed TCGA tumors against those tumors. A row's name, or a click on the row,
+  opens that site's card.
+
+Hypermutated samples are left out by default (`hyper=1` in the address puts them back). A cancer-type menu limits the groups
+(`mg=`) and `ms=` picks the source.
 
 ## What the page reads at once and what it reads later
 

@@ -213,8 +213,35 @@ def frequency_payload(
                 per_g[''] = curve((pt[col] / dd.where(dd > 0)).fillna(0).tolist(), n_total)
                 bg[cohort][res] = per_g
         out['bg'][s['id']] = bg
+        # O/E and q of each known site with a change, in both cohorts: the colors and rings of the waterfall's points
+        pt = pooled[s['id']]
+        on_ = pt[pt['isite'] & ((pt['k'] > 0) | (pt['k_no_hypermutated'] > 0))].sort_values(['canonical_UniProtAC', 'position'])
+        a_, b_ = _numbers(on_, False), _numbers(on_, True)
+        st: dict[str, list] = {}
+        for i, (acc_, pos_) in enumerate(zip(on_['canonical_UniProtAC'], on_['position'])):
+            st.setdefault(acc_, []).append([int(pos_), a_['o'][i], a_['q'][i], b_['o'][i], b_['q'][i]])
+        out.setdefault('stats', {})[s['id']] = st
     out['sites'] = {a: [[p, *per] for p, per in sorted(v.items())] for a, v in sites.items()}  # [pos, residue, per source...]
     return out
+
+
+def germline_payload(changes: list[pd.DataFrame], prop: pd.DataFrame, totals: dict[str, int]) -> dict:
+    """The germline waterfall's file (data/gn.json). A residue's frequency is the sum of the allele frequencies (`af`: allele
+    count over allele number) of its missense and stop variants in the release's change table. sites[acc]: [[position, residue,
+    variants, summed af, O/E, q (more), q (fewer)], ...] for the known sites with a variant; bg[residue]: the curve of the
+    other residues (`curve`)."""
+    ch = pd.concat([c[['canonical_UniProtAC', 'position', 'af']] for c in changes])
+    af = ch.groupby(['canonical_UniProtAC', 'position'])['af'].sum().rename('sum_af').reset_index()
+    d = prop.merge(af, on=['canonical_UniProtAC', 'position'], how='left')
+    d['sum_af'] = d['sum_af'].fillna(0.0)
+    bg = {res: curve(d[(~d['isite']) & (d['residue'] == res)]['sum_af'].tolist(), n) for res, n in totals.items()}
+    on = d[d['isite'] & (d['k'] > 0)].sort_values(['canonical_UniProtAC', 'position'])
+    nums = _numbers(on, False)
+    ql = [sig(x) if pd.notna(x) else None for x in on['q_lower']] if 'q_lower' in on else [None] * len(on)
+    sites: dict[str, list] = {}
+    for i, (a, p, r) in enumerate(zip(on['canonical_UniProtAC'], on['position'], on['residue'])):
+        sites.setdefault(a, []).append([int(p), r, nums['k'][i], sig(float(on['sum_af'].iat[i]), 3), nums['o'][i], nums['q'][i], ql[i]])
+    return {'sites': sites, 'bg': bg}
 
 
 # ---- the oncoprint -------------------------------------------------------------------------------------------------------
@@ -293,14 +320,14 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
     (`D.propensity`); None when the site has none or its tables are missing."""
     cfg = (site.get('website') or {}).get('propensity')
     shutil.rmtree(out / DIR, ignore_errors=True)
-    for f in ('wf.json', 'onco.json'):
+    for f in ('wf.json', 'onco.json', 'gn.json'):
         (out / 'data' / f).unlink(missing_ok=True)
     if not cfg or not listing:
         return None
     residues = list(cfg['residues'])
     marks = {a: {m[0] for m in (r.get('marks') or [])} for a, r in records.items()}
     acc = set(marks)
-    sources, blocks, pooled = [], {}, {}
+    sources, blocks, pooled, germ = [], {}, {}, {}
     n_rows = 0
     for s in cfg['sources']:
         f = _path(run, s['table'], log, s['id'])
@@ -321,10 +348,10 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
                 'rows': int(len(df)),
             }
         )
-        if somatic:  # every residue with a change, for the curve of the residues that are not sites
+        if somatic or lower:  # every residue with a change, for the curve of the residues that are not sites
             full = full.copy()
             full['isite'] = [p in marks.get(a, ()) for a, p in zip(full['canonical_UniProtAC'], full['position'])]
-            pooled[s['id']] = full
+            (pooled if somatic else germ)[s['id']] = full
     if not blocks:
         return None
     n, files = shard_files(blocks)
@@ -341,23 +368,23 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         'summary': summaries(site['id'], run, cfg, log),
     }
     # the waterfall and oncoprint files
+    totals = {r: 0 for r in residues}
+    for a, sq in seqs.items():
+        for i, ch in enumerate(sq):
+            if ch in totals:
+                totals[ch] += 1
+    known = 0
+    for a, ps in marks.items():
+        for p in ps:
+            ch = (seqs.get(a) or '')[p - 1 : p]
+            if ch in totals:
+                totals[ch] -= 1
+                known += 1
     ff, df_, bf = (_path(run, cfg.get(k), log, k) for k in ('frequency', 'denominators', 'burden'))
     if ff and df_ and bf and pooled:
         freq = pd.read_csv(ff, sep='\t', dtype={'group': str})
         freq = freq[freq['residue'].isin(residues)]
         den = pd.read_csv(df_, sep='\t', dtype={'group': str})
-        totals = {r: 0 for r in residues}
-        for a, sq in seqs.items():
-            for i, ch in enumerate(sq):
-                if ch in totals:
-                    totals[ch] += 1
-        known = 0
-        for a, ps in marks.items():
-            for p in ps:
-                ch = (seqs.get(a) or '')[p - 1 : p]
-                if ch in totals:
-                    totals[ch] -= 1
-                    known += 1
         wf = frequency_payload(freq, den, marks, totals, pooled, [s for s in sources if s.get('frequency_source')])
         wf['sites_total'] = known
         text = json.dumps(wf, separators=(',', ':'))
@@ -376,4 +403,12 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
             (out / 'data' / 'onco.json').write_text(text)
             res['onco'] = {'file': 'data/onco.json'}
             log(f'  oncoprint: onco.json {len(text) / 1e3:.0f} KB')
+    gc = [p for p in (_path(run, c, log, c) for c in cfg.get('germline_changes') or []) if p]
+    if gc and germ:
+        sid, prop = next(iter(germ.items()))
+        gn = germline_payload([pd.read_csv(p, sep='\t', usecols=['canonical_UniProtAC', 'position', 'af']) for p in gc], prop, totals)
+        text = json.dumps(gn, separators=(',', ':'))
+        (out / 'data' / 'gn.json').write_text(text)
+        res['gn'] = {'file': 'data/gn.json', 'source': sid}
+        log(f'  germline frequency: gn.json {len(text) / 1e3:.0f} KB')
     return res

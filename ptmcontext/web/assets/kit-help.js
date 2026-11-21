@@ -318,17 +318,16 @@
       (D.propensity
         ? sec(
             'h-mutations',
-            `<p>On a protein's cancer and germline cards, each source draws its residues as lollipops along the protein. ` +
-              `The <b>stick</b> is the count: tumors, cell lines or variants with a change at the residue. The <b>head</b> is O/E: the ` +
-              `changes seen over the changes the residue's codon predicts, among the protein's residues of the same type. A <b>ring</b> ` +
-              `means q is below 0.05. Hover or focus a head for the numbers. ClinVar's O/E is descriptive, with no ring, because its ` +
-              `variants reflect clinical testing more than mutation. A residue of a protein with no matching coding sequence has no q, ` +
-              `and its O/E counts every residue of the type as equally likely.</p>` +
+            `<p>On a protein's cancer and germline cards, each source is drawn along the protein. ` +
+              `Stick height is the count: tumors, cell lines or variants with a change at the residue. Circle size is O/E, the ` +
+              `changes seen over the changes the residue's codon predicts, among the protein's residues of the same type. A ring ` +
+              `means q is below 0.05. Hover or focus a circle for the numbers. ClinVar's O/E is descriptive, with no ring, because its ` +
+              `variants reflect clinical testing more than mutation. A residue of a protein with no matching coding sequence has no q; ` +
+              `its O/E treats every residue of the type as equally likely.</p>` +
               `<p>The site card has one line with the site's O/E and q in each source. ` +
               (K.views.mutations
-                ? `The <a href="${esc(K.link('mutations'))}">Mutation frequency</a> page ranks the sites of your selection by how often ` +
-                  `they are changed (a waterfall, with the other residues of the same type in gray) and draws the top sites across TCGA ` +
-                  `tumors (an oncoprint). `
+                ? `The <a href="${esc(K.link('mutations'))}">Mutation frequency</a> page ranks the sites of your selection by how ` +
+                  `often they are changed and draws the top sites across TCGA tumors. `
                 : '') +
               `Hypermutated tumors (more than ${D.propensity.hypermutated.per_mb} coding calls per Mb) are left out unless you choose ` +
               `With hypermutated. ${mlink('propensity', 'Methods › Mutation propensity')} has the test and its sources.</p>`

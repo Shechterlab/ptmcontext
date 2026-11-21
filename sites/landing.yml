@@ -29,8 +29,8 @@ references:                # lines under the intro: a label with a DOI (and all 
 whats_new:             # a short list of what a release added: the landing page and each site's Help show it
   title: What’s new in v1.7.0
   items:
-    - "Mutation propensity: for every candidate residue, the changes seen in TCGA tumors, DepMap cell lines, ClinVar and gnomAD against what the codon predicts (O/E, with a q value)."
-    - "Protein cards draw lollipops: stick height is the count, head size is O/E, and a ring marks q below 0.05. This replaces the old 3-times flag."
-    - "A Mutation frequency page: a ranked waterfall of the per-site frequency of any selection, and an oncoprint of its top sites across TCGA tumors."
+    - "Mutation propensity: O/E and q for every candidate residue in TCGA, DepMap, ClinVar and gnomAD, from the release."
+    - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old 3-times flag."
+    - "A Mutation frequency page: a waterfall of site frequencies (TCGA, DepMap, gnomAD) and an oncoprint of the top sites in TCGA tumors."
     - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
   doi: ""   # TODO(v1.7.0 DOI): the data DOI, once the release is tagged

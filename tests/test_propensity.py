@@ -80,8 +80,15 @@ def _toy_propensity(tmp_path):
         data / 'prop_clinvar.tsv', sep='\t', index=False
     )
     _prop_rows(
-        [('P1', 2, 0, 2.0, 1.0, 1.0, 0, 0, 0, 0.01), ('P1', 5, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.5)], nh=False, lower=True
+        [('P1', 2, 2, 2.0, 1.0, 0.4, 0, 0, 0, 0.9), ('P1', 5, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.01), ('P1', 11, 1, 2.0, 1.0, 1.0, 0, 0, 0, 0.5)], nh=False, lower=True
     ).to_csv(data / 'prop_gnomad.tsv', sep='\t', index=False)
+    pd.DataFrame(
+        {
+            'canonical_UniProtAC': ['P1', 'P1', 'P1', 'P1'],
+            'position': [2, 2, 5, 11],
+            'af': [1e-5, 2e-5, 1e-6, 5e-5],
+        }
+    ).to_csv(data / 'gchg.tsv', sep='\t', index=False)
     freq = pd.DataFrame(
         [
             ('P1', 2, 'R', 'tcga_mc3', 'TCGA-AA', 2, 60, 1, 50),
@@ -170,6 +177,7 @@ def _toy_propensity(tmp_path):
         'toy_den': 'den.tsv',
         'toy_burden': 'burden.tsv',
         'toy_chg': 'chg.tsv',
+        'toy_gchg': 'gchg.tsv',
         'toy_sets': 'sets.tsv',
         'toy_ctl': 'ctl.tsv',
         'toy_val': 'val.tsv',
@@ -198,6 +206,7 @@ def _toy_propensity(tmp_path):
         'denominators': 'toy_den',
         'burden': 'toy_burden',
         'changes': ['toy_chg'],
+        'germline_changes': ['toy_gchg'],
         'site_sets': 'toy_sets',
         'controls': 'toy_ctl',
         'validation': 'toy_val',
@@ -255,8 +264,9 @@ def test_a_protein_block_has_its_rows_in_both_cohorts(built):
     assert rows[2]['k'] == 3 and rows[2]['o'] == 6 and rows[2]['q'] == 0.01 and rows[2]['k2'] == 1
     assert rows[5]['o'] == 0 and rows[5]['k'] == 0  # a known site with no change keeps its row
     assert 'k2' not in PR.decode(sh['P1']['clinvar'])[0]  # a germline source has one cohort
-    assert PR.decode(sh['P1']['gnomad'])[0]['ql'] == 0.01  # the lower tail, only where q_lower < 0.05
-    assert 'ql' not in PR.decode(sh['P1']['gnomad'])[1]
+    g = PR.decode(sh['P1']['gnomad'])
+    assert g[1]['ql'] == 0.01  # the lower tail, only where q_lower < 0.05
+    assert 'ql' not in g[0]
 
 
 def test_an_entry_without_weights_falls_back_to_the_unweighted_expectation_and_has_no_q(built):
@@ -280,6 +290,24 @@ def test_the_waterfall_file_counts_sites_per_group_and_keeps_a_group_without_cha
     m, n, ranks, vals = wf['bg']['tcga']['all']['R']['0']
     assert (m, n, ranks, vals) == (1, 8, [1], [0.0167])  # 1 of 60 TCGA-AA samples
     assert wf['bg']['tcga']['all']['R']['']  # pooled over every group, from the propensity table
+
+
+def test_the_waterfall_file_has_o_e_and_q_of_the_sites_with_a_change_in_both_cohorts(built):
+    root, sp, index, data = built
+    wf = json.loads((index.parent / 'data' / 'wf.json').read_text())
+    # only known sites with a change: P1:2 (k 3, O/E 6, q 0.01; without hypermutated k 1, O/E 3.3, q 0.2)
+    st = wf['stats']['tcga']['P1']
+    assert [e[0] for e in st] == [2] and st[0][1:] == [6, 0.01, 3.3, 0.2]
+    assert 'P2' in wf['stats']['tcga'] and wf['stats']['tcga']['P2'][0][2] is None  # no weights: no q
+
+
+def test_the_germline_file_sums_the_allele_frequencies_of_a_residue(built):
+    root, sp, index, data = built
+    assert data['propensity']['gn'] == {'file': 'data/gn.json', 'source': 'gnomad'}
+    gn = json.loads((index.parent / 'data' / 'gn.json').read_text())
+    # P1:2 has two variants (1e-5 + 2e-5) and q_lower 0.9; P1:5 one variant and q_lower 0.01 (fewer than expected)
+    assert gn['sites']['P1'] == [[2, 'R', 2, 3e-05, 1, 0.4, 0.9], [5, 'R', 1, 1e-06, 0.5, 1, 0.01]]
+    assert gn['bg']['R'] == [1, 8, [1], [5e-05]]  # P1:11, among the 8 arginines that are not sites
 
 
 def test_the_oncoprint_file_joins_samples_to_their_burden_and_marks_a_stop(built):
@@ -384,7 +412,7 @@ global.fetch = async () => ({{ ok: true, json: async () => ({json.dumps({'P1': {
 
 
 def test_the_three_times_flag_is_gone_from_every_page_module_and_the_docs():
-    """The lollipop (head size, ring) replaced the old "at least 3 times the protein's average" flag everywhere."""
+    """The lollipop (circle size, ring) replaced the old "at least 3 times the protein's average" flag everywhere."""
     for f in [*ASSETS.glob('kit-*.js'), ASSETS / 'kit.css']:
         text = f.read_text()
         assert 'flag_ratio' not in text and 'cc-flag' not in text and 'data-cc-flag' not in text, f.name
@@ -405,8 +433,8 @@ def test_the_oncoprint_colors_are_three_different_validated_hues_in_both_themes(
     import re
 
     text = (ASSETS / 'kit-mutations.js').read_text()
-    light = re.findall(r':root\{--onc-1:(#\w+);--onc-2:(#\w+);--onc-3:(#\w+)\}', text)[0]
-    dark = re.findall(r'--onc-1:(#\w+);--onc-2:(#\w+);--onc-3:(#\w+)\}\}', text)[0]
+    light = re.findall(r':root\{--onc-1:(#\w+);--onc-2:(#\w+);--onc-3:(#\w+);', text)[0]
+    dark = re.findall(r'--onc-1:(#\w+);--onc-2:(#\w+);--onc-3:(#\w+);--wf-hot:#e66767', text)[0]
     assert light == ('#2a78d6', '#eb6834', '#1baf7a') and dark == ('#3987e5', '#d95926', '#199e70')
     assert len(set(light)) == 3 and len(set(dark)) == 3
     assert "['#2a78d6', '#eb6834']" in text  # the exports use the light slots too

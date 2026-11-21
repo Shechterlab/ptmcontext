@@ -628,7 +628,7 @@ def propensity_problems(site: dict) -> list[str]:
         have = None  # no manifest to read here: the names are checked by ptmc inputs
     names = [s['table'] for s in cfg.get('sources') or []]
     names += [cfg[k] for k in ('frequency', 'denominators', 'burden', 'site_sets', 'controls', 'validation') if cfg.get(k)]
-    names += list(cfg.get('changes') or [])
+    names += list(cfg.get('changes') or []) + list(cfg.get('germline_changes') or [])
     if have is not None:
         out += [f'website.propensity: no manifest input {n!r}' for n in names if n not in have]
     ids = [s['id'] for s in cfg.get('sources') or []]

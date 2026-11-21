@@ -6346,7 +6346,11 @@
                     "type": "string",
                     "description": "manifest input: the release's site_propensity_<source> table"
                   },
-                  "frequency_source": {
+                  "set_source": {
+                  "type": "string",
+                  "description": "the value of `source` in site_set_propensity for this source (the Mutation frequency page's line for the whole list)"
+                },
+                "frequency_source": {
                     "type": "string",
                     "description": "the value of `source` in site_frequency_by_group and group_denominators; only a source with one is on the waterfall"
                   },
@@ -6387,6 +6391,13 @@
                 "type": "string"
               },
               "description": "manifest inputs: the TCGA change tables of the site's residues (a row per sample and change), the oncoprint's samples"
+            },
+            "germline_changes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "manifest inputs: the gnomAD change tables of the site's residues (a row per variant, with af); a residue's germline frequency on the waterfall is the sum of its variants' af"
             },
             "site_sets": {
               "type": "string",

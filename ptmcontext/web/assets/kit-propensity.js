@@ -3,7 +3,7 @@
    ptmcontext/web/propensity.py writes it) and gives the rest of the kit:
      K.prop.load(acc)            a protein's rows, by source, once the file is in (a promise; null when it cannot be read)
      K.prop.at(acc, src, pos)    {k, e, o, q, u, ...} at a residue in the chosen cohort, from what load() has read
-     K.prop.lollipop(opts)       a protein's residues as lollipops: stick = count, head = O/E, ring = q < 0.05
+     K.prop.lollipop(opts)       a protein's residues as lollipops: stick = count, circle size = O/E, ring = q < 0.05
      K.prop.siteLine(c)          the site card's one line: O/E and q of the site in each source
      K.prop.hyperSwitch()        the switch between "without hypermutated" (the default) and "with" samples
    The numbers are the release's own (the data dictionary defines them): expected = n x the residue's share of the protein's
@@ -126,12 +126,12 @@
   function words(id, v, unit) {
     const s = SRC[id];
     if (!v || v.o == null)
-      return { head: 'no O/E', note: `${s.label}: the protein has no change at its residues of this type` };
+      return { head: 'no O/E', note: `${s.label}: this protein has no change at its residues of this type` };
     const parts = [`O/E ${fo(v.o)}`, `expected ${fe(v.e)}`];
     let status = '';
-    if (desc(id)) status = 'descriptive: ClinVar reflects clinical testing more than mutation, so it is not tested';
+    if (desc(id)) status = 'descriptive: ClinVar reflects clinical testing more than mutation, so there is no test';
     else if (v.q == null)
-      status = 'not tested: no coding sequence matches UniProt, so every residue of the type counts as equally likely';
+      status = 'no test: no coding sequence matches UniProt, so O/E treats every residue of the type as equally likely';
     else parts.push(`q ${fq(v.q)}`);
     return { head: parts.join(' · '), note: status, unit };
   }
@@ -152,7 +152,7 @@
     return lines.join('\n');
   }
 
-  // ---- the tooltip: one floating box for every lollipop head and waterfall mark ------------------------------------------------
+  // ---- the tooltip: one floating box for every lollipop circle and waterfall mark ------------------------------------------------
   let box = null;
   const tipBox = () => {
     if (box) return box;
@@ -246,17 +246,17 @@
     const key = (r, label) =>
       `<span class="pr-k"><svg width="${2 * r + 4}" height="${2 * r + 4}" aria-hidden="true"><circle class="pr-head known" cx="${r + 2}" cy="${r + 2}" r="${r}"/></svg>${label}</span>`;
     const legend =
-      `<p class="pr-key small muted"><span class="pr-k"><svg width="10" height="22" aria-hidden="true"><line class="pr-stick" x1="5" x2="5" y1="20" y2="2"/></svg>height: ${esc(u[1])} with the change</span>` +
-      key(headR(1), 'head: O/E 1') +
+      `<p class="pr-key small muted"><span class="pr-k"><svg width="10" height="22" aria-hidden="true"><line class="pr-stick" x1="5" x2="5" y1="20" y2="2"/></svg>stick height: ${esc(u[1])} with the change</span>` +
+      key(headR(1), 'circle size: O/E 1') +
       key(headR(10), 'O/E 10') +
       (desc(o.id)
-        ? `<span class="pr-k">descriptive: ClinVar reflects clinical testing more than mutation, so there is no ring</span>`
+        ? `<span class="pr-k">ClinVar is descriptive: no ring, no q</span>`
         : `<span class="pr-k"><svg width="30" height="30" aria-hidden="true"><circle class="pr-ring" cx="15" cy="15" r="12"/><circle class="pr-head known" cx="15" cy="15" r="7"/></svg>ring: q &lt; ${RING}</span>`) +
       `<span class="pr-k"><svg width="14" height="14" aria-hidden="true"><circle class="pr-head known" cx="7" cy="7" r="5"/></svg>known ${esc(K.W.mark)}</span>` +
       `<span class="pr-k"><svg width="14" height="14" aria-hidden="true"><circle class="pr-head other" cx="7" cy="7" r="5"/></svg>other residue</span></p>`;
     return (
-      `<figure class="pr-lol"><svg viewBox="0 0 ${Wd} ${H}" role="group" aria-label="${esc(s.label)}: ${esc(u[1])} along the protein, ` +
-      `height the count, head size O/E${desc(o.id) ? ', descriptive' : ', ring q below ' + RING}">${axis}${pts}</svg>${legend}</figure>`
+      `<figure class="pr-lol"><svg viewBox="0 0 ${Wd} ${H}" role="group" aria-label="${esc(s.label)}: stick height is the count, ` +
+      `circle size is O/E${desc(o.id) ? ', descriptive' : ', a ring means q below ' + RING}">${axis}${pts}</svg>${legend}</figure>`
     );
   }
 

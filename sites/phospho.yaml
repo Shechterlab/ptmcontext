@@ -1742,9 +1742,9 @@ website:                  # the look and words of the website (ptmc web); layout
   whats_new:               # what v1.7.0 added (the Help page)
     title: What’s new in v1.7.0
     items:
-      - "Mutation propensity: for every candidate residue, the changes seen in TCGA tumors, DepMap cell lines, ClinVar and gnomAD against what the codon predicts (O/E, with a q value)."
-      - "Protein cards draw lollipops: stick height is the count, head size is O/E, and a ring marks q below 0.05. This replaces the old 3-times flag."
-      - "A Mutation frequency page: a ranked waterfall of the per-site frequency of any selection, and an oncoprint of its top sites across TCGA tumors."
+      - "Mutation propensity: O/E and q for every candidate residue in TCGA, DepMap, ClinVar and gnomAD, from the release."
+      - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old 3-times flag."
+      - "A Mutation frequency page: a waterfall of site frequencies (TCGA, DepMap, gnomAD) and an oncoprint of the top sites in TCGA tumors."
       - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
     doi: ""   # TODO(v1.7.0 DOI): the data DOI, once the release is tagged
   downloads:               # the release's files, at the commit the site was built from
@@ -2130,14 +2130,15 @@ website:                  # the look and words of the website (ptmc web); layout
   propensity:
     residues: [S, T, Y]
     sources:
-      - {id: tcga, label: TCGA, long: "TCGA tumors (MC3)", kind: somatic, table: site_propensity_tcga_mc3, frequency_source: tcga_mc3, card: tcga, unit: [tumor, tumors]}
-      - {id: depmap, label: DepMap, long: "DepMap 24Q4 cell lines", kind: somatic, table: site_propensity_depmap_24q4, frequency_source: depmap_24q4, card: depmap, unit: [cell line, cell lines]}
-      - {id: clinvar, label: ClinVar, long: "ClinVar variations", kind: germline, table: site_propensity_clinvar, card: clinvar, unit: [variant, variants]}
-      - {id: gnomad, label: gnomAD, long: "gnomAD v4.1 exomes", kind: germline, table: site_propensity_gnomad_v4_1, card: gnomad, unit: [variant, variants], lower_tail: true}
+      - {id: tcga, set_source: tcga_mc3, label: TCGA, long: "TCGA tumors (MC3)", kind: somatic, table: site_propensity_tcga_mc3, frequency_source: tcga_mc3, card: tcga, unit: [tumor, tumors]}
+      - {id: depmap, set_source: depmap_24q4, label: DepMap, long: "DepMap 24Q4 cell lines", kind: somatic, table: site_propensity_depmap_24q4, frequency_source: depmap_24q4, card: depmap, unit: [cell line, cell lines]}
+      - {id: clinvar, set_source: clinvar, label: ClinVar, long: "ClinVar variations", kind: germline, table: site_propensity_clinvar, card: clinvar, unit: [variant, variants]}
+      - {id: gnomad, set_source: gnomad_v4_1, label: gnomAD, long: "gnomAD v4.1 exomes", kind: germline, table: site_propensity_gnomad_v4_1, card: gnomad, unit: [variant, variants], lower_tail: true}
     frequency: site_frequency_by_group
     denominators: group_denominators
     burden: sample_burden
     changes: [tcga_changes_S, tcga_changes_T, tcga_changes_Y]
+    germline_changes: [gnomad_changes_S, gnomad_changes_T, gnomad_changes_Y]   # gnomAD change tables: the germline waterfall sums each residue's allele frequencies
     site_sets: site_set_propensity
     controls: propensity_controls
     validation: propensity_validation
