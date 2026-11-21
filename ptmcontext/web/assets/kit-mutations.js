@@ -655,19 +655,27 @@
     return { rows, n: ps.length };
   }
   function chosenSection() {
-    const have = new Set(M.chosen);
     const { rows, n } = chosenRows();
+    // a site that no source has a row for (a residue this site's tables do not cover) is one line
+    const none = new Set(
+      M.chosen.filter(
+        (k) => rows.filter((r) => r.key === k && !r.wait).every((r) => !r.v) && rows.some((r) => r.key === k && !r.wait)
+      )
+    );
     const body = rows
+      .filter((r) => !none.has(r.key) || r.s === PR.sources[0])
       .map((r) =>
         r.wait
           ? `<tr><td>${esc(chosenName(r.key))}</td><td colspan="8" class="muted">Loading…</td></tr>`
-          : !r.v
-            ? `<tr><td>${esc(chosenName(r.key))}</td><td>${esc(r.s.label)}</td><td colspan="7" class="muted">no row in the release</td></tr>`
-            : `<tr><td>${esc(chosenName(r.key))}</td><td>${esc(r.s.label)}${r.v.nh ? '' : ''}</td><td>${int(r.v.k ?? 0)}</td><td>${K.prop.fe(r.v.e)}</td><td>${K.prop.fo(r.v.o)}</td>` +
-              (r.s.descriptive
-                ? `<td colspan="4" class="muted">descriptive: no test</td>`
-                : `<td>${fpv(r.v.p)}</td><td>${r.s.lower_tail ? fpv(r.v.pl) : '–'}</td><td>${fpv(r.more)}</td><td>${r.s.lower_tail ? fpv(r.fewer) : '–'}</td>`) +
-              `</tr>`
+          : none.has(r.key)
+            ? `<tr><td>${esc(chosenName(r.key))}</td><td colspan="8" class="muted">not tested here: this site covers ${esc(PR.residues.join(', '))}</td></tr>`
+            : !r.v
+              ? `<tr><td>${esc(chosenName(r.key))}</td><td>${esc(r.s.label)}</td><td colspan="7" class="muted">no row in the release</td></tr>`
+              : `<tr><td>${esc(chosenName(r.key))}</td><td>${esc(r.s.label)}</td><td>${int(r.v.k ?? 0)}</td><td>${K.prop.fe(r.v.e)}</td><td>${K.prop.fo(r.v.o)}</td>` +
+                (r.s.descriptive
+                  ? `<td colspan="4" class="muted">descriptive: no test</td>`
+                  : `<td>${fpv(r.v.p)}</td><td>${r.s.lower_tail ? fpv(r.v.pl) : '–'}</td><td>${fpv(r.more)}</td><td>${r.s.lower_tail ? fpv(r.fewer) : '–'}</td>`) +
+                `</tr>`
       )
       .join('');
     return (
@@ -687,7 +695,6 @@
           `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Source</th><th>k</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th><th>Adjusted p (more)</th><th>Adjusted p (fewer)</th></tr></thead><tbody>${body}</tbody></table></div>` +
           `${K.expBar(['tsv'], 'muchosen', 'tested sites', 'propensity')}</div>`
         : '') +
-      (have.size ? '' : '') +
       `</section>`
     );
   }
