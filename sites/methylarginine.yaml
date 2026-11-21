@@ -1909,7 +1909,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - "Network clusters are named against the annotated human proteome, with a tooltip of each cluster's best terms and a Highlight a term box."
     doi: "10.5281/zenodo.24406688"
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.5.1/releases/v1.5.1/human_methylarginine_sites_v1.5.1.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_sites_v1.6.0.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_sites_v1.6.0.tsv", format: TSV, note: "the same, tab-separated"}
     - {label: Proteins, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_proteins_v1.6.0.tsv", format: TSV, note: "every methylated protein with its classes, enrichment, clusters and evidence"}
     - {label: Lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_lower_confidence_sites_v1.6.0.tsv", format: TSV, note: "arginines reported as methylated whose records each fail a site test, with the tests"}
