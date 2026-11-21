@@ -37,7 +37,8 @@ def test_methylarginine_files_of_v1_6_0_are_those_of_v1_4_3(reference_root):
     inputs = json.loads((REPO / 'inputs.json').read_text())['inputs']
     compared = 0
     for entry in inputs.values():
-        f = entry['file']
+        # the manifest reads v1.7.0 now: the same tables, named for v1.6.0 (as in test_release_v1_5_1_matches_v1_4_3.py)
+        f = entry['file'].replace('releases/v1.7.0/', 'releases/v1.6.0/').replace('_v1.7.0.', '_v1.6.0.')
         if not f.startswith('releases/v1.6.0/'):
             continue
         rel = f[len('releases/v1.6.0/') :]
