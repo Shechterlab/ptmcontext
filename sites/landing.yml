@@ -23,14 +23,14 @@ footer:
     - {label: Shechter Lab, url: "https://www.shechterlab.org/"}
 references:                # lines under the intro: a label with a DOI (and all versions), or text with an optional link
   - {label: Paper, doi: "10.1016/j.chembiol.2026.09.011"}
-  - {label: Data, doi: "10.5281/zenodo.24406688", all_versions: "10.5281/zenodo.22696798"}
-  - {label: Data, text: PTM_Pipeline v1.6.0, url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0"}
+  # TODO(v1.7.0 DOI): PTM_Pipeline v1.7.0 is untagged. Once it is tagged and archived, set the version DOI here (and the Data text and url to the v1.7.0 tag); the all-versions DOI 10.5281/zenodo.22696798 stays. Do not use the v1.6.0 DOI for v1.7.0 data.
+  - {label: Data, all_versions: "10.5281/zenodo.22696798"}
+  - {label: Data, text: PTM_Pipeline v1.7.0, url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0"}
 whats_new:             # a short list of what a release added: the landing page and each site's Help show it
-  title: What’s new in v1.6.0
+  title: What’s new in v1.7.0
   items:
-    - "Cancer changes at every candidate residue (TCGA tumors, DepMap cell lines) and germline variants (ClinVar, gnomAD), with the gene named for proteins that several genes encode."
-    - "A count of the changes the cards do not show, with a download of those rows."
-    - "Histones and proteins without their initiator methionine are numbered as papers number them; one short name (H4) for a protein several genes encode, and search finds old gene names too."
-    - "The four human sites show the same protein-page cards, wherever the data have the residue."
-    - "Network clusters are named against the annotated human proteome, with a tooltip of each cluster's best terms and a Highlight a term box."
-  doi: "10.5281/zenodo.24406688"
+    - "Mutation propensity: for every candidate residue, the changes seen in TCGA tumors, DepMap cell lines, ClinVar and gnomAD against what the codon predicts (O/E, with a q value)."
+    - "Protein cards draw lollipops: stick height is the count, head size is O/E, and a ring marks q below 0.05. This replaces the old 3-times flag."
+    - "A Mutation frequency page: a ranked waterfall of the per-site frequency of any selection, and an oncoprint of its top sites across TCGA tumors."
+    - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
+  doi: ""   # TODO(v1.7.0 DOI): the data DOI, once the release is tagged

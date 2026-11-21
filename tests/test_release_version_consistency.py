@@ -13,7 +13,7 @@ from conftest import REPO
 # Deliberately older releases: (site, path or URL tail) -> why.
 HISTORICAL = {
     ('methylarginine', 'human_methylarginine_sites_v1.5.1.xlsx'): (
-        'the v1.6.0 workbook differs from the v1.5.1 one in its document properties; the sheets are the same. '
+        'the v1.7.0 workbook differs from the v1.5.1 one in its document properties; the sheets are the same. '
         'Left on v1.5.1 until the owner decides'
     ),
 }

@@ -23,16 +23,16 @@ def _copy(tmp_path, tag):
 
 def test_the_repository_pins_one_commit_everywhere():
     assert mod.problems(root=ROOT, offline=True) == []
-    assert json.loads((ROOT / 'data_pin.json').read_text())['tag'] == 'v1.6.0'
+    assert json.loads((ROOT / 'data_pin.json').read_text())['tag'] == 'v1.7.0'
 
 
 def test_a_tag_must_resolve_to_the_pinned_commit(tmp_path):
-    pin = _copy(tmp_path, 'v1.6.0')
-    ok = f'{pin["commit"]}\trefs/tags/v1.6.0\n'
+    pin = _copy(tmp_path, 'v1.7.0')
+    ok = f'{pin["commit"]}\trefs/tags/v1.7.0\n'
     assert mod.problems(root=tmp_path, ls_remote=lambda: ok) == []
     assert any('does not exist' in x for x in mod.problems(root=tmp_path, ls_remote=lambda: ''))
     assert any(
-        'resolves to' in x for x in mod.problems(root=tmp_path, ls_remote=lambda: f'{"0" * 40}\trefs/tags/v1.6.0\n')
+        'resolves to' in x for x in mod.problems(root=tmp_path, ls_remote=lambda: f'{"0" * 40}\trefs/tags/v1.7.0\n')
     )
     assert mod.problems(root=tmp_path, offline=True) == []
 

@@ -12,7 +12,7 @@ How a data release reaches the sites:
 1. The data session sends a commit of PTM_Pipeline (the release candidate).
 2. The website pins it (`data_pin.json`, the workflows, the manifests), builds the four sites, runs the checks and replies "ok to tag".
 3. The owner tags the data repository. The data session sends the tag commit and the Zenodo DOI.
-4. The website repins to the tag (`tag` in `data_pin.json`, `ref:` in the workflows), adds the DOI where the `TODO(v1.6.0 DOI)` markers stand (landing.yml, each site file, `whats_new`), runs `python tools/check_data_pin.py` and pushes to `develop`.
+4. The website repins to the tag (`tag` in `data_pin.json`, `ref:` in the workflows), adds the DOI where the `TODO(v1.7.0 DOI)` markers stand (landing.yml, each site file, `whats_new`), runs `python tools/check_data_pin.py` and pushes to `develop`.
 
 The pin is one commit hash (full) and one tag name. `tools/check_data_pin.py` checks that the workflows and the manifests name the pinned commit; with the tag set, it also asks the data repository (`git ls-remote`) whether the tag resolves to that commit. While the tag is `TODO(...)`, the check passes locally with a notice and fails in CI (`--require-tag`): a site is not published from an untagged data release.
 

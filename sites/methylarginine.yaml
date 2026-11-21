@@ -1,4 +1,4 @@
-# Site: the human methylarginine sites, rebuilt. Its analyses must equal release v1.6.0 of the Methylarginine Site
+# Site: the human methylarginine sites, rebuilt. Its analyses must equal release v1.7.0 of the Methylarginine Site
 # Explorer (reference), row for row. Contract: ptmcontext/schemas/site.schema.json.
 schema_version: 1
 id: methylarginine
@@ -89,7 +89,7 @@ marks:
   input: methylarginine_sites_v1_5_1
   accession: uniprot_accession
   position: position
-  left_out:            # sites held back: counted on neither side (none of v1.6.0's sites carries this flag; the
+  left_out:            # sites held back: counted on neither side (none of v1.7.0's sites carries this flag; the
     - {column: flags, contains: one_sided_window}   # release keeps them in a separate table)
   residue_mismatch: error
   attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
@@ -174,7 +174,7 @@ marks:
         shared_sequence: the peptide's sequence is shared with another protein
         xenograft_only: seen only in xenograft samples
 
-    # the release's own evidence at each site (human_methylarginine_sites_v1.6.0.tsv; definitions in its README)
+    # the release's own evidence at each site (human_methylarginine_sites_v1.7.0.tsv; definitions in its README)
     tcga:
       column: tcga_changes
       position_tokens: true     # R4C: shown as the protein page numbers it
@@ -1301,7 +1301,7 @@ proteins:                  # the release's protein table: facts of each methylat
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
-    description: "The release's lower-confidence sites added: those whose own evidence covers the arginine and leaves the methyl group on an arginine (in_analyses_with_lower_confidence), as statistics_with_lower_confidence_v1.6.0.tsv counts them"
+    description: "The release's lower-confidence sites added: those whose own evidence covers the arginine and leaves the methyl group on an arginine (in_analyses_with_lower_confidence), as statistics_with_lower_confidence_v1.7.0.tsv counts them"
     marks_add:
       - input: methylarginine_lower_confidence_sites_v1_5_1
         include: [{column: in_analyses_with_lower_confidence, equals: "true"}]
@@ -1345,7 +1345,7 @@ variants:                # the same questions on other marks; ptmc run --variant
       earlier: {column: in_earlier_versions, label: A site of}
 
 
-# Context marks: other modifications shown beside the methylarginines (CONTRACTS.md, Context marks). The release v1.6.0
+# Context marks: other modifications shown beside the methylarginines (CONTRACTS.md, Context marks). The release v1.7.0
 # tables; by-similarity rows are dropped (the default). A map row, "Other modifications nearby" on the site card, a filter, table
 # columns and downloads follow from these entries; the near_marks questions below test them.
 context_marks:
@@ -1360,7 +1360,7 @@ context_marks:
     colour_dark: "#1FA2C4"
     citation:
       short: UniProt, iPTMnet and Ochoa 2020
-      cite: "Phosphorylation sites of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included)"
+      cite: "Phosphorylation sites of the human reviewed proteome, release v1.7.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included)"
       licence: "CC BY-NC-SA 4.0; Ochoa 2020 included"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
@@ -1375,7 +1375,7 @@ context_marks:
     colour_dark: "#A3AEB3"
     citation:
       short: UniProt, iPTMnet and Berryhill 2023
-      cite: "Lysine methylation sites of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.7.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
       licence: "CC BY-NC-SA 4.0; Berryhill 2023 article CC BY 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
@@ -1393,7 +1393,7 @@ context_marks:
     colour_dark: "#4ade80"     # 9.3:1 on the dark surface
     citation:
       short: UniProt and iPTMnet
-      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.7.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
       licence: "CC BY-NC-SA 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
@@ -1410,7 +1410,7 @@ context_marks:
     colour_dark: "#ddd06a"     # 10.3:1 on the dark surface
     citation:
       short: UniProt and iPTMnet
-      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl) of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl) of the human reviewed proteome, release v1.7.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
       licence: "CC BY-NC-SA 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
@@ -1427,7 +1427,7 @@ context_marks:
     colour_dark: "#f9a8d4"     # 9.0:1 on the dark surface
     citation:
       short: Akimov 2018, UniProt and iPTMnet
-      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: Akimov V et al., Nat Struct Mol Biol 25:631–640 (2018), doi:10.1038/s41594-018-0084-y; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.7.0 of PTM_Pipeline: Akimov V et al., Nat Struct Mol Biol 25:631–640 (2018), doi:10.1038/s41594-018-0084-y; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
       licence: "CC BY-NC-SA 4.0; Akimov 2018 included"
     sources:
       Akimov 2018: {cite: "Akimov et al., Nat Struct Mol Biol 25:631 (2018)", doi: 10.1038/s41594-018-0084-y}
@@ -1445,7 +1445,7 @@ context_marks:
     colour_dark: "#7dd3fc"     # 9.8:1 on the dark surface
     citation:
       short: Hendriks 2017, UniProt and iPTMnet
-      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: Hendriks IA et al., Nat Struct Mol Biol 24:325–336 (2017), doi:10.1038/nsmb.3366; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.7.0 of PTM_Pipeline: Hendriks IA et al., Nat Struct Mol Biol 24:325–336 (2017), doi:10.1038/nsmb.3366; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
       licence: "CC BY-NC-SA 4.0; Hendriks 2017 included"
     sources:
       Hendriks 2017: {cite: "Hendriks et al., Nat Struct Mol Biol 24:325 (2017)", doi: 10.1038/nsmb.3366}
@@ -1896,29 +1896,29 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Studies and databases, attributes: [studies, n_studies, localised_by]}
-  dataset: {label: data release, version: v1.6.0, date: "2026-11-20", doi: "10.5281/zenodo.24406688", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0"}
+  # TODO(v1.7.0 DOI): PTM_Pipeline v1.7.0 is untagged. Once it is tagged and archived, set the version DOI here and in whats_new.doi (and `date`, `url` to the v1.7.0 tag); the all-versions DOI 10.5281/zenodo.22696798 stays. Do not use the v1.6.0 DOI for v1.7.0 data.
+  dataset: {label: data release, version: v1.7.0, date: "2026-11-20", doi: "", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
   methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
-  whats_new:               # what v1.6.0 added (the Help page)
-    title: What’s new in v1.6.0
+  whats_new:               # what v1.7.0 added (the Help page)
+    title: What’s new in v1.7.0
     items:
-      - "Cancer changes at every candidate residue (TCGA tumors, DepMap cell lines) and germline variants (ClinVar, gnomAD), with the gene named for proteins that several genes encode."
-      - "A count of the changes the cards do not show, with a download of those rows."
-      - "Histones and proteins without their initiator methionine are numbered as papers number them; one short name (H4) for a protein several genes encode, and search finds old gene names too."
-      - "The four human sites show the same protein-page cards, wherever the data have the residue."
-      - "Network clusters are named against the annotated human proteome, with a tooltip of each cluster's best terms and a Highlight a term box."
-    doi: "10.5281/zenodo.24406688"
+      - "Mutation propensity: for every candidate residue, the changes seen in TCGA tumors, DepMap cell lines, ClinVar and gnomAD against what the codon predicts (O/E, with a q value)."
+      - "Protein cards draw lollipops: stick height is the count, head size is O/E, and a ring marks q below 0.05. This replaces the old 3-times flag."
+      - "A Mutation frequency page: a ranked waterfall of the per-site frequency of any selection, and an oncoprint of its top sites across TCGA tumors."
+      - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
+    doi: ""   # TODO(v1.7.0 DOI): the data DOI, once the release is tagged
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.5.1/releases/v1.5.1/human_methylarginine_sites_v1.5.1.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_sites_v1.6.0.tsv", format: TSV, note: "the same, tab-separated"}
-    - {label: Proteins, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_proteins_v1.6.0.tsv", format: TSV, note: "every methylated protein with its classes, enrichment, clusters and evidence"}
-    - {label: Lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_lower_confidence_sites_v1.6.0.tsv", format: TSV, note: "arginines reported as methylated whose records each fail a site test, with the tests"}
-    - {label: Statistics, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/statistics_v1.6.0.tsv", format: TSV, note: "every test the site shows"}
-    - {label: Statistics with lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/statistics_with_lower_confidence_v1.6.0.tsv", format: TSV, note: "the same tests with the counted lower-confidence sites added"}
-    - {label: Studies, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/studies_v1.6.0.tsv", format: TSV, note: "the studies and databases, with their DOIs and counts"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/v1.6.0/releases/v1.6.0/README.md", format: Markdown, note: "how the release was made, and every column"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/v1.6.0/releases/v1.6.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/human_methylarginine_sites_v1.7.0.tsv", format: TSV, note: "the same, tab-separated"}
+    - {label: Proteins, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/human_methylarginine_proteins_v1.7.0.tsv", format: TSV, note: "every methylated protein with its classes, enrichment, clusters and evidence"}
+    - {label: Lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/human_methylarginine_lower_confidence_sites_v1.7.0.tsv", format: TSV, note: "arginines reported as methylated whose records each fail a site test, with the tests"}
+    - {label: Statistics, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/statistics_v1.7.0.tsv", format: TSV, note: "every test the site shows"}
+    - {label: Statistics with lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/statistics_with_lower_confidence_v1.7.0.tsv", format: TSV, note: "the same tests with the counted lower-confidence sites added"}
+    - {label: Studies, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/studies_v1.7.0.tsv", format: TSV, note: "the studies and databases, with their DOIs and counts"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/v1.7.0/releases/v1.7.0/README.md", format: Markdown, note: "how the release was made, and every column"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/v1.7.0/releases/v1.7.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   legacy_params:            # the explorer's filter parameters (?states=2&motifs=1), in its own codes
     states: {key: "t:state", values: {"1": Rme1, "2": Rme2, "3": Rme1_Rme2, "0": ""}}
     ips: {key: "t:methyl_ip", values: {"0": MMA, "1": ADMA, "2": SDMA}}
@@ -2391,7 +2391,7 @@ website:                  # the look and words of the website (ptmc web); layout
     other_ptms:                          # other modifications on the methylated proteins: the Filters panel's "other PTM nearby"
       input: methylarginine_other_ptm_sites_v1_5_1
       format: residue_evidence
-      exclude: [{column: ptm_type, in: [phospho, lys_methyl]}]   # phosphosites and methyllysines are the context marks (v1.6.0)
+      exclude: [{column: ptm_type, in: [phospho, lys_methyl]}]   # phosphosites and methyllysines are the context marks (v1.7.0)
       columns: {accession: uniprot_accession, start: position, end: position, kind: ptm_type, source: evidence}
     nucleic_regions:       # runs of residues within 4 Å of RNA or DNA in PDB structures (the RNA and DNA interactions card)
       input: methylarginine_nucleic_acid_regions_v1_5_1

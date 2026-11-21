@@ -2,24 +2,24 @@
 # file: edit it (and rebuild with ptmc web) to change the citation, the version or the date.
 cff-version: 1.2.0
 message: "Please cite the data sources: there is no paper for this site yet."
-title: "PTMcontext: human methyllysine sites (release v1.6.0 of PTM_Pipeline)"
+title: "PTMcontext: human methyllysine sites (release v1.7.0 of PTM_Pipeline)"
 version: "0.5.0"
 date-released: "2026-11-15"
-url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0"
+url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"
 license: "CC-BY-NC-SA-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"
 # No paper describes this site yet, so there is no preferred-citation; the data sources below are cited with every export.
 references:   # the data sources: cited with every export 
-  - type: dataset   # this release: the version DOI of PTM_Pipeline v1.6.0
+  - type: dataset   # this release: the version DOI of PTM_Pipeline v1.7.0
     authors:   # as the Zenodo record lists them
       - {family-names: DeAngelo, given-names: JD}
       - {family-names: Silverstein, given-names: AM}
       - {family-names: Shechter, given-names: D}
-    title: "Human methylarginine sites, context marks, and cancer and germline variants, v1.6.0 (PTM_Pipeline)"
+    title: "Human methylarginine sites, context marks, and cancer and germline variants, v1.7.0 (PTM_Pipeline)"
     publisher: Zenodo
     year: 2026
-    doi: "10.5281/zenodo.24406688"
+    # TODO(v1.7.0 DOI): the version DOI of PTM_Pipeline v1.7.0, once it is tagged and archived (doi: "10.5281/zenodo.XXXXXXX")
   - type: dataset   # all versions: the concept DOI
     authors:
       - {family-names: DeAngelo, given-names: JD}
