@@ -330,7 +330,124 @@
     return out;
   };
 
+  // The waterfall's height of a site (propensity.py signed_score is the twin): -log10 of the upper-tail p for more than expected
+  // (O/E above 1), log10 of the lower-tail p (negative) for fewer (O/E below 1), 0 at O/E 1; null when the side's p is missing.
+  const SCORE_CAP = 300;
+  const signed = (o, pu, pl) => {
+    if (o == null) return null;
+    if (o === 1) return 0;
+    const p = o > 1 ? pu : pl;
+    if (p == null) return null;
+    const s = p > 0 ? Math.log10(p) : -SCORE_CAP;
+    return o > 1 ? Math.min(SCORE_CAP, -s) : Math.max(-SCORE_CAP, s);
+  };
+
+  // Labels that never overlap. items: [{key, x, y, w, h}] in priority order (the anchor point x, y; the text box w by h);
+  // box: {x0, y0, x1, y1} the room; fixed: boxes already taken ({x, y, w, h}); lines: segments [x1, y1, x2, y2] no label may cross. Each label goes to the nearest free place around
+  // its point (24 directions, growing distance) that overlaps no placed label or fixed box, covers no other label's point
+  // and gives a leader line that crosses no other label (and, if it can, no other leader); a label farther than 10 px from its point has a leader.
+  // Returns {placed: [{key, x, y, w, h, leader: [x1, y1, x2, y2] | null}], dropped: [keys]}. Deterministic: same input, same layout.
+  function layoutLabels(items, box, fixed = [], lines = []) {
+    const PAD = 2,
+      ANG = [
+        -30, 0, 30, -15, 15, -45, 45, -60, 60, -75, 75, -90, 90, -105, 105, -120, 120, -135, 135, -150, 150, -165, 165,
+        180,
+      ],
+      RAD = [5, 12, 20, 30, 42, 56, 72, 90, 110, 132, 156, 182];
+    const hit = (a, b) =>
+      a.x < b.x + b.w + PAD && b.x < a.x + a.w + PAD && a.y < b.y + b.h + PAD && b.y < a.y + a.h + PAD;
+    const cross = (p, q, r, s) => {
+      const d = (a, b, c) => (c[1] - a[1]) * (b[0] - a[0]) - (b[1] - a[1]) * (c[0] - a[0]);
+      return d(p, r, s) * d(q, r, s) < 0 && d(p, q, r) * d(p, q, s) < 0;
+    };
+    const segBox = (a, b, r) => {
+      const [x1, y1, x2, y2] = [r.x, r.y, r.x + r.w, r.y + r.h];
+      const inside = (p) => p[0] > x1 && p[0] < x2 && p[1] > y1 && p[1] < y2;
+      return (
+        inside(a) ||
+        inside(b) ||
+        cross(a, b, [x1, y1], [x2, y1]) ||
+        cross(a, b, [x2, y1], [x2, y2]) ||
+        cross(a, b, [x2, y2], [x1, y2]) ||
+        cross(a, b, [x1, y2], [x1, y1])
+      );
+    };
+    const placed = [],
+      dropped = [],
+      taken = fixed.slice();
+    for (const it of items) {
+      // places to try: round the point (nearest first), a column of stacked labels beside it, then farther out
+      const spots = [];
+      const ring = (r) =>
+        ANG.forEach((deg) => {
+          const a = (deg * Math.PI) / 180,
+            c = Math.cos(a),
+            sn = Math.sin(a);
+          spots.push([
+            it.x + r * c + (c > 0.3 ? 0 : c < -0.3 ? -it.w : -it.w / 2),
+            it.y + r * sn - it.h / 2 + (Math.abs(c) <= 0.3 ? (sn < 0 ? -it.h / 2 : it.h / 2) : 0),
+          ]);
+        });
+      const column = (col, dx) => {
+        for (let k = 0; k < 40; k++)
+          for (const side of [1, -1]) {
+            const dy = Math.ceil(k / 2) * (it.h + PAD + 1) * (k % 2 ? 1 : -1);
+            spots.push([
+              side > 0 ? it.x + dx + col * (it.w + 8) : it.x - dx - col * (it.w + 8) - it.w,
+              it.y - it.h / 2 + dy,
+            ]);
+          }
+      };
+      RAD.slice(0, 3).forEach(ring);
+      column(0, 8);
+      RAD.slice(3).forEach(ring);
+      for (let col = 1; col < 4; col++) column(col, 24);
+      let got = null;
+      // first try with no crossing at all; then let a leader cross another leader (never a label)
+      for (const tier of [0, 1]) {
+        for (const [x, y] of spots) {
+          const b = { x, y, w: it.w, h: it.h };
+          if (b.x < box.x0 || b.y < box.y0 || b.x + b.w > box.x1 || b.y + b.h > box.y1) continue;
+          if (taken.some((t) => hit(b, t))) continue;
+          if (
+            items.some((o) => o !== it && o.x > b.x - 3 && o.x < b.x + b.w + 3 && o.y > b.y - 3 && o.y < b.y + b.h + 3)
+          )
+            continue;
+          if (it.x > b.x - 3 && it.x < b.x + b.w + 3 && it.y > b.y - 3 && it.y < b.y + b.h + 3) continue;
+          if (lines.some((l) => segBox([l[0], l[1]], [l[2], l[3]], b))) continue;
+          const ex = Math.max(b.x, Math.min(it.x, b.x + b.w)),
+            ey = Math.max(b.y, Math.min(it.y, b.y + b.h));
+          let leader = null;
+          if (Math.hypot(ex - it.x, ey - it.y) > 10) {
+            leader = [it.x, it.y, ex, ey];
+            const A = [it.x, it.y],
+              B = [ex, ey];
+            if (taken.some((t) => segBox(A, B, t))) continue;
+            if (
+              !tier &&
+              placed.some((p) => p.leader && cross(A, B, [p.leader[0], p.leader[1]], [p.leader[2], p.leader[3]]))
+            )
+              continue;
+          }
+          // a placed leader must not run through this box
+          if (placed.some((p) => p.leader && segBox([p.leader[0], p.leader[1]], [p.leader[2], p.leader[3]], b)))
+            continue;
+          got = { key: it.key, ...b, leader };
+          break;
+        }
+        if (got) break;
+      }
+      if (got) {
+        placed.push(got);
+        taken.push(got);
+      } else dropped.push(it.key);
+    }
+    return { placed, dropped };
+  }
+
   K.prop = {
+    signed,
+    layoutLabels,
     holm,
     cfg: PR,
     sources: PR.sources,

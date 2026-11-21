@@ -35,6 +35,7 @@ def _prop_rows(rows, nh=True, lower=False, status='test'):
             'residue': 'R',
             'site_sets': 'toy' if pos in (2, 5, 25) else '',
             'k': k,
+            'n': 20,
             'expected': e,
             'oe': (k / e) if e == e and e else NA,
             'expected_unweighted': eu,
@@ -49,6 +50,7 @@ def _prop_rows(rows, nh=True, lower=False, status='test'):
             r.update(
                 {
                     'k_no_hypermutated': k2,
+                    'n_no_hypermutated': 20,
                     'expected_no_hypermutated': e2,
                     'oe_no_hypermutated': (k2 / e2) if e2 == e2 and e2 else NA,
                     'expected_unweighted_no_hypermutated': eu,
@@ -289,27 +291,29 @@ def test_the_waterfall_file_counts_sites_per_group_and_keeps_a_group_without_cha
     entry = wf['sites']['P1'][0]
     assert entry[:2] == [2, 'R'] and entry[2] == [0, 2, 1, 1, 1, 0]  # TCGA-AA 2 of 1 (without hypermutated), TCGA-BB 1 of 0
     assert 'P2' not in wf['sites']  # P2:25 has no row of the frequency table
-    # the curve of the residues that are not sites: P1:11 is the only one with a change, among 8 (11 arginines less 3 sites)
-    m, n, ranks, vals = wf['bg']['tcga']['all']['R']['0']
-    assert (m, n, ranks, vals) == (1, 8, [1], [0.0167])  # 1 of 60 TCGA-AA samples
-    assert wf['bg']['tcga']['all']['R']['']  # pooled over every group, from the propensity table
+    # the curve of the signed score of the residues that are not sites: P1:11 (O/E 1.7, p 0.6: -log10 0.6 = 0.22) and P2:6 (no test: 0)
+    assert wf['bg']['tcga']['all']['R'] == [2, 2, [1, 2], [0.222, 0]]
 
 
 def test_the_waterfall_file_has_o_e_and_q_of_the_sites_with_a_change_in_both_cohorts(built):
     root, sp, index, data = built
     wf = json.loads((index.parent / 'data' / 'wf.json').read_text())
     # only known sites with a change: P1:2 (k 3, O/E 6, q 0.01; without hypermutated k 1, O/E 3.3, q 0.2)
+    # [position, O/E, q, k, expected, p (more), p (fewer)] and the same without hypermutated; the toy's p_upper is not its binomial, so
+    # there is no lower tail (None) and the opposite p is left out where it says nothing
     st = wf['stats']['tcga']['P1']
-    assert [e[0] for e in st] == [2] and st[0][1:] == [6, 0.01, 3.3, 0.2]
-    assert 'P2' in wf['stats']['tcga'] and wf['stats']['tcga']['P2'][0][2] is None  # no weights: no q
+    assert [e[0] for e in st] == [2] and st[0][1:] == [6, 0.01, 3, 0.5, 0.01, None, 3.3, 0.2, 1, 0.3, 0.2, None]
+    assert wf['lower']['tcga'] == [False, False]
+    p2 = wf['stats']['tcga']['P2'][0]
+    assert p2[2] is None and len(p2) == 7  # no weights: no q; both cohorts alike, so one set of numbers
 
 
 def test_the_frequency_file_lists_the_known_sites_with_no_change_by_expected(built):
     root, sp, index, data = built
     wf = json.loads((index.parent / 'data' / 'wf.json').read_text())
     # known sites only (P1:5; P1:2 has changes), the cohort's own expected count
-    assert wf['zero']['tcga']['all'] == [['P1', 5, 'R', 0.4]]
-    assert wf['zero']['tcga']['no_hypermutated'] == [['P1', 5, 'R', 0.3]]
+    assert wf['zero']['tcga']['all'] == [['P1', 5, 'R', 0.4, None]]  # [accession, position, residue, expected, p (fewer)]
+    assert wf['zero']['tcga']['no_hypermutated'] == [['P1', 5, 'R', 0.3, None]]
     assert data['propensity']['zero_rows'] == 1000
 
 
@@ -330,7 +334,7 @@ def test_the_germline_file_counts_variants_and_lists_the_depleted_sites_with_non
     # q_lower 0.9; P1:5 one variant and q_lower 0.01; P2:25 has none and q_lower 0.001, so it is listed (the most depleted)
     assert gn['sites']['P1'] == [[2, 'R', 2, 3e-05, 1, 0.4, 0.9, 2, 0.9, 0.4], [5, 'R', 1, 1e-06, 0.5, 1, 0.01, 2, 0.01, 1]]
     assert gn['sites']['P2'] == [[25, 'R', 0, 0, 0, 1, 0.001, 3, 0.001, 1]]
-    assert gn['bg']['R'] == [1, 8, [1], [1]]  # the curve of k: P1:11 has one variant, among the 8 arginines that are not sites
+    assert gn['bg']['R'] == [1, 1, [1], [-0.301]]  # the signed curve: P1:11 is the one residue that is not a site (O/E 0.5, p_lower 0.5)
 
 
 def test_the_oncoprint_file_joins_samples_to_their_burden_and_marks_a_stop(built):
@@ -494,3 +498,161 @@ def test_holm_adjustment_in_the_page_matches_hand_values_and_statsmodels(ps, wan
 
         ref = multipletests(ps, method='holm')[1]
         assert got == pytest.approx(list(ref), abs=1e-12)
+
+
+# ---- the signed score and the lower tail ------------------------------------------------------------------------------------
+
+
+def test_the_signed_score_has_a_side_for_every_o_e_and_zero_at_one():
+    assert PR.signed_score(3.0, 1e-4, 1.0) == pytest.approx(4.0)  # more than expected: -log10 of the upper p, up
+    assert PR.signed_score(0.2, 0.99, 1e-3) == pytest.approx(-3.0)  # fewer: log10 of the lower p, down
+    assert PR.signed_score(0.0, 1.0, 0.01) == pytest.approx(-2.0)  # a site with no change goes down by its lower p
+    assert PR.signed_score(1.0, 0.5, 0.6) == 0.0  # O/E 1 is on the line
+    assert PR.signed_score(2.0, None, 0.5) is None and PR.signed_score(0.5, 0.5, None) is None  # the side's p is missing: no test
+    assert PR.signed_score(None, 0.1, 0.1) is None
+    assert PR.signed_score(2.0, 0.0, 1.0) == PR.SCORE_CAP and PR.signed_score(0.5, 1.0, 0.0) == -PR.SCORE_CAP  # an underflowed p
+    got = PR.signed_scores([3.0, 0.2, 0.0, 1.0, 2.0, np.nan], [1e-4, 0.99, 1.0, 0.5, np.nan, 0.1], [1.0, 1e-3, 0.01, 0.6, 1.0, 0.1])
+    assert got[:4] == pytest.approx([4.0, -3.0, -2.0, 0.0]) and np.isnan(got[4]) and np.isnan(got[5])
+
+
+def _binomial_table(rows: int, seed: int = 3) -> pd.DataFrame:
+    """A source table whose p_upper is the binomial upper tail of its k, n and expected, stored to four significant digits."""
+    from scipy.stats import binom
+
+    rng = np.random.default_rng(seed)
+    n = rng.integers(1, 400, rows)
+    e = rng.uniform(0.01, 20, rows).clip(max=n * 0.9)
+    k = rng.binomial(n, e / n)
+    pu = binom.sf(k - 1, n, e / n)
+    d = pd.DataFrame({'k': k, 'n': n, 'expected': np.round(e, 6), 'p_upper': [float(f'{x:.4g}') for x in pu]})
+    for c in ('k', 'n', 'expected', 'p_upper'):
+        d[c + '_no_hypermutated'] = d[c]
+    return d
+
+
+def test_the_release_p_upper_is_reproduced_by_its_own_binomial_before_a_lower_tail_is_computed():
+    d = _binomial_table(3000)
+    rows, abs_diff, rel_diff = PR.upper_reproduces(d, False)
+    assert rows == 3000 and rel_diff < 6e-4 and PR.lower_tail_ok(d, False) and PR.lower_tail_ok(d, True)
+    up, lo, ok = PR.binom_tails(d, False)
+    assert ok.all() and (lo + up >= 1 - 1e-9).all()  # P(X <= k) + P(X >= k) = 1 + P(X = k)
+    assert (lo[d['k'] == 0] > 0).all()  # no change still has a lower tail: P(X = 0)
+    bad = d.copy()
+    bad.loc[7, 'p_upper'] *= 1.2  # one row the release's model does not give back
+    assert not PR.lower_tail_ok(bad, False) and PR.lower_tail_ok(bad, True)
+    assert not PR.lower_tail_ok(d.drop(columns=['n']), False)  # without n there is nothing to check
+
+
+def test_the_lower_tail_of_a_somatic_source_is_computed_where_the_release_p_upper_is_reproduced():
+    d = _binomial_table(40)
+    d['canonical_UniProtAC'] = 'P1'
+    d['position'] = range(1, 41)
+    d['residue'] = 'R'
+    d['isite'] = d['position'] <= 20
+    d['oe'] = d['k'] / d['expected']
+    for c in ('oe', 'q_upper'):
+        d[c] = d['oe'] if c == 'oe' else 0.5
+        d[c + '_no_hypermutated'] = d[c]
+    d['samples_profiled'] = d['samples_profiled_no_hypermutated'] = 100
+    d['expected_unweighted'] = d['expected_unweighted_no_hypermutated'] = d['expected']
+    d['oe_unweighted'] = d['oe_unweighted_no_hypermutated'] = d['oe']
+    d['site_sets'] = ''
+    wf = PR.frequency_payload(
+        pd.DataFrame(
+            [('P1', 2, 'R', 'tcga_mc3', 'A', 1, 100, 1, 100)],
+            columns=['canonical_UniProtAC', 'position', 'residue', 'source', 'group', 'samples_mutated', 'samples_profiled',
+                     'samples_mutated_no_hypermutated', 'samples_profiled_no_hypermutated'],
+        ),
+        pd.DataFrame({'source': ['tcga_mc3'], 'group': ['A'], 'samples_profiled': [100], 'samples_profiled_no_hypermutated': [100]}),
+        {'P1': set(range(1, 21))}, {'R': 20}, {'tcga': d}, [{'id': 'tcga', 'frequency_source': 'tcga_mc3'}],
+    )
+    assert wf['lower']['tcga'] == [True, True]
+    up, lo, _ = PR.binom_tails(d, False)
+    got = {e[0]: e for e in wf['stats']['tcga']['P1']}
+    site = d[d['isite'] & (d['k'] > 0)]
+    assert len(got) == len(site)
+    for i, r in site.iterrows():
+        e = got[int(r['position'])]
+        assert e[6] in (None, PR.sig(float(lo[i]))) and e[5] in (None, PR.sig(float(r['p_upper'])))
+        if r['oe'] < 1:
+            assert e[6] == PR.sig(float(lo[i]))  # a site with fewer than expected has its lower tail
+    z = wf['zero']['tcga']['all']
+    for _, pos, _, _, pl in z:
+        assert pl == PR.sig(float(lo[d.index[d['position'] == pos][0]]))
+
+
+def test_the_waterfall_payload_stays_within_a_fifth_of_the_old_layout():
+    """The old layout of a site with a change: [position, O/E, q, O/E, q] (about 36 bytes with its frequency counts' share of the
+    file) and 72 KB of frequency curves per file. The new stats entry carries k, expected and both tails for two cohorts and the
+    curves are one signed curve per cohort: the file grows by less than a fifth (measured on methylarginine: 390 KB before)."""
+    rng = np.random.default_rng(1)
+    sites = 3000
+    o = [float(f'{x:.2g}') for x in rng.lognormal(0, 1, sites)]
+    e = [float(f'{x:.2g}') for x in rng.uniform(0.01, 3, sites)]
+    new = [
+        [int(i)] + PR._cohort(o[i], 0.5, int(rng.integers(0, 5)), e[i], 0.12, 0.99) + PR._cohort(o[i], 0.5, 1, e[i], 0.14, 0.97)
+        for i in range(sites)
+    ]
+    per_site = len(json.dumps(new, separators=(',', ':'))) / sites
+    assert per_site <= 80  # was 36; 3,100 TCGA sites plus 840 DepMap sites in methylarginine: +160 KB, against 68 KB of curves removed
+    bg = PR.signed_curve(rng.normal(0, 1, 200000))
+    assert len(json.dumps(bg, separators=(',', ':'))) < 2000  # four of them in a file
+
+
+def test_the_signed_curve_keeps_both_ends_of_the_ranking():
+    c = PR.signed_curve([5.0, 1.0, 0.0, 0.0, -0.5, -9.0, np.nan])
+    assert c[:2] == [7, 7] and c[2][0] == 1 and c[2][-1] == 7
+    assert c[3][0] == 5 and c[3][-1] == -9 and c[3] == sorted(c[3], reverse=True)
+
+
+# ---- the page's twins: the signed score and the label layout ----------------------------------------------------------------------
+
+
+def test_the_signed_score_is_the_same_in_python_and_the_page():
+    cases = [[3.0, 1e-4, 1.0], [0.2, 0.99, 1e-3], [0.0, 1.0, 0.01], [1.0, 0.5, 0.6], [2.0, None, 0.5], [0.5, 0.5, None], [None, 0.1, 0.1], [2.0, 0.0, 1.0], [0.5, 1.0, 0.0]]
+    got = _node(f'console.log(JSON.stringify({json.dumps(cases)}.map(([o, a, b]) => K.prop.signed(o, a, b))));', PR_DATA)
+    want = [PR.signed_score(*c) for c in cases]
+    assert got == pytest.approx(want, nan_ok=True) or all((g is None and w is None) or g == pytest.approx(w) for g, w in zip(got, want))
+
+
+LAYOUT = r"""
+const box = { x0: 40, y0: 10, x1: 400, y1: 240 };
+const crowded = [...Array(14).keys()].map((i) => ({ key: i, x: 60 + i * 3, y: 20 + i * 9, w: 80, h: 15 }));
+const a = K.prop.layoutLabels(crowded, box, [{ x: 300, y: 10, w: 90, h: 15 }]);
+const b = K.prop.layoutLabels(crowded, box, [{ x: 300, y: 10, w: 90, h: 15 }]);
+const ends = [...[14, 20, 27, 33, 39].map((y, i) => ({ key: 't' + i, x: 62 + i * 0.3, y, w: 85, h: 15 })), ...[222, 226, 231, 236, 238].map((y, i) => ({ key: 'b' + i, x: 395 - i * 0.3, y, w: 85, h: 15 }))];
+const real = K.prop.layoutLabels(ends, box);
+const lone = K.prop.layoutLabels([{ key: 'a', x: 200, y: 120, w: 70, h: 15 }], box);
+const tight = K.prop.layoutLabels([...Array(12).keys()].map((i) => ({ key: i, x: 50 + i, y: 20, w: 90, h: 15 })), { x0: 40, y0: 10, x1: 150, y1: 45 });
+console.log(JSON.stringify({ a, same: JSON.stringify(a) === JSON.stringify(b), real, lone, tight }));
+"""
+
+
+def test_labels_never_overlap_and_each_has_a_leader_or_sits_beside_its_point():
+    out = _node(LAYOUT, PR_DATA)
+    a = out['a']
+    assert out['same']  # deterministic: the same input gives the same layout
+    assert len(a['placed']) + len(a['dropped']) == 14 and len(a['placed']) >= 8
+    boxes = a['placed'] + [{'x': 300, 'y': 10, 'w': 90, 'h': 15}]
+    for i, p in enumerate(boxes):
+        assert 40 <= p['x'] and p['x'] + p['w'] <= 400 and 10 <= p['y'] and p['y'] + p['h'] <= 240  # inside the room
+        for q in boxes[i + 1 :]:
+            assert not (p['x'] < q['x'] + q['w'] and q['x'] < p['x'] + p['w'] and p['y'] < q['y'] + q['h'] and q['y'] < p['y'] + p['h'])
+    # no leader runs through another label (sampled along the segment)
+    for p in a['placed']:
+        if not p['leader']:
+            continue
+        x1, y1, x2, y2 = p['leader']
+        for s in range(1, 20):
+            x, y = x1 + (x2 - x1) * s / 20, y1 + (y2 - y1) * s / 20
+            for q in boxes:
+                if q is not p and 'leader' in q:
+                    assert not (q['x'] < x < q['x'] + q['w'] and q['y'] < y < q['y'] + q['h'])
+    real = out['real']  # the five top and five bottom sites, as drawn: the anchors nearly on top of each other, none dropped
+    assert not real['dropped'] and len(real['placed']) == 10
+    for i, p in enumerate(real['placed']):
+        for q in real['placed'][i + 1 :]:
+            assert not (p['x'] < q['x'] + q['w'] and q['x'] < p['x'] + p['w'] and p['y'] < q['y'] + q['h'] and q['y'] < p['y'] + p['h'])
+    lone = out['lone']['placed'][0]
+    assert lone['leader'] is None and abs(lone['x'] - 205) < 8  # beside its point, no leader
+    assert out['tight']['dropped'] and len(out['tight']['placed']) < 12  # only what cannot fit is dropped
