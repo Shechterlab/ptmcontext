@@ -107,7 +107,7 @@
 
   // ---- the view ---------------------------------------------------------------------------------------------------------
   function html(p, rec, tb) {
-    if (!tb) return '<p class="muted small">Loading the interaction tables…</p>';
+    if (!tb) return K.loading('Loading the interaction tables…');
     const gene = p.gene || p.acc,
       parts = K.card.has(PT.table)
         ? K.card.rows(tb, PT.table).sort((a, b) => (num(b.score) || 0) - (num(a.score) || 0))
@@ -177,7 +177,7 @@
             ? `<p><button type="button" class="linkish small" ` +
               `data-pix-all>${UI.all ? 'Fewer partners' : `All ${int(parts.length)} partners`}</button></p>`
             : '');
-      } else if (!cx) out += '<p class="muted small">Loading the complexes…</p>';
+      } else if (!cx) out += K.loading('Loading the complexes…');
       else
         out += cx.length
           ? `<p class="pix-head"><b>${int(cx.length)} complex${cx.length === 1 ? '' : 'es'}</b> hold ${esc(gene)} and at least ` +

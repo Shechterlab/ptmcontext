@@ -58,7 +58,7 @@
         return false;
       }
     })());
-  // the address on another site: the protein open now when that site has it, the statistics or method page when open, else the Overview
+  // the address on another site: the protein open now when that site has it, the tab open now when that site has it (else its Overview)
   const target = (site, name, withProtein) => {
     const p = [];
     if (S.q) p.push('q=' + encodeURIComponent(S.q));
@@ -67,7 +67,12 @@
     if (f) p.push('f=' + f.replace(/[&#+\s]/g, (c) => encodeURIComponent(c)));
     if (f) p.push('sw=' + encodeURIComponent(name));
     const a = acc(),
-      path = a && withProtein ? '/protein/' + encodeURIComponent(a) : S.view === 'method' ? S.view : 'overview';
+      path =
+        a && withProtein
+          ? '/protein/' + encodeURIComponent(a)
+          : S.view && !['protein', 'list', 'comparesaved'].includes(S.view)
+            ? S.view // the open tab: a site without it opens its Overview (the kit's own fallback for an unknown view)
+            : 'overview';
     return `../${encodeURIComponent(site)}/#${path}` + (p.length ? '?' + p.join('&') : '');
   };
   // each link of a menu is a real address (so it opens in a new tab); it is the Overview's until the other site is known to have the protein

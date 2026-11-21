@@ -2,7 +2,7 @@
 # (tests/test_citation.py checks). Edit this file to change how the kit is cited.
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "ptmcontext: where modifications fall in proteins, tested pooled and within protein"
+title: "PTMcontext: where modifications fall in proteins, tested pooled and within protein"
 version: "0.5.0"
 date-released: "2026-11-15"
 license: MIT

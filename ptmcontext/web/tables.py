@@ -88,6 +88,8 @@ FORMATS: dict[str, dict] = {
             'check',
         ],
     },
+    # one row per (site, new residue) with the number of input rows (tumor samples, cell lines) that carry it
+    'residue_changes': {'key': 'site', 'required': ['alt'], 'optional': ['gene']},
     'protein_records': {'key': 'accession', 'free': True, 'open': True},
     'page_rows': {'key': 'none', 'free': True},  # rows of no site or protein (complexes, say): read by a page only
     'protein_partners': {
@@ -138,7 +140,8 @@ def source_columns(spec: dict) -> list[str]:
         out += v if isinstance(v, list) else [v]
     if (spec.get('both_ways') or {}).get('partner'):
         out.append(spec['both_ways']['partner'])
-    out += spec.get('values', []) + [c['column'] for c in spec.get('include', []) + spec.get('exclude', [])]
+    conds = spec.get('include', []) + spec.get('exclude', []) + spec.get('include_any', [])
+    out += spec.get('values', []) + [c['column'] for c in conds]
     return list(dict.fromkeys(out))
 
 
@@ -182,6 +185,11 @@ def read(spec: dict, path: Path):
         frame = _keep(frame, [c], True)
     for c in spec.get('exclude', []):  # a row any exclude condition holds for is dropped
         frame = _keep(frame, [c], False)
+    if spec.get('include_any'):  # a row any of these conditions holds for stays
+        stay: set = set()
+        for c in spec['include_any']:
+            stay |= set(_keep(frame, [c], True).index)
+        frame = frame[frame.index.isin(stay)]
     hide = set(
         spec.get('presence_only') or []
     )  # presence-only values (the site's marks.attributes): their rows never leave the run
@@ -206,6 +214,18 @@ def read(spec: dict, path: Path):
         if spec['format'] == 'residue_evidence' and c in out.columns:
             out = out[out[c].str.fullmatch(r'\d+')]
             out[c] = out[c].astype(int)
+    if (
+        spec['format'] == 'residue_changes'
+    ):  # the input lists one change per sample or line: counted per site, residue and (when the table names one) gene
+        out = out[(out['position'].astype(str) != '') & (out['alt'] != '')]
+        by = ['accession', 'position', 'alt'] + (['gene'] if 'gene' in out.columns else [])
+        out = out.groupby(by, sort=False).size().rename('n').reset_index()
+        out['position'] = out['position'].astype(int)
+        out = out.sort_values(
+            ['accession', 'position', 'n', 'alt'] + by[3:], ascending=[True, True, False, True] + [True] * len(by[3:])
+        )
+        out['position'] = out['position'].astype(str)
+        out['n'] = out['n'].astype(str)
     both = spec.get('both_ways')
     if both is not None and spec['format'] == 'protein_partners':  # a table that lists each pair once: both ways
         back = out.rename(columns={'accession': 'partner_accession', 'partner_accession': 'accession'})
@@ -266,7 +286,28 @@ def pack(specs: dict, paths: dict, proteins: set, everyone: set, log=print) -> t
     return header, rows, partner, lookups
 
 
-def dedupe(shard: dict, min_len: int = 8) -> dict:
+def repeated_columns(header: dict, rows: dict, min_rows: int = 500, ratio: float = 0.5) -> dict[str, set[int]]:
+    """{table: column positions} of the text columns that repeat a few values over many rows (the gene on every row of a
+    protein's changes, a residue): `dedupe` writes their values once however short they are, a dictionary of the page's own."""
+    count: dict[str, int] = {}
+    seen: dict[tuple[str, int], set] = {}
+    for tb in rows.values():
+        for name, rs in tb.items():
+            if name.startswith('_') or name not in header or not isinstance(rs, list):
+                continue
+            count[name] = count.get(name, 0) + len(rs)
+            for r in rs:
+                for i, x in enumerate(r):
+                    if isinstance(x, str) and x:
+                        seen.setdefault((name, i), set()).add(x)
+    out: dict[str, set[int]] = {}
+    for (name, i), vals in seen.items():
+        if count[name] >= min_rows and len(vals) <= ratio * count[name]:
+            out.setdefault(name, set()).add(i)
+    return out
+
+
+def dedupe(shard: dict, min_len: int = 8, short: dict[str, set[int]] | None = None) -> dict:
     """A shard with its repeated strings (min_len characters or more, seen twice or more) written once, in '_s', and
     each place they stood holding their index there. Table values are strings, but a site's position and a stretch's
     start and end, so a number in any other column is such an index (kit-sitecard.js reads them back)."""
@@ -274,16 +315,16 @@ def dedupe(shard: dict, min_len: int = 8) -> dict:
 
     seen: Counter = Counter()
 
-    def walk(rows, skip_first):
+    def walk(rows, skip_first, cols=frozenset()):
         for r in rows:
-            for x in r[1:] if skip_first else r:
-                if isinstance(x, str) and len(x) >= min_len:
+            for i, x in enumerate(r):
+                if isinstance(x, str) and (len(x) >= min_len or i in cols) and not (skip_first and i == 0):
                     seen[x] += 1
 
     for rec in shard.values():
         for name, rows in (rec.get('tables', rec) if isinstance(rec, dict) else {}).items():
             if isinstance(rows, list):
-                walk(rows, False)
+                walk(rows, False, (short or {}).get(name, frozenset()))
     strings = [s for s, n in seen.items() if n > 1]
     if not strings:
         return shard

@@ -513,14 +513,14 @@
         ]
       }
     },
-    "phosphorylation_sites_v1_5_0": {
-      "file": "releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv",
+    "phosphorylation_sites_v1_5_1": {
+      "file": "releases/v1.6.0/human_phosphorylation_sites_v1.6.0.tsv",
       "md5": "2b4cacbbedf48862d8c2816b9157c8fe",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/5fadf74/releases/v1.5.0/human_phosphorylation_sites_v1.5.0.tsv (commit 5fadf74, release v1.5.0): UniProt 2026_04 Modified residue records (Phosphoserine, Phosphothreonine, Phosphotyrosine), iPTMnet 6.2 phosphorylation records, and the phosphosites of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3, with their functional scores (Supplementary Table 2 of the article)",
-      "version": "v1.5.0 (2026-11-10): 142,415 rows on 142,415 residues of 12,588 proteins (S 101,126, T 31,170, Y 10,119); evidence_class experimental 135,936, by-similarity 4,393, text-mined 2,018, unspecified 68; 112,405 rows carry an Ochoa 2020 functional score",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/v1.6.0/releases/v1.6.0/human_phosphorylation_sites_v1.6.0.tsv (commit 9a03d54, release v1.6.0): UniProt 2026_04 Modified residue records (Phosphoserine, Phosphothreonine, Phosphotyrosine), iPTMnet 6.2 phosphorylation records, and the phosphosites of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3, with their functional scores (Supplementary Table 2 of the article)",
+      "version": "v1.6.0 (2026-11-10): 142,415 rows on 142,415 residues of 12,588 proteins (S 101,126, T 31,170, Y 10,119); evidence_class experimental 135,936, by-similarity 4,393, text-mined 2,018, unspecified 68; 112,405 rows carry an Ochoa 2020 functional score",
       "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet 6.2, CC BY-NC-SA 4.0); UniProt data CC BY 4.0; iPTMnet's upstream databases keep their own terms; Ochoa et al., Nat Biotechnol 38:365 (2020): the article is not open access and its supplementary table has no license, included",
       "role": "input",
-      "note": "No reference release: the statistics of this site are new. A row per residue and state; positions on UniProt 2026_03. Columns beyond the earlier table: functional_score (Ochoa 2020, 0 to 1), best_localization_probability, best_pep, biological_samples and spectral_counts (Ochoa 2020's mass-spectrometry evidence) and iptmnet_score. Ochoa 2020 is not open access and its supplementary table has no license: its rows are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Pinned to PTM_Pipeline commit 5fadf74."
+      "note": "No reference release: the statistics of this site are new. A row per residue and state; positions on UniProt 2026_03. Columns beyond the earlier table: functional_score (Ochoa 2020, 0 to 1), best_localization_probability, best_pep, biological_samples and spectral_counts (Ochoa 2020's mass-spectrometry evidence) and iptmnet_score. Ochoa 2020 is not open access and its supplementary table has no license: its rows are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Pinned to PTM_Pipeline commit 9a03d54."
     },
     "string_physical_v12_5": {
       "file": "inputs/interactions/string_v12.5_human_physical_links_score400.tsv",
@@ -539,59 +539,59 @@
       "licence": "CC0",
       "role": "input"
     },
-    "context_methylarginine_sites_v1_4_3": {
-      "file": "releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv",
+    "context_methylarginine_sites_v1_5_1": {
+      "file": "releases/v1.6.0/human_methylarginine_sites_v1.6.0.tsv",
       "md5": "50dd293d1a3dd94ce7a0fb3168eae3bd",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74/releases/v1.4.3 (the same bytes as at b0d9049, the methylarginine site's pin)",
-      "version": "Methylarginine Site Explorer release v1.4.3 (2026-10-31), as a context mark of the methyllysine site",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0 (the same bytes as v1.6.0)",
+      "version": "Methylarginine Site Explorer release v1.6.0 (2026-11-19), as a context mark of the methyllysine site",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
-      "note": "Context marks: the methylarginine sites of the human reviewed proteome (11,632 rows, one per residue), read beside the phosphosites by the protein map and the near_methylarginine question. The same file the methylarginine site reads as its marks. Pinned to PTM_Pipeline commit 5fadf74."
+      "note": "Context marks: the methylarginine sites of the human reviewed proteome (11,632 rows, one per residue), read beside the phosphosites by the protein map and the near_methylarginine question. The same file the methylarginine site reads as its marks. Pinned to PTM_Pipeline commit 9a03d54."
     },
-    "context_methyllysine_sites_v1_5_0": {
-      "file": "releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv",
-      "md5": "1b3e1ebcf56327eeded54b2486aac856",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/5fadf74/releases/v1.5.0/human_methyllysine_sites_v1.5.0.tsv (commit 5fadf74, release v1.5.0): UniProt 2026_04 N6-methyllysine, N6,N6-dimethyllysine and N6,N6,N6-trimethyllysine records, iPTMnet 6.2 lysine methylation records, and the 5,356 validated human lysine methylation sites of CPLM 4.0 (Zhang et al., Nucleic Acids Res 50:D451, 2022; Methylation.txt of 2021-06-13), and the methyllysine sites of Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (Supplementary Table 5, states me1, me2 and me3; HEK293T and U2OS cells)",
-      "version": "v1.5.0 (2026-11-10): 10,889 rows on 10,040 lysines of 4,781 proteins; evidence_class experimental 7,848, by-similarity 181, unspecified 2,860 rows; 5,356 rows report CPLM (cplm_evidence Exp. 618, Exp./Dat. 1,880, Dat. 2,858); 5,072 rows report Berryhill 2023 (me1, me2, me3)",
-      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet 6.2, CC BY-NC-SA 4.0); UniProt data CC BY 4.0; CPLM 4.0 states no license (copyright notice, All Rights Reserved): its rows are included; Berryhill 2023: the article is CC BY 4.0, its Supplementary Table 5 has no separate license notice and is included",
+    "context_methyllysine_sites_v1_5_1": {
+      "file": "releases/v1.6.0/human_methyllysine_sites_v1.6.0.tsv",
+      "md5": "911a56655d3d0c3ba80a63981fdd28dd",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/v1.6.0/releases/v1.6.0/human_methyllysine_sites_v1.6.0.tsv (commit 9a03d54, release v1.6.0): UniProt 2026_04 N6-methyllysine, N6,N6-dimethyllysine and N6,N6,N6-trimethyllysine records, iPTMnet 6.2 lysine methylation records, and the methyllysine sites of Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (Supplementary Table 5, states me1, me2 and me3; HEK293T and U2OS cells)",
+      "version": "v1.6.0 (2026-11-10): 5,746 rows on 5,178 lysines of 2,843 proteins; evidence_class experimental 5,359, by-similarity 181, unspecified 206 rows; 5,072 rows report Berryhill 2023 (me1, me2, me3)",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet 6.2, CC BY-NC-SA 4.0); UniProt data CC BY 4.0; Berryhill 2023: the article is CC BY 4.0, its Supplementary Table 5 has no separate license notice and is included",
       "role": "input",
-      "note": "Context marks: the methyllysine sites of the human reviewed proteome (10,889 rows: UniProt, iPTMnet, CPLM 4.0 and Berryhill 2023), one row per lysine and degree, read beside the phosphosites by the protein map and the near_methyllysine question; by-similarity rows are dropped by default (CPLM's database-derived Dat. rows are kept in this context view). CPLM 4.0 states no license: its sites are included. Pinned to PTM_Pipeline commit 5fadf74."
+      "note": "Context marks: the methyllysine sites of the human reviewed proteome (5,746 rows: UniProt, iPTMnet and Berryhill 2023), one row per lysine and degree, read beside the phosphosites by the protein map and the near_methyllysine question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 9a03d54."
     },
-    "context_acetylation_sites_v1_5_0": {
-      "file": "releases/v1.5.0/human_acetylation_sites_v1.5.0.tsv",
-      "md5": "f913576ea2dabcb9444c160f2eb925a9",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74/releases/v1.5.0",
-      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-12); CPLM 4.0, UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
-      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022)",
+    "context_acetylation_sites_v1_5_1": {
+      "file": "releases/v1.6.0/human_acetylation_sites_v1.6.0.tsv",
+      "md5": "079ce9e22305fcb01fb9f035fca778f7",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "Context marks, release v1.6.0 of PTM_Pipeline (2026-11-19); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
       "role": "input",
-      "note": "Context marks: lysine acetylation sites of the human reviewed proteome (53,177 rows on 53,177 residues of 9,336 proteins), one row per residue, with sources (CPLM 4.0, UniProt, iPTMnet), evidence class (experimental, by-similarity, unspecified), CPLM evidence label, iPTMnet upstream databases and PubMed IDs. Shown beside the phosphosites by the protein map and the near_acetylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 5fadf74."
+      "note": "Context marks: lysine acetylation sites of the human reviewed proteome (4,597 rows on 4,597 residues of 1,834 proteins), one row per residue, with sources (UniProt, iPTMnet), evidence class (experimental, by-similarity, unspecified), iPTMnet upstream databases and PubMed IDs. Shown beside the phosphosites by the protein map and the near_acetylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 9a03d54."
     },
-    "context_lysine_acylation_sites_v1_5_0": {
-      "file": "releases/v1.5.0/human_lysine_acylation_sites_v1.5.0.tsv",
-      "md5": "860ba02dafae6ebca77c3e0a0c2dc69f",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74/releases/v1.5.0",
-      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-12); CPLM 4.0, UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
-      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included, cited to Zhang et al., Nucleic Acids Res 50:D451 (2022)",
+    "context_lysine_acylation_sites_v1_5_1": {
+      "file": "releases/v1.6.0/human_lysine_acylation_sites_v1.6.0.tsv",
+      "md5": "4164819cece8710a79904b9901cfa2bf",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "Context marks, release v1.6.0 of PTM_Pipeline (2026-11-19); UniProt 2026_04 and iPTMnet 6.2; positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms",
       "role": "input",
-      "note": "Context marks: lysine acylation sites of the human reviewed proteome (88,816 rows on 61,549 residues of 9,857 proteins; 16 acyl types in acyl_type, 53,177 of them acetyl), one row per residue and acyl type, with sources, evidence class and PubMed IDs. Read as the mark 'other acylations' (every acyl type but acetyl) beside the phosphosites by the protein map and the near_other_acylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 5fadf74."
+      "note": "Context marks: lysine acylation sites of the human reviewed proteome (8,008 rows on 5,504 residues of 1,945 proteins; 13 acyl types in acyl_type, 4,597 of them acetyl), one row per residue and acyl type, with sources, evidence class and PubMed IDs. Read as the mark 'other acylations' (every acyl type but acetyl) beside the phosphosites by the protein map and the near_other_acylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 9a03d54."
     },
-    "context_ubiquitination_sites_v1_5_0": {
-      "file": "releases/v1.5.0/human_ubiquitination_sites_v1.5.0.tsv",
-      "md5": "a6db68d24062f43e254c0deda5441917",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74/releases/v1.5.0",
-      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); CPLM 4.0, UniProt 2026_04, iPTMnet 6.2 and Akimov 2018; positions on UniProt 2026_03",
-      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included; Akimov et al., Nat Struct Mol Biol 25:631 (2018): the article is not open access and its supplementary table has no notice of its own, included",
+    "context_ubiquitination_sites_v1_5_1": {
+      "file": "releases/v1.6.0/human_ubiquitination_sites_v1.6.0.tsv",
+      "md5": "6e6491617eb7ff03429eee4a6a42cc2a",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "Context marks, release v1.6.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Akimov 2018; positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Akimov et al., Nat Struct Mol Biol 25:631 (2018): the article is not open access and its supplementary table has no notice of its own, included",
       "role": "input",
-      "note": "Context marks: lysine ubiquitination sites of the human reviewed proteome (125,771 rows on 12,011 proteins; CPLM 4.0 123,753, Akimov 2018 62,871, UniProt 951, iPTMnet 610 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity), CPLM evidence label and PubMed IDs. Shown beside the site's own mark by the protein map and the near_ubiquitination question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 5fadf74."
+      "note": "Context marks: lysine ubiquitination sites of the human reviewed proteome (63,480 rows on 9,032 proteins; Akimov 2018 62,871, UniProt 951, iPTMnet 610 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity) and PubMed IDs. Shown beside the site's own mark by the protein map and the near_ubiquitination question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 9a03d54."
     },
-    "context_sumoylation_sites_v1_5_0": {
-      "file": "releases/v1.5.0/human_sumoylation_sites_v1.5.0.tsv",
-      "md5": "e3327c467d18428c7c4e26aa1de72b83",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/5fadf74/releases/v1.5.0",
-      "version": "Context marks, release v1.5.0 of PTM_Pipeline (2026-11-10); CPLM 4.0, UniProt 2026_04, iPTMnet 6.2 and Hendriks 2017; positions on UniProt 2026_03",
-      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; CPLM 4.0 states no license: its rows are included; Hendriks et al., Nat Struct Mol Biol 24:325 (2017): the article is not open access and its supplementary table has no notice of its own, included",
+    "context_sumoylation_sites_v1_5_1": {
+      "file": "releases/v1.6.0/human_sumoylation_sites_v1.6.0.tsv",
+      "md5": "e01697c623934b97357e04a654fa07bd",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "Context marks, release v1.6.0 of PTM_Pipeline (2026-11-10); UniProt 2026_04, iPTMnet 6.2 and Hendriks 2017; positions on UniProt 2026_03",
+      "licence": "CC BY-NC-SA 4.0 (the release; iPTMnet CC BY-NC-SA 4.0, UniProt CC BY 4.0); iPTMnet's upstream databases keep their own terms; Hendriks et al., Nat Struct Mol Biol 24:325 (2017): the article is not open access and its supplementary table has no notice of its own, included",
       "role": "input",
-      "note": "Context marks: lysine SUMOylation sites of the human reviewed proteome (48,593 rows on 7,424 proteins; Hendriks 2017 39,858, CPLM 4.0 39,493, UniProt 5,531, iPTMnet 33 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity), CPLM evidence label and PubMed IDs. Shown beside the site's own mark by the protein map and the near_sumoylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 5fadf74."
+      "note": "Context marks: lysine SUMOylation sites of the human reviewed proteome (40,249 rows on 6,410 proteins; Hendriks 2017 39,858, UniProt 5,531, iPTMnet 33 rows), one row per residue, with sources, evidence class (experimental, unspecified, by-similarity) and PubMed IDs. Shown beside the site's own mark by the protein map and the near_sumoylation question; by-similarity rows are dropped by default. Pinned to PTM_Pipeline commit 9a03d54."
     },
     "go_bp_annotations": {
       "file": "inputs/annotation/go_bp_human_2026-11-04.tsv",
@@ -610,6 +610,670 @@
       "licence": "CC BY 4.0",
       "role": "input",
       "note": "The GO biological process terms with at least one reviewed human protein: name, depth, protein counts, parents. Staged by PTM_Pipeline scripts/63_stage_go_bp.py. Gene Ontology Consortium, Genetics 224:iyad031 (2023), doi:10.1093/genetics/iyad031; Ashburner et al., Nat Genet 25:25 (2000), doi:10.1038/75556. Read for the Overlap page."
+    },
+    "phospho_site_interactions_v1_5_1": {
+      "file": "releases/v1.6.0/supporting/phospho_site_interactions_v1.6.0.tsv",
+      "md5": "886d80e5655f6904d57380bb555be5a3",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "PTM_Pipeline release v1.6.0 (phosphorylation supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.6.0); each record keeps its source's terms",
+      "role": "input",
+      "note": "Each phosphosite's interaction evidence, one row per kind and partner (PDB interfaces with proteins, RNA, DNA and another copy of the protein; RNA and DNA crosslinks; RNA-bound peptides; UniProt DNA-binding regions): the site card's interaction evidence and the Interactions page. Sources: PDBe-KB interface residues (EMBL-EBI terms of use); PDB data through the RCSB ModelServer and Data API and SIFTS (CC0, EMBL-EBI terms); pepR-MS RNA crosslinks (Sha, Kuster & Trendel, bioRxiv 2025, CC BY-NC; with re-analyses of Kramer 2014, XRNAX 2019, RBS-ID 2020 and pRBS-ID 2021); CAPRI (Panhale 2019, CC BY 4.0); RBR-ID (Oksuz 2023, PRIDE, CC0); DNA crosslinks (Trendel 2025, CC BY-NC 4.0); UniProt DNA-binding regions (CC BY 4.0). RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in this table."
+    },
+    "phospho_site_interaction_records_v1_5_1": {
+      "file": "releases/v1.6.0/supporting/phospho_site_interaction_records_v1.6.0.tsv",
+      "md5": "f1e3fec12479bf2bbdef5a3323edbe00",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "PTM_Pipeline release v1.6.0 (phosphorylation supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.6.0); each record keeps its source's terms",
+      "role": "input",
+      "note": "Every interaction record at a site with its source, method, paper and the state of the lysine in it (lysine, Kme1, Kme2, Kme3, Kac, another residue, not read): the site card's 'Who binds it, and how it was found' and the Interactions page. Sources as for the site interactions table: PDB data (CC0, EMBL-EBI terms), PDBe-KB, pepR-MS (CC BY-NC) and its re-analyses, CAPRI (CC BY 4.0), RBR-ID (CC0), Trendel 2025 DNA crosslinks (CC BY-NC 4.0), UniProt (CC BY 4.0). RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in this table."
+    },
+    "phospho_nucleic_acid_contacts_v1_5_1": {
+      "file": "releases/v1.6.0/supporting/phospho_nucleic_acid_contacts_v1.6.0.tsv",
+      "md5": "7ebbeb5f5b814a02a0898bdb61e172e9",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "PTM_Pipeline release v1.6.0 (phosphorylation supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.6.0); each record keeps its source's terms",
+      "role": "input",
+      "note": "The RNA and DNA chains within reach of each phosphosite in PDB structures, with the contacted nucleotides and the bound window: the site card's RNA and DNA contacts, the 3D viewer and the Interactions page. PDB data through the RCSB ModelServer and Data API and SIFTS (CC0, EMBL-EBI terms)."
+    },
+    "phospho_nucleic_acid_near_sites_v1_5_1": {
+      "file": "releases/v1.6.0/supporting/phospho_nucleic_acid_near_sites_v1.6.0.tsv",
+      "md5": "72c0401c1516818f7ef267d25df93592",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "PTM_Pipeline release v1.6.0 (phosphorylation supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.6.0); each record keeps its source's terms",
+      "role": "input",
+      "note": "RNA and DNA in contact with a residue next to a phosphosite in PDB structures: the site card's contacts through a neighboring residue. PDB data through the RCSB ModelServer and Data API and SIFTS (CC0, EMBL-EBI terms)."
+    },
+    "phospho_residue_evidence_v1_5_1": {
+      "file": "releases/v1.6.0/supporting/phospho_residue_evidence_v1.6.0.tsv",
+      "md5": "26e70bbf61571f5d24e5704092b3c5e8",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0",
+      "version": "PTM_Pipeline release v1.6.0 (phosphorylation supporting tables, 2026-11-16)",
+      "licence": "CC BY-NC-SA 4.0 (the tables, PTM_Pipeline release v1.6.0); each record keeps its source's terms",
+      "role": "input",
+      "note": "Interaction evidence along each protein, one row per residue or stretch (PDB interfaces, RNA and DNA crosslinks, RNA-bound peptides and regions, UniProt DNA-binding regions): the site card's evidence within a few residues of a site and the 3D viewer's colorings. Sources as for the site interactions table: PDBe-KB, PDB data and SIFTS, pepR-MS and its re-analyses (CC BY-NC), CAPRI (CC BY 4.0), RBR-ID (CC0), Trendel 2025 (CC BY-NC 4.0), UniProt (CC BY 4.0). RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in this table."
+    },
+    "tcga_changes_K": {
+      "file": "releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz",
+      "md5": "98bb86a2123c81ba0ac39140fb4969bc",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz",
+      "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
+      "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "TCGA MC3 somatic missense and stop changes at every K of reviewed canonical proteins, one row per tumor sample and change (same rules as the arginine table: FILTER PASS, and in OV and LAML also wga alone). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. this repository checks the bytes. The results shown here are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al., Cell Syst 6:271 (2018), doi:10.1016/j.cels.2018.03.002)."
+    },
+    "tcga_changes_S": {
+      "file": "releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz",
+      "md5": "6b4ff26259a5d3be25d34e6c0f3d8fb9",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz",
+      "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
+      "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "TCGA MC3 somatic missense and stop changes at every S of reviewed canonical proteins, one row per tumor sample and change (same rules as the arginine table: FILTER PASS, and in OV and LAML also wga alone). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. this repository checks the bytes. The results shown here are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al., Cell Syst 6:271 (2018), doi:10.1016/j.cels.2018.03.002)."
+    },
+    "tcga_changes_T": {
+      "file": "releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz",
+      "md5": "d8068cdf2c8ea6b12f303f143051eeed",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz",
+      "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
+      "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "TCGA MC3 somatic missense and stop changes at every T of reviewed canonical proteins, one row per tumor sample and change (same rules as the arginine table: FILTER PASS, and in OV and LAML also wga alone). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. this repository checks the bytes. The results shown here are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al., Cell Syst 6:271 (2018), doi:10.1016/j.cels.2018.03.002)."
+    },
+    "tcga_changes_Y": {
+      "file": "releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz",
+      "md5": "e36ef60ecfc6bc6f5972707e37b1c643",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz",
+      "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
+      "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "TCGA MC3 somatic missense and stop changes at every Y of reviewed canonical proteins, one row per tumor sample and change (same rules as the arginine table: FILTER PASS, and in OV and LAML also wga alone). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. this repository checks the bytes. The results shown here are in whole or part based upon data generated by the TCGA Research Network (https://www.cancer.gov/tcga): MC3 somatic calls (Ellrott et al., Cell Syst 6:271 (2018), doi:10.1016/j.cels.2018.03.002)."
+    },
+    "depmap_changes_K": {
+      "file": "releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz",
+      "md5": "9abba4e226b3bf97ab179bd66d02dfc7",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz",
+      "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "DepMap somatic missense and stop changes at every K of reviewed canonical proteins (OmicsSomaticMutations), one row per cell line and change. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. this repository checks the bytes."
+    },
+    "depmap_changes_S": {
+      "file": "releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz",
+      "md5": "cfa0d44b1193f3e9d5e531bd08598227",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz",
+      "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "DepMap somatic missense and stop changes at every S of reviewed canonical proteins (OmicsSomaticMutations), one row per cell line and change. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. this repository checks the bytes."
+    },
+    "depmap_changes_T": {
+      "file": "releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz",
+      "md5": "0fa9ef4dafde1469013db2578ff1a420",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz",
+      "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "DepMap somatic missense and stop changes at every T of reviewed canonical proteins (OmicsSomaticMutations), one row per cell line and change. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. this repository checks the bytes."
+    },
+    "depmap_changes_Y": {
+      "file": "releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz",
+      "md5": "8e84b4cb11be159dbec81ecd1ced811f",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz",
+      "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "DepMap somatic missense and stop changes at every Y of reviewed canonical proteins (OmicsSomaticMutations), one row per cell line and change. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. this repository checks the bytes."
+    },
+    "cancer_change_background": {
+      "file": "releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz",
+      "md5": "03537973ea1bbde64735a38c84bd7405",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz",
+      "version": "TCGA MC3 v0.2.8 and DepMap Public 24Q4",
+      "licence": "derived counts of the two tables above (GDC open-access data; CC BY 4.0)",
+      "role": "input",
+      "note": "Per reviewed entry and residue (R, K, S, T, Y, and all): how many residues of that kind the entry has, and the changes, tumor samples and positions (TCGA) and the changes, cell lines and positions (DepMap) at them. The base of the protein average beside a count of changes."
+    },
+    "clinvar_changes_S": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz",
+      "md5": "daa9bc71bd8c36ac7f5e517cd83818f9",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "ClinVar single-residue substitutions and stops at every S of reviewed canonical proteins, one row per variation (germline classification, review status and conditions as ClinVar gives them). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. This repository checks the bytes. Landrum et al., Nucleic Acids Res 53:D1313 (2025), doi:10.1093/nar/gkae1090."
+    },
+    "clinvar_plp_changes_S": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz",
+      "md5": "daa9bc71bd8c36ac7f5e517cd83818f9",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position",
+        "include": [
+          {
+            "column": "germline_classification",
+            "matches": "(Pathogenic|Likely pathogenic)([;,/].*)?"
+          }
+        ]
+      },
+      "note": "The rows of the table above whose classification is pathogenic or likely pathogenic (Pathogenic, Likely pathogenic, Pathogenic/Likely pathogenic, with ClinVar's qualifiers; not conflicting classifications): the residues the site question lists. The same file, read with a condition."
+    },
+    "clinvar_changes_T": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz",
+      "md5": "c46852217ee78e378a63205b17d818e5",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "ClinVar single-residue substitutions and stops at every T of reviewed canonical proteins, one row per variation (germline classification, review status and conditions as ClinVar gives them). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. This repository checks the bytes. Landrum et al., Nucleic Acids Res 53:D1313 (2025), doi:10.1093/nar/gkae1090."
+    },
+    "clinvar_plp_changes_T": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz",
+      "md5": "c46852217ee78e378a63205b17d818e5",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position",
+        "include": [
+          {
+            "column": "germline_classification",
+            "matches": "(Pathogenic|Likely pathogenic)([;,/].*)?"
+          }
+        ]
+      },
+      "note": "The rows of the table above whose classification is pathogenic or likely pathogenic (Pathogenic, Likely pathogenic, Pathogenic/Likely pathogenic, with ClinVar's qualifiers; not conflicting classifications): the residues the site question lists. The same file, read with a condition."
+    },
+    "clinvar_changes_Y": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz",
+      "md5": "74362c70c0590e00084ac0b582a00380",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "ClinVar single-residue substitutions and stops at every Y of reviewed canonical proteins, one row per variation (germline classification, review status and conditions as ClinVar gives them). From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. This repository checks the bytes. Landrum et al., Nucleic Acids Res 53:D1313 (2025), doi:10.1093/nar/gkae1090."
+    },
+    "clinvar_plp_changes_Y": {
+      "file": "releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz",
+      "md5": "74362c70c0590e00084ac0b582a00380",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position",
+        "include": [
+          {
+            "column": "germline_classification",
+            "matches": "(Pathogenic|Likely pathogenic)([;,/].*)?"
+          }
+        ]
+      },
+      "note": "The rows of the table above whose classification is pathogenic or likely pathogenic (Pathogenic, Likely pathogenic, Pathogenic/Likely pathogenic, with ClinVar's qualifiers; not conflicting classifications): the residues the site question lists. The same file, read with a condition."
+    },
+    "gnomad_changes_S": {
+      "file": "releases/v1.6.0/supporting/gnomad_v4_1_changes_S_v1.6.0.tsv.gz",
+      "md5": "b54c17083223244ac93d80e665fe4764",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/gnomad_v4_1_changes_S_v1.6.0.tsv.gz",
+      "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
+      "licence": "CC0 1.0 (gnomAD primary data)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "gnomAD v4.1 exome missense and stop-gained variants (FILTER PASS) at every S of reviewed canonical proteins, one row per variant, with allele count, number, frequency, homozygotes and the ancestry group of highest frequency. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0."
+    },
+    "gnomad_changes_T": {
+      "file": "releases/v1.6.0/supporting/gnomad_v4_1_changes_T_v1.6.0.tsv.gz",
+      "md5": "839777896ef0563e8179488dcd025c21",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/gnomad_v4_1_changes_T_v1.6.0.tsv.gz",
+      "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
+      "licence": "CC0 1.0 (gnomAD primary data)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "gnomAD v4.1 exome missense and stop-gained variants (FILTER PASS) at every T of reviewed canonical proteins, one row per variant, with allele count, number, frequency, homozygotes and the ancestry group of highest frequency. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0."
+    },
+    "gnomad_changes_Y": {
+      "file": "releases/v1.6.0/supporting/gnomad_v4_1_changes_Y_v1.6.0.tsv.gz",
+      "md5": "39d38b28204d723805130cd67abd5f9b",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/gnomad_v4_1_changes_Y_v1.6.0.tsv.gz",
+      "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
+      "licence": "CC0 1.0 (gnomAD primary data)",
+      "role": "input",
+      "columns": {
+        "accession": "canonical_UniProtAC",
+        "position": "position"
+      },
+      "note": "gnomAD v4.1 exome missense and stop-gained variants (FILTER PASS) at every Y of reviewed canonical proteins, one row per variant, with allele count, number, frequency, homozygotes and the ancestry group of highest frequency. From the PTM_Pipeline v1.6.0 release folder; its site_sets column names the sets with a site there. Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0."
+    },
+    "clinvar_background": {
+      "file": "releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz",
+      "md5": "81929ddfc93711ff5b968b36d01d4d52",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz",
+      "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
+      "licence": "derived counts of the ClinVar tables (public domain)",
+      "role": "input",
+      "note": "Per reviewed entry and residue (R, K, S, T, Y): how many residues of that kind the entry has, and the ClinVar variants, pathogenic or likely pathogenic variants and positions at them. The base of the protein average."
+    },
+    "gnomad_background": {
+      "file": "releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz",
+      "md5": "22a457f6990f903491e7d47f628b15c5",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz",
+      "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
+      "licence": "derived counts of the gnomAD tables (CC0 1.0)",
+      "role": "input",
+      "note": "Per reviewed entry and residue (R, K, S, T, Y): how many residues of that kind the entry has, and the gnomAD variants, positions and alleles at them. The base of the protein average."
+    },
+    "variant_changes_excluded": {
+      "file": "releases/v1.6.0/supporting/variant_changes_excluded_v1.6.0.tsv.gz",
+      "md5": "e9d043b7798d4317a35a7e6d549dda64",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/variant_changes_excluded_v1.6.0.tsv.gz",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367); UniProt 2026_03 canonical sequences",
+      "licence": "derived from the TCGA MC3, DepMap 24Q4, ClinVar and gnomAD v4.1 change tables of the release (their licenses and credits apply)",
+      "role": "input",
+      "note": "The changes of those four sources that the change tables leave out: the residue the source names differs from the canonical UniProt residue at that position (residue_differs), or the position lies beyond the canonical sequence (position_beyond_sequence). 42,056 rows on 1,240 proteins. Shown as a download and a count beside the cancer and germline cards, never counted."
+    },
+    "nucleic_acid_regions": {
+      "file": "releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv",
+      "md5": "244126e0faf5b7fe803b66b01950c9d4",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "Runs of residues within 4 Å of RNA or DNA in PDB structures, with the bound segments: the protein page's RNA and DNA interactions card. PDB: CC0."
+    },
+    "dna_motifs": {
+      "file": "releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv",
+      "md5": "b5ee0ac01e31897bd36ca2b7bc3cef0b",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "JASPAR 2026 DNA-binding profiles of the proteins: the protein page's RNA and DNA interactions card. JASPAR: CC BY 4.0."
+    },
+    "rna_bind_n_seq": {
+      "file": "releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv",
+      "md5": "7d2bccc6ce1482943997613d3ef741c8",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "The v1.6.0 release's ENCODE RNA Bind-n-Seq experiments of the proteins: their most enriched 5-mers (ENCODE: no use restrictions). Read by the website's Interactions page only."
+    },
+    "eclip": {
+      "file": "releases/v1.6.0/supporting/eclip_v1.6.0.tsv",
+      "md5": "acfdad3a4a6f82f9d07866e3ced0a249",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/eclip_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367)",
+      "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
+      "role": "input",
+      "note": "ENCODE and ENCORE eCLIP experiments of the proteins: peaks by transcript region, top genes and enriched 5-mers (in cells): the protein page's RNA and DNA interactions card."
+    },
+    "htr_selex": {
+      "file": "releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv",
+      "md5": "c89d0a813e1309bcb13fead0ca817229",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367)",
+      "licence": "CC BY-NC-SA 4.0",
+      "role": "input",
+      "note": "The v1.6.0 release's HTR-SELEX RNA-binding models of the proteins (Jolma et al., Genome Res 30:962 (2020), CC BY-NC 4.0). Read by the website's Interactions page only."
+    },
+    "pepr_crosslinks": {
+      "file": "inputs/interactions/pepr_ms_v2_table_s2_rna_crosslinked_peptides.tsv",
+      "md5": "dbaa86d0da61cc4b37b1de02b93bb2d2",
+      "source": "https://www.biorxiv.org/content/biorxiv/early/2026/09/21/2025.09.05.674461/DC1/embed/media-1.zip?download=true",
+      "version": "bioRxiv v2 (2026) supplement, downloaded 2026-10-16",
+      "licence": "CC BY-NC",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each RNA-crosslinked residue whose letter matches the sequence. Citation: Sha, Kuster & Trendel, bioRxiv (2025), doi:10.1101/2025.09.05.674461; re-analyzed: Kramer et al., Nat Methods 11:1064 (2014); Trendel et al., Cell 176:391 (2019); Bae et al., Nat Struct Mol Biol 27:678 (2020); Bae et al., Nat Commun 12:6026 (2021).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "position",
+        "residue": "crosslinked_residue",
+        "label": "dataset"
+      }
+    },
+    "pepr_focused": {
+      "file": "inputs/interactions/pepr_ms_v2_table_s3_focused_sites.tsv",
+      "md5": "f90b7461d7d49bc8d25b3f0fbf5fa5bb",
+      "source": "https://www.biorxiv.org/content/biorxiv/early/2026/09/21/2025.09.05.674461/DC1/embed/media-1.zip?download=true",
+      "version": "bioRxiv v2 (2026) supplement, downloaded 2026-10-16",
+      "licence": "CC BY-NC",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each focused crosslinking site whose letter matches the sequence. Citation: Sha, Kuster & Trendel, bioRxiv (2025), doi:10.1101/2025.09.05.674461; re-analyzed: Kramer et al., Nat Methods 11:1064 (2014); Trendel et al., Cell 176:391 (2019); Bae et al., Nat Struct Mol Biol 27:678 (2020); Bae et al., Nat Commun 12:6026 (2021).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "focused_positions",
+        "residue": "focused_residues",
+        "separator": "; "
+      }
+    },
+    "pepr_crosslinks_single": {
+      "file": "inputs/interactions/pepr_ms_v2_table_s2_rna_crosslinked_peptides.tsv",
+      "md5": "dbaa86d0da61cc4b37b1de02b93bb2d2",
+      "source": "https://www.biorxiv.org/content/biorxiv/early/2026/09/21/2025.09.05.674461/DC1/embed/media-1.zip?download=true",
+      "version": "bioRxiv v2 (2026) supplement, downloaded 2026-10-16",
+      "licence": "CC BY-NC",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The crosslinked residues of the spectra (dataset, peptide, RNA mass) that place their crosslink on one residue only. Citation: Sha, Kuster & Trendel, bioRxiv (2025), doi:10.1101/2025.09.05.674461; re-analyzed: Kramer et al., Nat Methods 11:1064 (2014); Trendel et al., Cell 176:391 (2019); Bae et al., Nat Struct Mol Biol 27:678 (2020); Bae et al., Nat Commun 12:6026 (2021).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "position",
+        "residue": "crosslinked_residue",
+        "label": "dataset",
+        "unique_within": [
+          "dataset",
+          "uniprot_accession",
+          "peptide",
+          "rna_mass"
+        ]
+      }
+    },
+    "pepr_focused_single": {
+      "file": "inputs/interactions/pepr_ms_v2_table_s3_focused_sites.tsv",
+      "md5": "f90b7461d7d49bc8d25b3f0fbf5fa5bb",
+      "source": "https://www.biorxiv.org/content/biorxiv/early/2026/09/21/2025.09.05.674461/DC1/embed/media-1.zip?download=true",
+      "version": "bioRxiv v2 (2026) supplement, downloaded 2026-10-16",
+      "licence": "CC BY-NC",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The crosslinks focused on one residue. Citation: Sha, Kuster & Trendel, bioRxiv (2025), doi:10.1101/2025.09.05.674461; re-analyzed: Kramer et al., Nat Methods 11:1064 (2014); Trendel et al., Cell 176:391 (2019); Bae et al., Nat Struct Mol Biol 27:678 (2020); Bae et al., Nat Commun 12:6026 (2021).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "focused_positions",
+        "residue": "focused_residues",
+        "separator": "; ",
+        "max_per_row": 1
+      }
+    },
+    "capri_xl_peptides": {
+      "file": "inputs/interactions/capri_panhale2019_xl_peptides.tsv",
+      "md5": "9e01218433c937f5f74b5fc74204b96a",
+      "source": "https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-019-10585-3/MediaObjects/41467_2019_10585_MOESM12_ESM.xlsx",
+      "version": "Supplementary Data 9, downloaded 2026-10-22",
+      "licence": "CC BY 4.0 (open access article and its supplementary data)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each XL-peptide placed on the sequence as the RBDmap fragments are. Citation: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3.",
+      "columns": {
+        "accession": "uniprot_id",
+        "canonical": true,
+        "gene": "gene",
+        "start": "peptide_start",
+        "end": "peptide_end",
+        "sequence": "xl_peptide",
+        "relocate": true
+      }
+    },
+    "capri_adj_peptides": {
+      "file": "inputs/interactions/capri_panhale2019_adj_peptides.tsv",
+      "md5": "cd118d852599247aa1d30edb85e4773c",
+      "source": "https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-019-10585-3/MediaObjects/41467_2019_10585_MOESM6_ESM.xlsx",
+      "version": "Supplementary Data 3, downloaded 2026-10-22",
+      "licence": "CC BY 4.0 (open access article and its supplementary data)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Each ADJ-peptide placed on the sequence as the RBDmap fragments are (its starts count from 0). Citation: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3.",
+      "columns": {
+        "accession": "uniprot_id",
+        "canonical": true,
+        "gene": "gene",
+        "start": "peptide_start",
+        "end": "peptide_end",
+        "sequence": "adj_peptide",
+        "relocate": true,
+        "start_offset": 1
+      }
+    },
+    "capri_measured": {
+      "file": "inputs/interactions/capri_panhale2019_measured_peptides.tsv",
+      "md5": "b68da55dadff42d07af20228946800ae",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2019/07/PXD013338/20160811_human_CAPRI_Adjacent_MaxQuant_augs2016.zip (20160811_adj_radj_combined_augs2016_Max_txt/peptides.txt)",
+      "version": "PRIDE PXD013338 (public 2019-07-02; MaxQuant 1.5.2.8, search written 2016-08-10), downloaded 2026-10-22",
+      "licence": "Creative Commons Public Domain (CC0) (PRIDE PXD013338)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Every peptide the adjacent-peptide runs measured whose sequence the reference reads at its place: the measured background. Citation: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3.",
+      "columns": {
+        "accession": "uniprot_id",
+        "start": "start",
+        "end": "end",
+        "sequence": "sequence"
+      }
+    },
+    "capri_measured_adjacent": {
+      "file": "inputs/interactions/capri_panhale2019_measured_peptides.tsv",
+      "md5": "b68da55dadff42d07af20228946800ae",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2019/07/PXD013338/20160811_human_CAPRI_Adjacent_MaxQuant_augs2016.zip (20160811_adj_radj_combined_augs2016_Max_txt/peptides.txt)",
+      "version": "PRIDE PXD013338 (public 2019-07-02; MaxQuant 1.5.2.8, search written 2016-08-10), downloaded 2026-10-22",
+      "licence": "Creative Commons Public Domain (CC0) (PRIDE PXD013338)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The measured peptides that are adjacent peptides (RNA-bound). Citation: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3.",
+      "columns": {
+        "accession": "uniprot_id",
+        "start": "start",
+        "end": "end",
+        "sequence": "sequence",
+        "include": [
+          {
+            "column": "adjacent_peptide",
+            "equals": "true"
+          }
+        ]
+      }
+    },
+    "rbrid_positive": {
+      "file": "inputs/interactions/rbrid_oksuz2023_k562_positive_residues.tsv",
+      "md5": "c23ffe3d17035fc280778fd72b011191",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2023/07/PXD035484/report.tsv",
+      "version": "PRIDE PXD035484 (public 2023-07-02), streamed 2026-10-22",
+      "licence": "CC0 (PRIDE project license, \"Creative Commons Public Domain (CC0)\", read from the PRIDE API)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The residues under an RBR-ID+ peptide (the primary call), each whose letter matches the sequence. Citation: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012; RBR-ID: He et al., Mol Cell 64:416 (2016), doi:10.1016/j.molcel.2016.09.034.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "position",
+        "residue": "residue",
+        "include": [
+          {
+            "column": "rbrid_positive_peptides",
+            "at_least": 1
+          }
+        ]
+      }
+    },
+    "rbrid_positive_published_rule": {
+      "file": "inputs/interactions/rbrid_oksuz2023_k562_positive_residues.tsv",
+      "md5": "c23ffe3d17035fc280778fd72b011191",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2023/07/PXD035484/report.tsv",
+      "version": "PRIDE PXD035484 (public 2023-07-02), streamed 2026-10-22",
+      "licence": "CC0 (PRIDE project license, \"Creative Commons Public Domain (CC0)\", read from the PRIDE API)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The residues under a peptide the published rule calls RBR-ID+ (technical replicates as observations, nominal p). Citation: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012; RBR-ID: He et al., Mol Cell 64:416 (2016), doi:10.1016/j.molcel.2016.09.034.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "position": "position",
+        "residue": "residue",
+        "include": [
+          {
+            "column": "published_rule_peptides",
+            "at_least": 1
+          }
+        ]
+      }
+    },
+    "rbrid_regions": {
+      "file": "inputs/interactions/rbrid_oksuz2023_k562_segments.tsv",
+      "md5": "83f2edc90ad61e9c3eab0909fbf924b3",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2023/07/PXD035484/report.tsv",
+      "version": "PRIDE PXD035484 (public 2023-07-02), streamed 2026-10-22",
+      "licence": "CC0 (PRIDE project license, \"Creative Commons Public Domain (CC0)\", read from the PRIDE API)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. RBR-ID regions of residue score at or above the staged threshold (2). Citation: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012; RBR-ID: He et al., Mol Cell 64:416 (2016), doi:10.1016/j.molcel.2016.09.034.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end"
+      }
+    },
+    "rbrid_quantified": {
+      "file": "inputs/interactions/rbrid_oksuz2023_k562_coverage.tsv",
+      "md5": "00deac2d5e477058269ea9b96d2bc594",
+      "source": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2023/07/PXD035484/report.tsv",
+      "version": "PRIDE PXD035484 (public 2023-07-02), streamed 2026-10-22",
+      "licence": "CC0 (PRIDE project license, \"Creative Commons Public Domain (CC0)\", read from the PRIDE API)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The residues under a quantified peptide: the measured background. Citation: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012; RBR-ID: He et al., Mol Cell 64:416 (2016), doi:10.1016/j.molcel.2016.09.034.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "include": [
+          {
+            "column": "coverage",
+            "equals": "quantified"
+          }
+        ]
+      }
+    },
+    "trendel_dna_crosslinks": {
+      "file": "inputs/interactions/trendel2025_dna_crosslink_localisation.tsv",
+      "md5": "19c32200f9241755121db8a140b2dfd8",
+      "source": "https://ars.els-cdn.com/content/image/1-s2.0-S0092867425005070-mmc{1,2}.xlsx",
+      "version": "Tables S1-S2, downloaded 2026-10-16",
+      "licence": "CC BY-NC 4.0 (open access article and its supplement)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. DNA crosslinks localized to one residue (one lower-case letter), each whose letter matches the sequence. Citation: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "peptide_start",
+        "marked_in": "sequence_with_localization",
+        "max_per_row": 1
+      }
+    },
+    "trendel_dna_crosslink_candidates": {
+      "file": "inputs/interactions/trendel2025_dna_crosslink_localisation.tsv",
+      "md5": "19c32200f9241755121db8a140b2dfd8",
+      "source": "https://ars.els-cdn.com/content/image/1-s2.0-S0092867425005070-mmc{1,2}.xlsx",
+      "version": "Tables S1-S2, downloaded 2026-10-16",
+      "licence": "CC BY-NC 4.0 (open access article and its supplement)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. Every residue a DNA crosslink may sit on (the lower-case letters), each whose letter matches the sequence. Citation: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "peptide_start",
+        "marked_in": "sequence_with_localization"
+      }
+    },
+    "trendel_dna_peptides": {
+      "file": "inputs/interactions/trendel2025_dna_crosslinked_peptides.tsv",
+      "md5": "bef8fe7413ad6f423aa96b13725b6ec8",
+      "source": "https://ars.els-cdn.com/content/image/1-s2.0-S0092867425005070-mmc{1,2}.xlsx",
+      "version": "Tables S1-S2, downloaded 2026-10-16",
+      "licence": "CC BY-NC 4.0 (open access article and its supplement)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. DNA-crosslinked peptides as protein ranges. Citation: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037.",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "peptide_start",
+        "end": "peptide_end"
+      }
+    },
+    "trendel_dna_interactome": {
+      "file": "inputs/interactions/trendel2025_mcf7_dna_interactome.tsv",
+      "md5": "c13632c51df55e48a717e13c230920f4",
+      "source": "https://ars.els-cdn.com/content/image/1-s2.0-S0092867425005070-mmc{1,2}.xlsx",
+      "version": "Tables S1-S2, downloaded 2026-10-16",
+      "licence": "CC BY-NC 4.0 (open access article and its supplement)",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. The proteins of the MCF7 DNA interactome. Citation: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037."
+    },
+    "uniprot_dna_binding_regions": {
+      "file": "inputs/interactions/uniprot_human_dna_binding_regions_2026-10-16.tsv",
+      "md5": "3787ee11b127c3e624423afc9a258e34",
+      "source": "https://rest.uniprot.org/uniprotkb/stream?query=reviewed:true+AND+organism_id:9606+AND+ft_dna_bind:*&fields=accession,ft_dna_bind&format=tsv",
+      "version": "UniProt release 2026_03, downloaded 2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. UniProt DNA-binding regions. Citation: UniProt Consortium, Nucleic Acids Res 53:D609 (2025).",
+      "columns": {
+        "accession": "uniprot_accession",
+        "start": "start",
+        "end": "end",
+        "label": "note"
+      }
+    },
+    "quickgo_rna_dna_binding": {
+      "file": "inputs/interactions/quickgo_human_rna_dna_binding_2026-10-16.tsv",
+      "md5": "82d4b9a0d114a040e991c8b650cc98b9",
+      "source": "https://www.ebi.ac.uk/QuickGO/services/annotation/downloadSearch (goUsage descendants, taxonId 9606, geneProductType protein)",
+      "version": "2026-10-16",
+      "licence": "CC BY 4.0",
+      "role": "input",
+      "note": "Staged by PTM_Pipeline (inputs/MANIFEST.tsv); this repository checks the bytes. One row per protein, GO term and evidence code: RNA binding (GO:0003723), DNA binding (GO:0003677) and their descendants. Citation: Gene Ontology Consortium, Genetics 224:iyad031 (2023); Binns et al., Bioinformatics 25:3045 (2009)."
+    },
+    "release_eclip_rna_compartments": {
+      "file": "releases/v1.6.0/supporting/eclip_rna_compartments_v1.6.0.tsv",
+      "md5": "feaed0917ea9ed25898d6f179b12b608",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/f042367da8aac9746559f64a597ce031a2b6c05f/releases/v1.6.0/supporting/eclip_rna_compartments_v1.6.0.tsv",
+      "version": "PTM_Pipeline v1.6.0 release folder (commit f042367), supporting/eclip_rna_compartments",
+      "licence": "CC BY-NC-SA 4.0 (the maps: APEX-seq, Fazal et al. 2019, GEO GSE116008; TSA-seq, Chen et al. 2018, GEO GSE81553; Hi-C subcompartments, Rao et al. 2014, GEO GSE63525: no use restrictions; eCLIP: ENCODE, no use restrictions)",
+      "role": "input",
+      "note": "Release v1.6.0's call, for each protein with eCLIP data and each map of RNA or DNA, of whether its bound RNAs gather in a compartment (q <= 0.05 and Mantel-Haenszel odds ratio above 1 within expression and gene-length deciles; computed by PTM_Pipeline scripts/cell_maps.py). Read by the eclip_* protein-set questions. Its nuclear-body rows (map nuclear_body) derive from Barutcu et al. 2022, whose license is pending: each question keeps only its own map (sets.include), so nothing reads or shows them."
     }
   }
 }

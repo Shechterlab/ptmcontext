@@ -288,7 +288,7 @@
       PS.n = 50;
     }
     if (K.sel?.active() && !SD())
-      return `<div class="page-head"><h2>Proteins</h2></div><p class="muted">Loading ` + `the selection…</p>`;
+      return `<div class="page-head"><h2>Proteins</h2></div>${K.loading('Loading the selection…')}`;
     const rows = proteinRows(),
       shown = rows.slice(0, PS.n),
       sel = K.sel?.active(),

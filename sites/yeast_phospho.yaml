@@ -59,7 +59,7 @@ outputs: {folder: out/yeast_phospho}
 citation: sites/yeast_phospho.citation.cff
 
 website:
-  name: Yeast Phosphosite Explorer
+  name: Yeast Phosphorylation Site Explorer
   tagline: "Budding yeast phosphosites from UniProt."
   landing:
     tagline: "Budding yeast phosphosites from UniProt."

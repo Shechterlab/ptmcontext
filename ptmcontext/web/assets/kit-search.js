@@ -50,19 +50,17 @@
     marks,
     entry: entry || '',
   }));
-  const norm = (x) =>
-    String(x || '')
-      .toUpperCase()
-      .replace(/[-\s._/]/g, '');
   const low = (x) => String(x || '').toLowerCase();
   // the search keys: questions, attributes of the marks and proteins, the site's own words, older keys, the modules'
   function keys() {
     const out = [];
     // flag: a yes/no attribute, written as its query word alone (als), never as key:true
     const add = (key, label, help, flag) => {
-      if (key && !out.some((x) => x.key === key)) out.push({ key, label, help, flag: !!flag });
+      if (key && !out.some((x) => x.key === key)) out.push({ key, label, help, flag });
     };
-    const attr = (k, s, help) => (s.flag ? add(s.query || k, s.label || k, help, true) : add(k, s.label || k, help));
+    // a flag carries its filter, so the row can show its label and apply it without the key
+    const attr = (k, s, help, kind) =>
+      s.flag ? add(s.query || k, s.label || k, help, [kind + k, [String(s.flag)]]) : add(k, s.label || k, help);
     Object.entries(SRCH.terms || {}).forEach(([k, t]) => add(k, t.label || k, t.help || ''));
     if (SRCH.patterns?.at)
       add(
@@ -87,8 +85,8 @@
     D.analyses.forEach((a) => add(a.id, a.title, a.question || ''));
     Object.entries(SPECS)
       .filter(([, s]) => s.filter)
-      .forEach(([k, s]) => attr(k, s, s.help || ''));
-    Object.entries(PSPEC).forEach(([k, s]) => attr(k, s, `${s.help || ''} (proteins)`.trim()));
+      .forEach(([k, s]) => attr(k, s, s.help || '', 't:'));
+    Object.entries(PSPEC).forEach(([k, s]) => attr(k, s, `${s.help || ''} (proteins)`.trim(), 'r:'));
     return out;
   }
   // a key's values: [value as typed in a term, its label, a count when known]
@@ -146,38 +144,25 @@
     );
   };
   function proteinRows(tok) {
-    const t = low(tok),
-      tn = norm(tok),
-      exact = [],
-      prefix = [],
-      alias = [],
-      accs = [],
-      named = [];
-    if (!t) return [];
-    for (const p of P) {
-      const al = K.sel.aliasesOf(p.i),
-        g = low(p.gene);
-      const ex = al.find((x) => low(x) === t || (tn.length >= 3 && norm(x) === tn));
-      if (g === t || low(p.acc) === t || low(p.entry) === t) exact.push([p, '']);
-      else if (ex) exact.push([p, ex]);
-      else if (g.startsWith(t)) prefix.push([p, '']);
-      else {
-        const a = al.find((x) => low(x).startsWith(t) || (tn.length >= 3 && norm(x).startsWith(tn)));
-        if (a) alias.push([p, a]);
-        else if (low(p.acc).startsWith(t)) accs.push([p, '']);
-        else if (t.length >= 3 && low(p.name).includes(t)) named.push([p, '']);
-      }
-    }
-    const by = (a, b) => b[0].marks - a[0].marks;
-    const rows = [...exact, ...prefix.sort(by), ...alias.sort(by), ...accs.sort(by), ...named.sort(by)]
-      .slice(0, 8)
-      .map(([p, a]) => ({
-        kind: 'protein',
-        text: p.gene || p.acc,
-        label: p.gene || p.acc,
-        sub: [a, p.name].filter(Boolean).join(' · '),
-        n: `${int(p.marks)} ${p.marks === 1 ? W.mark : W.marks}`,
-      }));
+    if (!low(tok)) return [];
+    // the same ranking as the landing page's search (kit-names.js)
+    const nameRows = P.map((p) => ({
+      acc: p.acc,
+      gene: p.gene,
+      genes: D.protein_genes?.[p.acc] || [],
+      aliases: K.sel.aliasesOf(p.i),
+      name: p.name,
+      entry: p.entry,
+      w: p.marks,
+      p,
+    }));
+    const rows = window.PTMNames.rank(nameRows, tok).map((h) => ({
+      kind: 'protein',
+      text: h.label,
+      label: h.label,
+      sub: h.sub,
+      n: `${int(h.row.p.marks)} ${h.row.p.marks === 1 ? W.mark : W.marks}`,
+    }));
     // a protein of the sequences without a mark: its light page
     if (light?.length && tok.length >= 2 && rows.length < 8) {
       const u = tok.toUpperCase();
@@ -197,41 +182,30 @@
     }
     return rows;
   }
-  // words that name a filter rather than a protein: a set, class or value whose name holds them
-  function conceptRows(phrase) {
+  // words that name a filter rather than a protein: a class, value or yes/no attribute whose name holds them (the protein
+  // sets are found by K.terms when its index is in). Each row is the filter itself, shown by its readable name.
+  function conceptRows(phrase, drop) {
     const t = low(phrase).trim(),
       sd = K.sel.data();
     if (t.length < 3 || !sd) return [];
-    // a question's shorter key (search_aliases), unless that key is another question's own id
     const out = [],
-      back = Object.fromEntries(
-        Object.entries(D.search_aliases || {})
-          .filter(([k, v]) => !A[k] || k === v)
-          .map(([k, v]) => [v, k])
-      );
-    const has = (s) => low(s).includes(t) || low(s).replace(/[-_]/g, ' ').includes(t);
+      has = (s) => low(s).includes(t) || low(s).replace(/[-_]/g, ' ').includes(t),
+      row = (label, sub, filter) => out.push({ kind: 'termsel', label, sub, filter, drop });
     D.analyses.forEach((a) => {
-      const names =
-        a.kind === 'protein_sets'
-          ? [
-              ...(sd.protein_sets?.[a.id]?.sets || []).map((x) => x[0]),
-              ...(sd.protein_sets?.[a.id]?.more || []).map((x) => x[0]),
-            ]
-          : sd.classes[a.id] || [];
+      const sets = a.kind === 'protein_sets';
+      if (sets && K.terms?.state() === 'ready') return;
+      const names = sets
+        ? [
+            ...(sd.protein_sets?.[a.id]?.sets || []).map((x) => x[0]),
+            ...(sd.protein_sets?.[a.id]?.more || []).map((x) => x[0]),
+          ]
+        : sd.classes[a.id] || [];
       names
-        .map((s) => String(a.labels?.[s] || s))
-        .filter(has)
-        .sort((x, y) => x.length - y.length)
+        .map((s) => [s, String(a.labels?.[s] || s)])
+        .filter(([, lab]) => has(lab))
+        .sort((x, y) => x[1].length - y[1].length)
         .slice(0, 2)
-        .forEach((lab) =>
-          out.push({
-            kind: 'term',
-            text: `${back[a.id] || a.id}:${quote(lab)}`,
-            label: `${back[a.id] || a.id}:${quote(lab)}`,
-            sub: a.title,
-            replace: true,
-          })
-        );
+        .forEach(([s, lab]) => row(lab, a.title, [(sets ? 'p:' : 'a:') + a.id, [s]]));
     });
     Object.entries(SPECS)
       .filter(([, s]) => s.filter)
@@ -239,25 +213,15 @@
         Object.entries(s.flag ? {} : s.values || {})
           .filter(([v, l]) => has(l) || has(v))
           .slice(0, 2)
-          .forEach(([v, l]) =>
-            out.push({
-              kind: 'term',
-              text: `${back[k] || k}:${quote(v)}`,
-              label: `${back[k] || k}:${v}`,
-              sub: `${s.label}: ${l}`,
-              replace: true,
-            })
-          )
+          .forEach(([v, l]) => row(l || v, s.label, ['t:' + k, [v]]))
       );
-    // a yes/no attribute whose label holds the words: its query word alone
-    [...Object.entries(SPECS), ...Object.entries(PSPEC)]
-      .filter(([k, s]) => s.flag && (has(s.label || k) || has(s.query || k)))
+    // a yes/no attribute whose label holds the words
+    [...Object.entries(SPECS).map(([k, s]) => ['t:', k, s]), ...Object.entries(PSPEC).map(([k, s]) => ['r:', k, s])]
+      .filter(([, k, s]) => s.flag && (has(s.label || k) || has(s.query || k)))
       .slice(0, 2)
-      .forEach(([k, s]) =>
-        out.push({ kind: 'term', text: s.query || k, label: s.query || k, sub: s.label || k, replace: true })
-      );
+      .forEach(([kind, k, s]) => row(s.label || k, 'Yes or no', [kind + k, [String(s.flag)]]));
     const seen = new Set();
-    return out.filter((x) => !seen.has(x.text) && seen.add(x.text)).slice(0, 6);
+    return out.filter((x) => !seen.has(x.filter[0] + x.filter[1]) && seen.add(x.filter[0] + x.filter[1])).slice(0, 6);
   }
   // a page by its tab's name, or by the word it had before: "Statistics" offers All tests, "IDRs" the Disordered regions
   const OLD = {
@@ -297,6 +261,12 @@
       tok = /\s$/.test(text) ? '' : toks[toks.length - 1] || '';
     if (!tok) return [];
     const m = /^([a-z_][\w]*):"?([^"]*)$/i.exec(tok);
+    // an id typed with its prefix (GO:0008380, DOID:332) names a term, though its prefix may be a key too
+    const byId = m && /\d/.test(m[2]) ? K.terms?.suggest(tok) : [];
+    if (byId?.length) {
+      byId.forEach((r) => (r.drop = 1) && (r.last = true));
+      return byId;
+    }
     if (m && K.sel.isTermKey(m[1])) {
       // a key's values
       const key = m[1].toLowerCase(),
@@ -307,54 +277,90 @@
         .slice(0, 10)
         .map(([v, l, n]) => ({ kind: 'value', text: `${key}:${head}${quote(v)}`, label: `${key}:${v}`, sub: l, n }));
     }
-    const out = [];
+    const out = [],
+      flags = []; // yes/no attributes whose query word begins with the typed word: shown by their label
     if (tok.length >= 2 && !m)
       keys()
         .filter((k) => k.key.startsWith(low(tok)))
         .slice(0, 4)
         .forEach((k) =>
-          out.push({
-            kind: k.flag ? 'term' : 'key',
-            text: k.flag ? k.key : k.key + ':',
-            label: k.flag ? k.key : k.key + ':',
-            sub: [k.label, k.help].filter(Boolean).join(' · '),
-          })
+          (k.flag ? flags : out).push(
+            k.flag
+              ? { kind: 'termsel', label: k.label, sub: k.help, filter: k.flag, drop: 1 }
+              : {
+                  kind: 'key',
+                  text: k.key + ':',
+                  label: k.key + ':',
+                  sub: [k.label, k.help].filter(Boolean).join(' · '),
+                }
+          )
         );
-    out.push(...proteinRows(tok));
+    // proteins named exactly come first, then the terms (protein sets and ontologies by name or id), then the other proteins
+    const prot = proteinRows(tok),
+      plainToks = toks.filter((t) => !/^[a-z_][\w]*:/i.test(t));
+    let terms = [];
+    if (!m && K.terms && plainToks.length) {
+      terms = K.terms.suggest(plainToks.join(' '));
+      terms.forEach((r) => (r.drop = plainToks.length));
+      if (!terms.length && plainToks.length > 1) {
+        terms = K.terms.suggest(tok);
+        terms.forEach((r) => (r.drop = 1));
+      }
+    }
+    const isExact = (r) => r.kind === 'protein' && low(r.label) === low(tok);
+    out.push(
+      ...prot.filter(isExact),
+      ...terms,
+      ...flags,
+      ...prot.filter((r) => !isExact(r)).slice(0, terms.length ? 3 : 8)
+    );
     if (!m && !/^[a-z_][\w]*:/i.test(tok)) out.push(...pageRows(tok));
     // plain words naming no protein: the filters they may mean
-    const plain = toks.filter((t) => !/^[a-z_][\w]*:/i.test(t)).join(' ');
-    if (out.length < 3 && plain === toks.join(' ')) out.push(...conceptRows(plain));
-    const seen = new Set();
-    return out.filter((x) => !seen.has(x.kind + x.text) && seen.add(x.kind + x.text)).slice(0, 10);
+    const plain = plainToks.join(' ');
+    if (out.length < 3 && plain === toks.join(' ')) out.push(...conceptRows(plain, plainToks.length));
+    const seen = new Set(),
+      same = (x) => x.kind + x.text + (x.filter || '');
+    return out.filter((x) => !seen.has(same(x)) && seen.add(same(x))).slice(0, terms.length ? 16 : 10);
   }
 
   // ---- the list -----------------------------------------------------------------------------------------------------
   let items = [],
-    active = -1;
+    active = -1,
+    slow = false; // the term index is still being read
+  const isFilterRow = (x) => ['key', 'value', 'term'].includes(x.kind);
   function draw() {
-    if (!items.length) {
+    if (!items.length && !slow) {
       list.hidden = true;
       input.setAttribute('aria-expanded', 'false');
       input.removeAttribute('aria-activedescendant');
       return;
     }
-    list.innerHTML = items
-      .map(
-        (x, k) =>
-          `<div class="q-opt${k === active ? ' on' : ''}" role="option" id="q-opt-${k}" aria-selected="${k === active}" data-q-opt="${k}">` +
-          `<span class="q-l${
-            x.kind === 'protein' || x.kind === 'light' || x.kind === 'page' ? '' : ' mono'
-          }">${esc(x.label)}</span>${x.sub ? `<span class="q-s">${esc(x.sub)}</span>` : ''}` +
-          `${x.n ? `<span class="q-n">${esc(x.n)}</span>` : ''}${
-            x.kind === 'key' || x.kind === 'value' || x.kind === 'term'
-              ? '<span class="q-k">filter</span>'
-              : x.kind === 'page'
-                ? '<span class="q-k">page</span>'
-                : ''
-          }</div>`
-      )
-      .join('');
+    let grp = null;
+    list.innerHTML =
+      items
+        .map((x, k) => {
+          const head =
+            x.group && x.group !== grp
+              ? `<div class="q-grp" role="presentation" aria-hidden="true">${esc(x.group)}</div>`
+              : '';
+          grp = x.group || grp;
+          return (
+            head +
+            `<div class="q-opt${k === active ? ' on' : ''}${x.kind === 'termsel' ? ' q-term' : ''}" role="option" id="q-opt-${k}" aria-selected="${k === active}" data-q-opt="${k}">` +
+            `<span class="q-l${
+              x.kind === 'protein' || x.kind === 'light' || x.kind === 'page' || x.kind === 'termsel' ? '' : ' mono'
+            }">${esc(x.label)}</span>${x.sub ? `<span class="q-s">${esc(x.sub)}</span>` : ''}` +
+            `${x.n ? `<span class="q-n">${esc(x.n)}</span>` : ''}${
+              isFilterRow(x)
+                ? '<span class="q-k">filter</span>'
+                : x.kind === 'page'
+                  ? '<span class="q-k">page</span>'
+                  : ''
+            }</div>`
+          );
+        })
+        .join('') +
+      (slow ? '<div class="q-grp q-load" role="status">Loading protein sets and ontology terms…</div>' : '');
     list.hidden = false;
     input.setAttribute('aria-expanded', 'true');
     if (active >= 0) input.setAttribute('aria-activedescendant', 'q-opt-' + active);
@@ -385,10 +391,18 @@
     }
     pasted = false;
     loadLight();
-    items = document.activeElement === input ? suggestions(input.value) : [];
+    const on = document.activeElement === input;
+    if (on) K.terms?.load();
+    items = on ? suggestions(input.value) : [];
+    // a first read that is slow says so, once a word is typed
+    slow = on && K.terms?.state() === 'loading' && /\S{3}/.test(input.value) && Date.now() - K.terms.since() > 250;
+    if (on && K.terms?.state() === 'loading' && !slow) setTimeout(update, 300);
     active = -1;
     draw();
   }
+  K.terms?.onLoad(() => {
+    if (document.activeElement === input) update();
+  });
   // the search as typed, applied as the box's own input does: a protein named alone opens it
   function apply(text, open) {
     input.value = text;
@@ -420,11 +434,21 @@
       if (!K.openLight?.(x.text)) K.go('protein', { arg: x.acc });
       return;
     }
-    const before = x.replace
-      ? toks.filter((t) => /^[a-z_][\w]*:/i.test(t) || K.sel.FLAGQ?.[t.toLowerCase()])
-      : keepEnd
-        ? toks
-        : toks.slice(0, -1);
+    if (x.filter) {
+      // a term of a set or ontology: its filter, shown as a chip; the words that named it leave the box
+      let left = x.drop ?? toks.length;
+      const kept = [];
+      for (let i = toks.length - 1; i >= 0; i--) {
+        const isKey = /^[a-z_][\w]*:/i.test(toks[i]) || K.sel.FLAGQ?.[toks[i].toLowerCase()];
+        if (left > 0 && (x.last ? i === toks.length - 1 : !isKey)) left--;
+        else kept.unshift(toks[i]);
+      }
+      const [fk, fv] = x.filter;
+      S.f[fk] = [...new Set([...(S.f[fk] || []), ...fv])];
+      apply(kept.join(' '), false);
+      return;
+    }
+    const before = keepEnd ? toks : toks.slice(0, -1);
     const text = [...before, x.text].join(' ');
     if (x.kind === 'key') {
       input.value = text;

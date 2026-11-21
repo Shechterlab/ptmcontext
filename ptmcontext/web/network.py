@@ -19,6 +19,7 @@ import base64
 import json
 import math
 from collections import Counter, defaultdict
+from functools import lru_cache
 from itertools import combinations
 from pathlib import Path
 
@@ -36,6 +37,8 @@ DEFAULTS = {
     'max_q': 0.05,
     'min_coverage': 0.25,
     'thin_term': 'best',
+    'weak_p': 0.05,
+    'background': 'proteome',
     'min_overlap': 3,
     'min_term': 5,
     'max_fraction': 0.2,
@@ -54,6 +57,11 @@ STYLE = {
     'groups': {'dash': False, 'width': 2.4, 'opacity': 1.8, 'tint': True, 'rank': 3},
     'functional': {'dash': True, 'width': 1.0, 'opacity': 0.6, 'tint': False, 'rank': 0},
 }
+DENSITY_UNIT = (
+    0.4  # a node's area is DENSITY_UNIT * density in the layout's units of one site (density 100 reaches the cap)
+)
+MIN_UNITS = 0.9  # the smallest drawn node, as the node of one site is
+SIZES = ('density', 'sites')
 STEPS = (400, 700, 900)  # the STRING thresholds the page offers, from the floor up
 EPS = 1e-12
 
@@ -172,7 +180,7 @@ def communities(n: int, edges: list, opt: dict) -> list[int]:
 
 
 # ---- labels: the most enriched term of each cluster ---------------------------------------------------------------------
-def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict) -> list[dict]:
+def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict, bg: dict | None = None) -> list[dict]:
     """For each cluster (a community number, in order), the term of the smallest one-sided hypergeometric p among the
     terms the cluster has `min_overlap` or more proteins in, that annotate `min_term` or more of the network's N proteins
     and no more than `max_fraction` of them (broad terms are left out), against all the network's proteins. q is
@@ -182,18 +190,25 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
     cluster's proteins (the best term that does is taken, the next best when the first would be too thin). When no term
     does, `thin_term: best` (default) takes the significant term of the smallest q (a tie going to the larger share of the
     cluster) and the label carries its share; `thin_term: genes` leaves the cluster to its busiest proteins. No term
-    names two clusters (larger clusters choose first; two terms with one short name count as one). With `opt['label']` set,
-    only the terms of that source (the second number of a term) are used."""
+    names two clusters (larger clusters choose first; two terms with one short name count as one). A cluster still without a
+    name takes, when `weak_p` is above 0, the term of the smallest p (p <= weak_p, coverage as above) although its q is above
+    `max_q`; the row carries `weak: True` and the label its q. With `opt['label']` set,
+    only the terms of that source (the second number of a term) are used. `bg` ({'N': [proteins of each source's
+    background], 'M': [proteins of the background each term annotates]}, see `background`) replaces the cluster's own
+    network as the background of the test and of the `min_term` and `max_fraction` rules; without it the network drawn is."""
     N = len(comm)
     members = defaultdict(list)
     for i, c in enumerate(comm):
         members[c].append(i)
     count: dict[int, int] = Counter(t for a in ann for t in a)
+    if bg:
+        count = {t: bg['M'][t] for t in count}
+    Nt = (lambda t: bg['N'][terms[t][1]]) if bg else (lambda t: N)  # noqa: E731
     ok = {
         t
         for t, m in count.items()
         if m >= opt['min_term']
-        and m / N <= opt['max_fraction']
+        and m / Nt(t) <= opt['max_fraction']
         and (opt.get('label') is None or terms[t][1] == opt['label'])
         and not (terms[t][2] in opt.get('exclude', ()) or terms[t][0] in opt.get('exclude', ()))
     }
@@ -207,7 +222,7 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
         tested = sorted(t for t, k in k_of.items() if k >= opt['min_overlap'])
         row = {'n': n, 'term': None}
         if tested:
-            ps = [hypergeom_sf(k_of[t], N, count[t], n) for t in tested]
+            ps = [hypergeom_sf(k_of[t], Nt(t), count[t], n) for t in tested]
             qs = [float(x) for x in benjamini_hochberg(ps)]
 
             def key(j):
@@ -243,7 +258,7 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
                         'q': qs[best],
                         'k': k_of[t],
                         'M': count[t],
-                        'N': N,
+                        'N': Nt(t),
                     }
                     break
                 remaining.remove(best)
@@ -275,11 +290,64 @@ def label_clusters(comm: list[int], ann: list[list[int]], terms: list, opt: dict
                         'q': qs[j],
                         'k': k_of[t],
                         'M': count[t],
-                        'N': N,
+                        'N': Nt(t),
                         'thin': True,
                     }
+            if row['term'] is None and opt.get('weak_p', 0) > 0:
+                # nothing is significant after correction (a selection's own background is rich in what it is about): the term of
+                # the smallest p that holds for a fair share and has p <= weak_p, written with its q
+                cand = [
+                    j
+                    for j in range(len(tested))
+                    if ps[j] <= opt['weak_p']
+                    and k_of[tested[j]] / n >= opt['min_coverage']
+                    and terms[tested[j]][2] not in used_ids
+                    and short_name(terms[tested[j]][0]) not in used_names
+                ]
+                if cand:
+                    j = min(
+                        cand,
+                        key=lambda j: (
+                            ps[j],
+                            -(terms[tested[j]][3] if len(terms[tested[j]]) > 3 else 0),
+                            count[tested[j]],
+                            terms[tested[j]][0],
+                        ),
+                    )
+                    t = tested[j]
+                    used_ids.add(terms[t][2])
+                    used_names.add(short_name(terms[t][0]))
+                    row = {
+                        'n': n,
+                        'term': terms[t][0],
+                        'id': terms[t][2],
+                        'source': terms[t][1],
+                        'p': ps[j],
+                        'q': qs[j],
+                        'k': k_of[t],
+                        'M': count[t],
+                        'N': Nt(t),
+                        'weak': True,
+                    }
+        if tested:  # the three terms of the smallest q the cluster was tested on, for its tooltip
+            near = sorted(range(len(tested)), key=lambda j: (qs[j], ps[j], terms[tested[j]][0]))[:3]
+            row['top'] = [[terms[tested[j]][0], k_of[tested[j]], count[tested[j]], qs[j]] for j in near]
         out.append(row)
     return out
+
+
+def background(full: dict, opt: dict) -> dict | None:
+    """The background the clusters' terms are tested against (`opt['background']`): `drawn` (None: the proteins of the view),
+    `site` (every protein the site's network can draw) or `proteome` (every annotated reviewed protein, counted when the
+    network was made: full['bg']; the site's own when a source has no proteome table). {'N': per source, 'M': per term}."""
+    mode = opt.get('background', 'proteome')
+    if mode == 'drawn':
+        return None
+    if mode == 'proteome' and full.get('bg'):
+        return full['bg']
+    n_src = max([t[1] for t in full['terms']], default=-1) + 1
+    count = Counter(t for a in full['ann'] for t in a)
+    return {'N': [len(full['nodes'])] * n_src, 'M': [count.get(t, 0) for t in range(len(full['terms']))]}
 
 
 # ---- the graph a view draws -----------------------------------------------------------------------------------------------
@@ -315,7 +383,7 @@ def make_view(full: dict, opt: dict, select: set | None = None, sources: list | 
     pos = {g: k for k, g in enumerate(live)}
     comm = communities(len(live), [(pos[a], pos[b], w) for a, b, _, _, w in edges], opt)
     ann = [full['ann'][g] for g in live]
-    labels = label_clusters(comm, ann, full['terms'], opt)
+    labels = label_clusters(comm, ann, full['terms'], opt, background(full, opt))
     # the three proteins with most sites of each cluster: its name when no term names it
     by_c: dict = defaultdict(list)
     for i, g in enumerate(live):
@@ -448,6 +516,82 @@ def role_values(site: dict, run: dict, spec: dict, nodes: list, genes: dict) -> 
     }
 
 
+def density(sites: int, candidates: int) -> float:
+    """Sites per 100 of the protein's own candidate residues (the residues of the site's mark, counted in its sequence)."""
+    return 100.0 * sites / max(int(candidates), int(sites), 1)
+
+
+def size_units(mode: str, sites: int, candidates: int) -> float:
+    """What the layout draws a node by, in its units of one site (radius = 2.2 * sqrt(units), capped): the number of
+    sites, or DENSITY_UNIT times the density."""
+    if mode == 'sites':
+        return float(sites)
+    return round(max(MIN_UNITS, DENSITY_UNIT * density(sites, candidates)), 3)
+
+
+@lru_cache(maxsize=2)
+def _sets_file(path: str, mtime: float) -> dict:
+    return json.loads(Path(path).read_text()) or {}
+
+
+def _covariate_set(folder: Path, analysis: str, log) -> dict | None:
+    """One analysis of the run's protein_sets.json (its sets' marked proteins and its abundance strata)."""
+    f = folder / 'protein_sets.json'
+    if not f.exists():
+        log(f'  network view: {f.name} is missing; the options that read it are left out')
+        return None
+    return _sets_file(str(f), f.stat().st_mtime).get(analysis)
+
+
+def decile_values(folder: Path, spec: dict, nodes: list, log=print) -> dict | None:
+    """The abundance-decile colour-by entry: each protein's decile (1 the lowest, 10 the highest; None without a value)
+    among the proteins of the analysis `analysis`, as that analysis used the abundance table as its strata (the run's
+    protein_sets.json), so that the figure and the statistics place a protein in the same decile."""
+    a = _covariate_set(folder, spec.get('analysis', ''), log)
+    cov = ((a or {}).get('covariate') or {}).get('proteins')
+    if not cov:
+        log(f'  network view: {spec.get("id")}: analysis {spec.get("analysis")!r} has no abundance strata; left out')
+        return None
+    got = {base(k): v[1] for k, v in cov.items()}
+    n = int((a['covariate'] or {}).get('strata', 10))
+    return {
+        **{k: spec[k] for k in ('id', 'name') if k in spec},
+        'kind': 'decile',
+        'n': n,
+        'v': [int(got[x]) if str(got.get(x, '')).isdigit() else None for x in nodes],
+    }
+
+
+def binding_values(folder: Path, spec: dict, nodes: list, log=print) -> dict | None:
+    """The nucleic-acid binding colour-by entry: RNA, DNA, both, or neither, from the published protein sets the spec
+    names (`rna` and `dna`, each a list of {analysis, set}): a protein in any set of a side binds that side."""
+    held: dict[str, set] = {'rna': set(), 'dna': set()}
+    found = 0
+    for side in held:
+        for ref in spec.get(side) or []:
+            a = _covariate_set(folder, ref.get('analysis', ''), log)
+            row = ((a or {}).get('sets') or {}).get(ref.get('set', ''))
+            if row is None:
+                log(f'  network view: {spec.get("id")}: no set {ref.get("analysis")}/{ref.get("set")}; skipped')
+                continue
+            found += 1
+            held[side] |= {base(x) for x in row.get('marked', [])}
+    if not found:
+        return None
+    labels = {**{'rna': 'RNA', 'dna': 'DNA', 'both': 'RNA and DNA'}, **(spec.get('labels') or {})}
+    v = []
+    for x in nodes:
+        r, d = x in held['rna'], x in held['dna']
+        v.append(2 if r and d else 0 if r else 1 if d else -1)
+    return {
+        **{k: spec[k] for k in ('id', 'name') if k in spec},
+        'kind': 'binding',
+        'cats': [labels['rna'], labels['dna'], labels['both']],
+        'none_label': spec.get('none', 'Neither'),
+        'v': v,
+    }
+
+
 def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=print) -> dict | None:
     """Write data/network.json and data/network_full.json; return what the page reads (the block's words and options, the
     files), or None when the block is absent or an input is missing."""
@@ -463,10 +607,11 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         b = base(r[0])
         if int(r[4]) <= 0:
             continue
-        p = prot.setdefault(b, [r[0], r[1] or r[0], 0])
+        p = prot.setdefault(b, [r[0], r[1] or r[0], 0, 0])
         if r[0] == b:
             p[0] = r[0]
         p[2] += int(r[4])
+        p[3] += int(r[5])
     srcs, rows = [], {}
     pair_keys = {}
     extra: dict[str, dict] = defaultdict(
@@ -606,6 +751,8 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
     # the terms of the labels: sets annotating at least min_term of the nodes
     terms, ann = [], [[] for _ in nodes]
     labels = []
+    bg_n: list[int] = []
+    bg_m: list[int] = []
     for lab in cfg.get('label_from') or []:
         li = len(labels)  # the source's number among those read
         mf = _path(site, run, lab['input'], log)
@@ -616,7 +763,10 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
         has_iea = 'non_iea' in mt.columns
         if lab.get('non_iea', True) and has_iea:
             mt = mt[mt['non_iea'] == 'true']
-        mt = mt[mt[lab['protein']].map(base).isin(ix)]
+        every = mt[lab['protein']].map(base)  # the whole annotated proteome of this source: the labels' background
+        bg_n.append(int(every.nunique()))
+        whole_count = mt.assign(_p=every).groupby(lab['set'])['_p'].nunique().to_dict()
+        mt = mt[every.isin(ix)]
         names, depth, whole = {}, {}, {}
         if nf is not None:
             nt = _table(nf)
@@ -645,6 +795,7 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
                 continue
             t = len(terms)
             terms.append([names.get(s, s), li, s, depth.get(s, 0)])
+            bg_m.append(int(whole_count.get(s, len(by_set[s]))))
             for p in by_set[s]:
                 ann[ix[p]].append(t)
         labels.append(
@@ -656,32 +807,55 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
                 'non_iea': bool(lab.get('non_iea', True) and has_iea),
             }
         )
-    cols = _table(folder / 'marks.tsv') if cfg.get('color_by') else None
+    wants_cols = any('column' in c for c in cfg.get('color_by') or [])
+    cols = _table(folder / 'marks.tsv') if wants_cols else None
     if cols is not None:
         cols['base'] = cols['accession'].map(base)
     color = []
     for c in cfg.get('color_by') or []:
-        if c.get('kind') == 'role':
-            color.append(role_values(site, run, c, nodes, {a: prot[a][1] for a in nodes}))
-        elif c['column'] in cols.columns:
-            color.append(color_values(cols, c, nodes))
+        if c.get('kind') == 'decile':
+            got = decile_values(folder, c, nodes, log)
+        elif c.get('kind') == 'binding':
+            got = binding_values(folder, c, nodes, log)
+        elif 'column' in c and cols is not None and c['column'] in cols.columns:
+            got = color_values(cols, c, nodes)
+        else:
+            got = None
+        if got:
+            color.append(got)
+    outline = None
+    if (cfg.get('outline') or {}).get('kind') == 'role':
+        outline = role_values(site, run, cfg['outline'], nodes, {a: prot[a][1] for a in nodes})
+        if all(x < 0 for x in outline['v']):
+            outline = None
+    size_mode = (cfg.get('size') or {}).get('default', 'density')
     full = {
         'sources': srcs,
         'nodes': [prot[a] for a in nodes],
         'edges': edges,
         'terms': terms,
         'ann': ann,
+        **({'bg': {'N': bg_n, 'M': bg_m}} if len(bg_n) == len(labels) and terms else {}),
     }
     view = make_view(full, opt)
     default = {
         'nodes': [full['nodes'][g][0] for g in view['nodes']],
         'gene': [full['nodes'][g][1] for g in view['nodes']],
         'sites': [full['nodes'][g][2] for g in view['nodes']],
+        'cand': [full['nodes'][g][3] for g in view['nodes']],
+        'size': [size_units(size_mode, full['nodes'][g][2], full['nodes'][g][3]) for g in view['nodes']],
         'edges': view['edges'],
         'comm': view['comm'],
         'labels': view['labels'],
     }
-    lay_in = {k: default[k] for k in ('gene', 'sites', 'comm', 'edges', 'labels')}
+    # what a node shows besides its size, for the default view's cards: the abundance decile, the binding class, the enzyme role
+    for key, kind in (('dec', 'decile'), ('bind', 'binding')):
+        spec = next((c for c in color if c['kind'] == kind), None)
+        if spec:
+            default[key] = [spec['v'][g] for g in view['nodes']]
+    if outline:
+        default['role'] = [outline['v'][g] for g in view['nodes']]
+    lay_in = {k: default[k] for k in ('gene', 'comm', 'edges', 'labels')} | {'sites': default['size']}
     default['layout'] = {v: layout(lay_in, v, opt['min_cluster'], opt['max_shown']) for v in ('desktop', 'phone')}
     (out / 'data').mkdir(parents=True, exist_ok=True)
 
@@ -698,10 +872,13 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
             'acc': [p[0] for p in full['nodes']],
             'gene': [p[1] for p in full['nodes']],
             'sites': [p[2] for p in full['nodes']],
+            'cand': [p[3] for p in full['nodes']],
             'edges': [x for e in edges for x in e],
             'terms': terms,
             'ann': ann,
+            **({'bg': full['bg']} if 'bg' in full else {}),
             'color': color,
+            **({'outline': outline} if outline else {}),
             **({'extra': extra_out} if extra_out else {}),
             **({'groups': groups_out} if groups_out else {}),
         },
@@ -736,4 +913,10 @@ def build(site: dict, run: dict, listing: list, folder: Path, out: Path, log=pri
             'top_labels': [x['term'] for x in shown if x.get('term')][:3],
         },
         'color_by': [{k: c[k] for k in ('id', 'name', 'kind', 'cats', 'none_label') if k in c} for c in color],
+        **(
+            {'outline': {k: outline[k] for k in ('id', 'name', 'cats', 'none_label') if k in outline}}
+            if outline
+            else {}
+        ),
+        'size': {'default': size_mode if size_mode in SIZES else 'density', 'unit': DENSITY_UNIT},
     }

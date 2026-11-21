@@ -18,11 +18,13 @@ import yaml
 
 _COLOUR = re.compile(r'^#[0-9a-fA-F]{3,8}$')
 
-SEARCH_JS = (Path(__file__).parent / 'assets' / 'land-search.js').read_text()
+SEARCH_JS = (Path(__file__).parent / 'assets' / 'kit-names.js').read_text() + (
+    Path(__file__).parent / 'assets' / 'land-search.js'
+).read_text()
 SEARCH_HTML = (
     '<section class="land-search" role="search" aria-label="Find a protein">'
     '<label for="land-q">Find a protein</label>'
-    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene name or UniProt accession" '
+    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene, old gene symbol or UniProt accession" '
     'aria-controls="land-hits">'
     '<p class="say" id="land-say" role="status"></p><ul id="land-hits" aria-label="Proteins found"></ul></section>'
 )
@@ -50,8 +52,13 @@ CSS = """
 .land-search li { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; justify-content: space-between; padding: 0.45rem 0.7rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .land-search .hit-sites { display: inline-flex; flex-wrap: wrap; gap: 0.2rem 0.7rem; }
 .land-search .muted { color: var(--muted); }
+.land-search .ld-spin { display: inline-block; vertical-align: -0.15em; width: 0.9rem; height: 0.9rem; margin-right: 0.3rem; border-radius: 50%; border: 2px solid var(--line-strong); border-top-color: var(--accent-l, currentColor); animation: land-spin 0.8s linear infinite; }
+@keyframes land-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .land-search .ld-spin { animation: none; border-top-color: var(--line-strong); background: radial-gradient(circle, currentColor 35%, transparent 40%); } }
 .land-intro { max-width: 46rem; padding-block: 1.5rem 0.25rem; display: grid; gap: 0.5rem; color: var(--ink-2); font-size: 1.02rem; line-height: 1.55; }
 .land-intro p { margin: 0; }
+.land-refs { max-width: 46rem; list-style: none; margin: 0; padding: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.2rem 1.4rem; font-size: 0.9rem; color: var(--ink-2); }
+.land-refs .muted { color: var(--muted); }
 .land-intro p:first-child { color: var(--ink); font-size: 1.15rem; }
 .sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(26rem, 100%), 1fr)); gap: 1.25rem; padding: 1rem 0 1.5rem; list-style: none; margin: 0; }
 .sites > li { display: flex; }
@@ -67,7 +74,8 @@ CSS = """
 .land-card { --c1: var(--band-1); --c2: var(--band-2); --ac: var(--accent-l); --acd: var(--accent-d); position: relative; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow); color: var(--ink); transition: transform 0.18s ease, box-shadow 0.18s ease; }
 .land-card.live:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
 .land-card.live:has(a:focus-visible) { outline: 3px solid var(--ac); outline-offset: 3px; }
-.land-card .band { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 0.35rem; min-height: 11rem; padding: 0.9rem 1.1rem 0.9rem; background: linear-gradient(160deg, var(--c1), var(--c2)); border-bottom: 4px solid var(--ac); color: #fff; }
+/* not positioned: the title link's ::after must reach the article, so the whole card (the call to action too) is one target */
+.land-card .band { display: flex; flex-direction: column; justify-content: flex-end; gap: 0.35rem; min-height: 11rem; padding: 0.9rem 1.1rem 0.9rem; background: linear-gradient(160deg, var(--c1), var(--c2)); border-bottom: 4px solid var(--ac); color: #fff; }
 .land-card .art { height: 6.8rem; color: rgba(255, 255, 255, 0.88); }
 .land-card .art svg { display: block; width: 100%; height: 100%; }
 .land-card h2 { margin: 0; display: flex; align-items: center; gap: 0.6rem; font-size: 1.3rem; line-height: 1.2; }
@@ -225,6 +233,26 @@ def ordered(cards: list[dict], cfg: dict) -> list[dict]:
     return sorted(cards, key=lambda c: rank.get(c['id'], len(rank)))
 
 
+def _ref(x: dict) -> str:
+    """One line of the landing page's references: a label, then a DOI (a link to doi.org, with `all_versions` as a second
+    DOI) or plain text (a link when it has a url)."""
+    label = html.escape(str(x.get('label', '')))
+    parts = []
+    if x.get('doi'):
+        d = html.escape(str(x['doi']))
+        parts.append(f'<a href="https://doi.org/{d}">doi:{d}</a>')
+    if x.get('all_versions'):
+        a = html.escape(str(x['all_versions']))
+        parts.append(f'all versions <a href="https://doi.org/{a}">doi:{a}</a>')
+    if x.get('text'):
+        t = html.escape(str(x['text']))
+        parts.append(f'<a href="{html.escape(str(x["url"]))}">{t}</a>' if x.get('url') else t)
+    if not parts:
+        return ''
+    body = ' · '.join(parts) if x.get('doi') and x.get('all_versions') else ', '.join(parts)
+    return f'<li><span class="muted">{label}:</span> {body}</li>'
+
+
 def page(
     cards: list[dict],
     cfg: dict,
@@ -234,6 +262,7 @@ def page(
     fonts_css: str,
     built_with: str,
     logo: str | None = None,
+    favicon: str | None = None,
     search: bool = False,
 ) -> str:
     title = html.escape(cfg.get('title') or 'ptmcontext')
@@ -245,6 +274,17 @@ def page(
         for x in (cfg.get('footer') or {}).get('links') or []
     )
     note = (cfg.get('footer') or {}).get('note')
+    refs = ''.join(_ref(x) for x in cfg.get('references') or [])
+    wn = cfg.get('whats_new') or {}
+    new = (
+        f'<section class="land-new"><h2>{html.escape(wn.get("title") or "What’s new")}</h2><ul>'
+        + ''.join(f'<li>{html.escape(x)}</li>' for x in wn['items'])
+        + '</ul>'
+        + (f'<p class="muted">Data: {html.escape(wn["doi"])}</p>' if wn.get('doi') else '')
+        + '</section>'
+        if wn.get('items')
+        else ''
+    )
     groups = [g for g in cfg.get('groups') or [] if g.get('id')] or [{'id': None}]
     ids = {g['id'] for g in groups}
     sections = ''
@@ -269,7 +309,7 @@ def page(
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <meta name="description" content="{desc}">
-{f'<link rel="icon" href="{html.escape(logo)}">' if logo else ''}
+{f'<link rel="icon" href="{html.escape(favicon or logo)}">' if favicon or logo else ''}
 {'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' if fonts_css.startswith('http') else ''}
 <link rel="stylesheet" href="{html.escape(fonts_css)}">
 {f'<link rel="stylesheet" href="{html.escape(kit_css)}">' if kit_css else ''}
@@ -280,6 +320,8 @@ def page(
 {f'<div class="lede"><p class="lede-what">{lede}</p></div>' if lede else ''}</div></header>
 <main class="wrap" id="sites">
 {f'<section class="land-intro" aria-label="About">{intro}</section>' if intro else ''}
+{f'<ul class="land-refs" aria-label="Paper and data">{refs}</ul>' if refs else ''}
+{new}
 {SEARCH_HTML if search else ''}
 <h2 class="vh">The explorers</h2>
 {sections}</main>
@@ -291,20 +333,38 @@ def page(
 """
 
 
+def _dot_layout(n: int, cx: float, cy: float, fit: float = 17.0) -> list[tuple[float, float, float]]:
+    """(x, y, r) of n dots packed inside a lens of radius `fit` about (cx, cy): one row for 1 or 2, else two staggered
+    rows (the top row the longer), each dot as large as the lens lets it be, with a small gap for the light ring."""
+    k = n if n <= 2 else -(-n // 2)
+    rows = [k] if n <= 2 else [k, n - k]
+    r = 9.0
+    while r > 2:
+        step = 2 * r + 1.6
+        dy = 0.866 * step if len(rows) == 2 else 0.0
+        shift = step / 6 if len(rows) == 2 and rows[0] == rows[1] else 0.0
+        pts = []
+        for ri, m in enumerate(rows):
+            y = cy + (ri - (len(rows) - 1) / 2) * dy
+            sx = shift * (1 if ri else -1)
+            pts += [(cx + sx + (i - (m - 1) / 2) * step, y, r) for i in range(m)]
+        if all(((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 + r <= fit for x, y, _ in pts):
+            return pts
+        r -= 0.1
+    return pts
+
+
 def logo_with_dots(svg: str, colours: list[str]) -> str:
-    """The landing page's mark with its `<g id="dots">` refilled: one dot per explorer card, each in that card's band
-    colour (landing.yml `logo_dots: cards`), centred across the lens; the template's own dots stay when no card has one."""
-    cs = [c for c in colours if _colour(c, None)][:5]
+    """The landing page's mark with its `<g id="dots">` refilled: one dot per explorer card (up to six), each in that
+    card's band colour (landing.yml `logo_dots: cards`), staggered in two rows inside the lens; the template's own dots
+    stay when no card has one."""
+    cs = [c for c in colours if _colour(c, None)][:6]
     m = re.search(r'(<g id="dots"[^>]*>)(.*?)(</g>)', svg, flags=re.S)
     if not cs or not m:
         return svg
-    first = re.search(r'cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"', m.group(2))
-    cy, r = (float(first.group(2)), float(first.group(3))) if first else (29.0, 4.3)
-    xs = [float(x) for x in re.findall(r'cx="([\d.]+)"', m.group(2))] or [29.0]
-    mid, step = (min(xs) + max(xs)) / 2, 2.1 * r * (0.85 if len(cs) > 3 else 1)
     dots = ''.join(
-        f'<circle cx="{mid + (i - (len(cs) - 1) / 2) * step:.1f}" cy="{cy:g}" r="{r * (0.85 if len(cs) > 3 else 1):.1f}" fill="{c}"/>'
-        for i, c in enumerate(cs)
+        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="{c}"/>'
+        for (x, y, r), c in zip(_dot_layout(len(cs), 29.0, 29.0), cs, strict=True)
     )
     return svg[: m.start()] + m.group(1) + dots + m.group(3) + svg[m.end() :]
 

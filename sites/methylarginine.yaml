@@ -1,4 +1,4 @@
-# Site: the human methylarginine sites, rebuilt. Its analyses must equal release v1.4.3 of the Methylarginine Site
+# Site: the human methylarginine sites, rebuilt. Its analyses must equal release v1.6.0 of the Methylarginine Site
 # Explorer (reference), row for row. Contract: ptmcontext/schemas/site.schema.json.
 schema_version: 1
 id: methylarginine
@@ -37,10 +37,12 @@ inputs:                # role the layers read: manifest input that fills it
   depmap_genes: depmap_gene_effect
   tcga_changes: tcga_arginine_changes
   depmap_changes: depmap_arginine_changes
+  clinvar_plp: clinvar_plp_changes_R
+  gnomad_variants: gnomad_changes_R
   # the protein map's own rows (website.protein.map.rows): release tables read for the map only, no test reads them
-  residue_evidence: methylarginine_residue_evidence_v1_4_3
-  density_windows: density_windows_v1_4_3
-  lower_confidence_sites: methylarginine_lower_confidence_sites_v1_4_3
+  residue_evidence: methylarginine_residue_evidence_v1_5_1
+  density_windows: density_windows_v1_5_1
+  lower_confidence_sites: methylarginine_lower_confidence_sites_v1_5_1
   interpro_entries: interpro_all_entries
   go_bp_annotations: go_bp_annotations         # the Compare sets page's GO biological process terms
   go_bp_terms: go_bp_terms
@@ -84,10 +86,10 @@ inputs:                # role the layers read: manifest input that fills it
 
 marks:
   # Until this repository builds the site union from the studies, the marks are the release's own sites.
-  input: methylarginine_sites_v1_4_3
+  input: methylarginine_sites_v1_5_1
   accession: uniprot_accession
   position: position
-  left_out:            # sites held back: counted on neither side (none of v1.4.3's sites carries this flag; the
+  left_out:            # sites held back: counted on neither side (none of v1.6.0's sites carries this flag; the
     - {column: flags, contains: one_sided_window}   # release keeps them in a separate table)
   residue_mismatch: error
   attributes:          # what the website keeps for each site: to color, filter and explain it (no test reads these)
@@ -172,9 +174,10 @@ marks:
         shared_sequence: the peptide's sequence is shared with another protein
         xenograft_only: seen only in xenograft samples
 
-    # the release's own evidence at each site (human_methylarginine_sites_v1.4.3.tsv; definitions in its README)
+    # the release's own evidence at each site (human_methylarginine_sites_v1.6.0.tsv; definitions in its README)
     tcga:
       column: tcga_changes
+      position_tokens: true     # R4C: shown as the protein page numbers it
       label: Changes in TCGA tumors
       kind: list
       separator: "; "
@@ -192,6 +195,7 @@ marks:
       help: "Whether a TCGA tumor (MC3 public calls) has a missense or stop change at this arginine. This counts every methylarginine; the tumor question compares only the proteins whose gene DepMap screened, so its count is smaller"
     depmap:
       column: depmap_changes
+      position_tokens: true     # R4C: shown as the protein page numbers it
       label: Changes in DepMap cell lines
       kind: list
       separator: "; "
@@ -378,15 +382,15 @@ marks:
   tables:              # several rows per site, for the website's count questions (no test reads these): each row names
                        # its site by the marks table's site_id (CONTRACTS.md, Per-mark tables)
     maron_inhibitors:  # each site, methyl-IP antibody and inhibitor of Maron et al. 2021 Table S3
-      input: maron2021_inhibitors_v1_4_3
+      input: maron2021_inhibitors_v1_5_1
       key: {marks: site_id, table: site_id}
       columns: [inhibitor, antibody, call, log2_diff_median]
     carm1_ko:          # each site and cell line of the CARM1 knockout (Shishkova et al. 2017)
-      input: carm1_ko_v1_4_3
+      input: carm1_ko_v1_5_1
       key: {marks: site_id, table: site_id}
       columns: [cell_line, call, log2_ko_over_wt]
     writer_perturbations:   # each site and knockout, knockdown or inhibitor; its calls are the perturbation attribute's
-      input: writer_perturbations_v1_4_3
+      input: writer_perturbations_v1_5_1
       key: {marks: site_id, table: site_id}
       columns: [perturbation, call, log2_treated_over_control]
 analyses:              # each: one statistics row per class, pooled (fisher) and within protein (mantel_haenszel)
@@ -915,6 +919,39 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     proteins: {input: depmap_genes, column: canonical_UniProtAC, label: " whose gene DepMap screened"}
     marks_alone: count
     order: [{categories: [tcga_tumours, depmap_cell_lines]}]
+  # Germline variants at the methylarginines: a ClinVar single-residue substitution or stop with a pathogenic or likely pathogenic
+  # record, or a gnomAD v4.1 exome variant, against the other arginines of the same proteins; every mark counts, as for the
+  # tumor and cell-line question above. Display only: no row of the release's analyses reads these inputs.
+  - id: clinvar_plp
+    new: true
+    layer: residue_lists
+    with:
+      flags: {clinvar_plp: clinvar_plp}
+      noun: arginine with a pathogenic ClinVar variant
+      title: ClinVar pathogenic variants
+      question: "Does a methylarginine carry a pathogenic or likely pathogenic ClinVar variant more or less often than the other arginines of its protein?"
+      sub: "Methylarginines against the other arginines of the same proteins: a ClinVar single-residue substitution or stop classified pathogenic or likely pathogenic. ClinVar lists the genes and regions that clinical testing covers, so a well-studied protein has more variants at every residue; the comparison within each protein limits that, not removes it. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most, and the codons of methylated and other arginines may differ"
+      section: Disease and cancer
+      labels: {clinvar_plp: Pathogenic or likely pathogenic in ClinVar}
+      help:
+        clinvar_plp: "A single-residue substitution or stop whose ClinVar germline classification is pathogenic or likely pathogenic (including Pathogenic/Likely pathogenic; conflicting classifications are not counted), on a RefSeq protein UniProt assigns to the entry"
+    marks_alone: count
+    order: [{categories: [clinvar_plp]}]
+  - id: gnomad_variant
+    new: true
+    layer: residue_lists
+    with:
+      flags: {gnomad_variant: gnomad_variants}
+      noun: arginine with a gnomAD variant
+      title: gnomAD variants
+      question: "Does a methylarginine carry a gnomAD variant more or less often than the other arginines of its protein?"
+      sub: "Methylarginines against the other arginines of the same proteins: a missense or stop-gained variant in gnomAD v4.1 exomes (730,947 exomes; FILTER PASS), at any allele frequency. Most are rare. A variant seen in healthy adults does not show that it is harmless, and a residue without one may only be rare in the sample. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most, and the codons of methylated and other arginines may differ"
+      section: Disease and cancer
+      labels: {gnomad_variant: Variant in gnomAD}
+      help:
+        gnomad_variant: "A missense or stop-gained change of the residue in at least one gnomAD v4.1 exome variant that passed the filters (VEP consequence on a transcript UniProt assigns to the entry)"
+    marks_alone: count
+    order: [{categories: [gnomad_variant]}]
   - {id: motif, layer: motif}
   - {id: disorder, layer: disorder}
   - {id: domain_context, layer: domain_context}
@@ -987,7 +1024,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near methyllysines (±10 residues)
     question: "Are methylarginines more often near a methyllysine than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a methyllysine (UniProt, iPTMnet, CPLM and Berryhill 2023, by-similarity records left out) is within 10 residues on either side. Few proteins carry a recorded methyllysine"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a methyllysine (UniProt, iPTMnet and Berryhill 2023, by-similarity records left out) is within 10 residues on either side. Few proteins carry a recorded methyllysine"
     section: Other modifications
   - id: near_acetylation
     layer: near_marks
@@ -995,7 +1032,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near acetylation sites (±10 residues)
     question: "Are methylarginines more often near an acetylation site than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether an acetylation site (CPLM 4.0, UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
     section: Other modifications
   - id: near_other_acylation
     layer: near_marks
@@ -1003,7 +1040,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near other acylation sites (±10 residues)
     question: "Are methylarginines more often near another lysine acylation than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a lysine acylation other than acetylation (CPLM 4.0, UniProt and iPTMnet, by-similarity records left out; 15 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
     section: Other modifications
   - id: near_ubiquitination
     layer: near_marks
@@ -1011,7 +1048,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near ubiquitination sites (±10 residues)
     question: "Are methylarginines more often near a ubiquitination site than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a ubiquitination site (CPLM 4.0, Akimov et al. 2018, UniProt and iPTMnet; by-similarity records left out) is within 10 residues on either side"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a ubiquitination site (Akimov et al. 2018, UniProt and iPTMnet; by-similarity records left out) is within 10 residues on either side"
     section: Other modifications
   - id: near_sumoylation
     layer: near_marks
@@ -1019,7 +1056,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near SUMOylation sites (±10 residues)
     question: "Are methylarginines more often near a SUMOylation site than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a SUMOylation site (CPLM 4.0, Hendriks et al. 2017, UniProt and iPTMnet; by-similarity records left out) is within 10 residues on either side"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a SUMOylation site (Hendriks et al. 2017, UniProt and iPTMnet; by-similarity records left out) is within 10 residues on either side"
     section: Other modifications
   # Taking all factors together: one conditional logistic regression, a stratum per protein (the multi-factor
   # Mantel-Haenszel; Breslow & Day 1980), the whole dataset (a selection is not refitted in the browser)
@@ -1214,7 +1251,7 @@ controls:
     only_in: idr
 
 reference:
-  statistics: methylarginine_statistics_v1_4_3
+  statistics: methylarginine_statistics_v1_5_1
   # the residue questions' denominators: each protein's other arginines, in all and per class or motif
   background: {input: release_arginine_background, accession: uniprot_accession, analysis: analysis, category: category, others: other_arginines}
   excused:                 # rows the published inputs cannot rebuild, each with why
@@ -1224,13 +1261,13 @@ reference:
       why: "the release's supporting table gives each odds ratio to 6 significant digits, and two proteins compared (HNRNPA1, methylated, and LIN28B) share 1.00353 there, a tie the release's exact values did not have; q is compared"
   tables:                  # questions the statistics table does not hold, checked against the release's supporting tables
     disease_ontology:
-      input: methylarginine_disease_ontology_v1_4_3
+      input: methylarginine_disease_ontology_v1_5_1
       columns: {set: term_id, a: n_methylated, M: n_genes_term, fold_enrichment: fold_enrichment, p: p, q: q}
     disease_term:          # p_adjust is the Benjamini-Hochberg q (its q is DOSE's q value)
-      input: methylarginine_disease_terms_tested_v1_4_3
+      input: methylarginine_disease_terms_tested_v1_5_1
       columns: {set: term_id, a: n_methylated, M: n_genes_term, fold_enrichment: fold_enrichment, p: p, q: p_adjust}
 proteins:                  # the release's protein table: facts of each methylated protein for the website (no test reads these)
-  input: methylarginine_proteins_v1_4_3
+  input: methylarginine_proteins_v1_5_1
   accession: uniprot_accession
   attributes:
     arg_enrichment: {column: arg_enrichment_log2, label: Arg enrichment, kind: number, help: "log2 of the shrinkage-estimated methylated share of the protein's arginines over the proteome-wide rate (negative when below it)"}
@@ -1264,13 +1301,13 @@ proteins:                  # the release's protein table: facts of each methylat
 variants:                # the same questions on other marks; ptmc run --variant <name>
   with_lower_confidence:
     label: With lower-confidence sites
-    description: "The release's lower-confidence sites added: those whose own evidence covers the arginine and leaves the methyl group on an arginine (in_analyses_with_lower_confidence), as statistics_with_lower_confidence_v1.4.3.tsv counts them"
+    description: "The release's lower-confidence sites added: those whose own evidence covers the arginine and leaves the methyl group on an arginine (in_analyses_with_lower_confidence), as statistics_with_lower_confidence_v1.6.0.tsv counts them"
     marks_add:
-      - input: methylarginine_lower_confidence_sites_v1_4_3
+      - input: methylarginine_lower_confidence_sites_v1_5_1
         include: [{column: in_analyses_with_lower_confidence, equals: "true"}]
         left_out: [{column: in_analyses_with_lower_confidence, equals: "false"}]   # the others are on neither side
     reference:
-      statistics: methylarginine_statistics_lower_confidence_v1_4_3
+      statistics: methylarginine_statistics_lower_confidence_v1_5_1
       excused:             # the same tie as the main view's (reference.excused)
         - analysis: eclip_rna_apexseq
           method: mann_whitney
@@ -1278,10 +1315,10 @@ variants:                # the same questions on other marks; ptmc run --variant
           why: "the release's supporting table gives each odds ratio to 6 significant digits, and two proteins compared (HNRNPA1, methylated, and LIN28B) share 1.00353 there, a tie the release's exact values did not have; q is compared"
       tables:              # the view's own disease tables (analyses_with_lower_confidence/disease)
         disease_ontology:
-          input: methylarginine_lc_disease_ontology_v1_4_3
+          input: methylarginine_lc_disease_ontology_v1_5_1
           columns: {set: ID, a: k, M: M, fold_enrichment: FoldEnrichment, p: pvalue, q: p.adjust}
         disease_term:      # only the enriched terms are listed (and DOSE's q value also cut them)
-          input: methylarginine_lc_disease_terms_v1_4_3
+          input: methylarginine_lc_disease_terms_v1_5_1
           columns: {set: ID, a: Count, fold_enrichment: FoldEnrichment, p: pvalue, q: p.adjust}
           rows: enriched
     not_compared:          # run, but not checked: their release tables cover the main view's proteins only
@@ -1308,14 +1345,14 @@ variants:                # the same questions on other marks; ptmc run --variant
       earlier: {column: in_earlier_versions, label: A site of}
 
 
-# Context marks: other modifications shown beside the methylarginines (CONTRACTS.md, Context marks). The release v1.5.0
+# Context marks: other modifications shown beside the methylarginines (CONTRACTS.md, Context marks). The release v1.6.0
 # tables; by-similarity rows are dropped (the default). A map row, "Other modifications nearby" on the site card, a filter, table
 # columns and downloads follow from these entries; the near_marks questions below test them.
 context_marks:
   - id: phospho
     label: Phosphosite
     short: "pS/pT/pY"
-    input: context_phosphorylation_sites_v1_5_0
+    input: context_phosphorylation_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources, score: functional_score}
     subset: {id: high, at_least: 0.5, label: score ≥ 0.5}   # every site is drawn at first; a click on the row label shows only the sites Ochoa 2020 scores 0.5 or more (about 10,900), and sites with no score (UniProt or iPTMnet only) are then hidden too
     replaces_ptm_kinds: [Phospho]   # the live UniProt "Other PTMs" row leaves its Phospho kind out: one source for phosphosites
@@ -1323,7 +1360,7 @@ context_marks:
     colour_dark: "#1FA2C4"
     citation:
       short: UniProt, iPTMnet and Ochoa 2020
-      cite: "Phosphorylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included)"
+      cite: "Phosphorylation sites of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Ochoa et al., Nat Biotechnol 38:365-373 (2020), doi:10.1038/s41587-019-0344-3 (the article is not open access; its supplementary table is included)"
       licence: "CC BY-NC-SA 4.0; Ochoa 2020 included"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
@@ -1332,35 +1369,33 @@ context_marks:
   - id: methyllysine
     label: Methyllysine
     short: "Kme"
-    input: context_methyllysine_sites_v1_5_0
+    input: context_methyllysine_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: state, evidence: evidence_class, sources: sources}
     colour: "#5E6E75"          # the site's neutral, secondary style
     colour_dark: "#A3AEB3"
     citation:
-      short: UniProt, iPTMnet, CPLM and Berryhill 2023
-      cite: "Lysine methylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license; Berryhill 2023 article CC BY 4.0"
+      short: UniProt, iPTMnet and Berryhill 2023
+      cite: "Lysine methylation sites of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104; Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x"
+      licence: "CC BY-NC-SA 4.0; Berryhill 2023 article CC BY 4.0"
     sources:
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       Berryhill 2023: {cite: "Berryhill et al., Sci Rep 13:377 (2023)", doi: 10.1038/s41598-022-27175-x}
   - id: acetylation
     label: Acetylation
     short: "Kac"
     noun: acetylation site
     plural: Acetylation sites
-    input: context_acetylation_sites_v1_5_0
+    input: context_acetylation_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, evidence: evidence_class, sources: sources}
     replaces_ptm_kinds: [Lys acyl]   # the live UniProt "Other PTMs" row would repeat the lysine acylations: one source for them
     colour: "#15803d"          # green: apart from the orange, violet, cyan and olive of the other marks (5.0:1 on white)
     colour_dark: "#4ade80"     # 9.3:1 on the dark surface
     citation:
-      short: CPLM, UniProt and iPTMnet
-      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
+      short: UniProt and iPTMnet
+      cite: "Lysine acetylation sites of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: other_acylation
@@ -1368,17 +1403,16 @@ context_marks:
     short: "Acyl"
     noun: non-acetyl acylation site
     plural: Other acylation sites
-    input: context_lysine_acylation_sites_v1_5_0
+    input: context_lysine_acylation_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, state: acyl_type, evidence: evidence_class, sources: sources}
-    exclude: [{column: acyl_type, in: [acetyl]}]   # acetylation is its own mark above; the rest, as one group, 15 acyl types
+    exclude: [{column: acyl_type, in: [acetyl]}]   # acetylation is its own mark above; the rest, as one group, 12 acyl types
     colour: "#8a7a1c"          # olive: 4.3:1 on white
     colour_dark: "#ddd06a"     # 10.3:1 on the dark surface
     citation:
-      short: CPLM, UniProt and iPTMnet
-      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl, phosphoglyceryl, biotinyl, lipoyl) of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license"
+      short: UniProt and iPTMnet
+      cite: "Lysine acylation sites (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl, lactyl, glutaryl, butyryl, methacryl, isonicotinyl, benzoyl, propionyl) of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
   - id: ubiquitination
@@ -1386,17 +1420,16 @@ context_marks:
     short: "Kub"
     noun: ubiquitination site
     plural: Ubiquitination sites
-    input: context_ubiquitination_sites_v1_5_0
+    input: context_ubiquitination_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, evidence: evidence_class, sources: sources}
     replaces_ptm_kinds: [Ubiquitin]   # the live UniProt "Other PTMs" row would repeat the ubiquitination sites: one source for them
     colour: "#be185d"          # rose: 6.0:1 on white
     colour_dark: "#f9a8d4"     # 9.0:1 on the dark surface
     citation:
-      short: CPLM, Akimov 2018, UniProt and iPTMnet
-      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); Akimov V et al., Nat Struct Mol Biol 25:631–640 (2018), doi:10.1038/s41594-018-0084-y; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license; Akimov 2018 included"
+      short: Akimov 2018, UniProt and iPTMnet
+      cite: "Lysine ubiquitination sites of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: Akimov V et al., Nat Struct Mol Biol 25:631–640 (2018), doi:10.1038/s41594-018-0084-y; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; Akimov 2018 included"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       Akimov 2018: {cite: "Akimov et al., Nat Struct Mol Biol 25:631 (2018)", doi: 10.1038/s41594-018-0084-y}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
@@ -1405,17 +1438,16 @@ context_marks:
     short: "SUMO"
     noun: SUMOylation site
     plural: SUMOylation sites
-    input: context_sumoylation_sites_v1_5_0
+    input: context_sumoylation_sites_v1_5_1
     columns: {accession: canonical_UniProtAC, position: position, residue: residue, evidence: evidence_class, sources: sources}
     replaces_ptm_kinds: [SUMO]   # the live UniProt "Other PTMs" row would repeat the SUMOylation sites: one source for them
     colour: "#0369a1"          # blue: 5.9:1 on white
     colour_dark: "#7dd3fc"     # 9.8:1 on the dark surface
     citation:
-      short: CPLM, Hendriks 2017, UniProt and iPTMnet
-      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.5.0 of PTM_Pipeline: Zhang et al., Nucleic Acids Res 50:D451-D459 (2022), doi:10.1093/nar/gkab849 (CPLM 4.0 states no license); Hendriks IA et al., Nat Struct Mol Biol 24:325–336 (2017), doi:10.1038/nsmb.3366; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
-      licence: "CC BY-NC-SA 4.0; CPLM 4.0 states no license; Hendriks 2017 included"
+      short: Hendriks 2017, UniProt and iPTMnet
+      cite: "Lysine SUMOylation sites of the human reviewed proteome, release v1.6.0 of PTM_Pipeline: Hendriks IA et al., Nat Struct Mol Biol 24:325–336 (2017), doi:10.1038/nsmb.3366; UniProt Consortium, Nucleic Acids Res 53:D609-D617 (2025), doi:10.1093/nar/gkae1010; Huang et al., Nucleic Acids Res 46:D542-D550 (2018), doi:10.1093/nar/gkx1104"
+      licence: "CC BY-NC-SA 4.0; Hendriks 2017 included"
     sources:
-      CPLM: {cite: "Zhang et al., Nucleic Acids Res 50:D451 (2022)", doi: 10.1093/nar/gkab849}
       Hendriks 2017: {cite: "Hendriks et al., Nat Struct Mol Biol 24:325 (2017)", doi: 10.1038/nsmb.3366}
       UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
       iPTMnet: {cite: "Huang et al., Nucleic Acids Res 46:D542 (2018)", doi: 10.1093/nar/gkx1104}
@@ -1437,6 +1469,7 @@ website:                  # the look and words of the website (ptmc web); layout
   accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
   accent_dark: "#fb923c"
   logo: sites/art/methylarginine_logo.svg
+  favicon: sites/art/methylarginine_favicon.svg
   switcher: {label: PTM}            # the site switcher reads "PTM: <site> ▾"
   art: sites/art/methylarginine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
@@ -1539,6 +1572,8 @@ website:                  # the look and words of the website (ptmc web); layout
       eclip_gene_hic: "Genes of bound RNAs (Hi-C)"
       depmap_dependency: "Cancer cell dependency"
       cancer_change: "Tumor and cell-line changes"
+      clinvar_plp: "ClinVar pathogenic variants"
+      gnomad_variant: "gnomAD variants"
       motif: "Sequence motifs"
       disorder: "Disorder context"
       domain_context: "Domain context"
@@ -1577,6 +1612,7 @@ website:                  # the look and words of the website (ptmc web); layout
       crosslink: ["capri_adj_peptide_among_measured", "rbrid_residue_among_measured", "pclap_lysc_region", "pclap_lysc_region_outside_rg", "pclap_peptide", "rbdmap_fragment", "rbdmap_fragment_outside_rg"]
     glossary:
       "IDR": "an intrinsically disordered region, a stretch with no fixed fold."
+      "PRMT": "a protein arginine methyltransferase, an enzyme that adds methyl groups to arginines."
       "CAPRI": "peptides crosslinked to RNA in living cells (UV crosslinking and mass spectrometry)."
       "RBR-ID": "residues whose peptides drop after UV crosslinking to RNA in cells, a sign of RNA contact."
       "pDockQ": "confidence of a predicted protein-protein interface (AlphaFold); 0.23 is likely, 0.5 confident."
@@ -1703,6 +1739,8 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: disease_family_additional, title: "More disease families"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
           - {analysis: cancer_change, title: Changes in tumors and cell lines}
+          - {analysis: clinvar_plp, title: ClinVar pathogenic variants}
+          - {analysis: gnomad_variant, title: gnomAD variants}
       - name: Evidence and studies
         about: "Which studies and databases reported the sites."
         #  counted, not tested (website.counts)
@@ -1714,7 +1752,7 @@ website:                  # the look and words of the website (ptmc web); layout
                 eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, disorder, domain_context]
   cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
     id: where_in_the_cell
-    default_view: fold        # what the maps color by on opening: percent (share of proteins with a mark), average (each share against the share among all mapped proteins) or fold
+    default_view: average        # what the maps color by on opening: percent (share of proteins with a mark), average (each share against the share among all mapped proteins) or fold
     dispersion: false        # the average view: no overdispersion adjustment across compartments (they are not expected to be alike)
     abundance: true          # its test is within abundance deciles (Mantel-Haenszel), Fisher's exact test where a map has none
     min_h: 0.2               # filled only where the effect is at least small (Cohen's h); significant but smaller is outlined
@@ -1848,7 +1886,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {name: "CARM1 KD, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: carm1_kd_hek293, table: writer_perturbations, where: {perturbation: carm1_kd_hek293}, change: log2_treated_over_control}
         - {name: "PRMT5 KD, HEK293", note: "Li WJ et al. 2021 · published call; decreased sites only", kind: knockdown, listed: true, attribute: perturbation, value: prmt5_kd_hek293, table: writer_perturbations, where: {perturbation: prmt5_kd_hek293}, change: log2_treated_over_control}
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
-    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change], attributes: [tcga_any, depmap_any]}
+    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant], attributes: [tcga_any, depmap_any]}
     - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, reactome_top_level], proteins: [marks, arg_enrichment_q]}
     - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
     - {name: Methylation state, attributes: [state, maron_s2, methyl_ip, neutral_loss]}
@@ -1858,19 +1896,29 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context]}
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Studies and databases, attributes: [studies, n_studies, localised_by]}
-  dataset: {label: data release, version: v1.4.3, date: "2026-10-31", doi: "10.5281/zenodo.22696798", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3"}
+  dataset: {label: data release, version: v1.6.0, date: "2026-11-20", doi: "10.5281/zenodo.24406688", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0/releases/v1.6.0"}
+  methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
+  whats_new:               # what v1.6.0 added (the Help page)
+    title: What’s new in v1.6.0
+    items:
+      - "Cancer changes at every candidate residue (TCGA tumors, DepMap cell lines) and germline variants (ClinVar, gnomAD), with the gene named for proteins that several genes encode."
+      - "A count of the changes the cards do not show, with a download of those rows."
+      - "Histones and proteins without their initiator methionine are numbered as papers number them; one short name (H4) for a protein several genes encode, and search finds old gene names too."
+      - "The four human sites show the same protein-page cards, wherever the data have the residue."
+      - "Network clusters are named against the annotated human proteome, with a tooltip of each cluster's best terms and a Highlight a term box."
+    doi: "10.5281/zenodo.24406688"
   downloads:               # the release's files, at the commit the site was built from
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_sites_v1.4.3.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
-    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_sites_v1.4.3.tsv", format: TSV, note: "the same, tab-separated"}
-    - {label: Proteins, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_proteins_v1.4.3.tsv", format: TSV, note: "every methylated protein with its classes, enrichment, clusters and evidence"}
-    - {label: Lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/human_methylarginine_lower_confidence_sites_v1.4.3.tsv", format: TSV, note: "arginines reported as methylated whose records each fail a site test, with the tests"}
-    - {label: Statistics, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/statistics_v1.4.3.tsv", format: TSV, note: "every test the site shows"}
-    - {label: Statistics with lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/statistics_with_lower_confidence_v1.4.3.tsv", format: TSV, note: "the same tests with the counted lower-confidence sites added"}
-    - {label: Studies, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/studies_v1.4.3.tsv", format: TSV, note: "the studies and databases, with their DOIs and counts"}
-    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
-    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/README.md", format: Markdown, note: "how the release was made, and every column"}
-    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/b0d9049835fbd2527075629f00a4ebab154221bf/releases/v1.4.3/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_sites_v1.6.0.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
+    - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_sites_v1.6.0.tsv", format: TSV, note: "the same, tab-separated"}
+    - {label: Proteins, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_proteins_v1.6.0.tsv", format: TSV, note: "every methylated protein with its classes, enrichment, clusters and evidence"}
+    - {label: Lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/human_methylarginine_lower_confidence_sites_v1.6.0.tsv", format: TSV, note: "arginines reported as methylated whose records each fail a site test, with the tests"}
+    - {label: Statistics, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/statistics_v1.6.0.tsv", format: TSV, note: "every test the site shows"}
+    - {label: Statistics with lower-confidence sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/statistics_with_lower_confidence_v1.6.0.tsv", format: TSV, note: "the same tests with the counted lower-confidence sites added"}
+    - {label: Studies, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/studies_v1.6.0.tsv", format: TSV, note: "the studies and databases, with their DOIs and counts"}
+    - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.6.0/releases/v1.6.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}
+    - {label: README, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/v1.6.0/releases/v1.6.0/README.md", format: Markdown, note: "how the release was made, and every column"}
+    - {label: What changed, url: "https://github.com/Shechterlab/PTM_Pipeline/blob/v1.6.0/releases/v1.6.0/CHANGES.md", format: Markdown, note: "the changes since the previous release"}
   legacy_params:            # the explorer's filter parameters (?states=2&motifs=1), in its own codes
     states: {key: "t:state", values: {"1": Rme1, "2": Rme2, "3": Rme1_Rme2, "0": ""}}
     ips: {key: "t:methyl_ip", values: {"0": MMA, "1": ADMA, "2": SDMA}}
@@ -2034,7 +2082,7 @@ website:                  # the look and words of the website (ptmc web); layout
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
     title: Network
-    about: "Methylated proteins as one network: STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched GO biological process (or Reactome pathway). Node size is the number of sites."
+    about: "Methylated proteins as one network: STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched GO biological process (or Reactome pathway). Node size is the number of sites per 100 arginines of the protein (the number of sites is the other choice)."
     edges:
       - {id: string_physical, kind: pairs, label: STRING physical, input: string_partners, min_score: 700, channels: [{id: experiments, label: experiments, column: experiments}, {id: databases, label: curated databases, column: database}], cite: "STRING v12.5: Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113", url: "https://string-db.org"}
       - {id: complex_portal, kind: groups, label: Complex Portal complexes, input: complexes, name: complex_name, where: {curation: curated}, max_size: 40, weight: 700, cite: "Complex Portal (curated complexes, CC0): Meldal et al., Nucleic Acids Res 50:D578 (2022), doi:10.1093/nar/gkab991", url: "https://www.ebi.ac.uk/complexportal"}
@@ -2065,16 +2113,32 @@ website:                  # the look and words of the website (ptmc web); layout
     cluster: louvain
     min_coverage: 0.25   # a term names a cluster if it holds for this share of the cluster
     thin_term: best      # else the best significant term, written with its share ("..." · 18%); genes: its three busiest proteins
+    background: proteome  # the terms are tested against the annotated human proteome (site: every protein the network can draw; drawn: the view's own proteins)
     clusters: {default: auto, min: 4, max: 16}   # the page's Clusters menu: auto (Louvain at its default resolution) or a target number
     lead: "Methylated proteins joined by physical links and complexes, grouped into clusters named by GO biological process."   # the one line under the heading; the section Method has the rest
-    controls: [clusters, colour, find]   # the main row (others under More options): label, clusters, colour, find, score, minc, sources, claim
+    controls: [clusters, colour, size, outline, find]   # the main row (others under More options): label, clusters, colour, size, outline, find, score, minc, sources, claim
     protein_link: true   # a See in network button on every protein page (#network?p=<accession>)
     protein_preview: true   # and a small drawing of it among its cluster under the button
     claim: "Methylated proteins form {n} functional clusters"   # the exported figure's title
+    size: {default: density}   # node size: density (sites per 100 of the protein's own candidate residues) or sites
     color_by:
       - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
       - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
-      - {id: enzyme_role, name: Enzyme role, kind: role, none: "No enzyme or reader role"}   # from the writer, eraser and reader classes of website.search.partners
+      - {id: abundance, name: PaxDb abundance decile, kind: decile, analysis: panther_group}   # the decile the statistics use as strata
+      - id: binding
+        name: RNA and DNA binding
+        kind: binding
+        none: Neither
+        labels: {rna: RNA, dna: DNA, both: RNA and DNA}
+        rna:   # published sets only: GO RNA binding with experimental evidence, pepR-MS crosslinked proteins, CAPRI
+          - {analysis: go_binding, set: rna_binding_experimental}
+          - {analysis: binding_protein, set: rna_xl}
+          - {analysis: binding_protein, set: rna_capri}
+        dna:   # GO DNA binding with experimental evidence, Trendel 2025 crosslinks and DNA interactome
+          - {analysis: go_binding, set: dna_binding_experimental}
+          - {analysis: binding_protein, set: dna_xl}
+          - {analysis: binding_protein, set: dna_interactome}
+    outline: {id: enzyme_role, name: Enzyme role, kind: role, none: "No enzyme or reader role"}   # a ring on the writers, erasers and readers (website.search.partners classes), with any color
     tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
   # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
@@ -2255,97 +2319,97 @@ website:                  # the look and words of the website (ptmc web); layout
   tables:                  # tables the protein pages show (no test reads them), each in a format of CONTRACTS.md ("Tables
                            # the protein pages show"); here the release's own tables, their columns mapped to the format's
     site:
-      input: methylarginine_sites_v1_4_3
+      input: methylarginine_sites_v1_5_1
       format: site_values
       columns: {site: site_id}
       values: [methyl_states_reported, maron2021_s2_states, uniprot_states, states_by_study_design, tcga_change_tumours, depmap_change_lines,
                reported_positions, nearest_domain_interpro, nearest_domain_name, domain_side, domain_edge_distance,
                window_31, disorder_edge_distance, carm1_ko_call, curated_only, bound_sequence, bound_sequence_offset, shared_with_paralogs]   # the last: the Sites download
     proteins:                            # other names a search or an old link may use (#TDP-43); the facts are proteins.attributes
-      input: methylarginine_proteins_v1_4_3
+      input: methylarginine_proteins_v1_5_1
       format: protein_values
       columns: {accession: uniprot_accession, aliases: [gene_synonyms, reported_genes]}
     studies:
-      input: methylarginine_studies_v1_4_3
+      input: methylarginine_studies_v1_5_1
       format: lookup
       columns: {key: study_id}
       values: [label, citation, doi, licence]
     interactions:
-      input: methylarginine_site_interactions_v1_4_3
+      input: methylarginine_site_interactions_v1_5_1
       format: site_evidence
       columns: {site: site_id, kind: evidence_type, partner: partner_gene, partner_accession: partner_accession, ids: structures, score: score, detail: detail}
     contacts:
-      input: methylarginine_nucleic_acid_contacts_v1_4_3
+      input: methylarginine_nucleic_acid_contacts_v1_5_1
       format: bound_windows
       columns: {site: site_id, window: window_marked, kind: nucleic_acid, type: nucleic_acid_type, name: molecule_name, entry: pdb_id,
                 distance: closest_distance_a, preparation: sample_preparation, chain: chain, nucleotides: contacted_nucleotides,
                 numbers: contacted_author_numbers, distances: contacted_distances_a}
     contacts_near:
-      input: methylarginine_nucleic_acid_near_sites_v1_4_3
+      input: methylarginine_nucleic_acid_near_sites_v1_5_1
       format: bound_windows
       columns: {site: site_id, window: window_marked, kind: nucleic_acid, type: nucleic_acid_type, name: molecule_name, entry: pdb_id,
                 entries: n_entries, offset: residue_offset, preparation: sample_preparation}
     residues:
-      input: methylarginine_residue_evidence_v1_4_3
+      input: methylarginine_residue_evidence_v1_5_1
       format: residue_evidence
       columns: {accession: uniprot_accession, start: start, end: end, kind: evidence_type, source: sources}
       include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region, dna_binding_region]}]
     chain_evidence:        # the 3D viewer's colorings along the chain: each run's kind with where it falls (RBDmap and pCLAP left out:
-      input: methylarginine_residue_evidence_v1_4_3      # their extents may not be republished: marks.attributes.evidence.presence_only)
+      input: methylarginine_residue_evidence_v1_5_1      # their extents may not be republished: marks.attributes.evidence.presence_only)
       format: residue_evidence
       columns: {accession: uniprot_accession, start: start, end: end, kind: [evidence_type, localisation], source: sources}
       include: [{column: evidence_type, in: [rna_crosslink, dna_crosslink, capri_xl_peptide, capri_adj_peptide, rbrid_residue, rbrid_region,
                                              dna_binding_region, pdb_rna, pdb_dna, pdb_protein, pdb_self]}]
     records:
-      input: methylarginine_site_interaction_records_v1_4_3
+      input: methylarginine_site_interaction_records_v1_5_1
       format: site_records
       columns: {site: site_id, group: record_class, partner: partner_gene, partner_name: partner_name, partner_accession: partner_accession,
                 partner_kind: partner_kind, species: partner_species, source: source, id: source_id, method: method, context: context,
                 state: site_state, state_detail: state_detail, other_marks: other_marks, pubmed: pubmed, doi: doi, citation: citation,
                 title: paper_title}
     perturbations:
-      input: methylarginine_writer_perturbations_v1_4_3
+      input: methylarginine_writer_perturbations_v1_5_1
       format: site_measurements
       columns: {site: site_id, condition: perturbation, call: call, n: n_peptides, n_down: n_decreased, n_up: n_increased,
                 value: log2_treated_over_control, q: q, rule: call_criteria}
     inhibitors:
-      input: methylarginine_maron2021_inhibitors_v1_4_3
+      input: methylarginine_maron2021_inhibitors_v1_5_1
       format: site_table
       columns: {site: site_id}
       values: [antibody, inhibitor, log2_diff_median, adj_p_min, n_peptides, n_decreased, n_increased, call, call_single_site_peptides]
     sources:
-      input: methylarginine_source_records_v1_4_3
+      input: methylarginine_source_records_v1_5_1
       format: source_records
       columns: {site: placed_site, source: study, doi: study_doi, reference: reference_text, pubmed: pmid, source_table: source_table,
                 peptide: evidence_sequence, state: reported_methyl_state, enzyme: reported_enzyme, sample: reported_sample, detail: reported_detail,
                 reported_accession: reported_accession, reported_position: reported_position, check: placement_code}
     string:
-      input: methylarginine_protein_partners_v1_4_3
+      input: methylarginine_protein_partners_v1_5_1
       format: protein_partners
       columns: {accession: uniprot_accession, partner_accession: partner_accession, partner: partner_gene, score: string_score,
                 partner_marked: partner_methylated, classes: partner_classes}
     other_ptms:                          # other modifications on the methylated proteins: the Filters panel's "other PTM nearby"
-      input: methylarginine_other_ptm_sites_v1_4_3
+      input: methylarginine_other_ptm_sites_v1_5_1
       format: residue_evidence
-      exclude: [{column: ptm_type, in: [phospho, lys_methyl]}]   # phosphosites and methyllysines are the context marks (v1.5.0)
+      exclude: [{column: ptm_type, in: [phospho, lys_methyl]}]   # phosphosites and methyllysines are the context marks (v1.6.0)
       columns: {accession: uniprot_accession, start: position, end: position, kind: ptm_type, source: evidence}
     nucleic_regions:       # runs of residues within 4 Å of RNA or DNA in PDB structures (the RNA and DNA interactions card)
-      input: methylarginine_nucleic_acid_regions_v1_4_3
+      input: methylarginine_nucleic_acid_regions_v1_5_1
       format: protein_records
       columns: {accession: uniprot_accession}
       values: [start, end, nucleic_acid, n_entries, methylarginines]
     dna_motifs:            # JASPAR profiles of the protein
-      input: methylarginine_dna_motifs_v1_4_3
+      input: methylarginine_dna_motifs_v1_5_1
       format: protein_records
       columns: {accession: uniprot_accession}
       values: [matrix_id, name, tf_class, tf_family, consensus]
     rna_bind_n_seq:        # ENCODE RNA Bind-n-Seq, in vitro
-      input: methylarginine_rna_bind_n_seq_v1_4_3
+      input: methylarginine_rna_bind_n_seq_v1_5_1
       format: protein_records
       columns: {accession: uniprot_accession}
       values: [encode_experiment, concentration, top_5mers, top_5mer_R]
     eclip:                 # ENCODE and ENCORE eCLIP, in cells
-      input: methylarginine_eclip_v1_4_3
+      input: methylarginine_eclip_v1_5_1
       format: protein_records
       columns: {accession: uniprot_accession}
       values: [source, experiment, cell_line, n_peaks, peaks_CDS, peaks_UTR3, peaks_UTR5, peaks_noncoding_exon, peaks_intron, peaks_intergenic,
@@ -2369,12 +2433,12 @@ website:                  # the look and words of the website (ptmc web); layout
       format: protein_records
       columns: {accession: canonical_UniProtAC, lines: lines, dependent: dependent_lines, median: median, common_essential: common_essential, histogram: histogram, lineages: most_dependent_lineages}
     experiments:                         # the Experiments on its methylation card
-      input: functional_experiments_v1_4_3
+      input: functional_experiments_v1_5_1
       format: protein_records
       columns: {accession: uniprot_accession, position: position, region: region, perturbation: perturbation, system: system, species: species,
                 readout: readout, direction: direction, finding: finding, figure: figure, reference: reference, doi: doi, read_from: read_from, in_release: in_release}
     clusters:                            # the Clustering card
-      input: methylarginine_proteins_v1_4_3
+      input: methylarginine_proteins_v1_5_1
       format: protein_records
       columns: {accession: uniprot_accession, spacing_min: nearest_spacing_min, spacing_median: nearest_spacing_median, max_3: max_sites_3aa, max_5: max_sites_5aa,
                 max_10: max_sites_10aa, max_20: max_sites_20aa, max_50: max_sites_50aa, window_size: best_window_aa, window_start: best_window_start,
@@ -2411,19 +2475,72 @@ website:                  # the look and words of the website (ptmc web); layout
       format: protein_values
       columns: {accession: uniprot_accession}
       values: [experiment, source, cell_line, n_peaks, top_target_genes, top_5mers]
+    # changes at every arginine (TCGA MC3 tumors, DepMap 24Q4 cell lines; the same rows as the arginine tables the questions read): one table a source, counted per site and new residue
+    tcga_changes_R:
+      input: tcga_changes_R
+      format: residue_changes
+      columns: {accession: canonical_UniProtAC, position: position, alt: alt, gene: gene}
+    depmap_changes_R:
+      input: depmap_changes_R
+      format: residue_changes
+      columns: {accession: canonical_UniProtAC, position: position, alt: alt, gene: gene}
+    cancer_background:     # per protein and residue: how many candidates it has and the changes at them, the base of its average
+      input: cancer_change_background
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, residue: residue, residues: residues}
+      values: [tcga_changes, depmap_changes]
+      include: [{column: residue, in: [R]}]
+    # germline variants at every arginine (ClinVar, gnomAD v4.1): one row per variant, read beside the site
+    clinvar_R:
+      input: clinvar_changes_R
+      format: site_table
+      columns: {accession: canonical_UniProtAC, position: position}
+      values: [alt, variation_id, germline_classification, clinsig_simple, review_stars, conditions, gene]
+    gnomad_R:
+      input: gnomad_changes_R
+      format: site_table
+      columns: {accession: canonical_UniProtAC, position: position}
+      values: [alt, variant_id, af, nhomalt, grpmax, gene]
+    clinvar_background:       # per protein and residue: how many candidates it has and the variants at them, the base of its average
+      input: clinvar_background
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, residue: residue, residues: residues}
+      values: [clinvar_variants]
+      include: [{column: residue, in: [R]}]
+    gnomad_background:       # per protein and residue: how many candidates it has and the variants at them, the base of its average
+      input: gnomad_background
+      format: protein_records
+      columns: {accession: canonical_UniProtAC, residue: residue, residues: residues}
+      values: [gnomad_variants]
+      include: [{column: residue, in: [R]}]
+    # changes the sources list that the cards do not show (the source's residue differs from UniProt's, or lies past its end): read whole, in files of their own
+    excluded_cancer:
+      input: variant_changes_excluded
+      format: site_table
+      columns: {accession: canonical_UniProtAC, position: position}
+      values: [source, source_id, gene, source_ref, canonical_ref, alt, reason]
+      include: [{column: source, in: [tcga_mc3, depmap_24q4]}]
+      include_any: [{column: source_ref, in: [R]}, {column: canonical_ref, in: [R]}]      # the source or UniProt names one of the site's residues
+    excluded_germline:
+      input: variant_changes_excluded
+      format: site_table
+      columns: {accession: canonical_UniProtAC, position: position}
+      values: [source, source_id, gene, source_ref, canonical_ref, alt, reason]
+      include: [{column: source, in: [clinvar, gnomad_v4_1]}]
+      include_any: [{column: source_ref, in: [R]}, {column: canonical_ref, in: [R]}]
   protein:                 # the protein page
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
-    order: [p-map, p-cell, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologs after the sites
+    order: [p-map, p-cell, p-cc, p-ix, p-na, p-sites, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologs after the sites
     groups:                # about five headings, each holding its folds (website.protein.groups)
       - {id: g-overview, title: Overview and map, folds: [p-map, p-cell, p-kinds]}
       - {id: g-sites, title: Sites, folds: [p-sites, p-cons, p-score, p-pert, p-exp, p-cluster, p-ptm]}
       - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
-      - {id: g-context, title: "Context: location, condensates, disease, cancer", switch: true, folds: [p-cond, p-dis, p-depmap]}
+      - {id: g-context, title: "Context: location, condensates, disease, cancer", switch: true, folds: [p-cond, p-dis, p-depmap, p-germline]}
       - {id: g-structure, title: Structure and sequence, folds: [p-struct, p-regions, p-seq]}
     headings:              # the cards front end's folds under labeled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
       - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
       - {id: h-sites, title: Sites and structure, folds: [p-score, p-pert, p-exp]}
-      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-kinds, p-regions, p-cons]}
+      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cons]}
       - {id: h-seq, title: Sequence features, folds: [p-cluster, p-ptm, p-seq]}
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
@@ -2451,6 +2568,7 @@ website:                  # the look and words of the website (ptmc web); layout
                      emergent properties: emergent properties, others: other}
       dependency:
         title: Cancer cell lines and tumors
+        excluded: cancer
         table: dependency
         unit: cancer cell lines
         sub: "Cancer genetics, not evidence about methylation: how much cancer cell lines depend on the gene in DepMap's CRISPR screens, and the protein changes at its arginines in TCGA tumors and DepMap cell lines."
@@ -2478,6 +2596,11 @@ website:                  # the look and words of the website (ptmc web); layout
         kinds: {lys_acyl: Lysine acylation, ub_sumo: Ubiquitin and SUMO}
         near: 10
         note: "Not an exhaustive list: it holds only what the cross-PTM table used here contains (an iPTMnet export of HPRD, literature mining and other curated sources, plus UniProt), so modifications reported elsewhere may be missing."
+      germline:
+        title: Germline variants
+        excluded: germline
+        sub: "Variants in ClinVar (clinical classifications) and gnomAD v4.1 (population frequencies) at the protein's arginines, against the protein's average for an arginine. A variant at a residue does not show an effect on methylation, and a variant seen in a population is not necessarily harmless."
+        note: "Data: ClinVar (NCBI; public domain; submitters may claim rights in what they submitted) and gnomAD v4.1 exomes (CC0 1.0; Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0). A variant counts only at an arginine of the canonical UniProt sequence."
     nucleic:               # the RNA and DNA interactions card (CONTRACTS.md, RNA and DNA interactions)
       title: RNA and DNA interactions
       kinds: {rna: RNA, dna: DNA}
@@ -2589,12 +2712,25 @@ website:                  # the look and words of the website (ptmc web); layout
         analyses: [disease_ontology, disease_term, disease_family, disease_family_additional]
         term_groups: {terms: disease_term, families: [disease_family, disease_family_additional]}
         live: {uniprot: true, open_targets: {graphql: "https://api.platform.opentargets.org/api/v4/graphql", size: 12, page: "https://platform.opentargets.org/target/{id}/associations"}}
+    genes:                 # one accession several genes encode: a short name for labels and titles, the full list on the page, every gene searchable
+      input: uniprot_entries
+      from: Entry
+      to: "Gene Names (primary)"
+      separator: ";"
+      symbols: sites/data/hgnc_symbols.tsv   # previous and alias symbols (HGNC, CC0): HIST1H4B finds H4
+      short:
+        - {pattern: "^H3-3[AB]$", replace: "H3.3"}
+        - {pattern: "^(H2A|H2B|H3|H4)[C-]\\d+[A-Z]?$", replace: "\\1"}
     numbering:             # proteins numbered as papers do: histones without the initiator methionine (H3R2 is UniProt R3)
-      - genes: "^(H1-\\d+|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
+      - genes: "^(H1-\\d+P?|H2A[A-Z0-9-]*|H2B[A-Z0-9-]*|H3C\\d+|H3-\\d+[A-Z]?|H3Y\\d|H4C\\d+|H4-\\d+|MACROH2A\\d|CENPA)$"
         names: "^(putative |core )?histone (h1|h2a|h2b|h3|h4|macro-h2a)\\b|^testis-specific h1 histone|^histone h3-like centromeric"
         offset: -1
         label: histone numbering
         note: "Histone numbering, without the initiator methionine"
+      - removed_met: sites/data/uniprot_init_met_removed.tsv     # UniProt: initiator methionine, Removed
+        offset: -1
+        label: numbered without the initiator methionine
+        note: "Numbered without the initiator methionine, which UniProt records as removed"
     facts:                 # the headline cards under the map: each opens its section, with a hover
       - {count: marks, of: candidates, label: "{residues} methylated", kind: Sites, glyph: pins, opens: p-seq,
          tip: {values: [{attribute: arg_enrichment, label: "Arginine methylation enrichment: log2", format: l2}, {attribute: arg_enrichment_q, label: q, format: p}]}}
@@ -2673,9 +2809,50 @@ website:                  # the look and words of the website (ptmc web); layout
         - {table: site, column: uniprot_states, label: UniProt, url: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"}
         - {attribute: neutral_loss, label: "Hartel 2019, neutral loss", source: Hartel2019}
         - {table: site, column: states_by_study_design, label: a study that looked for one state only}
-      changes:             # changes of the residue, with how many tumors or lines carry each (counts: a site_values column in step)
-        - {attribute: tcga, table: site, counts: tcga_change_tumours, unit: [tumor, tumors], label: TCGA}
-        - {attribute: depmap, table: site, counts: depmap_change_lines, unit: [cell line, cell lines], label: DepMap}
+      change_counts:       # changes at each candidate residue from residue_changes tables, beside the protein's average for that residue (the toggle: known sites only, or every arginine)
+        - {id: tcga, label: TCGA, unit: [tumor, tumors], tables: [tcga_changes_R], background: cancer_background, count: tcga_changes, gene: gene}
+        - {id: depmap, label: DepMap, unit: [cell line, cell lines], tables: [depmap_changes_R], background: cancer_background, count: depmap_changes, gene: gene}
+      variant_counts:      # germline variants at each candidate residue from per-variant tables, beside the protein's average for that residue (the toggle: known sites only, or every arginine)
+        - id: clinvar
+          lazy: true       # its rows are read from a file of their own when the card is opened
+          label: ClinVar
+          unit: [variant, variants]
+          tables: [clinvar_R]
+          background: clinvar_background
+          count: clinvar_variants
+          gene: gene       # the column naming the gene; the card shows it for a protein several genes encode
+          highlight: {column: germline_classification, matches: "(Pathogenic|Likely pathogenic)([;,/].*)?", label: P/LP, title: "Classified pathogenic or likely pathogenic by ClinVar"}
+          sort: [{column: review_stars, order: desc}]
+          fields:
+            - {column: germline_classification, label: Classification}
+            - {column: review_stars, label: Review, type: stars, max: 4}
+            - {column: conditions, label: Conditions, separator: "|", max: 60}
+          link: {column: variation_id, url: "https://www.ncbi.nlm.nih.gov/clinvar/variation/{}/"}
+        - id: gnomad
+          lazy: true
+          label: gnomAD
+          unit: [variant, variants]
+          tables: [gnomad_R]
+          background: gnomad_background
+          count: gnomad_variants
+          gene: gene       # the column naming the gene; the card shows it for a protein several genes encode
+          sort: [{column: af, order: desc}]
+          fields:
+            - {column: af, label: Allele frequency, type: sci}
+            - {column: nhomalt, label: Homozygotes, type: int}
+            - {column: grpmax, label: Highest group, words: {afr: African, amr: Admixed American, asj: Ashkenazi Jewish, eas: East Asian, fin: Finnish, mid: Middle Eastern, nfe: Non-Finnish European, sas: South Asian, remaining: Remaining}}
+          link: {column: variant_id, url: "https://gnomad.broadinstitute.org/variant/{}?dataset=gnomad_r4"}
+      excluded:            # changes the cards do not show, one list a card: kept in files of their own, counted by reason (CONTRACTS.md)
+        - id: cancer
+          lazy: true
+          tables: [excluded_cancer]
+          count_by: reason
+          reasons: {residue_differs: "the source's residue differs from UniProt's", position_beyond_sequence: "the position lies beyond the end of UniProt's sequence"}
+        - id: germline
+          lazy: true
+          tables: [excluded_germline]
+          count_by: reason
+          reasons: {residue_differs: "the source's residue differs from UniProt's", position_beyond_sequence: "the position lies beyond the end of UniProt's sequence"}
       calls:               # a mark per decrease or increase: site_measurements tables and category attributes
         tables: [perturbations]
         attributes: {gsk591: GSK591, ms023: MS023}
@@ -2706,6 +2883,9 @@ website:                  # the look and words of the website (ptmc web); layout
           self: homo-oligomer contacts in structures
           predicted: complex models (ProtVar, AlphaFold DB), not observations
         open: [writes, removes, binds_methylated, mutation_changes_binding, binds_region, other_reaction, not_a_protein]
+        rollup:              # the groups under two headings: the residue in the site's state, against in any other
+          - {label: Binds it methylated, groups: [binds_methylated]}
+          - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
         not_papers: [predicted]              # groups whose records are not counted among the papers
         kinds: {self: another copy, rna: RNA, dna: DNA, gene: Gene locus, small_molecule: Small molecule, peptide: Peptide or complex}
         species: Homo sapiens                # partners of another species are named with theirs
@@ -2781,7 +2961,7 @@ website:                  # the look and words of the website (ptmc web); layout
                        url: "https://www.ebi.ac.uk/interpro/entry/InterPro/{ref}/", sides: {N_terminal_to_domain: N-term, C_terminal_to_domain: C-term, inside: inside}}
     map:                   # the protein map: more ways to color the sites, and rows of the release's own evidence
       combined_marks: {default: folded}   # one "All modifications" block (a thin lane for each modification, the site's own first); the rows of the context marks fold behind it
-      default_off: [ptm]                  # the grey live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
+      default_off: [ptm]                  # the gray live UniProt row (glycosylation, lipidation, cross-links, other) starts off: the Rows menu turns it on
       hover:                # the hovers on the map: a concise card; the rest is on the pinned card and the site card
         site: [name, chips, nearby, click]
         chips: [studies]
@@ -3262,11 +3442,11 @@ website:                  # the look and words of the website (ptmc web); layout
           sections:
             - id: ix-who
               title: Who acts on the methylarginine
-              question: Which partners methylate these sites, demethylate them, or bind them methylated, and in which experiments?
+              question: Which partners methylate these sites, demethylate them, bind them methylated, or bind the residue in another state, and in which experiments?
               sub: methylarginines with a record
               blocks:
-                - {kind: table, table: records, group_by: group, columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
-                   where: [{column: group, in: [writes, removes, binds_methylated, mutation_changes_binding]}]}
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds it methylated, values: [binds_methylated]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
+                   where: [{column: group, in: [writes, removes, binds_methylated, binds_unmodified, binds_other_residue, binds_state_not_read, mutation_changes_binding]}]}
             - id: ixs-partners
               title: Writers, readers and other partners
               question: Which PRMTs and reader-domain proteins bind the methylated proteins?

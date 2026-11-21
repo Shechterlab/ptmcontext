@@ -190,6 +190,39 @@
     ['h-read', 'Reading a figure'],
     ['h-terms', 'Badges and terms'],
   ];
+  // The kit's shared glossary: a term the site's own words use gets its entry here, in every site that uses it. The site's
+  // own glossary (website.front.glossary) adds terms and takes the place of a shared one of the same name.
+  const SHARED_TERMS = [
+    ['IDR', /\bIDRs?\b/, 'an intrinsically disordered region, a stretch of protein with no fixed fold.'],
+    ['aa', /\baa\b/, 'amino acids (residues), as in "within 20 aa".'],
+    [
+      'Janus',
+      /\bJanus\b/,
+      'an IDR with a quarter to a third of its residues charged (FCR 0.25 to 0.35), positive and negative mixed so that it is neither clearly acidic nor basic (a Janus sequence in the Das–Pappu diagram of states).',
+    ],
+    [
+      'polyampholyte',
+      /polyampholyte/i,
+      'a region carrying both positive and negative charges. Strong polyampholytes have more than a third of their residues charged, with the charges balanced (FCR > 0.35, |NCPR| < 0.35).',
+    ],
+    ['FCR', /\bFCR\b/, 'fraction of charged residues: positive plus negative.'],
+    ['NCPR', /\bNCPR\b/, 'net charge per residue: positive minus negative.'],
+    [
+      'ChEP',
+      /\bChEP\b/,
+      'chromatin enrichment for proteomics: how strongly a protein is found with chromatin in interphase cells.',
+    ],
+  ];
+  function glossaryTerms() {
+    const own = D.front?.glossary || {},
+      have = new Set(Object.keys(own).map((t) => t.toLowerCase())),
+      text = JSON.stringify([D.analyses, { ...D.front, glossary: null }, D.start, D.overview, D.attribute_specs]);
+    return [
+      ...SHARED_TERMS.filter(([t, re]) => !have.has(t.toLowerCase()) && re.test(text)).map(([t, , d]) => [t, d]),
+      ...Object.entries(own),
+    ];
+  }
+  K.glossaryTerms = glossaryTerms;
   function helpPage() {
     const sec = (id, body) =>
       `<section id="${id}"><h3>${esc(SECTIONS.find((s) => s[0] === id)[1])}</h3>${body}</section>`;
@@ -197,6 +230,13 @@
     const term = (t, d) => `<dt>${t}</dt><dd>${d}</dd>`;
     return (
       `<div class="page-head"><h2>Help</h2></div><div class="doc help-doc">` +
+      (D.whats_new?.items?.length
+        ? `<section id="h-new" class="whats-new"><h3>${esc(D.whats_new.title || 'What’s new')}</h3><ul>${D.whats_new.items
+            .map((x) => `<li>${esc(x)}</li>`)
+            .join(
+              ''
+            )}</ul>${D.whats_new.doi ? `<p class="muted small">Data: ${esc(D.whats_new.doi)}</p>` : ''}</section>`
+        : '') +
       sec(
         'h-search',
         `<p>The search box takes a protein (gene name, UniProt accession or entry name), a list of proteins separated by ` +
@@ -209,7 +249,11 @@
                   .join(', ')})`
               : ''
           }. Separate values with <span class="mono">|</span> to match any; several terms must all hold. Naming one ` +
-          `protein opens its page. The line under the box counts what matches. ${mlink('search', 'Methods › Sources')} lists every key.</p>`
+          `protein opens its page. The line under the box counts what matches. ${mlink('search', 'Methods › Sources')} lists every key.</p>` +
+          (D.term_index
+            ? `<p>A pathway, GO term, protein class, condensate or disease can be typed by name or ID. The matching terms ` +
+              `are listed by source with their number of ${esc(W.marked)} proteins, and choosing one filters to those proteins.</p>`
+            : '')
       ) +
       sec(
         'h-filters',
@@ -257,14 +301,14 @@
               )
             : '') +
           term(
-            'Fails control',
+            "Doesn't hold (badge)",
             'The result disappears or reverses when the question is asked again with one change, such as only high-confidence sites. The badge names the control.'
           ) +
           term(
             'Controls',
             `The same question repeated with one change each. ${mlink('controls', 'Methods › Controls')} lists them.`
           ) +
-          Object.entries(D.front?.glossary || {})
+          glossaryTerms()
             .map(([t, d]) => term(esc(t), esc(cap(d))))
             .join('') +
           `</dl><p>More: ${mlink('', 'Methods')} · ${mlink('download', 'Download')} · ${mlink('cite', 'Cite')} · ` +

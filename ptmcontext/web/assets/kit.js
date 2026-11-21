@@ -37,6 +37,68 @@
       if (labels[a.id]) a.labels = labels[a.id];
     });
   }
+  // American spelling for the names a source writes in British English (a class, a disease, a domain), applied to what
+  // is displayed: the labels and texts below, and a protein's regions. Matching, links and downloads keep the source's
+  // own names; a code or column name (snake_case) is never a whole word here, so it is left alone.
+  const US_WORDS = {
+    defence: 'defense',
+    behaviour: 'behavior',
+    behavioural: 'behavioral',
+    tumour: 'tumor',
+    tumours: 'tumors',
+    signalling: 'signaling',
+    signalled: 'signaled',
+    modelled: 'modeled',
+    modelling: 'modeling',
+    labelled: 'labeled',
+    labelling: 'labeling',
+    haematological: 'hematological',
+    haematopoietic: 'hematopoietic',
+    haemoglobin: 'hemoglobin',
+    haemorrhage: 'hemorrhage',
+    anaemia: 'anemia',
+    leukaemia: 'leukemia',
+    ischaemia: 'ischemia',
+    oedema: 'edema',
+    oesophageal: 'esophageal',
+    oesophagus: 'esophagus',
+    paediatric: 'pediatric',
+    foetal: 'fetal',
+    centre: 'center',
+    colour: 'color',
+    sulphur: 'sulfur',
+    ageing: 'aging',
+    catalysed: 'catalyzed',
+    localised: 'localized',
+    localises: 'localizes',
+    localising: 'localizing',
+    stabilised: 'stabilized',
+    characterised: 'characterized',
+    recognised: 'recognized',
+    organised: 'organized',
+    summarised: 'summarized',
+  };
+  const US_RE = new RegExp(`\\b(?:${Object.keys(US_WORDS).join('|')}|\\w+isations?)\\b`, 'gi');
+  const us = (t) =>
+    typeof t !== 'string'
+      ? t
+      : t.replace(US_RE, (w) => {
+          const low = w.toLowerCase(),
+            to = US_WORDS[low] ?? low.replace(/isation/, 'ization');
+          return w === w.toUpperCase() && w.length > 1
+            ? to.toUpperCase()
+            : w[0] === w[0].toLowerCase()
+              ? to
+              : to[0].toUpperCase() + to.slice(1);
+        });
+  const usText = (o, keys) =>
+    keys.forEach((k) => {
+      const v = o[k];
+      if (typeof v === 'string') o[k] = us(v);
+      else if (v && typeof v === 'object') usText(v, Object.keys(v));
+    });
+  D.analyses.forEach((a) => usText(a, ['title', 'question', 'sub', 'describe', 'note', 'labels', 'help']));
+  if (D.front) usText(D.front, ['short', 'row_labels']);
   const W = D.words;
   const $ = (s) => document.querySelector(s);
   const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -58,23 +120,9 @@
   const fx = (v) => (v == null ? '–' : fxn(v) + '×');
   const pct = (k, n) => (n ? ((100 * k) / n).toFixed(1) + '%' : '–');
   const cap = (t) => String(t).charAt(0).toUpperCase() + String(t).slice(1);
-  const MONTHS = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
   const hdate = (iso) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
-    return m ? `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}` : String(iso || '');
+    return m ? `${m[1]}-${m[2]}-${m[3]}` : String(iso || '');
   };
   const htime = (iso) => {
     const m = /T(\d{2}):(\d{2})/.exec(String(iso || ''));
@@ -348,7 +396,18 @@
     how: false,
   };
   // modules (kit-*.js) register views, tabs, click handlers, tooltips and search hints here; the core starts them last
+  // one name for each action, wherever it is offered (labels only; each control keeps its behavior)
+  const ACT = {
+    details: 'Details', // opens a tile's question page
+    filters: 'Filters', // opens the filters
+    clearAll: 'Clear all',
+    resetView: 'Reset view', // back to the whole drawing
+    download: 'Download',
+    showMore: 'Show more', // expands a text or list in place
+    showLess: 'Show less',
+  };
   const K = (window.PTMC = {
+    ACT,
     D,
     W,
     A,
@@ -587,6 +646,11 @@
   };
   // smooth scrolling only for readers whose system does not ask for reduced motion
   K.smooth = () => (matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+  // a view that waits for data: a small spinner with a short text in the area being filled. Hidden for the first 300 ms
+  // (CSS delay, so a quick load shows nothing), a live status for screen readers, still under reduced motion
+  K.loading = (text, cls) =>
+    `<p class="ld${cls ? ' ' + esc(cls) : ''}" role="status" aria-live="polite"><i class="ld-spin" aria-hidden="true"></i>` +
+    `<span>${esc(text || 'Loading…')}</span></p>`;
   Object.assign(K, {
     GLOSS,
     BTN,
@@ -665,8 +729,8 @@
     const site = (D.site.examples || []).find((e) => /\s[A-Z]?\d+$/.test(e)),
       term = (D.site.examples || []).find((e) => e.includes(':'));
     $('#q').placeholder = `Gene, accession, ${site ? `site (${site}), ` : ''}gene list${
-      term ? `, or a filter such ` + `as ${term}` : ''
-    }`;
+      D.term_index ? ', pathway, GO term or disease' : ''
+    }${term ? `, or a filter such ` + `as ${term}` : ''}`;
     const bar = K.sel?.bar();
     $('#scope').classList.toggle('selected', !!bar);
     $('#scope').setAttribute('aria-live', 'polite');
@@ -676,7 +740,7 @@
       fbtn = K.sel
         ? `<button type="button" class="btn small filter-btn${nf ? ' on' : ''}" data-rail-open="filters" ` +
           `title="Open the filters: narrow every page to the ${esc(W.marks)} that match"><span aria-hidden="true">` +
-          `⏚</span> Filter${nf ? ` <span class="badge">${nf}</span>` : ''}</button>`
+          `⏚</span> ${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}</button>`
         : '';
     const hs = K.hl?.summary?.() || ''; // "Highlighted: FUS, TAF15 +1 ×", only while something is highlighted
     $('#scope').innerHTML =
@@ -694,7 +758,9 @@
     const v = S.view;
     if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return ''; // a protein of the selection: its page fades the sites outside it, and says so
     if (follows(v)) return ''; // the bar above says what is selected and how many; its Clear all removes it
-    return `<p class="sel-line off" role="status">${esc(K.views[v]?.offNote || 'Not filtered by your selection.')}</p>`;
+    const n = K.views[v]?.offNote;
+    const note = typeof n === 'function' ? n() : n || 'Not filtered by your selection.'; // a page may say nothing: its sets already include the selection
+    return note ? `<p class="sel-line off" role="status">${esc(note)}</p>` : '';
   }
   // the tabs, the same on every explorer and in this order. A tab whose data a site lacks is greyed out with its reason on
   // hover (website.tabs.<page>.empty words it), never hidden; a page of the site's own (website.pages) follows Network
@@ -1346,6 +1412,19 @@
     const or = valOf(r) !== t.eff || r.adj ? `OR ${fxn(t.eff)}${ci} · ` : '';
     return `${r.adj ? 'within abundance deciles: ' : ''}${or}q ${fq(t.q)}`;
   };
+  // a vertical line of an export from y0 to y1 with the stretches under a text left out (gaps: [x0, x1, y0, y1] boxes), so
+  // no text is crossed by a line whatever draws its halo
+  const vLine = (x, y0, y1, gaps, attrs) => {
+    const cuts = gaps.filter((g) => x >= g[0] && x <= g[1] && g[3] > y0 && g[2] < y1).sort((a, b) => a[2] - b[2]);
+    let out = '',
+      from = y0;
+    for (const g of cuts) {
+      if (g[2] > from) out += `<line x1="${x}" x2="${x}" y1="${from}" y2="${g[2]}" ${attrs}/>`;
+      from = Math.max(from, g[3]);
+    }
+    if (from < y1) out += `<line x1="${x}" x2="${x}" y1="${from}" y2="${y1}" ${attrs}/>`;
+    return out;
+  };
   // the counts behind a row's fold, for its hover
   const countLine = (r) => {
     if (r.a == null || !(r.a + r.b > 0)) return '';
@@ -1590,7 +1669,7 @@
   K.tileTitle = tileTitle;
   const detailsLink = (id) =>
     `<a class="tdetails" href="${esc(link('overview', id))}" title="Open the question: ` +
-    `every class, the tests and the downloads">details ›</a>`;
+    `every class, the tests and the downloads">${K.ACT.details} ›</a>`;
   K.detailsLink = detailsLink;
   function tile(card) {
     if (A[card.analysis].tile) return A[card.analysis].tile(card); // a question a module draws (kit-counts.js)
@@ -1789,7 +1868,7 @@
     cat: r.category,
     f: A[r.analysis || a.id] ? fkeyOf(a) : '',
     noun: SETS(a.id) ? 'proteins' : W.marks,
-    ov: SETS(a.id) && K.overlapHas?.(a.id) ? `s:${a.id}:${r.category}` : '',
+    ov: SETS(a.id) && K.overlapHas?.(a.id, r.category) ? `s:${a.id}:${r.category}` : '',
   });
   const frModel = (a, r) => ({
     label: r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
@@ -1880,7 +1959,7 @@
         : '') +
       `<div class="rp-acts">${d.f ? btn('sel', `Show these ${esc(d.noun)}`) : ''}${
         d.ov ? btn('ov', 'Compare sets with…') : ''
-      }${btn('open', 'Details')}</div>`;
+      }${btn('open', K.ACT.details)}</div>`;
     document.body.append(el);
     const r = row.getBoundingClientRect(),
       h = el.offsetHeight,
@@ -1979,7 +2058,7 @@
             `selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>`
           : ''
       }` +
-      `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">Details</button></p>`;
+      `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">${S.how ? 'Hide details' : 'Show details'}</button></p>`;
     const howP = S.how
       ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a ` +
         `log scale (the solid line is no difference). The number is the fold: for questions about where ${esc(W.marks)} ` +
@@ -2350,7 +2429,8 @@
           K.questions[a.id]?.tile ||
           a.control_of ||
           a.kind === 'attribute' ||
-          a.kind === 'module'
+          a.kind === 'module' ||
+          a.key_findings === false
         )
           return;
         (rowsOf(a, S.m) || []).forEach((r) => {
@@ -2358,6 +2438,7 @@
           const e = { a, r, q: r.adj ? r.adj.q : r.q, v: valOf(r), sec: x.name, card },
             at = named(KF?.pin, a.id, r.category);
           if (at >= 0) return pins.push({ ...e, at });
+          if (a.key_findings_off?.includes(r.category)) return;
           if (named(KF?.exclude, a.id, r.category) >= 0 || EXCL.test(r.label || '')) return;
           if (e.q == null || e.q > PADJ || e.v < minFold || controlFails(a, r.category).length) return;
           cands.push(e);
@@ -2379,10 +2460,23 @@
       const label = r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
         f = `${fxn(v)}×`,
         // "RGG" and "IDR" keep their capitals; "Nucleus" reads "nucleus" after "in"
-        low = (t) => (/^[A-Z][a-z]*(\s|$)/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t),
+        low = (t) =>
+          /^[A-Z][a-z]*(\s|$)/.test(t) && !/^[A-Z][a-z]{2}\s+(or|and)\s+[A-Z]/.test(t)
+            ? t.charAt(0).toLowerCase() + t.slice(1)
+            : t,
         where = /^(in|at|near|next to|within|inside|on)\s/i.test(label) ? low(label) : `in ${low(label)}`;
+      // a protein set reads as its plural noun: "P-body proteins", "Chromodomain proteins (reader)"
+      const noun = (t) => {
+        const [head, ...rest] = t.replace(/^(an?|the)\s+/i, '').split(/(?=\s\()/),
+          h = /\bproteins?$/i.test(head)
+            ? head.replace(/protein$/i, 'proteins')
+            : /\bproteome$/i.test(head)
+              ? head.replace(/proteome$/i, 'proteins')
+              : `${head} proteins`;
+        return cap(h) + rest.join('');
+      };
       return SETS(a.id)
-        ? `Proteins in <b>${esc(label)}</b> are ${esc(W.marked)} ${f} as often as other proteins.`
+        ? `<b>${esc(noun(label))}</b> are ${esc(W.marked)} ${f} as often as other proteins.`
         : `${esc(cap(W.marks))} are more common <b>${esc(where)}</b> (${f} other ${esc(W.residues)}).`;
     };
     return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings</h3><ol>${pick
@@ -2397,7 +2491,7 @@
   function overview() {
     REG = [];
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
-    if (selOn() && !K.sel.data()) return lead() + '<p class="muted">Loading the selection…</p>';
+    if (selOn() && !K.sel.data()) return lead() + K.loading('Loading the selection…');
     // a selection too small to test: its proteins drawn and the counts that hold for any selection; one that can be
     // tested: what sets it apart, in brief (the modules' blocks: kit-selview.js)
     const selBlocks = (list) => (list || []).map((f) => f()).join('');
@@ -2519,6 +2613,10 @@
   // reading; 'weaker': the same direction by 1.1x or more, not at q <= 0.05; 'reversed': the other way at q <= 0.05;
   // 'lost': otherwise; 'new': a reading only the control has
   const controlsOf = (a) => D.analyses.filter((x) => A[x.id]?.control_of === a.id);
+  // a control on a part of the marks that counted too few of them (analyses[].control_too_few: how many) shows no result,
+  // no verdict and no badge; its page and the Controls table say so in one plain sentence
+  const tooFewText = (x) =>
+    `Too few ${x.control_label || 'sites'} to test (n = ${x.control_too_few.toLocaleString('en-US')}).`;
   const ctlMethod = (a) => (a.kind === 'protein_sets' ? 'enricher' : vsMethod(S.m));
   // a control is read on the measure its tiles show: the fold (valOf), with the test's odds ratio and q (the adjusted test
   // where there is one). Verdicts, as the Controls table's key says them:
@@ -2557,6 +2655,7 @@
       const main = new Map(rowsFor(a, m).map((r) => [r.category, r])),
         out = {};
       controlsOf(a).forEach((x) => {
+        if (A[x.id].control_too_few != null) return;
         const cr = new Map(rowsFor(A[x.id], m).map((r) => [r.category, r]));
         main.forEach((r, cat) => {
           const c = cr.get(cat),
@@ -2584,7 +2683,16 @@
       or = r.method !== 'enricher' && t.eff != null ? `OR ${fxn(t.eff)}${ci}, ` : '';
     return `${or}q ${fq(t.q)}`;
   };
-  const failText = (f) => `fails control: ${f.label}`;
+  // "Doesn't hold with high-confidence sites (n = 83)", "Doesn't hold in detectable peptides": the control, and how many
+  // marks it counted
+  const failText = (f) => {
+    const n = D.run?.analyses?.[f.id]?.marks_where?.marks,
+      lab = String(f.label || f.id);
+    return (
+      `Doesn't hold ${/^(in|inside|with|within|among|at|near|without)\b/i.test(lab) ? '' : 'with '}${lab}` +
+      (n != null ? ` (n = ${int(n)})` : '')
+    );
+  };
   // one plain sentence: what happens to the result under the control, fold to fold; the numbers are in the Controls table
   const failTip = (f) =>
     `This result ${f.verdict === 'reversed' ? 'reverses' : 'disappears'} when ` +
@@ -2651,15 +2759,23 @@
   // the Controls table: each class's fold in the question and in each control, its test (odds ratio, interval, q) in the
   // cell's tooltip and accessible name. The controls describe the whole site: with a selection on they are shown so labelled
   function controlsBlock(a, m) {
-    const ctl = controlsOf(a);
-    if (!ctl.length) return '';
+    const all = controlsOf(a),
+      ctl = all.filter((x) => A[x.id].control_too_few == null),
+      few = all.filter((x) => A[x.id].control_too_few != null);
+    if (!all.length) return '';
+    const fewNotes = few.map((x) => `<p class="page-note note">${esc(tooFewText(A[x.id]))}</p>`).join('');
+    if (!ctl.length)
+      return `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls</h3>${fewNotes}</section>`;
     const main = rowsFor(a, m),
       of = (x) => new Map(rowsFor(A[x.id], m).map((r) => [r.category, r])),
       by = ctl.map(of);
     const cats = main.filter(
       (r) => r.dir === 'more' || r.dir === 'less' || by.some((b) => ctlTest(b.get(r.category) || {}).q <= PADJ)
     );
-    if (!cats.length) return '';
+    if (!cats.length)
+      return few.length
+        ? `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls</h3>${fewNotes}</section>`
+        : '';
     const cell = (r, v) => {
       if (!r) return v ? `– <b class="ctl-${v.replace(' ', '-')}">${esc(v)}</b>` : '–';
       const d = ctlDetail(r);
@@ -2694,7 +2810,7 @@
               .join('')}</tr>`
         )
         .join('') +
-      `</tbody></table></div></section>`
+      `</tbody></table></div>${fewNotes}</section>`
     );
   }
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
@@ -2777,15 +2893,17 @@
             .join('')}</p>`
         : '') +
       familyLine(a) +
-      `<section class="pcard">${
-        (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
-        (K.questionBody && K.questionBody(a, rows, card)) ??
-        cardBody(a, rows)
-      }${
-        selOn() && !vsOn() && !mod
-          ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
-          : ''
-      }</section>` +
+      (a.control_too_few != null
+        ? `<section class="pcard"><p class="note too-few">${esc(tooFewText(a))}</p></section>`
+        : `<section class="pcard">${
+            (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
+            (K.questionBody && K.questionBody(a, rows, card)) ??
+            cardBody(a, rows)
+          }${
+            selOn() && !vsOn() && !mod
+              ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
+              : ''
+          }</section>`) +
       (mod
         ? ''
         : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m === 'fisher' ? 'fisher' : 'mantel_haenszel'))
@@ -2805,6 +2923,10 @@
           }${ds.date ? ` (${esc(hdate(ds.date))})` : ''}${
             ds.doi ? `, archived ` + `as <a href="https://doi.org/${esc(ds.doi)}">doi:${esc(ds.doi)}</a>` : ''
           }.</p>`
+        : '') +
+      (D.run?.marks?.rows > D.run?.marks?.counted
+        ? `<p>This explorer analyzes ${int(D.run.marks.counted)} ${esc(W.marks)}; the release table holds ` +
+          `${int(D.run.marks.rows)} rows. Sites known only by similarity, or not on the UniProt snapshot, are left out.</p>`
         : '') +
       (D.download_terms ? `<p>${esc(D.download_terms)}</p>` : '') +
       (`<div class="tbl-card"><table class="tbl"><thead><tr><th>File</th><th>Format</th><th>What it holds</th></tr>` +
@@ -2885,7 +3007,7 @@
     ];
     return (
       `<section id="m-privacy"><h3>Licenses and privacy</h3>` +
-      (`<p>Licenses: the code (ptmcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} license${
+      (`<p>Licenses: the code (PTMcontext) is under the ${esc(hlicence(D.kit.licence || 'MIT'))} license${
         D.kit.url ? ` (<a href="${esc(D.kit.url)}">source</a>)` : ''
       }. This site’s ` +
         `data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}, and each source ` +
@@ -3255,7 +3377,7 @@
       `</section>` +
       everyTest() +
       (`<span id="m-g2"></span><section id="m-data"><h3>Data</h3><p>Sequences: ${esc(sn.release)}, ${int(sn.entries)} entries ` +
-        `(FASTA MD5 <span class="mono">${esc(sn.fasta_md5)}</span>). `) +
+        `(FASTA MD5 <span class="mono">${esc(sn.fasta_md5)}</span>). ${D.methods_note ? esc(D.methods_note) + ' ' : ''}`) +
       (`${cap(W.marks)}: ${int(m.counted)} on ${int(m.proteins)} proteins, from ${int(m.selected)} records${
         dropped.length ? ' (' + dropped.join('; ') + ', left out)' : ''
       }. Each file ` +
@@ -3307,7 +3429,7 @@
       return (
         `<h4>${esc(cap(c.label))}</h4>${c.note ? `<p>${esc(c.note)}.</p>` : ''}` +
         (n
-          ? `<p>A ${esc(W.mark)} counts when at least ${int(n.distinct_at_least)} independent sources report it.` +
+          ? `<p>A ${esc(W.mark)} counts when at least ${int(n.distinct_at_least)} independent ${int(n.distinct_at_least) === 1 ? 'source reports' : 'sources report'} it.` +
             (groups.length
               ? ` Sources counted once together: ${groups
                   .map(([g, xs]) => `${esc(g)} (${xs.map(nm).join(', ')})`)
@@ -3444,6 +3566,9 @@
       ? `protein-set ` + `test of the ${x.sets} input`
       : `layer ${x.layer} (${x.origin})${x.with ? ', made with the parameters of its definition' : ''}`;
   };
+  // a label read inside a sentence: lower case, except one that names something ('PubMed IDs')
+  const lcLabel = (t) => (/[A-Z]/.test(String(t).slice(1)) ? t : String(t).toLowerCase());
+  const PAGE_LABEL = 'Page:';
   function creditLines() {
     const sn = D.run.snapshot || {};
     const lines = [];
@@ -3456,7 +3581,9 @@
       } · ptmcontext ${D.kit.version}${sn.release ? ' · ' + sn.release : ''}`
     );
     if (selOn() && K.sel.data()) lines.push(`Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks})`);
-    // the commit, the FASTA MD5 and the page's address are not in the strip: they are in the file's metadata (provenance())
+    // the commit and the FASTA MD5 are not in the strip: they are in the file's metadata (provenance()); the page's full
+    // address (view, filters, protein, section) is, so the figure can be traced back to it
+    if (typeof location !== 'undefined' && /^https?:/.test(location.href)) lines.push(`${PAGE_LABEL} ${location.href}`);
     lines.push(`Exported ${hdate(stamp())}${CIT.licence ? ' · license ' + hlicence(CIT.licence) : ''}`);
     return lines;
   }
@@ -3860,7 +3987,8 @@
         selWords(rows);
     const parts = [],
       gp = [],
-      rp = [];
+      rp = [],
+      gaps = [];
     const T = (x, y, t, o = {}, to = parts) =>
       to.push(
         `<text x="${r1(x)}" y="${r1(y)}" font-size="${o.size || 11.5}"${
@@ -3913,7 +4041,7 @@
       // its name (two lines at most), then its meaning where there is room
       let name = wrap(r.label, LW, 11.5);
       if (name.length > 2) name = [name[0], fit(name.slice(1).join(' '), LW, 11.5)];
-      const h = Math.max(sharePair(r) && !r.vs ? 30 : 22, name.length * 14 + 8),
+      const h = Math.max(sharePair(r) && !r.vs ? 30 : 22, name.length * 15 + 8),
         yc = y + h / 2;
       name.forEach((t, k) => {
         const last = k === name.length - 1,
@@ -3922,7 +4050,7 @@
           last && shortHelp(r) && room > 30
             ? `<tspan fill="${PAL.muted}" font-size="10.5"> · ${esc(fit(r.help, room, 10.5))}</tspan>`
             : '';
-        T(P, yc + 4 - (name.length - 1) * 7 + k * 14, '', { raw: esc(t) + help }, rp);
+        T(P, yc + 4 - (name.length - 1) * 7.5 + k * 15, '', { raw: esc(t) + help }, rp);
       });
       T(C1, yc + 4, `${kfmt(r.a)} / ${kfmt(r.a + r.b)}`, { size: 10.5, anchor: 'end', fill: PAL.muted }, rp);
       T(C2, yc + 4, `${kfmt(r.c)} / ${kfmt(r.c + r.d)}`, { size: 10.5, anchor: 'end', fill: PAL.muted }, rp);
@@ -3966,8 +4094,10 @@
         { size: 11, anchor: 'end', weight: strong ? 'bold' : null, fill: strong ? PAL[r.dir] : PAL.muted },
         rp
       );
-      if (sharePair(r) && !r.vs)
+      if (sharePair(r) && !r.vs) {
         T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted, halo: true }, rp);
+        gaps.push([VX - tw(sharePair(r), 9.5) - 2, VX + 2, yc + 1, yc + 15]);
+      }
       if (d)
         T(
           DX,
@@ -3980,9 +4110,13 @@
     });
     M.axis.ticks.forEach((t) =>
       gp.push(
-        `<line x1="${r1(X0 + t.x * (X1 - X0))}" x2="${r1(X0 + t.x * (X1 - X0))}" y1="${top}" y2="${y + 2}" stroke="${
-          M.axis.log && t.lab === '1×' ? PAL.one : PAL.line
-        }" stroke-width="${M.axis.log && t.lab === '1×' ? 1.2 : 1}"/>`
+        vLine(
+          r1(X0 + t.x * (X1 - X0)),
+          top,
+          y + 2,
+          gaps,
+          `stroke="${M.axis.log && t.lab === '1×' ? PAL.one : PAL.line}" stroke-width="${M.axis.log && t.lab === '1×' ? 1.2 : 1}"`
+        )
       )
     );
     parts.push(...gp, ...rp);
@@ -4080,9 +4214,9 @@
     let y = 0;
     shown.forEach((r) => {
       const lab = wrap(r.label, LW, 11).slice(0, 2),
-        h = Math.max(!vs ? 32 : 22, lab.length * 13 + 8),
+        h = Math.max(!vs ? 32 : 22, lab.length * 15 + 8),
         yc = y + h / 2;
-      lab.forEach((t, k) => T(P, yc + 4 - (lab.length - 1) * 6.5 + k * 13, t));
+      lab.forEach((t, k) => T(P, yc + 4 - (lab.length - 1) * 7.5 + k * 15, t));
       if (r.absent) {
         T(VX, yc + 4, '–', { anchor: 'end', fill: PAL.muted });
         y += h;
@@ -4096,9 +4230,16 @@
               `<circle cx="${X(share1(r)).toFixed(1)}" cy="${yc}" r="4.6" fill="${col}" stroke="${PAL.bg}" stroke-width="1.5"/>`)
         );
       } else {
+        const gap = [[VX - tw(testLine(r), 9.5) - 2, VX + 2, yc + 1, yc + 15]];
         sc.grid.forEach((k) =>
           parts.push(
-            `<line x1="${X(2 ** k).toFixed(1)}" x2="${X(2 ** k).toFixed(1)}" y1="${y}" y2="${y + h}" stroke="${k === 0 ? PAL.ink : PAL.one}" stroke-width="1"${k === 0 ? '' : ' stroke-dasharray="2 3"'}/>`
+            vLine(
+              X(2 ** k).toFixed(1),
+              y,
+              y + h,
+              gap,
+              `stroke="${k === 0 ? PAL.ink : PAL.one}" stroke-width="1"${k === 0 ? '' : ' stroke-dasharray="2 3"'}`
+            )
           )
         );
         if (ciOf(r))
@@ -4362,6 +4503,38 @@
     });
     return moved;
   }
+  // the credit's "Page:" line (its address may be wrapped over several texts) as boxes in PDF points, to be made clickable
+  function pageLinkBoxes(svgEl, pw) {
+    const href = typeof location !== 'undefined' ? location.href : '',
+      box = svgEl.getBoundingClientRect(),
+      k = box.width ? pw / box.width : 0,
+      out = [];
+    let at = -1;
+    svgEl.querySelectorAll('#credit text, text').forEach((t) => {
+      const s = (t.textContent || '').trim();
+      let piece = '';
+      if (s.startsWith(PAGE_LABEL)) {
+        piece = s.slice(PAGE_LABEL.length).trim();
+        at = 0;
+      } else if (at >= 0 && at < href.length && s && href.startsWith(s, at)) piece = s;
+      else {
+        if (at >= 0) at = -1;
+        return;
+      }
+      if (!piece || !href.startsWith(piece, at < 0 ? 0 : at)) return;
+      at += piece.length;
+      const r = t.getBoundingClientRect(),
+        w = piece === s ? r.width : r.width * (piece.length / s.length);
+      out.push({
+        x: (r.right - w - box.left) * k,
+        y: (r.top - box.top) * k,
+        w: w * k,
+        h: r.height * k,
+        url: href,
+      });
+    });
+    return out;
+  }
   // a vector PDF of the figure's SVG, its text in Inter (monospace in IBM Plex Mono, so residues still line up; weights as
   // regular or bold, the two cuts embedded); where the vector drawing fails, the figure as a 3x PNG on a page of its size
   async function pdfExport(f, name) {
@@ -4452,7 +4625,9 @@
         n.setAttribute('stroke', 'none');
         n.parentNode.insertBefore(halo, n);
       });
+      const links = pageLinkBoxes(svgEl, pw);
       await window.svg2pdf.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: pw, height: ph });
+      links.forEach((l) => pdf.link(l.x, l.y, l.w, l.h, { url: l.url }));
     } catch (err) {
       const svg = await embedFonts(f.svg),
         img = new Image(),
@@ -4529,7 +4704,7 @@
     return Object.entries(SP)
       .filter(([, s]) => s.kind === 'list' && s.link)
       .map(([name, s]) => {
-        if (!SD) return `<section id="m-sources"><h3>${esc(s.label)}</h3><p class="muted">Loading…</p></section>`;
+        if (!SD) return `<section id="m-sources"><h3>${esc(s.label)}</h3>${K.loading('Loading…')}</section>`;
         const ti = (SD.attribute_names || []).indexOf(name),
           vals = SD.attributes[name],
           n = vals.map(() => 0);
@@ -4544,7 +4719,7 @@
           .filter(([v]) => v)
           .sort((x, y) => y[1] - x[1]);
         return (
-          `<section id="m-sources"><h3>${esc(s.label)}</h3><p>${int(rows.length)} ${esc(s.label.toLowerCase())} report the ${esc(W.marks)}, with the ` +
+          `<section id="m-sources"><h3>${esc(s.label)}</h3><p>${int(rows.length)} ${esc(lcLabel(s.label))} report the ${esc(W.marks)}, with the ` +
           `number each reports. ${esc(s.help || '')} Cite those whose ${esc(W.marks)} you use.</p>` +
           (`<div class="tbl-card"><table class="tbl"><thead><tr><th>${esc(s.label)}</th><th class="num">${esc(cap(W.marks))}</th><th>` +
             `Reference</th></tr></thead><tbody>`) +
@@ -4585,9 +4760,7 @@
         ? `<p>${CIT.preferred ? 'and the' : 'Please cite the'} original data sources${
             Object.values(D.attribute_specs || {}).some((x) => x.kind === 'list' && x.link)
               ? ` and the ${esc(
-                  Object.values(D.attribute_specs)
-                    .find((x) => x.kind === 'list' && x.link)
-                    .label.toLowerCase()
+                  lcLabel(Object.values(D.attribute_specs).find((x) => x.kind === 'list' && x.link).label)
                 )} <a href="#method/sources">` + `under Sources</a> you use`
               : ''
           }:</p><ul>${CIT.references
@@ -4723,7 +4896,9 @@
       old = host ? host.textContent : '';
     if (host) {
       host.disabled = true;
-      host.textContent = '…';
+      host.setAttribute('aria-busy', 'true');
+      host.textContent = 'Preparing download…';
+      await new Promise((r) => setTimeout(r, 40)); // let the cue paint before a long synchronous build
     }
     try {
       if (kind === 'tsv') download(name + '.tsv', tsv(), 'text/tab-separated-values');
@@ -4739,6 +4914,7 @@
     } finally {
       if (host) {
         host.disabled = false;
+        host.removeAttribute('aria-busy');
         host.textContent = old;
       }
     }
@@ -4779,6 +4955,7 @@
     provenance,
     download,
     hdate,
+    us,
     htime,
     hlicence,
     shortCommit,
@@ -5473,7 +5650,7 @@
       `<span class="dock-x dock-search"><input id="dock-q" type="search" autocomplete="off" spellcheck="false" ` +
       `placeholder="Search" aria-label="Search proteins and sites, or filter"><button type="button" class="dock-ico" ` +
       `data-dock-search aria-label="Search" title="Search and pages">⌕</button></span>` +
-      `<button type="button" class="dock-x dock-sel" data-rail-open="filters" aria-label="Selection and filters"></button>` +
+      `<button type="button" class="dock-x dock-sel" data-rail-open="filters" aria-label="${K.ACT.filters}"></button>` +
       `</span></div>`;
     d.dataset.bar = (HDR.bar || BAR_ITEMS).join(' ');
   }

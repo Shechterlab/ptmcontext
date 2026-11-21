@@ -182,7 +182,7 @@
     });
     const theme = document.documentElement.dataset.theme;
     document.documentElement.dataset.theme = 'light';
-    document.body.dataset.printFoot = `${D.site.name} · ${location.href.split('#')[0]} · printed ${K.hdate(new Date().toISOString())}. ${K.creditLines()[0] || ''}`;
+    document.body.dataset.printFoot = `${D.site.name} · ${location.href} · printed ${K.hdate(new Date().toISOString())}. ${K.creditLines()[0] || ''}`;
     setTimeout(() => {
       print();
       if (theme) document.documentElement.dataset.theme = theme;

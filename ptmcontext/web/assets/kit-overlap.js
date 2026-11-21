@@ -2776,9 +2776,13 @@
     [
       '[data-ovexp]',
       (btn) => K.exportFigure(btn.dataset.ovexp, figure, `${D.site.id || 'site'}_overlap`, btn, () => tsv()),
-    ],
-    ['[data-ov-compare]', (el) => K.go('overlap', { ot: [el.dataset.ovCompare], ou: 'proteins', or: '' })]
+    ]
   );
+  // first in line: the button sits inside a row whose own click filters the page
+  K.clicks.unshift([
+    '[data-ov-compare]',
+    (el) => K.go('overlap', { ot: [el.dataset.ovCompare], ou: 'proteins', or: '' }),
+  ]);
 
   // a "Compare with…" button on the rows of a protein-set question's page (the Overview's tiles have none: a row opens the page)
   function rowButtons() {
@@ -2786,7 +2790,7 @@
       `<button type="button" class="btn small ov-cmp" data-ov-compare="${esc(`s:${aid}:${cat}`)}" aria-label="Compare ${esc(name)} with other terms">Compare with…</button>`;
     if (S.view === 'overview' && S.arg && sets.includes(S.arg))
       document.querySelectorAll('#view .drow[data-cat]').forEach((r) => {
-        if (r.querySelector('.ov-cmp')) return;
+        if (r.querySelector('.ov-cmp') || !K.overlapHas(S.arg, r.dataset.cat)) return;
         // a button inside a role="button" row is a nested control: the row's name takes the role instead, the row keeps its click
         const ln = r.querySelector('.ln');
         if (ln && r.getAttribute('role') === 'button') {
@@ -2806,8 +2810,10 @@
   K.views.overlap = {
     render: view,
     title: () => K.tabName('overlap', 'Compare sets'),
-    offNote:
-      'Not filtered by your selection: this page compares the sets chosen on it. Add “The current selection” as a set to compare it.',
+    offNote: () =>
+      S.ot.includes('sel')
+        ? ''
+        : 'Not filtered by your selection: this page compares the sets chosen on it. Add “The current selection” as a set to compare it.',
   };
   K.tabs.push(() => ['overlap', 'Compare sets', null]);
   (K.methodParts ||= []).push(
@@ -2830,7 +2836,7 @@
         'none'
       }; a protein is a reader when it carries any of a family’s Pfam or InterPro entries.${(C.sources || []).map((src) => ` ${esc(src.title)}: ${src.n.toLocaleString('en')} sets; ${src.cite?.length ? 'cite ' + src.cite.map(esc).join('; ') : ''}.`).join('')}</p></section>`
   );
-  K.overlapHas = (aid) => sets.includes(aid); // a protein-set question whose classes the Overlap page takes as terms
+  K.overlapHas = (aid, cat) => sets.includes(aid) && (cat == null || rowsOf(aid).some((r) => r.id === cat)); // a protein-set question whose classes the Overlap page takes as terms
   K.overlap = {
     tableHtml,
     pairTableHtml,

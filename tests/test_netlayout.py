@@ -397,7 +397,7 @@ const K2={D:{site:{id:'x'},counts:{proteins:100},network:{options:{steps:[400,70
 window.PTMC_MODULES.forEach(m=>m(K2));
 const into=(q)=>{K2.paramsIn.forEach(f=>f(new URLSearchParams(q)));const o=new URLSearchParams();K2.paramsOut.forEach(f=>f(o));const none=new URLSearchParams();K2.nwWriting=false;K2.paramsOut.forEach(f=>f(none));K2.nwWriting=true;return none.toString()+'|'+o.toString();};
 K2.nwWriting=true;
-console.log(JSON.stringify([into('p=P35637,Q92804,BAD&clusters=8&colour=disordered&score=400&sources=1&view=table&top=500'),into('p=P35637&nz=2.5,0.4,0.6&nk=8'),typeof K2.netcore.exportFrame,typeof K2.network.exportFrame]));
+console.log(JSON.stringify([into('p=P35637,Q92804,BAD&clusters=8&colour=disordered&score=400&sources=1&view=table&top=500'),into('p=P35637&nz=2.5,0.4,0.6&nk=8'),into('clusters=8&color=disordered'),typeof K2.netcore.exportFrame,typeof K2.network.exportFrame]));
 """
     )
     got = _node(prog, {'net': str(ASSETS / 'kit-network.js')})
@@ -406,12 +406,15 @@ console.log(JSON.stringify([into('p=P35637,Q92804,BAD&clusters=8&colour=disorder
     )  # a link followed from the page does not carry the settings: only the page's own address does
     q = dict(x.split('=') for x in got[0][1:].split('&'))
     # every setting that differs from the defaults is written; a bad accession is dropped; the pins come out comma-separated
-    assert q['p'] == 'P35637%2CQ92804' and q['clusters'] == '8' and q['colour'] == 'disordered' and q['score'] == '400'
+    assert q['p'] == 'P35637%2CQ92804' and q['clusters'] == '8' and q['color'] == 'disordered' and q['score'] == '400'
     assert q['sources'] == 'g' and q['view'] == 'table' and q['top'] == '500'
     # an address with a pin and no settings leaves the settings as they were
     assert got[1].startswith('|p=P35637') and 'clusters=8' in got[1]
     assert 'zoom=2.5%2C0.4%2C0.6' in got[1]  # the zoom and its centre are in the address
-    assert got[2] == 'function' and got[3] == 'function'
+    # an old link with colour= still sets the colour, and every address is written with color=
+    assert q['color'] == 'disordered' and 'colour' not in q
+    assert 'color=disordered' in got[2].split('|')[1] and 'colour' not in got[2]
+    assert got[3] == 'function' and got[4] == 'function'
 
 
 @pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
@@ -477,3 +480,28 @@ def test_the_frame_of_a_pinned_view_holds_every_lit_cluster_whole_with_its_margi
         assert inside(box[0], box[1], 24) and inside(box[2], box[3], 24)
     # and the window is no larger than it has to be: one of the margins touches the extreme
     assert B['w'] > 48 and B['h'] > 48
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_an_exported_link_is_cut_where_it_passes_under_a_name():
+    cases = {
+        'through': [[0, 0], [100, 0], [[40, -5, 60, 5]]],
+        'clear': [[0, 0], [100, 0], [[40, 10, 60, 20]]],
+        'two': [[0, 0], [100, 100], [[20, 15, 30, 35], [60, 55, 70, 75]]],
+        'vertical': [[50, 0], [50, 100], [[40, 40, 60, 60]]],
+    }
+    got = _node(
+        _harness(
+            'const o={};for(const [k,[a,b,bx]] of Object.entries(IN))o[k]=K.netlayout.cutSegment(a,b,bx,1);'
+            'console.log(JSON.stringify(o));'
+        ),
+        cases,
+    )
+    assert got['through'] == [[0, 0, 39, 0], [61, 0, 100, 0]]
+    assert got['clear'] == [[0, 0, 100, 0]]
+    assert len(got['two']) == 3
+    assert got['vertical'] == [[50, 0, 50, 39], [50, 61, 50, 100]]
+    for pieces, boxes in ((got['two'], cases['two'][2]),):
+        for x0, y0, x1, y1 in pieces:
+            for b in boxes:
+                assert not (b[0] < (x0 + x1) / 2 < b[2] and b[1] < (y0 + y1) / 2 < b[3])

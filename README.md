@@ -1,6 +1,6 @@
-# ptmcontext
+# PTMcontext
 
-ptmcontext tests which human proteins carry a post-translational modification, and which regions, domains, motifs
+PTMcontext tests which human proteins carry a post-translational modification, and which regions, domains, motifs
 and neighboring modifications its sites are enriched in. Every test runs two ways: across all proteins (Fisher's
 exact test) and within each protein (Mantel–Haenszel, comparing each site with the other residues of its own
 protein). Python computes the statistics and builds the site. JavaScript displays them. The published sites are static files on GitHub Pages.
@@ -16,7 +16,7 @@ Landing page: <https://shechterlab.github.io/ptmcontext/>
 | Human lysine modification sites (acetylation and other acylations, ubiquitination, SUMOylation) | <https://shechterlab.github.io/ptmcontext/lysine/> |
 | Human phosphosites | <https://shechterlab.github.io/ptmcontext/phospho/> |
 
-The methylarginine site rebuilds the statistics of release v1.4.3 of the
+The methylarginine site rebuilds the statistics of release v1.6.0 (its methylarginine data equal v1.4.3) of the
 [Methylarginine Site Explorer](https://github.com/Shechterlab/PTM_Pipeline) without running its code.
 `tests/test_parity_v1_4_3.py` checks that 4,549 of the release's 4,659 rows are reproduced exactly.
 The methyllysine, phosphosite and lysine modification sites have no earlier release, so all their statistics are new. Each site also shows the
@@ -28,11 +28,12 @@ describes its inputs, tests and caveats.
 ## Data
 
 Every input is in a manifest with its source, release and MD5. Staging is the only step that uses the network.
-The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pipeline) pinned by commit: v1.4.3 for
-methylarginine, and v1.5.0 for methyllysine, phosphorylation, acetylation and other acylations, ubiquitination and
-SUMOylation. The v1.5.0 tables come from UniProt, iPTMnet, CPLM 4.0, Berryhill et al. 2023, Ochoa et al. 2020, Hendriks et al. 2017 (SUMO-2) and Akimov et al. 2018 (ubiquitination). CPLM
-4.0 states no license. Its human lysine methylation, acetylation, other acylation, ubiquitination and SUMOylation sites
-are included and cited.
+The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pipeline) pinned by commit: v1.6.0 for every
+site (the methylarginine data of v1.6.0 are byte for byte those of v1.4.3). The v1.6.0 context tables come from UniProt, iPTMnet, Berryhill et al. 2023, Ochoa et al. 2020, Hendriks et al. 2017 (SUMO-2) and Akimov et al. 2018
+(ubiquitination).
+
+To cite the data, use the archive of this release, v1.6.0 (doi:10.5281/zenodo.24406688), and
+the archive of all versions (doi:10.5281/zenodo.22696798). Each site's Methods page (Cite) lists these with the studies and databases behind its sites.
 
 ## Build a site
 
@@ -93,6 +94,7 @@ ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml 
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the pieces and the rules they enforce |
 | [CONTRACTS.md](CONTRACTS.md) | the file formats |
 | [ADDING_DATA.md](ADDING_DATA.md) | adding a source, a mark or a site |
+| [docs/DATA_STANDARD.md](docs/DATA_STANDARD.md) | the standard a new source must meet, and what a contributor sends |
 | [AGENTS.md](AGENTS.md) | the rules for anyone changing this repository |
 
 ## License

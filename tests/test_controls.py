@@ -30,6 +30,78 @@ def test_distinct_groups_count_a_laboratory_once_and_a_database_not_at_all():
         S._holds(frame, {**cond, 'not_counted': ['L1']})
 
 
+def test_distinct_units_pool_a_marks_rows_and_count_a_paper_once():
+    frame = pd.DataFrame(
+        {
+            'acc': ['P1', 'P1', 'P2', 'P3', 'P4', 'P4', 'P5', 'P6'],
+            'pos': [1, 1, 5, 7, 9, 9, 2, 3],
+            'sources': [
+                'UniProt; Hendriks 2017',  # the same paper twice: one unit
+                'Ochoa 2020; iPTMnet',  # P1 pools its rows: 28112733 + Ochoa
+                'Ochoa 2020; UniProt',  # Ochoa alone: one unit
+                'UniProt; iPTMnet',  # databases add nothing
+                'UniProt',
+                'UniProt',
+                'UniProt; Akimov 2018',
+                'UniProt',
+            ],
+            'pmids': ['28112733', '', '', '111;222', '333', '444', '29967540', '555;666'],
+            'evidence_class': [
+                'experimental',
+                'experimental',
+                'experimental',
+                'experimental',
+                'experimental',
+                'by-similarity',  # gives no units: P4 has one
+                'experimental',
+                'by-similarity',  # P6: nothing counts
+            ],
+        }
+    )
+    cond = {
+        'distinct_units_at_least': 2,
+        'units': {
+            'columns': ['pmids'],
+            'direct': {
+                'column': 'sources',
+                'map': {
+                    'Ochoa 2020': 'Ochoa 2020',
+                    'Hendriks 2017': '28112733',
+                    'Akimov 2018': '29967540',
+                },
+            },
+            'only_where': {'column': 'evidence_class', 'equals': 'experimental'},
+        },
+    }
+    key = frame['acc'] + ':' + frame['pos'].astype(str)
+    got = dict(zip(key, S._holds(frame, cond, key)))
+    assert got == {'P1:1': True, 'P2:5': False, 'P3:7': True, 'P4:9': False, 'P5:2': False, 'P6:3': False}
+    # the paper cited by a database and also a direct dataset counts once
+    both = frame.iloc[[0]].assign(pmids='28112733')
+    assert not S._holds(both, cond, key.iloc[[0]]).iloc[0]
+    with pytest.raises(ValueError, match='marks_where only'):
+        S._holds(frame, cond)
+
+
+def test_distinct_units_are_pooled_per_type_when_per_is_given():
+    """One lysine with an acetyl record of paper A, a ubiquitin record of paper B and a second ubiquitin record of
+    paper C: pooled over all rows it has three units; per type, only the ubiquitin rows reach two."""
+    frame = pd.DataFrame(
+        {
+            'acc': ['P1', 'P1', 'P1', 'P2', 'P2'],
+            'pos': [1, 1, 1, 4, 4],
+            'type': ['acetyl', 'ubiquitin', 'ubiquitin', 'sumo', 'sumo'],
+            'pmids': ['1', '2', '3', '7', '7'],
+        }
+    )
+    cond = {'distinct_units_at_least': 2, 'units': {'columns': ['pmids']}}
+    key = frame['acc'] + ':' + frame['pos'].astype(str)
+    assert list(S._holds(frame, cond, key)) == [True, True, True, False, False]
+    assert list(S._holds(frame, {**cond, 'per': 'type'}, key)) == [False, True, True, False, False]
+    with pytest.raises(ValueError, match='per column'):
+        S._holds(frame, {**cond, 'per': 'nope'}, key)
+
+
 def test_digest_peptide_lengths_leave_the_residue_itself_uncut():
     # cuts after K3 (next R), not after R4 (next P), after K8 and R12; K15 is the last residue
     seq = 'MAKRPGGKAAARSTK'
@@ -162,6 +234,7 @@ def test_the_browser_retests_a_flags_control_as_the_run(tmp_path):
             'id': 'x',
             'label': 'kind x',
             'analyses': ['motif'],
+            'min_marks': 1,
             'marks_where': {'column': 'kind', 'equals': 'x'},
             'marks_outside': 'left_out',
         }
@@ -265,7 +338,7 @@ def test_a_failed_control_keeps_its_row_with_a_badge_in_the_kit():
     # the badge sits after the tile row (not inside its button), links to Methods > Controls, and the row's name says it
     assert 'class="ctl-fail"' in js and 'class="ctl-badge" href="${esc(link(\'method\', \'controls\'))}"' in js
     assert 'id="q-controls"' in js
-    assert 'fails control: ${f.label}' in js and 'badge: fails.map(failText)' in js
+    assert "Doesn't hold ${" in js and 'badge: fails.map(failText)' in js
     assert '<span class="vh">, ${esc(x.badge)}</span>' in (ASSETS / 'kit-tile.js').read_text()
     css = (ASSETS / 'kit.css').read_text()
     badge = css[css.index('.ctl-badge {') :]
@@ -349,6 +422,7 @@ def test_a_badge_click_opens_methods_controls(tmp_path):
             'label': 'RA sites only',
             'when': 'only the RA sites are compared',
             'analyses': ['motif'],
+            'min_marks': 1,
             'marks_where': {'column': 'kind', 'equals': 'a'},
             'marks_outside': 'left_out',
         }
@@ -388,3 +462,40 @@ def test_a_badge_click_opens_methods_controls(tmp_path):
     assert out['tip'].startswith('This result reverses when only the RA sites are compared (')
     # each cell shows the fold, its test in the tooltip
     assert out['cells'] and all('× q ' in c[0] and c[1].startswith('OR ') and ', q ' in c[1] for c in out['cells'])
+
+
+def test_a_control_with_too_few_marks_shows_no_result(tmp_path):
+    """A control on a part of the marks needs `min_marks` marks (default 100): below it the web data says how many it
+    counted (control_too_few), and the kit draws one plain sentence instead of a result, verdicts or badges."""
+    from ptmcontext import web
+
+    def control(**extra):
+        return {
+            'id': 'hc',
+            'label': 'high-confidence sites',
+            'analyses': ['confidence'],
+            'marks_where': {'column': 'studies', 'distinct_at_least': 2},
+            **extra,
+        }
+
+    root, path = _with_controls(tmp_path, [control()])
+    base = {a['id']: a for a in S.load_site(path)['analyses']}
+    assert base['confidence_hc']['control_min_marks'] == 100
+    assert 'control_min_marks' not in base['confidence']
+    root, path = _with_controls(tmp_path / 'b', [control(min_marks=2)])
+    assert {a['id']: a for a in S.load_site(path)['analyses']}['confidence_hc']['control_min_marks'] == 2
+    run = {'analyses': {'confidence_hc': {'marks_where': {'marks': 83}}}}
+    a = {
+        'id': 'confidence_hc',
+        'control_of': 'confidence',
+        'control_label': 'high-confidence sites',
+        'control_min_marks': 100,
+    }
+    assert web._control(a, run)['control_too_few'] == 83
+    assert 'control_too_few' not in web._control({**a, 'control_min_marks': 83}, run)  # enough: unchanged
+    assert 'control_too_few' not in web._control(a, {})  # no count: nothing hidden
+    assert web._control({'id': 'x'}, run) == {}
+    js = (ASSETS / 'kit.js').read_text()
+    assert 'Too few ${x.control_label' in js and 'A[x.id].control_too_few != null) return;' in js
+    schema = json.loads((S.Path(S.__file__).parent / 'schemas' / 'site.schema.json').read_text())
+    assert schema['properties']['controls']['items']['properties']['min_marks']['minimum'] == 1

@@ -318,6 +318,7 @@ def partners(
     run: dict | None = None,
     paths: dict | None = None,
     root: Path | None = None,
+    multi: dict | None = None,
 ) -> dict:
     """data/partners.json: the partners of the marked proteins (a protein_partners table)."""
     from . import tables as T
@@ -363,6 +364,9 @@ def partners(
         except ValueError:
             continue
         rows.setdefault(pidx[r['accession']], []).extend([aidx[r['partner_accession']], sc])
+    for k, a in enumerate(accs):  # a protein several genes encode is named by its short name, as on the page
+        if a in (multi or {}):
+            gene[k] = multi[a]['short']
     return {
         'genes': gene,
         'accessions': accs,
@@ -400,7 +404,9 @@ def class_set_pairs(site: dict, inputs: dict, root: Path | None = None, role: st
     return pd.DataFrame(sorted(pairs), columns=['set', 'protein']), labels, set(accs)
 
 
-def data(site: dict, run: dict, sel: dict, listing: list, fasta: Path | None, out: Path, log=print) -> dict:
+def data(
+    site: dict, run: dict, sel: dict, listing: list, fasta: Path | None, out: Path, log=print, multi: dict | None = None
+) -> dict:
     """Add the search's data to the selection data (windows, nearby distances); write data/partners.json; return
     what the page's own data carry (D.search)."""
     web = site.get('website') or {}
@@ -440,7 +446,7 @@ def data(site: dict, run: dict, sel: dict, listing: list, fasta: Path | None, ou
             log('  website.search.partners: its table is not in the run record; left out')
             sc.pop('partners')
         else:
-            p = partners(listing, spec, path, pt, run, paths, Path(site.get('__root__', '.')))
+            p = partners(listing, spec, path, pt, run, paths, Path(site.get('__root__', '.')), multi)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(json.dumps(p, separators=(',', ':')))
             labels, info = class_words(pt)

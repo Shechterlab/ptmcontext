@@ -1,11 +1,12 @@
 # The landing page of `ptmc pages` (read from beside the first site file, or --landing FILE): the page's own words and
 # the cards of sites not built yet. Each built site's card comes from its site file (website.name, band, accent, art,
 # landing.tagline / question / cta, stats) and its build (the numbers, the strongest result). CONTRACTS.md, "The landing page".
-title: PTMContext
+title: PTMcontext
 lede: Analysis tools for protein post-translational modifications
-description: "PTMContext: analysis tools for protein post-translational modifications."
+description: "PTMcontext: analysis tools for protein post-translational modifications."
 logo: sites/art/ptmcontext_logo.svg
-logo_dots: cards           # the mark's dots: one per card, in its band colour
+favicon: sites/art/ptmcontext_favicon.svg   # the bolder mark for the tab icon
+logo_dots: cards           # the mark's dots: one per card, in its band color
 switcher: {label: PTM}
 card: {result: false, question: false}    # the card's "Strongest result" block and italic question line (both default off)
 cta: "Explore {marks} →"
@@ -20,3 +21,16 @@ footer:
     - {label: Cite, url: "https://github.com/Shechterlab/ptmcontext/blob/main/CITATION.cff"}
     - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Shechter Lab, url: "https://www.shechterlab.org/"}
+references:                # lines under the intro: a label with a DOI (and all versions), or text with an optional link
+  - {label: Paper, doi: "10.1016/j.chembiol.2026.09.011"}
+  - {label: Data, doi: "10.5281/zenodo.24406688", all_versions: "10.5281/zenodo.22696798"}
+  - {label: Data, text: PTM_Pipeline v1.6.0, url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0"}
+whats_new:             # a short list of what a release added: the landing page and each site's Help show it
+  title: What’s new in v1.6.0
+  items:
+    - "Cancer changes at every candidate residue (TCGA tumors, DepMap cell lines) and germline variants (ClinVar, gnomAD), with the gene named for proteins that several genes encode."
+    - "A count of the changes the cards do not show, with a download of those rows."
+    - "Histones and proteins without their initiator methionine are numbered as papers number them; one short name (H4) for a protein several genes encode, and search finds old gene names too."
+    - "The four human sites show the same protein-page cards, wherever the data have the residue."
+    - "Network clusters are named against the annotated human proteome, with a tooltip of each cluster's best terms and a Highlight a term box."
+  doi: "10.5281/zenodo.24406688"

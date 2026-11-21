@@ -146,7 +146,7 @@ HIGH = {
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
 def test_where_nearly_every_protein_has_a_mark_the_ramp_is_fitted_to_the_data_and_the_sentence_says_so(tmp_path):
-    out = _run(tmp_path, _build(tmp_path / 'b'), [], patch=f'D.cell_pct = {json.dumps(HIGH)};')
+    out = _run(tmp_path, _build(tmp_path / 'b', 'percent'), [], patch=f'D.cell_pct = {json.dumps(HIGH)};')
     # the overall share is 96%: the ramp runs from the lowest share (38 of 40 = 95%) to 100%
     assert out['range'] == {'lo': 0.95, 'hi': 1}
     assert out['by']['nucleoplasm']['tone'] == 'p0'  # 95% and 97% of 40 and 30: the lowest step

@@ -659,8 +659,7 @@
       k = Math.min(ord.length, k + 10);
     }
   }
-  const loadingView = () =>
-    `<div class="page-head"><h2>Sites</h2></div><p class="muted">Loading the ${esc(W.marks)}…</p>`;
+  const loadingView = () => `<div class="page-head"><h2>Sites</h2></div>${K.loading(`Loading the ${W.marks}…`)}`;
   function view() {
     if (T.key !== K.tables.selKey()) {
       T.key = K.tables.selKey();
@@ -1074,7 +1073,7 @@
     [
       '[data-sites-3d]',
       (el) => {
-        const [acc, pos] = el.dataset.sites3d.split('/');
+        const [acc, pos] = el.dataset['sites-3d'].split('/');
         if (typeof K.show3d === 'function') K.show3d(acc, +pos);
       },
     ],

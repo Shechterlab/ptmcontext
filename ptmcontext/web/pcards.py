@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-CARDS = ('location', 'dependency', 'perturbations', 'experiments', 'clustering', 'other_ptms')
+CARDS = ('location', 'dependency', 'perturbations', 'experiments', 'clustering', 'other_ptms', 'germline')
 FOLD = re.compile(r'^p-[a-z0-9-]+$')
 
 
@@ -86,8 +86,75 @@ def problems(site: dict) -> list[str]:
         need('experiments', 'table', cards['experiments'].get('table'), 'protein_records', ('reference', 'finding'))
     if 'clustering' in cards:
         need('clustering', 'table', cards['clustering'].get('table'), 'protein_records', ('spacing_median',))
-    if 'other_ptms' in cards:
-        need('other_ptms', 'table', cards['other_ptms'].get('table'), 'residue_evidence')
+    if 'other_ptms' in cards and (cards['other_ptms'].get('table') or not site.get('context_marks')):
+        need('other_ptms', 'table', cards['other_ptms'].get('table'), 'residue_evidence')  # context marks replace it
+    for k, x in enumerate((cfg.get('card') or {}).get('change_counts') or []):
+        w = f'website.protein.card.change_counts[{k}]'
+        if not x.get('tables'):
+            out.append(f'{w}: names no tables (residue_changes tables of website.tables)')
+        for name in x.get('tables') or []:
+            if name not in tables:
+                out.append(f'{w}.tables: no table {name!r} in website.tables')
+            elif tables[name].get('format') != 'residue_changes':
+                out.append(
+                    f'{w}.tables: {name!r} is a {tables[name].get("format")} table; read a residue_changes table'
+                )
+            elif x.get('gene') and x['gene'] not in _cols(tables[name]):
+                out.append(f'{w}.tables: table {name!r} has no column {x["gene"]!r} (the card reads it as the gene)')
+        bg = x.get('background')
+        if not bg:
+            out.append(f'{w}: names no background table (a protein_records table with residue, residues and the count)')
+        elif bg not in tables:
+            out.append(f'{w}.background: no table {bg!r} in website.tables')
+        else:
+            missing = [c for c in ('residue', 'residues', x.get('count')) if c not in _cols(tables[bg])]
+            out.extend(f'{w}.background: table {bg!r} has no column {c!r} (the card reads it)' for c in missing)
+    excl = (cfg.get('card') or {}).get('excluded') or []
+    ids = {x.get('id') for x in excl}
+    for k, x in enumerate(excl):
+        w = f'website.protein.card.excluded[{k}]'
+        if not x.get('id'):
+            out.append(f'{w}: needs an id')
+        if not x.get('tables'):
+            out.append(f'{w}: names no tables (site_table tables of website.tables)')
+        for name in x.get('tables') or []:
+            if name not in tables:
+                out.append(f'{w}.tables: no table {name!r} in website.tables')
+            elif tables[name].get('format') != 'site_table':
+                out.append(f'{w}.tables: {name!r} is a {tables[name].get("format")} table; read a site_table table')
+            elif x.get('count_by') and x['count_by'] not in _cols(tables[name]):
+                out.append(f'{w}.tables: table {name!r} has no column {x["count_by"]!r} (count_by)')
+    for cname, c in cards.items():
+        if isinstance(c, dict) and c.get('excluded') and c['excluded'] not in ids:
+            out.append(
+                f'website.protein.cards.{cname}.excluded: no entry {c["excluded"]!r} in website.protein.card.excluded'
+            )
+    vcs = (cfg.get('card') or {}).get('variant_counts') or []
+    if 'germline' in cards and not vcs:
+        out.append('website.protein.cards.germline: names no sources (website.protein.card.variant_counts)')
+    for k, x in enumerate(vcs):
+        w = f'website.protein.card.variant_counts[{k}]'
+        if not x.get('tables'):
+            out.append(f'{w}: names no tables (site_table tables of website.tables, one row per variant)')
+        for name in x.get('tables') or []:
+            if name not in tables:
+                out.append(f'{w}.tables: no table {name!r} in website.tables')
+            elif tables[name].get('format') != 'site_table':
+                out.append(f'{w}.tables: {name!r} is a {tables[name].get("format")} table; read a site_table table')
+            else:
+                shown = [x.get('alt', 'alt'), x.get('gene'), *[f.get('column') for f in x.get('fields') or []]]
+                shown += [(x.get(key) or {}).get('column') for key in ('highlight', 'link')]
+                shown += [s.get('column') for s in x.get('sort') or []]
+                missing = sorted({c for c in shown if c and c not in _cols(tables[name])})
+                out.extend(f'{w}.tables: table {name!r} has no column {c!r} (the card reads it)' for c in missing)
+        bg = x.get('background')
+        if not bg:
+            out.append(f'{w}: names no background table (a protein_records table with residue, residues and the count)')
+        elif bg not in tables:
+            out.append(f'{w}.background: no table {bg!r} in website.tables')
+        else:
+            missing = [c for c in ('residue', 'residues', x.get('count')) if c not in _cols(tables[bg])]
+            out.extend(f'{w}.background: table {bg!r} has no column {c!r} (the card reads it)' for c in missing)
     if 'perturbations' in cards:
         calls = (cfg.get('card') or {}).get('calls') or {}
         if not (calls.get('tables') or calls.get('attributes')):

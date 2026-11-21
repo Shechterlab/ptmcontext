@@ -28,12 +28,12 @@
   const DRAWINGS = (C.drawings || []).filter((d) => PARTS[d.drawing]);
   // ---- the percent view: the share of a part's proteins that carry at least one mark, counted when the site was built
   // (D.cell_pct: for each map the proteins it places and, for each set a row names, its proteins and the marked ones). The
-  // site's default is website.cell.default_view; the switch on every map of the cell changes it for the page.
+  // site's default is website.cell.default_view (without it, the average view); the switch on every map of the cell changes it for the page.
   const PCTD = D.cell_pct || {};
   const HAS_PCT = MAPS.some((m) => PCTD[m.analysis]);
   // three views: percent (the share), diff (the share's difference from the share among all the proteins the maps place,
   // in points, on a diverging ramp) and fold; the first two draw from the counts
-  let VIEW = !HAS_PCT ? 'fold' : C.default_view === 'percent' ? 'percent' : C.default_view === 'average' ? 'z' : 'fold';
+  let VIEW = !HAS_PCT ? 'fold' : C.default_view === 'percent' ? 'percent' : C.default_view === 'fold' ? 'fold' : 'z';
   const pctOn = () => VIEW !== 'fold';
   const pv = () => (VIEW === 'z' ? 'z' : 'percent');
   const isPv = (p) => p.view === 'percent' || p.view === 'z';
@@ -54,7 +54,11 @@
     DISP = C.dispersion !== false,
     ABUND = !!C.abundance;
   const hOf = (p, q) => 2 * Math.asin(Math.sqrt(p)) - 2 * Math.asin(Math.sqrt(q));
-  const hText = (h) => (h == null ? '–' : 'h ' + (h > 0 ? '+' : h < 0 ? '−' : '') + Math.abs(h).toFixed(1));
+  const hText = (h) => {
+    if (h == null) return '–';
+    const r = Math.abs(h).toFixed(1); // round first: a value that rounds to 0.0 carries no sign
+    return 'h ' + (Number(r) === 0 ? '' : h > 0 ? '+' : '−') + r;
+  };
   const hStep = (h) => H_BANDS.filter((b) => Math.abs(h) >= b).length;
   const hBand = (h) =>
     ['negligible', 'small', 'medium', 'large'][hStep(h)] + (hStep(h) ? '' : ' (under ' + H_BANDS[0] + ')');
@@ -245,7 +249,7 @@
       '.cd-lead{stroke-opacity:1;stroke-width:1.8}svg [data-cell-part].on ' +
       '.cd-name{text-decoration:underline}',
     'svg .cg-row:hover .cg-hit,svg .cg-row.on .cg-hit,svg .cb-row:hover .cg-hit{fill:var(--accent);fill-opacity:.08}',
-    '.cell-svg.cell-funnel{max-width:760px;min-width:560px}.cf-l95{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:4 3}.cf-l998{fill:none;stroke:var(--ink-2);stroke-width:1.2}',
+    '.cell-svg.cell-funnel{max-width:760px;min-width:560px}.cf-l95{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:4 3}.cf-l998{fill:none;stroke:var(--ink-2);stroke-width:1.2}.cf-lead{stroke:var(--muted);stroke-width:.8}',
     '.cg-c.sm{fill:var(--surface);stroke:var(--ink-2);stroke-opacity:.75;stroke-width:1.8}.cg-line.sm{stroke:var(--ink-2)}.cg-k.sm{background:var(--surface);border:1.5px solid var(--ink-2)}.kd.sm{background:var(--surface);border:1.5px solid var(--ink-2);box-sizing:border-box}.cf-dot.cf-sm{fill:var(--surface);stroke:var(--ink-2);stroke-width:1.8}',
     '.cf-w95{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:1 3;opacity:.8}.cf-w998{fill:none;stroke:var(--ink-2);stroke-width:1;stroke-dasharray:1 3;opacity:.8}',
     '.cf-ref{stroke:var(--ink);stroke-width:1.4}.cf-dot{stroke:var(--ink);stroke-width:1}.cf-dot.cf-ns{fill:var(--surface);stroke:var(--muted)}.cf-t{font-size:11px;fill:var(--ink)}.cf-ax{font-size:11px;fill:var(--muted)}',
@@ -325,6 +329,7 @@
     '.pk-ref{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}',
     '.pk-tick{display:inline-block;width:2px;height:12px;background:var(--ink);margin-right:.3rem}',
     '@media (max-width:700px){.cell-view button{padding:.3rem .55rem}}',
+    '@media(max-width:700px){.cell-cell svg,.cell-svg.cell-cell,.cell-svg.cell-nucleus,.cell-svg.cell-bars,.cell-svg.cell-funnel{min-width:0}.tbl-wrap:has(>.cell-funnel-tbl){overflow-x:auto}}', // a phone: the drawings scale to the width and the funnel table scrolls inside its box, instead of widening the page
   ].join('');
 
   // ---- the site's rows of each map: the enricher row (counts, fold, q) and its repeat within the strata ----------------
@@ -1100,9 +1105,12 @@
               p.ds
                 ? `${esc(p.value)} across the dataset${p.mine ? '; found here' : ''}`
                 : p.found
-                  ? (p.genes ? esc(and(p.genes.slice(0, 6))) + (p.genes.length > 6 ? ' and more' : '') + ': ' : '') +
-                    'found here by ' +
-                    and(p.cells.map(([aid]) => esc(DS(aid).name)))
+                  ? (p.genes
+                      ? `found here \u00B7 ${esc(p.maps)}: ` +
+                        esc(and(p.genes.slice(0, 6))) +
+                        (p.genes.length > 6 ? ' and more' : '') +
+                        ', by '
+                      : 'found here by ') + and(p.cells.map(([aid]) => esc(DS(aid).name)))
                   : esc(p.value.toLowerCase())
             }`
           ) + ` data-cell-zpart="${esc(k)}"`
@@ -1170,23 +1178,25 @@
                 m = p.maps && !p.selected ? '\u00A0·\u00A0' + p.maps : '';
               const wt = isPv(p) ? 700 : 400;
               if (!v || K.tw(v + m, 13, wt) * 1.2 <= room) return [it, null];
-              const ls = K.wrap(v, room / 1.2, 13, wt);
+              // a selection's share ("3 of 4 proteins") stays in the wrapped value
+              const ls = K.wrap(p.genes ? v + ' · ' + p.maps : v, room / 1.2, 13, wt);
               return [it, ls.length > 3 ? [ls[0], ls[1], K.fit(ls.slice(2).join(' '), room, 13, wt, 1.2)] : ls];
             })
           ),
           wide = list.some((it) => vals.get(it)),
+          // the lines of a value run below its label: the last label stands that much higher
+          more = 14 * (Math.max(1, ...list.map((it) => vals.get(it)?.length || 1)) - 1),
           // labels of two-line values still fit between the top and the bottom of the drawing
           gap = wide
             ? Math.min(
-                (list.some((it) => lines.get(it).length > 1) ? 66 : 52) +
-                  14 * (Math.max(...list.map((it) => vals.get(it)?.length || 1)) - 1),
-                (H - 56) / Math.max(1, list.length - 1)
+                (list.some((it) => lines.get(it).length > 1) ? 66 : 52) + more,
+                (H - 56 - more) / Math.max(1, list.length - 1)
               )
             : list.some((it) => lines.get(it).length > 1)
               ? 66
               : 52,
           top = 30,
-          bot = H - 26,
+          bot = H - 26 - more,
           ys = list.map((it) => it.y);
         for (let i = 0; i < ys.length; i++) ys[i] = Math.max(ys[i], i ? ys[i - 1] + gap : top);
         for (let i = ys.length - 1; i >= 0; i--) ys[i] = Math.min(ys[i], i < ys.length - 1 ? ys[i + 1] - gap : bot);
@@ -1829,6 +1839,106 @@
     });
     return rows;
   }
+  // ---- label placer for the funnel's point names ----
+  // pts: [{x, y, w}] in the order of priority (a point's dot is 10 px wide); fixed: boxes {x, y, w, h} to keep clear of (tick labels,
+  // axis titles, reference-line labels); lines: polylines [[x, y], ...] to keep clear of (limit curves, the overall line);
+  // frame: {x0, y0, x1, y1}, which a name stays inside. Each name tries right, left, above, below and the diagonals next to
+  // its dot, then a place further off with a leader line at growing distances; the first whose box meets no placed name, no
+  // other dot, no fixed box, no line and no placed leader is taken. A name that fits nowhere is dropped (its dot stays).
+  // Returns, per point, {x, y, a: 'start'|'middle'|'end', lead: [x1, y1, x2, y2] | null} or null.
+  function placeFunnelNames(pts, fixed, lines, frame, h = 13) {
+    const segBox = (x0, y0, x1, y1, b) => {
+        let t0 = 0,
+          t1 = 1;
+        const dx = x1 - x0,
+          dy = y1 - y0;
+        for (const [p, q] of [
+          [-dx, x0 - b.x],
+          [dx, b.x + b.w - x0],
+          [-dy, y0 - b.y],
+          [dy, b.y + b.h - y0],
+        ]) {
+          if (p === 0) {
+            if (q < 0) return false;
+          } else {
+            const r = q / p;
+            if (p < 0) {
+              if (r > t1) return false;
+              t0 = Math.max(t0, r);
+            } else {
+              if (r < t0) return false;
+              t1 = Math.min(t1, r);
+            }
+          }
+        }
+        return true;
+      },
+      boxHit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h,
+      grow = (b, g) => ({ x: b.x - g, y: b.y - g, w: b.w + 2 * g, h: b.h + 2 * g }),
+      dots = pts.map((q) => ({ x: q.x - 6, y: q.y - 6, w: 12, h: 12 })),
+      boxes = [], // placed names
+      leads = [], // placed leaders
+      out = pts.map(() => null),
+      inFrame = (b) => b.x >= frame.x0 && b.x + b.w <= frame.x1 && b.y >= frame.y0 && b.y + b.h <= frame.y1,
+      clearOf = (box, i, lead) => {
+        const padded = grow(box, 1);
+        if (!inFrame(box)) return false;
+        if (fixed.some((o) => boxHit(padded, o)) || boxes.some((o) => boxHit(padded, o))) return false;
+        if (dots.some((o, k) => k !== i && boxHit(padded, o)) || boxHit(padded, dots[i])) return false;
+        if (lines.some((l) => l.some((q, k) => k && segBox(l[k - 1][0], l[k - 1][1], q[0], q[1], padded))))
+          return false;
+        if (leads.some((l) => segBox(l[0], l[1], l[2], l[3], padded))) return false;
+        if (lead) {
+          if (boxes.some((o) => segBox(lead[0], lead[1], lead[2], lead[3], o))) return false;
+          if (dots.some((o, k) => k !== i && segBox(lead[0], lead[1], lead[2], lead[3], grow(o, -1)))) return false;
+          if (fixed.some((o) => segBox(lead[0], lead[1], lead[2], lead[3], o))) return false;
+          if (leads.some((l) => segCross(lead, l))) return false;
+        }
+        return true;
+      },
+      segCross = (a, b) => {
+        const d = (p, q, r) => (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]),
+          A = [a[0], a[1]],
+          B = [a[2], a[3]],
+          C = [b[0], b[1]],
+          D = [b[2], b[3]];
+        return d(A, B, C) * d(A, B, D) < 0 && d(C, D, A) * d(C, D, B) < 0;
+      };
+    pts.forEach((q, i) => {
+      const w = q.w,
+        g = 7,
+        r = 0.7 * g,
+        near = [
+          { x: q.x + g + 1, y: q.y - h / 2, a: 'start' },
+          { x: q.x - g - 1 - w, y: q.y - h / 2, a: 'end' },
+          { x: q.x - w / 2, y: q.y - g - h, a: 'middle' },
+          { x: q.x - w / 2, y: q.y + g, a: 'middle' },
+          { x: q.x + r, y: q.y - r - h, a: 'start' },
+          { x: q.x + r, y: q.y + r, a: 'start' },
+          { x: q.x - r - w, y: q.y - r - h, a: 'end' },
+          { x: q.x - r - w, y: q.y + r, a: 'end' },
+        ],
+        cands = near.map((c) => ({ ...c, lead: null }));
+      for (const d of [20, 30, 42, 58, 80])
+        for (let k = 0; k < 16; k++) {
+          const th = (k * Math.PI) / 8,
+            cx = Math.cos(th),
+            cy = Math.sin(th),
+            ax = q.x + d * cx,
+            ay = q.y + d * cy,
+            a = cx > 0.35 ? 'start' : cx < -0.35 ? 'end' : 'middle',
+            x = a === 'start' ? ax : a === 'end' ? ax - w : ax - w / 2,
+            y = cy > 0.35 ? ay : cy < -0.35 ? ay - h : ay - h / 2;
+          cands.push({ x, y, a, lead: [ax, ay, q.x + 5 * cx, q.y + 5 * cy] });
+        }
+      const c = cands.find((c) => clearOf({ x: c.x, y: c.y, w, h }, i, c.lead));
+      if (!c) return;
+      boxes.push({ x: c.x, y: c.y, w, h });
+      if (c.lead) leads.push(c.lead);
+      out[i] = c;
+    });
+    return out;
+  }
   function funnelSvg(aid, scoped) {
     const rows = funnelRows(aid, scoped),
       Wd = 760,
@@ -1851,23 +1961,62 @@
       Y = (v) => MT + ((yhi - v) / (yhi - ylo)) * (H - MT - MB),
       clampY = (v) => Math.min(yhi, Math.max(ylo, v));
     let g = '';
+    const fixedBoxes = [], // the tick labels', axis titles' and reference labels' boxes, which a point's name keeps clear of
+      gridLines = []; // the gridlines, drawn last with a gap where a name stands
     const step = [0.01, 0.02, 0.05, 0.1, 0.2].find((s) => (yhi - ylo) / s <= 8) || 0.2;
-    for (let v = Math.ceil(ylo / step - 1e-9) * step; v <= yhi + 1e-9; v += step)
-      g += `<line class="cb-grid" x1="${ML}" x2="${Wd - MR}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="cf-ax" x="${ML - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${pctText(+v.toFixed(4))}</text>`;
+    for (let v = Math.ceil(ylo / step - 1e-9) * step; v <= yhi + 1e-9; v += step) {
+      const tw = K.tw(pctText(+v.toFixed(4)), 11) * 1.18;
+      fixedBoxes.push({ x: ML - 6 - tw, y: Y(v) - 9, w: tw, h: 13 });
+      gridLines.push([ML, Y(v), Wd - MR, Y(v)]);
+      g += `<text class="cf-ax" x="${ML - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${pctText(+v.toFixed(4))}</text>`;
+    }
     for (const base of [1, 2, 5])
       for (let e = 0; e <= 6; e++) {
         const n = base * 10 ** e;
-        if (n >= nmin && n <= nmax && (base === 1 || nmax / nmin < 40))
-          g += `<line class="cb-grid" x1="${X(n).toFixed(1)}" x2="${X(n).toFixed(1)}" y1="${MT}" y2="${H - MB}"/><text class="cf-ax" x="${X(n).toFixed(1)}" y="${H - MB + 15}" text-anchor="middle">${int(n)}</text>`;
+        if (n >= nmin && n <= nmax && (base === 1 || nmax / nmin < 40)) {
+          const tw = K.tw(int(n), 11) * 1.18;
+          fixedBoxes.push({ x: X(n) - tw / 2, y: H - MB + 4, w: tw, h: 13 });
+          gridLines.push([X(n), MT, X(n), H - MB]);
+          g += `<text class="cf-ax" x="${X(n).toFixed(1)}" y="${H - MB + 15}" text-anchor="middle">${int(n)}</text>`;
+        }
       }
-    const curve = (zz, sign, f = 1) => {
-      const pts = [];
-      for (let i = 0; i <= 80; i++) {
-        const n = Math.exp(Math.log(nmin) + (i / 80) * (Math.log(nmax) - Math.log(nmin)));
-        pts.push(`${X(n).toFixed(1)},${Y(clampY(pa + sign * zz * se(n, f))).toFixed(1)}`);
-      }
-      return pts.join(' ');
-    };
+    const drawn = [
+        [
+          [ML, Y(pa)],
+          [Wd - MR, Y(pa)],
+        ],
+      ], // the lines a point's name must stay clear of
+      curve = (zz, sign, f = 1) => {
+        const pts = [];
+        for (let i = 0; i <= 80; i++) {
+          const n = Math.exp(Math.log(nmin) + (i / 80) * (Math.log(nmax) - Math.log(nmin)));
+          pts.push([X(n), Y(clampY(pa + sign * zz * se(n, f)))]);
+        }
+        drawn.push(pts);
+        return pts.map((q) => `${q[0].toFixed(1)},${q[1].toFixed(1)}`).join(' ');
+      };
+    // the reference lines' labels at the right edge, spread to a line apart where their lines end close together
+    function refLabels() {
+      const at = (z, f) => Y(clampY(pa + z * se(nmax, f))) + 4,
+        L = [
+          [`overall ${pctText(pa)}`, Y(pa) + 4],
+          ['95% limit', at(1.96, 1)],
+          ['99.8% limit', at(3.09, 1)],
+          ...(wide > 1
+            ? [
+                ['95% × √φ', at(1.96, wide)],
+                ['99.8% × √φ', at(3.09, wide)],
+              ]
+            : []),
+        ].sort((p, q) => p[1] - q[1]),
+        gap = 15;
+      for (let i = 1; i < L.length; i++) L[i][1] = Math.max(L[i][1], L[i - 1][1] + gap);
+      const over = L[L.length - 1][1] - (H - 4);
+      if (over > 0) L.forEach((l) => (l[1] -= over));
+      for (let i = L.length - 2; i >= 0; i--) L[i][1] = Math.min(L[i][1], L[i + 1][1] - gap);
+      L.forEach(([t, y]) => fixedBoxes.push({ x: Wd - MR + 5, y: y - 11, w: K.tw(t, 11) * 1.18 + 2, h: 14 }));
+      return L.map(([t, y]) => `<text class="cf-ax" x="${Wd - MR + 6}" y="${y.toFixed(1)}">${esc(t)}</text>`).join('');
+    }
     g +=
       `<polyline class="cf-l95" points="${curve(1.96, 1)}"/><polyline class="cf-l95" points="${curve(1.96, -1)}"/>` +
       `<polyline class="cf-l998" points="${curve(3.09, 1)}"/><polyline class="cf-l998" points="${curve(3.09, -1)}"/>` +
@@ -1876,41 +2025,35 @@
           `<polyline class="cf-w998" points="${curve(3.09, 1, wide)}"/><polyline class="cf-w998" points="${curve(3.09, -1, wide)}"/>`
         : '') +
       `<line class="cf-ref" x1="${ML}" x2="${Wd - MR}" y1="${Y(pa).toFixed(1)}" y2="${Y(pa).toFixed(1)}"/>` +
-      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(pa) + 4).toFixed(1)}">overall ${esc(pctText(pa))}</text>` +
-      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 1.96 * se(nmax))) + 4).toFixed(1)}">95% limit</text>` +
-      `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 3.09 * se(nmax))) + 4).toFixed(1)}">99.8% limit</text>` +
-      (wide > 1
-        ? `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 3.09 * se(nmax, wide))) + 4).toFixed(1)}">99.8% × √φ</text>` +
-          `<text class="cf-ax" x="${Wd - MR + 6}" y="${(Y(clampY(pa + 1.96 * se(nmax, wide))) + 4).toFixed(1)}">95% × √φ</text>`
-        : '');
-    // points, the most different first, each named where there is room
-    const placed = [],
-      hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h,
-      pts = rows.map((r) => ({ r, x: X(r.c.M), y: Y(r.c.share) }));
-    pts.forEach((q) => placed.push({ x: q.x - 6, y: q.y - 6, w: 12, h: 12 }));
+      refLabels();
+    // points, the most different first, each named where there is room; a name that fits nowhere is left off
+    const xTitle = 'proteins the map places in the compartment (log scale)',
+      xw = K.tw(xTitle, 11) * 1.18,
+      yw = K.tw(scoped ? 'share in the selection' : 'share with a ' + W.mark, 11) * 1.18;
+    fixedBoxes.push(
+      { x: ML + (Wd - ML - MR) / 2 - xw / 2, y: H - 17, w: xw, h: 16 },
+      { x: 2, y: MT + (H - MT - MB) / 2 - yw / 2, w: 16, h: yw }
+    );
+    const pts = rows.map((r) => ({ r, x: X(r.c.M), y: Y(r.c.share), w: K.tw(r.name, 11) * 1.18 + 2 })),
+      order = pts.map((q, i) => i).sort((i, j) => Math.abs(pts[j].r.s.h) - Math.abs(pts[i].r.s.h) || i - j),
+      got = placeFunnelNames(
+        order.map((i) => pts[i]),
+        fixedBoxes,
+        drawn,
+        { x0: ML + 1, y0: MT + 1, x1: Wd - MR - 1, y1: H - MB - 1 }
+      ),
+      names = [],
+      dropped = [];
     let lab = '',
       dots = '';
-    [...pts]
-      .sort((a, b) => Math.abs(b.r.s.h) - Math.abs(a.r.s.h))
-      .forEach((q) => {
-        const w = K.tw(q.r.name, 11) * 1.18 + 2,
-          cand = [
-            { x: q.x + 8, y: q.y - 6, a: 'start' },
-            { x: q.x - 8 - w, y: q.y - 6, a: 'end' },
-            { x: q.x - w / 2, y: q.y - 20, a: 'middle' },
-            { x: q.x - w / 2, y: q.y + 8, a: 'middle' },
-          ];
-        for (const c of cand) {
-          const box = { x: c.x, y: c.y, w, h: 13 };
-          if (box.x < ML - 30 || box.x + w > Wd - MR + 4 || placed.some((o, i) => i >= pts.length && hit(box, o)))
-            continue;
-          if (placed.slice(0, pts.length).some((o) => hit(box, o) && Math.hypot(o.x + 6 - q.x, o.y + 6 - q.y) > 1))
-            continue;
-          placed.push(box);
-          lab += `<text class="cf-t" x="${(c.a === 'start' ? c.x : c.a === 'end' ? c.x + w : c.x + w / 2).toFixed(1)}" y="${(c.y + 10).toFixed(1)}" text-anchor="${c.a}">${esc(q.r.name)}</text>`;
-          break;
-        }
-      });
+    got.forEach((c, k) => {
+      const q = pts[order[k]];
+      if (!c) return dropped.push(q.r.name);
+      names.push({ x: c.x, y: c.y, w: q.w, h: 13 });
+      if (c.lead)
+        lab += `<line class="cf-lead" x1="${c.lead[0].toFixed(1)}" y1="${c.lead[1].toFixed(1)}" x2="${c.lead[2].toFixed(1)}" y2="${c.lead[3].toFixed(1)}"/>`;
+      lab += `<text class="cf-t" x="${(c.a === 'start' ? c.x : c.a === 'end' ? c.x + q.w : c.x + q.w / 2).toFixed(1)}" y="${(c.y + 10).toFixed(1)}" text-anchor="${c.a}">${esc(q.r.name)}</text>`;
+    });
     pts.forEach((q) => {
       const r = q.r,
         tone = hTone(r.s.h, r.clear, r.small);
@@ -1918,7 +2061,32 @@
         `<b>${esc(r.name)}</b>: ${esc(pctText(r.c.share))} of ${int(r.c.M)} proteins${scoped ? ' are in your selection' : ''}<br>${esc(ptsText(r.c.share - pa))} from ${esc(pctText(pa))}; <b>${esc(hText(r.s.h))}</b>, OR ${f2(r.s.or)} (${f2(r.s.lo)}–${f2(r.s.hi)}), ${esc(zText(r.s.z))}, q ${esc(fq(r.q))}`
       )}><circle class="cf-dot ${r.clear ? 'cg-c ' + tone : r.small ? 'cf-sm' : 'cf-ns'}" cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="5"/></g>`;
     });
-    g +=
+    // the gridlines, each cut where a point's name stands so that none runs through a name
+    const grid = gridLines
+      .flatMap(([x1, y1, x2, y2]) => {
+        const vert = x1 === x2,
+          [a0, a1] = vert ? [y1, y2] : [x1, x2],
+          cuts = names
+            .filter((b) => (vert ? x1 > b.x - 2 && x1 < b.x + b.w + 2 : y1 > b.y - 2 && y1 < b.y + b.h + 2))
+            .map((b) => (vert ? [b.y - 2, b.y + b.h + 2] : [b.x - 3, b.x + b.w + 3]))
+            .sort((p, q) => p[0] - q[0]),
+          segs = [];
+        let from = a0;
+        cuts.forEach(([c0, c1]) => {
+          if (c0 > from) segs.push([from, c0]);
+          from = Math.max(from, c1);
+        });
+        if (from < a1) segs.push([from, a1]);
+        return segs.map(([u, v]) => (vert ? [x1, u, x1, v] : [u, y1, v, y1]));
+      })
+      .map(
+        ([x1, y1, x2, y2]) =>
+          `<line class="cb-grid" x1="${x1.toFixed(1)}" x2="${x2.toFixed(1)}" y1="${y1.toFixed(1)}" y2="${y2.toFixed(1)}"/>`
+      )
+      .join('');
+    g =
+      grid +
+      g +
       dots +
       lab +
       `<text class="cf-ax" x="${(ML + (Wd - ML - MR) / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">proteins the map places in the compartment (log scale)</text>` +
@@ -1928,9 +2096,13 @@
       W: Wd,
       H,
       aria: `Funnel plot: the share of each compartment's proteins ${scoped ? 'in the selection' : 'with a ' + W.mark} against its size, with the overall share and 95% and 99.8% control limits`,
+      dropped,
     };
   }
   const funnelNote = () =>
+    ((d) => (d && d.length ? `Names left off where they would not fit (see the table): ${d.join(', ')}. ` : ''))(
+      funnelSvg(UI.map, scopedNow()).dropped
+    ) +
     `Each point is a compartment of the map; the line is the share among all the proteins the map places, and the solid and dashed curves its 99.8% and 95% limits${
       phiOf(UI.map, scopedNow()) > 1
         ? '; the lighter curves are the same limits widened by √φ (φ ' +
@@ -3145,7 +3317,7 @@
     ZS.part = part;
     ZS.page = page;
     if (!mem) {
-      box.innerHTML = '<p class="muted">Loading the proteins…</p>';
+      box.innerHTML = K.loading('Loading the proteins…');
       Promise.resolve(K.sel.ready).then(() => {
         if (ZS && ZS.part === part && K.sel.peek()) zoomList(part, page);
       });
@@ -3284,7 +3456,7 @@
       `<div class="cz-bar"><strong>${esc(title)}</strong>${one ? '' : viewSwitch()}<span class="cz-btns"><button type="button" ` +
       `class="btn small" data-cz="more" aria-label="Zoom in" title="Zoom in">+</button><button type="button" ` +
       `class="btn small" data-cz="less" aria-label="Zoom out" title="Zoom out">−</button><button type="button" ` +
-      `class="btn small" data-cz="reset" title="Back to the whole drawing">Reset</button><button type="button" ` +
+      `class="btn small" data-cz="reset" title="Back to the whole drawing">${K.ACT.resetView}</button><button type="button" ` +
       `class="btn small" data-cz="close" aria-label="Close" title="Close (Esc)">×</button></span></div>` +
       (`<div class="cz-body"><div class="cz-stage" tabindex="0" role="group" aria-label="${esc(title)}: scroll or ` +
         `pinch to zoom, drag to move; with the keyboard, plus and minus zoom, 0 resets and the arrow keys move">` +
@@ -3721,7 +3893,7 @@
         : '') +
       '</div>' +
       (!mem
-        ? '<p class="muted">Loading the proteins…</p>'
+        ? K.loading('Loading the proteins…')
         : mem.length
           ? `<p class="cell-chips">${shown
               .map(

@@ -37,13 +37,16 @@
     return byGene[u] || (byAcc[a] ? [byAcc[a]] : byEntry[u] ? [byEntry[u]] : null);
   };
   const byGene = {};
-  P.forEach((p) =>
+  // a protein several genes encode shows a short name (p.gene); D.protein_genes keeps every gene, and each finds it
+  const genesOf = (p) =>
+    D.protein_genes?.[p.acc] ||
     String(p.gene || '')
       .split(/[\s;]+/)
-      .filter(Boolean)
-      .forEach((g) => {
-        (byGene[g.toUpperCase()] ||= []).push(p);
-      })
+      .filter(Boolean);
+  P.forEach((p) =>
+    [...new Set([...String(p.gene || '').split(/[\s;]+/), ...genesOf(p)])].filter(Boolean).forEach((g) => {
+      (byGene[g.toUpperCase()] ||= []).push(p);
+    })
   );
   // other names: the aliases of the site's protein_values table (synonyms, the symbols the sources used), the names
   // papers use (website.search.shorthand: H4), and any of these, or a gene, without hyphens, spaces and dots
@@ -62,12 +65,9 @@
     if (!l.includes(p)) l.push(p);
   };
   P.forEach((p) =>
-    String(p.gene || '')
-      .split(/[\s;]+/)
-      .filter(Boolean)
-      .forEach((g) => {
-        if (norm(g).length >= 3) addTo(byNorm, norm(g), p);
-      })
+    [...new Set([...String(p.gene || '').split(/[\s;]+/), ...genesOf(p)])].filter(Boolean).forEach((g) => {
+      if (norm(g).length >= 3) addTo(byNorm, norm(g), p);
+    })
   );
   Object.entries(D.protein_aliases || {}).forEach(([acc, al]) => {
     const p = byAcc[acc];
@@ -94,21 +94,24 @@
     return al ? { ps: al, via: true } : null;
   };
   const nameOf = (p) => (p.gene ? String(p.gene).split(/[\s;]+/)[0] : p.acc);
-  // numbering as papers do (website.protein.numbering: histones without the initiator methionine): a position typed
-  // in a search is read in it, as on the protein's page
+  // numbering as papers do (website.protein.numbering: histones, and proteins UniProt records without their initiator
+  // methionine): the one rule every view reads, K.numbering(protein) -> the rule (with its offset) or null. A position
+  // typed in a search is read in it, as on the protein's page
   const NUMR = (D.protein_view?.numbering || []).map((n) => ({
     ...n,
     g: n.genes ? new RegExp(n.genes) : null,
     nm: n.names ? new RegExp(n.names, 'i') : null,
+    a: n.accs ? new Set(n.accs) : null,
   }));
   const numOf = (p) => {
-    if (!NUMR.length) return null;
+    if (!NUMR.length || !p) return null;
     if (p._num === undefined) {
-      const g = String(p.gene || '').split(/[\s;,]+/)[0];
-      p._num = NUMR.find((n) => (g ? n.g?.test(g) : n.nm?.test(p.name || ''))) || null;
+      const g = genesOf(p)[0] || '';
+      p._num = NUMR.find((n) => n.a?.has(p.acc) || (g ? n.g?.test(g) : n.nm?.test(p.name || ''))) || null;
     }
     return p._num;
   };
+  K.numbering = numOf;
   const uniPos = (p, typed) => typed - (numOf(p)?.offset || 0);
   // symbols one edit away from a word (a letter added, dropped, changed, or two swapped), most marks first: "did you mean"
   function nearSymbols(word, max = 3) {
@@ -771,7 +774,8 @@
       q.positions.length ||
       cons.length ||
       q.unmatched.length ||
-      unresolved.length
+      unresolved.length ||
+      (!SD && q.terms?.length) // a filter term in the search is not resolved until the marks load: the selection is on, and loading
     );
     let marks = null,
       proteins = null;

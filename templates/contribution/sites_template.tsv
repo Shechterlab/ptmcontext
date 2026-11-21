@@ -1,0 +1,15 @@
+# schema: ptm-sites/1
+# source_id: Smith2026
+# citation: Smith J et al., Nat Methods 1:1 (2026)
+# doi: 10.1000/example
+# pmid: 00000000
+# dataset: PXD000000
+# organism: 9606
+# reference_proteome: UniProt 2026_03
+# mark: sumoylation
+# residues: K
+# evidence_class: experimental
+# license: CC BY 4.0 (https://example.org/license, checked 2026-11-19)
+accession	position	residue	state	window	localization_probability	cell_line	condition	pmids
+P35637	216	K	sumo	GRGGGSGGKGGSGGR	0.98	HeLa	untreated	00000000
+P04637	386	K	sumo	PGGSRAHSSHLKSKKGQSTSR	0.91	HEK293	MG132	00000000

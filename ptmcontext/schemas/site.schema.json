@@ -187,6 +187,10 @@
                 "type": "boolean",
                 "description": "true: the attribute exists only where the marks table has its column (a column a later release may add, a score); without the column the attribute and everything built on it (filters, columns, downloads, count questions and their cards, header tiles) are left out"
               },
+              "position_tokens": {
+                "type": "boolean",
+                "description": "list: the values name changes with a residue position (R4C, K79*); on a protein the site numbers without its initiator methionine the page shows the positions as the protein is numbered (downloads keep the UniProt ones)"
+              },
               "join_rows": {
                 "type": "boolean",
                 "description": "list: a mark on several rows of the table (one per methylation state, say) keeps every row's values, each once, in the order of the rows; without it a mark takes its first row's"
@@ -1219,6 +1223,10 @@
             "type": "string",
             "description": "the control's when, for its badge. Written by controls"
           },
+          "control_min_marks": {
+            "type": "integer",
+            "description": "the fewest marks the control needs to show a result. Written by controls"
+          },
           "control_label": {
             "type": "string",
             "description": "the control's short name on its question's page. Written by controls"
@@ -1394,6 +1402,10 @@
             "type": "boolean",
             "description": "not in the site's reference: no parity check, and the website marks it new"
           },
+          "key_findings": {
+            "const": false,
+            "description": "false keeps every result of this question out of the Overview's Key findings (its tile still shows them); a motif family can say the same of itself"
+          },
           "with": {
             "type": "object",
             "description": "the parameters of a layer made from them (ptmc layers lists them): regions {role, kind, window, noun, nouns, labels, help, title, question, sub, section, track}; residue_values {role, bins, classes, missing, noun, labels, help, title, question, sub, section, track}; residue_lists {flags: {flag: role}, noun, labels, help, title, question, sub, section}; built-in layers: disorder {window}, idr {window, min_length}, domain {window}, domain_context {window}, structure_context {near, mid}, idr_charge {min_length} (each optional, the documented default 20, 20, 20, 20, 10 and 30, 20), domain_class {classes: the path of a file of domain classes, required}"
@@ -1537,7 +1549,7 @@
                 },
                 "query": {
                   "type": "string",
-                  "description": "a search query the button puts in the search box (a filter such as sources:CPLM)"
+                  "description": "a search query the button puts in the search box (a filter such as sources:UniProt)"
                 }
               }
             },
@@ -2016,6 +2028,10 @@
         "logo": {
           "type": "string",
           "description": "the site's logo: an SVG file, relative to the repository (the header's mark, the favicon and the landing card's); default: a drawn mark in the band's colors"
+        },
+        "favicon": {
+          "type": "string",
+          "description": "a bolder SVG of the mark for the tab icon, relative to the repository (default: the logo)"
         },
         "icon": {
           "type": "string",
@@ -2678,6 +2694,8 @@
                   "label",
                   "clusters",
                   "colour",
+                  "size",
+                  "outline",
                   "find",
                   "score",
                   "minc",
@@ -2702,7 +2720,17 @@
             },
             "thin_term": {
               "enum": ["best", "genes"],
-              "description": "what names a cluster that no term holds for a fair share of (`min_coverage`): \"best\" (default) the significant term of the smallest q, a tie going to the larger share of the cluster, written with that share (\"chromatin organization · 18%\"); \"genes\" its three busiest proteins. A cluster with no significant term is always named by its three busiest proteins"
+              "description": "what names a cluster that no term holds for a fair share of (`min_coverage`): \"best\" (default) the significant term of the smallest q, a tie going to the larger share of the cluster, written with that share (\"chromatin organization · 18%\"); \"genes\" its three busiest proteins. A cluster with no significant term gets the `weak_p` term, and without one is called \"Unnamed:\" with its three busiest proteins"
+            },
+            "background": {
+              "enum": ["proteome", "site", "drawn"],
+              "description": "what a cluster's terms are tested against: `proteome` (default; every reviewed protein with annotations from the label source, counted when the network is made), `site` (every protein the site's network can draw) or `drawn` (only the proteins of the view, which for a selection is the selection and its partners). `min_term` and `max_fraction` apply to the same background."
+            },
+            "weak_p": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "a cluster that no term names at `max_q` is named by its term of the smallest p when that p is at most this (default 0.05; 0 turns it off) and the term holds for `min_coverage` of the cluster; the name carries its q (\"heterochromatin formation · q 0.11\")"
             },
             "claim": {
               "type": "string",
@@ -2718,7 +2746,7 @@
                   "name",
                   "kind"
                 ],
-                "description": "a way to colour the proteins besides the cluster, from a column of the run's marks.tsv: `sequential` is the share of the protein's sites whose value is one of `values` (all sites with a value when none is listed); `categorical` is the value most of the protein's sites hold (the commonest `max_values`, the rest Other); `role` colours a protein by what it is to the site's mark, from the site's own enzyme and reader classes (writer, eraser, reader; none; several roles is a value of its own)",
+                "description": "a way to colour the proteins besides the cluster, from a column of the run's marks.tsv: `sequential` is the share of the protein's sites whose value is one of `values` (all sites with a value when none is listed); `categorical` is the value most of the protein's sites hold (the commonest `max_values`, the rest Other); `decile` is the protein's abundance decile (1 to 10) from the strata of the analysis `analysis`; `binding` is RNA, DNA, both or neither, from published protein sets (`rna`, `dna`)",
                 "properties": {
                   "id": {
                     "type": "string"
@@ -2731,34 +2759,30 @@
                     "enum": [
                       "sequential",
                       "categorical",
-                      "role"
+                      "decile",
+                      "binding"
                     ]
                   },
-                  "roles": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "role: the roles shown, in order (default writer, eraser, reader), from the `role` of website.search.partners.classes"
+                  "analysis": {
+                    "type": "string",
+                    "description": "decile: an analysis of the site (a protein_sets one with `abundance`) whose strata give the deciles, so that the figure and the statistics place a protein in the same one"
                   },
+                  "rna": {"$ref": "#/$defs/network_sets"},
+                  "dna": {"$ref": "#/$defs/network_sets"},
                   "labels": {
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
                     },
-                    "description": "role: the name of each role in the key"
+                    "description": "binding: the name of `rna`, `dna` and `both` in the key (default RNA, DNA, RNA and DNA)"
                   },
                   "none": {
                     "type": "string",
-                    "description": "role: the key's name for a protein with no role (default No role)"
-                  },
-                  "several": {
-                    "type": "string",
-                    "description": "role: the name for a protein with more than one role (default More than one)"
+                    "description": "binding: the key's name for a protein in none of the sets (default Neither)"
                   },
                   "column": {
                     "type": "string",
-                    "description": "a column of marks.tsv (not for `role`)"
+                    "description": "a column of marks.tsv (for `sequential` and `categorical`)"
                   },
                   "values": {
                     "type": "array",
@@ -2776,6 +2800,62 @@
                     "minimum": 1,
                     "maximum": 8
                   }
+                }
+              }
+            },
+            "size": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "node size: `density` (sites per 100 of the protein's own candidate residues, the residues of the mark counted in its sequence) or `sites` (their number); the reader can choose either",
+              "properties": {
+                "default": {
+                  "enum": [
+                    "density",
+                    "sites"
+                  ],
+                  "description": "the size shown first (default density)"
+                }
+              }
+            },
+            "outline": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "description": "a ring on the nodes of proteins with an enzyme or reader role, one ring style per role, drawn with any colour (on by default): the roles come from the site's own classes (website.search.partners.classes, each with a `role`)",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "the name in the Outline menu and the key"
+                },
+                "kind": {
+                  "const": "role"
+                },
+                "roles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "the roles shown, in order (default writer, eraser, reader)"
+                },
+                "labels": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "the name of each role in the key"
+                },
+                "none": {
+                  "type": "string",
+                  "description": "the name for a protein with no role (default No role)"
+                },
+                "several": {
+                  "type": "string",
+                  "description": "the name for a protein with more than one role (default More than one)"
                 }
               }
             },
@@ -4062,9 +4142,61 @@
               "type": "boolean",
               "description": "false: leave out the kit's own list (config/protein_links.json)"
             },
+            "genes": {
+              "type": "object",
+              "description": "proteins several genes encode (one accession, a list of genes in a table): the page names them by a short name and shows the list, and search finds every gene; the short name is the first rule that gives one name for all the genes, else the common start of the genes",
+              "required": [
+                "input",
+                "from",
+                "to"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "input": {
+                  "type": "string",
+                  "description": "the manifest input (a tab-separated table) with a row per accession"
+                },
+                "from": {
+                  "type": "string",
+                  "description": "its accession column"
+                },
+                "to": {
+                  "type": "string",
+                  "description": "its gene column, the genes of an accession split at the separator"
+                },
+                "separator": {
+                  "type": "string"
+                },
+                "symbols": {
+                  "type": "string",
+                  "description": "a tab-separated table (accession, previous and alias columns of symbols separated by semicolons; # lines are comments) of the old and alternative symbols of the proteins, read by the search, links and the landing search (sites/data/hgnc_symbols.tsv, from the HGNC complete set)"
+                },
+                "short": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "pattern",
+                      "replace"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "pattern": {
+                        "type": "string",
+                        "description": "a regular expression on a gene"
+                      },
+                      "replace": {
+                        "type": "string",
+                        "description": "its replacement (\\1 is the first group): the short name"
+                      }
+                    }
+                  }
+                }
+              }
+            },
             "numbering": {
               "type": "array",
-              "description": "proteins numbered as papers do, in labels and links: a protein whose gene (or, without a gene, name) matches is shown at UniProt position + offset (histones without the initiator methionine: offset -1)",
+              "description": "proteins numbered as papers do, in labels and links: a protein whose gene (or, without a gene, name) matches, or whose accession is in the removed_met table, is shown at UniProt position + offset (histones, and proteins whose initiator methionine UniProt records as removed: offset -1); the first rule that matches wins; downloads keep the UniProt position beside the shown site",
               "items": {
                 "type": "object",
                 "required": [
@@ -4080,6 +4212,10 @@
                     "type": "string",
                     "description": "a regular expression on the protein's name (case-insensitive), for a protein without a gene"
                   },
+                  "removed_met": {
+                    "type": "string",
+                    "description": "a tab-separated table (an accession column; # lines are comments) of the proteins this rule numbers, from UniProt's feature Initiator methionine, Removed"
+                  },
                   "offset": {
                     "type": "integer"
                   },
@@ -4094,7 +4230,7 @@
             },
             "card": {
               "type": "object",
-              "description": "the site card's blocks, read from the attributes and website.tables (evidence, states, changes, calls, records, writer, sources, inhibitors, cite); ptmc check names a table, attribute or column a block reads that does not exist",
+              "description": "the site card's blocks, read from the attributes and website.tables (evidence, states, changes, change_counts, calls, records, writer, sources, inhibitors, cite); ptmc check names a table, attribute or column a block reads that does not exist",
               "additionalProperties": {
                 "type": [
                   "object",
@@ -5149,8 +5285,12 @@
                   "required": [
                     "table"
                   ],
-                  "description": "Cancer cell lines and tumors: a protein_records table with lines (screened), dependent (lines depending), median, common_essential, histogram (counts, ;-separated) and lineages (name|lines|mean, ;-separated); the changes at the marks are the site card's (card.changes)",
+                  "description": "Cancer cell lines and tumors: a protein_records table with lines (screened), dependent (lines depending), median, common_essential, histogram (counts, ;-separated) and lineages (name|lines|mean, ;-separated); the changes at the marks are the site card's (card.changes, or card.change_counts)",
                   "properties": {
+                    "excluded": {
+                      "type": "string",
+                      "description": "the id of an entry of website.protein.card.excluded: its count of the changes the card does not show, with a Download button"
+                    },
                     "title": {
                       "type": "string"
                     },
@@ -5291,10 +5431,7 @@
                 "other_ptms": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "table"
-                  ],
-                  "description": "Other PTMs: a residue_evidence table of the protein's other modifications (kind = the modification)",
+                  "description": "Other PTMs: the site's context marks, or else a residue_evidence table of the protein's other modifications (kind = the modification)",
                   "properties": {
                     "title": {
                       "type": "string"
@@ -5318,6 +5455,34 @@
                     "near": {
                       "type": "integer",
                       "description": "a modification within this many residues of a mark is listed"
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "germline": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Germline variants: the sources are card.variant_counts (per-variant tables of website.tables, a background table for the protein average); the card has the same switch as the change counts, known sites only or every candidate residue",
+                  "properties": {
+                    "excluded": {
+                      "type": "string",
+                      "description": "the id of an entry of website.protein.card.excluded: its count of the changes the card does not show, with a Download button"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "sub": {
+                      "type": "string"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "variants listed per source before Show all (default 12)"
                     },
                     "note": {
                       "type": "string"
@@ -5467,9 +5632,23 @@
             }
           }
         },
+        "whats_new": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "what a release added, shown at the top of the Help page: a `title`, a list of `items` (plain sentences) and the release's data `doi` once it has one",
+          "properties": {
+            "title": {"type": "string"},
+            "items": {"type": "array", "items": {"type": "string"}},
+            "doi": {"type": "string"}
+          }
+        },
         "download_terms": {
           "type": "string",
           "description": "the terms the downloads come under (licenses, attribution), shown above the list"
+        },
+        "methods_note": {
+          "type": "string",
+          "description": "one sentence for the Methods page's Data section (which releases of a source the sequences and the context marks use, and why)"
         },
         "counts": {
           "type": "object",
@@ -5689,7 +5868,7 @@
                 "average",
                 "fold"
               ],
-              "description": "what the cell and nucleus maps color by when the page opens: percent (the share of each compartment's proteins that carry at least one mark), average (each compartment's share against the share among all the proteins the maps place, as Cohen's h on a diverging ramp, filled where q ≤ 0.05 across the compartments shown; percent and average suit a mark that covers most proteins, where the fold has little to compare against) or fold (the default: the fold against the other proteins). The switch on each map changes it for the visitor"
+              "description": "what the cell and nucleus maps color by when the page opens: percent (the share of each compartment's proteins that carry at least one mark), average (each compartment's share against the share among all the proteins the maps place, as Cohen's h on a diverging ramp, filled where q ≤ 0.05 across the compartments shown; percent and average suit a mark that covers most proteins, where the fold has little to compare against) or fold (the fold against the other proteins; without this key, average). The switch on each map changes it for the visitor"
             },
             "min_h": {
               "type": "number",
@@ -5963,6 +6142,7 @@
                   "site_evidence",
                   "bound_windows",
                   "residue_evidence",
+                  "residue_changes",
                   "site_records",
                   "site_measurements",
                   "source_records",
@@ -6074,6 +6254,13 @@
                   },
                   "additionalProperties": false
                 }
+              },
+              "include_any": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/row_condition"
+                },
+                "description": "rows kept: any one of these conditions holds (include keeps the rows every condition holds for)"
               }
             }
           }
@@ -7932,6 +8119,29 @@
                                 "group_by": {
                                   "type": "string"
                                 },
+                                "rollup": {
+                                  "type": "array",
+                                  "description": "table with group_by: headings that each hold several groups, as [{label, values: [group codes]}] (for example binds it modified, against binds the residue in any other state)",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "values": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "label",
+                                      "values"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
                                 "chips": {
                                   "type": "string"
                                 },
@@ -8343,6 +8553,11 @@
               "left_out"
             ],
             "description": "with marks_where: the other marks are counted on neither side"
+          },
+          "min_marks": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "with marks_where: the fewest marks the control needs (default 100); with fewer, its page and the Controls table say \"Too few <label> to test (n = ...)\" and show no result, and no badge is drawn for it"
           },
           "without_proteins": {
             "$ref": "#/properties/analyses/items/properties/without_proteins"
@@ -8902,6 +9117,26 @@
     }
   },
   "$defs": {
+    "network_sets": {
+      "type": "array",
+      "description": "protein sets of the site's analyses (a protein_sets analysis and one of its sets), the union of which is one side of the binding colour",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "analysis",
+          "set"
+        ],
+        "properties": {
+          "analysis": {
+            "type": "string"
+          },
+          "set": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "row_condition": {
       "description": "a condition on the rows of a marks table: a condition, or all_of, which holds for a row when every condition listed holds for it (exclude rows that are one thing in one column and another in a second), or any_of, which holds when one of them does",
       "oneOf": [
@@ -8910,6 +9145,9 @@
         },
         {
           "$ref": "#/$defs/count_condition"
+        },
+        {
+          "$ref": "#/$defs/units_condition"
         },
         {
           "type": "object",
@@ -8982,6 +9220,71 @@
             "type": "string"
           },
           "description": "items that count for nothing (databases and compilations)"
+        }
+      }
+    },
+    "units_condition": {
+      "type": "object",
+      "required": [
+        "distinct_units_at_least",
+        "units"
+      ],
+      "additionalProperties": false,
+      "description": "marks_where only: holds for a mark whose rows, pooled, give at least distinct_units_at_least distinct units (independent studies): the items of the list columns of units.columns (PubMed IDs), plus the unit each item of units.direct.column maps to; rows failing units.only_where give none",
+      "properties": {
+        "distinct_units_at_least": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "per": {
+          "type": "string",
+          "description": "a column of the marks table (the modification type): units are pooled only among rows with the same value in it, so a mark is high-confidence for its own type only"
+        },
+        "units": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "list columns whose items are units (PubMed IDs)"
+            },
+            "separator": {
+              "type": "string",
+              "description": "separator of those columns, default ';'"
+            },
+            "direct": {
+              "type": "object",
+              "required": [
+                "column",
+                "map"
+              ],
+              "additionalProperties": false,
+              "description": "a list column of sources: an item in map adds the unit it maps to (a dataset's own PubMed ID, so that a database citing the same paper is not counted twice, or its own name); any other item (a database) adds nothing",
+              "properties": {
+                "column": {
+                  "type": "string"
+                },
+                "separator": {
+                  "type": "string",
+                  "description": "default '; '"
+                },
+                "map": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "source item: its unit"
+                }
+              }
+            },
+            "only_where": {
+              "$ref": "#/$defs/condition",
+              "description": "a row that fails this condition (by-similarity, unspecified or text-mined evidence, say) gives no units"
+            }
+          }
         }
       }
     },

@@ -23,11 +23,49 @@
   const shardOf = (acc, n) => [...acc].reduce((s, c) => s + c.charCodeAt(0), 0) % (n || D.shards || 64);
   const cache = {};
   const getShard = (dir, k) => {
-    const key = String(k).padStart(2, '0');
-    if (dir === 'e' && inline[key]) return Promise.resolve(inline[key]);
+    const key = String(k).padStart(dir === 'g' ? 3 : 2, '0');
+    if ((dir === 'e' || dir === 'g') && inline[(dir === 'g' ? 'g' : '') + key])
+      return Promise.resolve(inline[(dir === 'g' ? 'g' : '') + key]);
     return (cache[dir + key] ||= fetch(`data/${dir}/${key}.json`).then((r) =>
       r.ok ? r.json() : Promise.reject(new Error(String(r.status)))
     ));
+  };
+  // the variant lists of the sources with `lazy` (data/g, a few proteins to a file) are read when a card is opened; the
+  // file's hash of an accession is variants.py's hash_shard
+  const hashOf = (acc, n) => {
+    let h = 0;
+    for (const c of acc) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0;
+    return h % n;
+  };
+  // a protein's variant lists as row objects by source id ({} when it has none, null when they cannot be read)
+  const loadDetail = (acc) => {
+    const VD = D.variant_detail;
+    if (!VD) return Promise.resolve({});
+    return getShard('g', hashOf(acc, VD.shards)).then(
+      (sh) => {
+        const s = sh._s || [],
+          rec = sh[acc] || {},
+          out = {};
+        for (const [id, block] of Object.entries(rec)) {
+          const { columns, kinds } = VD.entries[id],
+            n = (block[0] || []).length,
+            list = new Array(n);
+          let pos = 0;
+          for (let i = 0; i < n; i++) {
+            const o = {};
+            for (let j = 0; j < columns.length; j++) {
+              const v = block[j][i];
+              if (kinds[j] === 'pos') o[columns[j]] = pos += v;
+              else o[columns[j]] = kinds[j] === 'str' ? str(s, v) : v;
+            }
+            list[i] = o;
+          }
+          out[id] = list;
+        }
+        return out;
+      },
+      () => null
+    );
   };
   // a protein's tables ({} when it has no rows, null when they cannot be read)
   // a shard writes its repeated strings once ('_s'); a number in a row (but a position) is an index there
@@ -114,6 +152,8 @@
 
   // ---- interaction evidence ----------------------------------------------------------------------------------------
   const EV = C.evidence || {};
+  // a partner's name in an evidence row: its gene, else its accession (a protein with no gene), never the kind's code
+  const partnerName = (r) => r.partner || r.partner_accession || '';
   function evidenceParts(c) {
     const tg = EV.tags || {},
       vals = tg.attribute ? attrVals(c, tg.attribute) : [],
@@ -159,7 +199,7 @@
       if (seen.has(key)) continue;
       seen.add(key);
       const ps = partnersOf([v]),
-        names = [...new Set(ps.map((r) => r.partner).filter(Boolean))];
+        names = [...new Set(ps.map(partnerName).filter(Boolean))];
       const ids = [...new Set(ps.flatMap((r) => list(r.ids)))].map((x) => x.toUpperCase()); // a named kind also gives the entries that show it: "TNPO1 4FDD, 4FQ3 +4"
       const label =
         named.has(v) && names.length
@@ -180,14 +220,14 @@
     }
     if (predVals.length) {
       const ps = partnersOf(predVals),
-        names = [...new Set(ps.map((r) => r.partner).filter(Boolean))];
+        names = [...new Set(ps.map(partnerName).filter(Boolean))];
       const tip =
         predVals.map((v) => vLabel(tg.attribute, v)).join(', ') +
         (ps.length
           ? ': ' +
-            [...new Map(ps.map((r) => [r.partner, r])).values()]
+            [...new Map(ps.map((r) => [partnerName(r), r])).values()]
               .slice(0, 20)
-              .map((r) => `${r.partner}${r.score ? ' ' + Number(r.score).toFixed(2) : ''}`)
+              .map((r) => `${partnerName(r)}${r.score ? ' ' + Number(r.score).toFixed(2) : ''}`)
               .join(', ')
           : '');
       labs.push((tg.short || {})[predVals[0]] || 'pred.');
@@ -219,7 +259,7 @@
       groups = new Map();
     for (const r of at(c.tb, e.table, c.pos)) {
       if (!(r.kind in kinds)) continue;
-      const name = kinds[r.kind] || r.partner || r.kind,
+      const name = kinds[r.kind] || partnerName(r) || vLabel(EV.tags?.attribute, r.kind),
         key = r.kind + '|' + name;
       if (!groups.has(key)) groups.set(key, { name, tone: (EV.tags?.tone || {})[r.kind] || 'x', ids: [] });
       list(r.ids).forEach((id) => {
@@ -440,7 +480,7 @@
       )}</span> ${parts.join(' · ')}` +
       (pr.opens && document.getElementById(pr.opens)
         ? ` <button class="linkish" type="button" data-open-fold="${esc(pr.opens)}">${esc(
-            ctxWords(pr.opens_label || 'More', c)
+            ctxWords(pr.opens_label || K.ACT.showMore, c)
           )}</button>`
         : '') +
       '</p>'
@@ -490,9 +530,147 @@
   }
   const renumber = (c, v) =>
     String(v).replace(/^([A-Za-z])(\d+)(?=[A-Za-z*])/, (m0, a, d) => (+d === c.pos ? a + c.shown(c.pos) : m0));
+  // ---- changes at residues counted from per-change tables (card.change_counts): a count at each residue, beside the
+  // protein's average per residue of the same kind (the background table). The tables list one change per tumor or line;
+  // the table format residue_changes (tables.py) counts them per site and new residue.
+  const CCN = (C.change_counts || []).filter((x) => (x.tables || []).some(has));
+  const CC_IDX = new WeakMap();
+  function changeIdx(tb, x) {
+    // position -> [{alt, n}], most first, over the entry's tables
+    let m = CC_IDX.get(tb);
+    if (!m) CC_IDX.set(tb, (m = {}));
+    return (m[x.id] ||= (() => {
+      const idx = new Map();
+      for (const t of x.tables || [])
+        for (const r of rows(tb, t)) {
+          if (!idx.has(r.position)) idx.set(r.position, []);
+          // one entry a new residue; a table that names the gene keeps the count of each gene in `by`
+          const v = idx.get(r.position);
+          let e = v.find((a) => a.alt === r.alt);
+          if (!e) v.push((e = { alt: r.alt, n: 0, by: {} }));
+          e.n += +r.n || 0;
+          if (x.gene && r[x.gene]) e.by[r[x.gene]] = (e.by[r[x.gene]] || 0) + (+r.n || 0);
+        }
+      idx.forEach((v) => v.sort((a, b) => b.n - a.n || (a.alt < b.alt ? -1 : 1)));
+      return idx;
+    })());
+  }
+  const changesAt = (tb, x, pos) => changeIdx(tb, x).get(pos) || [];
+  const changeTotal = (v) => v.reduce((a, r) => a + r.n, 0);
+  // the protein's average per residue of one kind (letter): changes at its residues of that kind over how many it has
+  function changeAvg(tb, x, letter) {
+    const r = has(x.background) ? rows(tb, x.background).find((q) => q.residue === letter) : null;
+    const n = r ? +r.residues : 0;
+    return r && n ? { per: (+r[x.count] || 0) / n, residues: n, changes: +r[x.count] || 0 } : null;
+  }
+  // a count of at least flag_ratio (default 3) times the protein's average for that residue kind
+  const flagRatio = (x) => (+x.flag_ratio > 0 ? +x.flag_ratio : 3);
+  const flagged = (tb, x, letter, n) => {
+    const b = changeAvg(tb, x, letter);
+    return !!(b && b.per > 0 && n > 0 && n >= flagRatio(x) * b.per);
+  };
+  const flagTag = (x) =>
+    `<span class="tag cc-flag" title="At least ${flagRatio(x)} times the protein's average for this residue kind">≥${flagRatio(x)}× protein average</span>`;
+  const avgText = (v) =>
+    v == null ? '–' : v === 0 ? '0' : v < 0.1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : int(Math.round(v));
+  const residueName = (l) => D.residue_names?.[l] || ((D.residues || []).length === 1 ? W.residue : l);
+  const residueNames = (l) =>
+    D.residue_names?.[l] ? D.residue_names[l] + 's' : (D.residues || []).length === 1 ? W.residues : l + ' residues';
+  function changeCounts(c) {
+    const letter = (c.seq || '')[c.pos - 1] || '',
+      nm = residueName(letter);
+    return CCN.map((x) => {
+      const v = changesAt(c.tb, x, c.pos),
+        t = changeTotal(v),
+        unit = x.unit || ['', ''],
+        b = changeAvg(c.tb, x, letter);
+      const head = t
+        ? `${v
+            .map((r) => `<b>${esc(letter + c.shown(c.pos) + r.alt)}</b>${r.n > 1 ? ' ×' + int(r.n) : ''}`)
+            .join(', ')} <span class="muted">in ${int(t)} ${esc(t === 1 ? unit[0] : unit[1])} (${esc(x.label)})</span>`
+        : `<span class="muted">no change in ${esc(unit[1])} (${esc(x.label)})</span>`;
+      const flag = flagged(c.tb, x, letter, t) ? ' ' + flagTag(x) : '';
+      return (
+        `<div>${head}${flag}<br><span class="muted small">changes at this ${esc(nm)}: ${int(t)} · ` +
+        `protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`
+      );
+    }).join('');
+  }
+  // ---- variants at residues from per-variant tables (card.variant_counts): the count at a residue beside the protein's
+  // average per residue of the same kind, as the change counts above. A table lists one row per variant (site_table).
+  const VCN = (C.variant_counts || []).filter((x) => (x.tables || []).some(has));
+  const VC_IDX = new WeakMap();
+  function variantIdx(tb, x) {
+    // position -> [row], over the entry's tables
+    let m = VC_IDX.get(tb);
+    if (!m) VC_IDX.set(tb, (m = {}));
+    if (x.lazy && !tb._vd?.[x.id]) return new Map(); // its list is not read yet
+    return (m[x.id] ||= (() => {
+      const idx = new Map();
+      for (const r of x.lazy ? tb._vd[x.id] : (x.tables || []).flatMap((t) => rows(tb, t))) {
+        if (!idx.has(r.position)) idx.set(r.position, []);
+        idx.get(r.position).push(r);
+      }
+      return idx;
+    })());
+  }
+  const variantsAt = (tb, x, pos) => variantIdx(tb, x).get(pos) || [];
+  // the genes a protein's rows of one source name, and whether the page shows them: only for a protein that several genes
+  // encode, or whose rows name more than one gene (a lone gene is the page's title already)
+  function genesOfRows(tb, x) {
+    if (!x.gene) return [];
+    const rs = x.lazy ? tb._vd?.[x.id] || [] : (x.tables || []).flatMap((t) => rows(tb, t));
+    return [...new Set(rs.map((r) => r[x.gene]).filter(Boolean))];
+  }
+  const showGene = (acc, tb, x) =>
+    !!x.gene && ((D.protein_genes?.[acc] || []).length > 1 || genesOfRows(tb, x).length > 1);
+  // the count and the highlighted count at a residue: a lazy source keeps them in the protein's table shard (_vc), the
+  // rest are counted from the rows
+  const VS_IDX = new WeakMap();
+  function variantSums(tb, x) {
+    let m = VS_IDX.get(tb);
+    if (!m) VS_IDX.set(tb, (m = {}));
+    return (m[x.id] ||= (() => {
+      const out = new Map();
+      if (x.lazy) {
+        const f = tb._vc?.[x.id] || [];
+        let pos = 0;
+        for (let i = 0; i < f.length; i += 3) out.set((pos += f[i]), { n: f[i + 1], hot: f[i + 2] });
+      } else variantIdx(tb, x).forEach((v, q) => out.set(q, { n: v.length, hot: v.filter((r) => isHot(x, r)).length }));
+      return out;
+    })());
+  }
+  const variantSum = (tb, x, pos) => variantSums(tb, x).get(pos) || { n: 0, hot: 0 };
+  // a variant is highlighted when the entry's highlight column equals the value, or matches the pattern (pathogenic, say)
+  const HOT_RX = new WeakMap();
+  const isHot = (x, r) => {
+    const h = x.highlight;
+    if (!h) return false;
+    const v = String(r[h.column] ?? '');
+    if (h.matches) {
+      if (!HOT_RX.has(h)) HOT_RX.set(h, new RegExp('^(?:' + h.matches + ')$'));
+      return HOT_RX.get(h).test(v);
+    }
+    return v === String(h.equals);
+  };
+  const hotCount = (x, vs) => vs.filter((r) => isHot(x, r)).length;
+  function variantCounts(c) {
+    const letter = (c.seq || '')[c.pos - 1] || '',
+      nm = residueName(letter);
+    return VCN.map((x) => {
+      const { n, hot } = variantSum(c.tb, x, c.pos),
+        unit = x.unit || ['variant', 'variants'],
+        b = changeAvg(c.tb, x, letter);
+      const head = `<b>${esc(x.label)}</b>: ${n ? int(n) : 'no'} ${esc(n === 1 ? unit[0] : unit[1])}${
+        hot && x.highlight.label ? ` <span class="muted">(${int(hot)} ${esc(x.highlight.label)})</span>` : ''
+      }`;
+      const flag = flagged(c.tb, x, letter, n) ? ' ' + flagTag(x) : '';
+      return `<div>${head}${flag} <span class="muted small">· protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`;
+    }).join('');
+  }
   function changes(c) {
     const cs = C.changes || [];
-    if (!cs.length) return '';
+    if (!cs.length) return changeCounts(c);
     const parts = cs
       .map((x) => {
         const vals = attrVals(c, x.attribute);
@@ -616,12 +794,19 @@
 
   // ---- who binds it, and how it was found (site_records) ------------------------------------------------------------
   const RC = C.records || {};
-  const grpLabel = (g) => (RC.groups && SPECS[RC.groups] ? vLabel(RC.groups, g) : g.replace(/_/g, ' '));
+  const grpLabel = (g) => {
+    const attr = RC.groups && SPECS[RC.groups] ? RC.groups : '';
+    if (attr && (SPECS[attr].values || {})[g] != null) return vLabel(attr, g); // the attribute's label wins
+    return (RC.labels || {})[g] || (attr ? vLabel(attr, g) : g.replace(/_/g, ' ')); // the site file's label, else the code
+  };
   const grpOrder = (g) => {
     const v = Object.keys(SPECS[RC.groups]?.values || {});
     const k = v.indexOf(g);
     return k < 0 ? 999 : k;
   };
+  // card.records.rollup: [{label, groups: [codes]}] puts the groups of a heading under one line, as "binds it modified"
+  // against "binds the residue (unmodified or another state)"; a group no roll names stands alone
+  const rollOf = (g) => (RC.rollup || []).find((x) => (x.groups || []).includes(g));
   const paperKey = (r) => r.pubmed || r.doi || r.citation || '';
   const paperA = (r) => {
     const pml = K.papers.ids(r.pubmed);
@@ -749,14 +934,18 @@
       papers = new Set(),
       quiet = new Set(RC.not_papers || []);
     rs.forEach((r) => {
-      n.set(r.group, (n.get(r.group) || 0) + 1);
+      const roll = rollOf(r.group),
+        k = roll ? roll.label : r.group;
+      if (!n.has(k))
+        n.set(k, { label: roll ? roll.label : grpLabel(r.group), at: grpOrder(roll ? roll.groups[0] : r.group), k: 0 });
+      n.get(k).k++;
       if (!quiet.has(r.group) && paperKey(r)) papers.add(paperKey(r));
     });
     return (
       `${int(rs.length)} interaction record${rs.length === 1 ? '' : 's'} from ${int(papers.size)} paper${papers.size === 1 ? '' : 's'} and datasets: ` +
-      [...n.entries()]
-        .sort((a, b) => grpOrder(a[0]) - grpOrder(b[0]))
-        .map(([g, k]) => `${grpLabel(g).replace(/^[A-Z](?=[a-z])/, (ch) => ch.toLowerCase())} ${int(k)}`)
+      [...n.values()]
+        .sort((a, b) => a.at - b.at)
+        .map((x) => `${x.label.replace(/^[A-Z](?=[a-z])/, (ch) => ch.toLowerCase())} ${int(x.k)}`)
         .join(' · ')
     );
   }
@@ -769,6 +958,13 @@
         `class="linkish small" type="button" data-rec-tsv="${c.pos}">TSV</button></p>` +
         recordGroups(c, rs)
           .map(([g, m], _k, all) => {
+            const roll = rollOf(g),
+              first = roll && all.find(([x]) => roll.groups.includes(x))[0] === g,
+              rollRecs = roll
+                ? all
+                    .filter(([x]) => roll.groups.includes(x))
+                    .reduce((t, [, mm]) => t + [...mm.values()].reduce((u, x) => u + x.n, 0), 0)
+                : 0;
             const xs = [...m.values()],
               n = xs.reduce((t, x) => t + x.n, 0),
               who = new Set(xs.map((x) => x.partner || x.partner_name || x.partner_kind));
@@ -777,6 +973,9 @@
               `data-label="Method">${methodCell(x)}</td><td data-label="Site in it">${stateCell(x)}</td><td ` +
               `data-label="Paper">${papersCell(x)}</td></tr>`;
             return (
+              (first
+                ? `<h5 class="sp-roll">${esc(cap(roll.label))} <span class="muted small">${int(rollRecs)} record${rollRecs === 1 ? '' : 's'}</span></h5>`
+                : '') +
               `<details class="sp-group"${
                 (RC.open || []).includes(g) || all.length === 1 ? ' open' : ''
               }><summary><b>${esc(cap(grpLabel(g)))}</b> <span ` +
@@ -877,7 +1076,15 @@
         ];
         if (names.length || w.none)
           lines.push(
-            dl(esc(w.label), names.length ? esc(names.join(', ')) : `<span class="muted">${esc(w.none)}</span>`)
+            dl(
+              esc(w.label),
+              names.length
+                ? esc(names.slice(0, 8).join(', ')) +
+                    (names.length > 8
+                      ? ` <span class="muted">+${names.length - 8} more, in the table below</span>`
+                      : '')
+                : `<span class="muted">${esc(w.none)}</span>`
+            )
           );
       }
     if (WR.suggest) {
@@ -1369,6 +1576,7 @@
   K.card = {
     proteinRecords,
     load,
+    loadDetail,
     loadDefault,
     defaultTb,
     compact: SDF,
@@ -1384,6 +1592,34 @@
     around,
     states,
     changes,
+    vc: {
+      entries: VCN,
+      at: variantsAt,
+      sum: variantSum,
+      sums: variantSums,
+      hot: isHot,
+      showGene,
+      hotCount,
+      avg: changeAvg,
+      avgText,
+      residueName,
+      residueNames,
+      flagged,
+      flagTag,
+    },
+    variants: variantCounts,
+    cc: {
+      entries: CCN,
+      at: changesAt,
+      showGene,
+      total: changeTotal,
+      avg: changeAvg,
+      avgText,
+      residueName,
+      residueNames,
+      flagged,
+      flagTag,
+    },
     calls,
     callsKey,
     evidenceBlock,

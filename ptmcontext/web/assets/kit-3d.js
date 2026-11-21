@@ -372,7 +372,9 @@
   };
   const markAt = (pos) => marks().find((m) => m[0] === pos);
   const seqAt = (pos) => (T.rec?.seq || '')[pos - 1] || (D.residues || [''])[0];
-  const rl = (pos) => `${seqAt(pos)}${pos}`;
+  // a residue as the protein page numbers it (K.prot: histones without the initiator methionine)
+  const sp = (pos) => (K.prot?.shownPos ? K.prot.shownPos(T.acc, pos) : pos);
+  const rl = (pos) => `${seqAt(pos)}${sp(pos)}`;
   const ev = () => T.rec?.s3d || {};
   const colourOf = (m) => (K.map?.siteColour ? K.map.siteColour(m) : { c: tok().mark, label: '' });
   // the map's color mode: the reader's, or the one it opens with (the cards front end names that one in the legend; classic reads the reader's only)
@@ -703,8 +705,11 @@
           .filter((x) => x && x.det.coverage)
           .map(({ e, det }) => {
             let obs = 0;
-            for (const m of e.maps.filter((x) => x.chain === det.chain))
-              for (const [a, b] of det.coverage) obs += Math.max(0, Math.min(b, m.end) - Math.max(a, m.start) + 1);
+            for (const m of e.maps.filter((x) => x.chain === det.chain)) {
+              // the residues the page numbers: not the initiator methionine where the page numbers without it
+              const lo = m.start + Math.max(0, (K.prot?.first ? K.prot.first(acc) : 1) - m.unpStart);
+              for (const [a, b] of det.coverage) obs += Math.max(0, Math.min(b, m.end) - Math.max(a, lo) + 1);
+            }
             return { e, det, obs, nSites: pdbSites(e, det).filter((x) => x[2]).length };
           })
           .filter((x) => x.obs > 0);
@@ -1643,12 +1648,12 @@
     const names = chainNames();
     mol.label = v.addLabel(
       pred
-        ? `${a.resn} ${a.resi} · ${names[a.chain] || 'chain ' + a.chain} · pLDDT ${Math.round(a.b)}`
+        ? `${a.resn} ${sp(a.resi)} · ${names[a.chain] || 'chain ' + a.chain} · pLDDT ${Math.round(a.b)}`
         : `${a.resn} ${pdbMode ? a.chain : ''}${a.resi}${
             pdbMode && unp != null
               ? hom
-                ? ` (≙ ${T.p.gene || T.acc} ${unp})`
-                : ` (UniProt ${unp})`
+                ? ` (≙ ${T.p.gene || T.acc} ${sp(unp)})`
+                : ` (${rl(unp)})`
               : pdbMode && names[a.chain]
                 ? ' · ' + shorten(names[a.chain], 30)
                 : ''
@@ -1893,7 +1898,9 @@
                 `<option value="${esc(c)}"${c === own.chain ? ' selected' : ''}>${esc(c)} · ${esc(
                   own.e.maps
                     .filter((m) => m.chain === c)
-                    .map((m) => m.unpStart + '–' + m.unpEnd)
+                    .map((m) =>
+                      K.prot?.range ? K.prot.range(T.acc, m.unpStart, m.unpEnd) : m.unpStart + '–' + m.unpEnd
+                    )
                     .join(', ')
                 )}</option>`
             )
@@ -1956,7 +1963,7 @@
     const rows =
       `<div class="s3d-row">${sel('style', 'Style', STYLES, V.style)}${sel(
         'color',
-        'Colour',
+        'Color',
         colourOptions(),
         colourKey()
       )}${sel('surface', 'Surface', SURFACES, V.surface)}${sel('light', 'Lighting', LIGHTS, V.light)}` +
@@ -2462,7 +2469,9 @@
                   esc(
                     e.maps
                       .filter((m) => m.chain === e.maps[0].chain)
-                      .map((m) => m.unpStart + '–' + m.unpEnd)
+                      .map((m) =>
+                        K.prot?.range ? K.prot.range(T.acc, m.unpStart, m.unpEnd) : m.unpStart + '–' + m.unpEnd
+                      )
                       .join(', ')
                   )
                 : '<span class="muted">not mapped by PDBe</span>'

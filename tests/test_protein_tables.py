@@ -448,3 +448,96 @@ console.log(JSON.stringify(out));"""
     for pos, (a, b) in out.items():
         assert a == b, pos
     assert any(len(a) > 40 for a, _ in out.values())
+
+
+def _card_script(card, specs, evidence_rows, record_rows):
+    """The site card's blocks (kit-sitecard.js, in Node) over hand-made tables; prints the entries row and the records block."""
+    data = {
+        'words': {'residues': 'residues', 'marks': 'sites'},
+        'shards': 1,
+        'attribute_specs': specs,
+        'tables': {
+            'ev': {'columns': ['position', 'kind', 'partner', 'partner_accession', 'ids']},
+            'rec': {
+                'columns': ['position', 'group', 'partner', 'partner_kind', 'partner_accession', 'state', 'source']
+            },
+        },
+        'protein_view': {'card': card},
+    }
+    tb = {'ev': evidence_rows, 'rec': record_rows, '_s': []}
+    return f"""
+global.window = {{}}; global.document = {{ getElementById: () => null, addEventListener: () => {{}} }};
+eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-papers.js'))}, 'utf8'));
+eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-sitecard.js'))}, 'utf8'));
+const D = {json.dumps(data)}, esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}})[c]);
+const K = {{ D, W: D.words, esc, int: n => String(n), cap: t => String(t)[0].toUpperCase() + String(t).slice(1), clicks: [], link: (v, a) => '#' + v + '/' + a,
+  map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
+window.PTMC_MODULES[0](K); window.PTMC_MODULES[1](K);
+const c = {{ p: {{ acc: 'P1' }}, tb: {json.dumps(tb)}, acc: 'P1', pos: 2, gene: 'G', label: 'X2', seq: '', window: '', shown: q => q,
+  attr: () => '', attrHtml: (n, v) => v, isListed: () => false }};
+console.log(JSON.stringify({{ entries: K.card.entries(c), rec: K.card.recordsBlock(c) }}));"""
+
+
+def _card(card, specs, ev, rec):
+    script = _card_script(card, specs, ev, rec)
+    return json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
+
+
+_CARD_EV = {'entries': {'table': 'ev', 'kinds': {'k_prot': '', 'k_rna': 'RNA'}, 'url': 'https://x/{id}'}}
+_CARD_REC = {'table': 'rec', 'title': 'Who binds it'}
+_REC_ROWS = [
+    [2, 'binds_one', 'AAA', 'protein', 'P2', 's', 'PDB'],
+    [2, 'binds_one', 'BBB', 'protein', 'P3', 's', 'PDB'],
+    [2, 'binds_two', 'CCC', 'protein', 'P4', 's', 'PDB'],
+]
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_an_evidence_row_names_a_partner_without_a_gene_by_its_accession_never_by_the_kind_code():
+    ev = [[2, 'k_prot', '', 'Q9TEST', '1ABC'], [2, 'k_prot', 'GENE1', 'P9', '2DEF'], [2, 'k_rna', '', '', '3GHI']]
+    out = _card({'evidence': _CARD_EV}, {}, ev, [])['entries']
+    assert '>Q9TEST</b>' in out and '>GENE1</b>' in out and '>RNA</b>' in out
+    assert 'k_prot' not in out
+    # nothing but a kind: its code is the last resort
+    assert '>k_prot</b>' in _card({'evidence': _CARD_EV}, {}, [[2, 'k_prot', '', '', '1ABC']], [])['entries']
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_the_record_groups_and_their_summary_use_the_site_files_labels_with_the_code_last():
+    card = {'evidence': _CARD_EV, 'records': {**_CARD_REC, 'labels': {'binds_one': 'Binds it as modified'}}}
+    rec = _card(card, {}, [], _REC_ROWS)['rec']
+    assert '<b>Binds it as modified</b>' in rec and 'binds it as modified 2' in rec  # heading and summary
+    assert '<b>Binds two</b>' in rec and 'binds two 1' in rec  # no label: the code, underscores replaced
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_the_record_groups_keep_the_attributes_labels_over_the_site_files():
+    specs = {'cls': {'values': {'binds_one': 'Attribute word'}}}
+    plain = {'evidence': _CARD_EV, 'records': {**_CARD_REC, 'groups': 'cls'}}
+    rec = _card(plain, specs, [], _REC_ROWS)['rec']
+    assert '<b>Attribute word</b>' in rec and 'attribute word 2' in rec
+    assert '<b>Binds_two</b>' in rec  # as before: a value the attribute lacks shows its code
+    both = {
+        'evidence': _CARD_EV,
+        'records': {**plain['records'], 'labels': {'binds_one': 'Site word', 'binds_two': 'Two'}},
+    }
+    rec = _card(both, specs, [], _REC_ROWS)['rec']
+    assert '<b>Attribute word</b>' in rec and 'Site word' not in rec and '<b>Two</b>' in rec
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_record_groups_can_roll_up_under_two_headings_with_one_summary_phrase_each():
+    card = {
+        'evidence': _CARD_EV,
+        'records': {
+            **_CARD_REC,
+            'labels': {'binds_one': 'One', 'binds_two': 'Two'},
+            'rollup': [
+                {'label': 'Binds it modified', 'groups': ['binds_one']},
+                {'label': 'Binds the residue', 'groups': ['binds_two']},
+            ],
+        },
+    }
+    rec = _card(card, {}, [], _REC_ROWS)['rec']
+    assert '<h5 class="sp-roll">Binds it modified' in rec and '<h5 class="sp-roll">Binds the residue' in rec
+    assert 'binds it modified 2 · binds the residue 1' in rec  # the summary line reads the headings

@@ -108,13 +108,22 @@ class Context:
         """The residues a table lists (accession, position) that fills a role, by its manifest column mapping."""
         from .. import units as U
 
-        path = self.path(role)
-        cols = self.formats.get(str(path))
-        if not cols or not cols.get('accession') or not cols.get('position'):
-            raise ValueError(
-                f'role {role!r}: a list of residues needs a column mapping (columns: {{accession, position}}) in its manifest entry'
+        def one(path):
+            cols = self.formats.get(str(path))
+            if not cols or not cols.get('accession') or not cols.get('position'):
+                raise ValueError(
+                    f'role {role!r}: a list of residues needs a column mapping (columns: {{accession, position}}) in its manifest entry'
+                )
+            return U.listed_residues(path, cols)
+
+        given = self.inputs.get(role)
+        if isinstance(given, Several):  # several lists (one a residue type): the residues any of them lists
+            return self.cached(
+                f'listed:{role}',
+                lambda: pd.concat([one(p) for p in given.paths], ignore_index=True).drop_duplicates(),
             )
-        return self.cached(f'listed:{role}', lambda: U.listed_residues(path, cols))
+        path = self.path(role)
+        return self.cached(f'listed:{role}', lambda: one(path))
 
     def cached(self, key: str, make: Callable):
         if key not in self._cache:

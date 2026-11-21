@@ -67,7 +67,7 @@
       `<section class="pwcard" id="pwcard" aria-labelledby="pwtitle"><header><h2 id="pwtitle" tabindex="-1">${esc(nameOf(id))}</h2><span ` +
       `class="pwtools">${out}<button type="button" class="btn small" data-pw-close aria-label="Close the ` +
       `pathway">×</button></span></header>` +
-      `<div id="pwbody" aria-live="polite"><p class="muted">Loading the pathway’s proteins…</p></div>` +
+      `<div id="pwbody" aria-live="polite">${K.loading('Loading the pathway’s proteins…')}</div>` +
       (by ? `<p class="pwattr">Pathway from ${by}${src.licence ? ` (${esc(src.licence)})` : ''}.</p>` : '') +
       '</section>'
     );
@@ -80,7 +80,7 @@
     const act = K.sel.active(),
       SD = act ? K.sel.data() : null;
     if (act && !SD) {
-      box.innerHTML = '<p class="muted">Loading the selection…</p>';
+      box.innerHTML = K.loading('Loading the selection…');
       return;
     }
     const prots = act ? K.sel.compute().proteins : null,

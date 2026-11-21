@@ -75,7 +75,7 @@
       `<b>${esc(label)}</b><br>${pcT(k, n)}% of ${int(n)} ${esc(pop)} ${esc(v.meter_words || 'in ' + setName)} (${int(k)})`;
     const loading =
       K.selOn() && !K.sel.data()
-        ? '<p class="muted small">Loading the selection…</p>'
+        ? K.loading('Loading the selection…')
         : K.selOn() && !scoped
           ? '<p class="twhole"><span>Whole dataset</span> the selection is too small to test</p>'
           : '';
@@ -350,7 +350,7 @@
   function page(v, card, body) {
     const G = groups(v),
       a = A[v.analysis];
-    if (!G) return body() + '<p class="muted">Loading the proteins’ numbers…</p>';
+    if (!G) return body() + K.loading('Loading the proteins’ numbers…');
     const scoped = G.scoped,
       total = scoped ? K.sel.nProteins() : D.counts.proteins;
     const intro = (v.intro || '')

@@ -30,7 +30,7 @@ const SD = { marks: [[0, 10], [0, 12], [1, 5]] };
 const names = { ALPHA: [0], BETA: [1], GAMMA: [] };
 let active = ACTIVE; const calls = { hash: [], render: 0 };
 const K = { esc: s => String(s), int: n => String(n), S, clicks: [], paramsIn: [], paramsOut: [], tw: (t, s) => t.length * s, afterRender: [],
-  writeHash: p => calls.hash.push(p), render: () => { calls.render++; }, link: (v, a) => '#' + v + '/' + a,
+  writeHash: p => calls.hash.push(p), views: { overlap: {} }, go: (v, p) => { calls.go = [v, p]; }, render: () => { calls.render++; }, link: (v, a) => '#' + v + '/' + a,
   sel: { active: () => active, compute: () => ({ proteins: new Set([0, 1]) }), data: () => SD, peek: () => SD, encode: () => 'k~v', byAcc: { A0: { i: 0 }, B1: { i: 1 } },
     select: (tok, f) => {
       if (f && f['a:cls']) { const ps = f['a:cls'][0] === 'x' ? [0, 2] : [1]; return { active: true, proteins: new Set(ps), marks: [], q: {} }; }
@@ -81,17 +81,18 @@ console.log(JSON.stringify({ q: S.q, f: S.f, hl: S.hl, hash: calls.hash, render:
 
 
 @node
-def test_compare_with_selection_needs_a_selection_and_keeps_the_old_one_as_the_other_side():
+def test_compare_with_selection_opens_compare_sets_with_the_highlighted_list_as_a():
     body = """
-S.q = 'z';
 const ctl = K.hl.control();
 click('[data-hl-compare]')();
-console.log(JSON.stringify({ q: S.q, vs: S.vs, cmp: S.cmp, view: S.view, ctl: K.hl.control(), off: ctl.includes('data-hl-compare disabled') }));
+console.log(JSON.stringify({ go: calls.go, shown: ctl.includes('data-hl-compare') }));
 """
     got = run('ALPHA, GAMMA', body, 'true')
-    assert (got['q'], got['vs'], got['cmp'], got['view']) == ('ALPHA', 'cmp', 'q=z&f=k~v', 'overview')
-    assert 'Compared: 1 of 2 found · not found: GAMMA' in got['ctl'] and not got['off']
-    assert run('ALPHA', body, 'false')['off'] is True
+    assert got['shown'] is True and got['go'] == [
+        'overlap',
+        {'ot': ['g:ALPHA, GAMMA', 'sel'], 'ou': 'proteins', 'or': ''},
+    ]
+    assert run('ALPHA', body, 'false')['shown'] is False  # no selection: no button
 
 
 @node

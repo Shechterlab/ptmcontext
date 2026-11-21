@@ -1,0 +1,30 @@
+field	value	notes
+source_id	Smith2026	Author+year; also the source string in the sites file
+label	Smith 2026	Display name
+citation	Smith J et al., Nat Methods 1:1 (2026)	Full reference
+doi	10.1000/example	
+pmid	00000000	
+dataset_accession	PXD000000	PXD, jPOST, MassIVE ID, or none
+license_text	CC BY 4.0	Exact wording from the source
+license_url	https://example.org/license	
+license_date_checked	2026-11-19	
+version_or_release	v1	Release name or date downloaded
+download_url	https://example.org/supplement.xlsx	Direct file URL
+md5	d41d8cd98f00b204e9800998ecf8427e	Of every raw file; add SHA-256 if available
+organism	9606	NCBI taxon; human only unless agreed
+reference_proteome	UniProt 2026_03	
+mark	sumoylation	Unimod and PSI-MOD terms
+states	sumo	me1, me2, me3, phospho, ub, sumo, acyl type
+residues	K	One-letter codes
+evidence_class	experimental	experimental, text-mined, by-similarity or unspecified
+method	His-tag pulldown, Orbitrap Exploris 480, MaxQuant 2.4	Enrichment, instrument, search engine and version
+fdr_thresholds	PSM 1%, peptide 1%, site 1%	
+localization_threshold	0.75	Probability cutoff applied
+laboratory	Smith lab, Example University	Senior investigators and institution; name any shared with studies already in the release
+direct_or_aggregator	direct	aggregator if it re-reports other studies
+upstream_sources	none	For an aggregator: studies or databases with PMIDs
+same_raw_data_elsewhere	no	Same raw data under another accession? Give it
+reanalysis_of_public_data	no	If yes, name the original dataset
+samples	HeLa; HEK293	Cell lines, tissues, treatments
+published_and_shareable	yes	Data are published and may be shared under CC BY-NC-SA 4.0 or the source's terms
+contact	name@example.org	Never published

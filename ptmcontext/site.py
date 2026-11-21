@@ -103,6 +103,7 @@ def expand_subsets(site: dict) -> dict:
 
 
 CONTROL_KEYS = ('marks_where', 'marks_outside', 'without_proteins', 'only_in')
+CONTROL_MIN_MARKS = 100  # a control on a part of the marks (marks_where) with fewer marks shows no result
 
 
 def expand_controls(site: dict) -> dict:
@@ -164,6 +165,11 @@ def expand_controls(site: dict) -> dict:
                 control_of=aid,
                 control_label=ctl['label'],
                 **({'control_when': ctl['when']} if ctl.get('when') else {}),
+                **(
+                    {'control_min_marks': int(ctl.get('min_marks', CONTROL_MIN_MARKS))}
+                    if 'marks_where' in change
+                    else {}
+                ),
             )
             if title:
                 v['title'] = f'{title}, {ctl["label"]}'
@@ -633,11 +639,17 @@ def network_problems(site: dict) -> list[str]:
     if len(ids) != len(set(ids)) or 'cluster' in ids:
         out.append('website.network: color_by ids must be distinct and not "cluster"')
     classes = ((((site.get('website') or {}).get('search') or {}).get('partners') or {}).get('classes')) or {}
+    if (cfg.get('outline') or {}).get('kind') == 'role' and not any(
+        isinstance(k, dict) and k.get('role') for k in classes.values()
+    ):
+        out.append('website.network outline: kind role needs website.search.partners.classes with roles')
+    done = {a.get('id') for a in site.get('analyses') or [] if isinstance(a, dict)}
     for c in cfg.get('color_by', []):
-        if c.get('kind') == 'role' and not any(isinstance(k, dict) and k.get('role') for k in classes.values()):
-            out.append(
-                f'website.network color_by {c.get("id")!r}: kind role needs website.search.partners.classes with roles'
-            )
+        refs = [c.get('analysis')] if c.get('kind') == 'decile' else []
+        refs += [r.get('analysis') for side in ('rna', 'dna') for r in c.get(side) or []]
+        for a in refs:
+            if a not in done:
+                out.append(f'website.network color_by {c.get("id")!r}: no analysis {a!r}')
     sec = (cfg.get('tile') or {}).get('section')
     names = {x.get('name') for x in ((site.get('website') or {}).get('overview') or {}).get('sections', [])}
     if sec and sec not in names:
@@ -1150,6 +1162,11 @@ def card_problems(site: dict) -> list[str]:
     if card.get('records'):
         table('card.records', card['records']['table'], 'site_records')
         attr('card.records', card['records'].get('groups'))
+        labels = card['records'].get('labels')
+        if labels is not None and not (
+            isinstance(labels, dict) and all(isinstance(k, str) and isinstance(v, str) for k, v in labels.items())
+        ):
+            out.append('website.protein.card.records.labels: a map of group code -> label (text)')
     if card.get('writer'):
         w = card['writer']
         for rule in (w.get('suggest') or {}).get('rules', []):
@@ -1184,12 +1201,28 @@ def card_problems(site: dict) -> list[str]:
         )
     if tb.get('nearest_domain'):
         table('table.nearest_domain', tb['nearest_domain']['table'], 'site_values')
+    sym = (prot.get('genes') or {}).get('symbols')
+    if sym and not any(
+        (Path(sym) if Path(sym).is_absolute() else b / sym).exists()
+        for b in (Path.cwd(), Path(__file__).resolve().parents[1])
+    ):
+        out.append(f'website.protein.genes.symbols: {sym} does not exist')
+    for k, n in enumerate((prot.get('genes') or {}).get('short') or []):
+        try:
+            re.sub(n['pattern'], n['replace'], '')
+        except (re.error, IndexError) as e:
+            out.append(f'website.protein.genes.short[{k}]: not a regular-expression substitution ({e})')
     for k, n in enumerate(prot.get('numbering') or []):
         for key in ('genes', 'names'):
             try:
                 re.compile(n.get(key, ''))
             except re.error as e:
                 out.append(f'website.protein.numbering[{k}].{key}: not a regular expression ({e})')
+        if n.get('removed_met') and not any(
+            (Path(n['removed_met']) if Path(n['removed_met']).is_absolute() else b / n['removed_met']).exists()
+            for b in (Path.cwd(), Path(__file__).resolve().parents[1])
+        ):
+            out.append(f'website.protein.numbering[{k}].removed_met: {n["removed_met"]} does not exist')
     return out
 
 
@@ -1358,19 +1391,24 @@ def manifest_of(site: dict) -> Path:
     return root / 'inputs.json' if (root / 'inputs.json').exists() else I.MANIFEST
 
 
-def _holds(frame: pd.DataFrame, cond: dict) -> pd.Series:
+def _holds(frame: pd.DataFrame, cond: dict, key: pd.Series | None = None) -> pd.Series:
     """Whether each row meets a condition on the marks table: equals, in or contains on a column's text, or all_of, a
-    list of such conditions that all hold for the row, or any_of, a list of which one holds."""
+    list of such conditions that all hold for the row, or any_of, a list of which one holds. `key` names the mark each
+    row belongs to; a `distinct_units_at_least` condition pools the rows of a mark and needs it."""
     if 'all_of' in cond:
         out = pd.Series(True, index=frame.index)
         for part in cond['all_of']:
-            out &= _holds(frame, part)
+            out &= _holds(frame, part, key)
         return out
     if 'any_of' in cond:
         out = pd.Series(False, index=frame.index)
         for part in cond['any_of']:
-            out |= _holds(frame, part)
+            out |= _holds(frame, part, key)
         return out
+    if 'distinct_units_at_least' in cond:
+        if key is None:
+            raise ValueError('distinct_units_at_least counts the rows of a mark together: it is for marks_where only')
+        return _distinct_units_at_least(frame, cond, key)
     col = frame[cond['column']].astype(str)
     if 'distinct_at_least' in cond:
         return _distinct_at_least(col, cond)
@@ -1416,6 +1454,45 @@ def _distinct_at_least(col: pd.Series, cond: dict) -> pd.Series:
         return len({group_of.get(x, x) for x in items if x and x not in skip})
 
     return col.map(count) >= n
+
+
+def _distinct_units_at_least(frame: pd.DataFrame, cond: dict, key: pd.Series) -> pd.Series:
+    """Whether each row's mark (rows with the same `key`) has at least `distinct_units_at_least` distinct units pooled
+    over all its rows. A row's units are the items of the list columns in `units.columns` (PubMed IDs), plus, for each
+    item of `units.direct.column` listed in `units.direct.map`, the unit it maps to (a dataset counts as one unit, or
+    as the PubMed ID of its paper, so that a database citing that paper is not counted twice). Items of the direct
+    column not in the map add nothing: databases count only through the papers they cite. A row that fails
+    `units.only_where` adds no units. Every row of a mark gets the mark's answer. With `per` (a column's name), units
+    are pooled only among rows with the same value in that column (the modification type): each row's answer is for
+    its own type, and records of different types never add up."""
+    u = cond['units']
+    if cond.get('per'):
+        if cond['per'] not in frame.columns:
+            raise ValueError(f'distinct_units_at_least: per column {cond["per"]!r} is not in the marks table')
+        key = key.astype(str) + '\x1f' + frame[cond['per']].astype(str)
+    cols = u.get('columns') or []
+    sep = u.get('separator', ';')
+    d = u.get('direct') or {}
+    dmap = d.get('map') or {}
+    dsep = d.get('separator', '; ')
+    ok = _holds(frame, u['only_where']) if u.get('only_where') else pd.Series(True, index=frame.index)
+
+    def split(cell, sp):
+        return [x.strip() for x in str(cell).split(sp) if x.strip()]
+
+    pooled: dict = {}
+    streams = [(frame[c].fillna('').to_numpy(), sep, None) for c in cols]
+    if d:
+        streams.append((frame[d['column']].fillna('').to_numpy(), dsep, dmap))
+    for i, (k, good) in enumerate(zip(key.to_numpy(), ok.to_numpy())):
+        got = pooled.setdefault(k, set())
+        if not good:
+            continue
+        for vals, sp, m in streams:
+            items = split(vals[i], sp)
+            got.update(items if m is None else (str(m[x]) for x in items if x in m))
+    n = int(cond['distinct_units_at_least'])
+    return pd.Series([len(pooled[k]) >= n for k in key.to_numpy()], index=frame.index)
 
 
 def listed_proteins(spec: dict, ctx: L.Context) -> set:
@@ -1490,7 +1567,12 @@ def subset_marks(spec: dict, table: pd.DataFrame, marked: pd.DataFrame, cond: di
     """The counted marks with a kept row of the marks table that the condition holds for (an analysis's marks_where:
     the marks with a row of one state, say). A mark's other rows may be of any other kind."""
     rows = _kept_rows(spec, table)
-    hit = rows[_holds(rows, cond)]
+    mark = (
+        rows[spec['accession']].astype(str).str.strip()
+        + ':'
+        + pd.to_numeric(rows[spec['position']], errors='coerce').fillna(-1).astype(int).astype(str)
+    )
+    hit = rows[_holds(rows, cond, mark)]
     pos = pd.to_numeric(hit[spec['position']], errors='coerce')
     keys = set(zip(hit[spec['accession']].astype(str).str.strip(), pos.fillna(-1).astype(int)))
     keep = [(a, int(p)) in keys for a, p in zip(marked['accession'], marked['position'])]

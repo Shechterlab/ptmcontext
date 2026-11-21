@@ -20,7 +20,7 @@
         })
       );
     });
-  const PAGE = { w: 210, h: 297, side: 12, top: 16, bottom: 14 },
+  const PAGE = { w: 210, h: 297, side: 12, top: 16, bottom: 22 },
     WIDTH = 1000;
   // jsPDF's built-in fonts cover Latin-1 only
   const latin = (t) =>
@@ -30,10 +30,13 @@
       .replace(/≤/g, '<=')
       .replace(/[^\x20-\xff]/g, '');
   async function pagePdf(root, title, filename, btn) {
-    const label = btn ? btn.textContent : '';
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = 'Writing PDF…';
+    // the cue goes on the menu's toggle, which stays in view when the menu closes
+    const host = btn ? btn.closest('[data-xm]')?.querySelector('[data-xm-toggle]') || btn : null,
+      label = host ? host.textContent : '';
+    if (host) {
+      host.disabled = true;
+      host.setAttribute('aria-busy', 'true');
+      host.textContent = 'Preparing download…';
     }
     try {
       await Promise.all(LIBS.map(loadScript));
@@ -87,8 +90,8 @@
         y = cut;
       }
       const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true });
-      // the visible foot has the site's address without the page's state; the commit, the version and the full address are in the
-      // document's properties
+      // the visible foot has the full address, the sources, the version and the license; the commit is in the document's
+      // properties
       const cite = K.CIT?.preferred?.text ? `Cite: ${K.CIT.preferred.text}` : '';
       pdf.setProperties({
         title,
@@ -106,12 +109,23 @@
         creator: `ptmcontext ${D.kit.version} (${D.kit.commit || 'commit not recorded'})`,
       });
       const head = latin(`${D.site.name} · ${title}`),
-        foot = latin(
-          (K.creditLines?.()[0] || '') +
-            (D.dataset?.version ? ` · data ${D.dataset.version}` : '') +
-            (K.selText ? ` · Selection: ${K.selText()}` : '')
-        ),
-        url = latin(location.origin === 'null' ? location.href.split(/[?#]/)[0] : location.origin + location.pathname);
+        credit = (K.creditLines?.() || []).map(latin),
+        pick = (re) => credit.find((l) => re.test(l)) || '',
+        // the foot: the page's full address (with its section), the data sources (cut at two lines), then the site's
+        // version, the data release, the selection and the license
+        foot = [
+          pick(/^Page:/) || latin(location.href),
+          pick(/^Data:/),
+          [
+            pick(new RegExp('^' + D.site.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ', version')),
+            D.dataset?.version ? `data ${D.dataset.version}` : '',
+            K.selText ? `Selection: ${latin(K.selText())}` : '',
+            pick(/^Exported/),
+          ]
+            .filter(Boolean)
+            .join(' · '),
+        ].filter(Boolean),
+        W = PAGE.w - 2 * PAGE.side;
       pages.forEach(([a, b], n) => {
         if (n) pdf.addPage();
         const c = document.createElement('canvas');
@@ -126,21 +140,26 @@
         pdf.setTextColor(110);
         pdf.text(head, PAGE.side, 9);
         pdf.text(`${n + 1} / ${pages.length}`, PAGE.w - PAGE.side, 9, { align: 'right' });
-        pdf.text(
-          pdf
-            .splitTextToSize(`${url} · ${new Date().toISOString().slice(0, 10)} · ${foot}`, PAGE.w - 2 * PAGE.side)
-            .slice(0, 3),
-          PAGE.side,
-          PAGE.h - 10.5
-        );
+        const lines = foot.flatMap((t) => {
+          const w = pdf.splitTextToSize(t, W);
+          if (t.startsWith('Data:') && w.length > 2) {
+            let cut = w[1];
+            const tail = ' ... (all: Methods, Cite)';
+            while (cut.includes(' ') && pdf.getTextWidth(cut + tail) > W) cut = cut.replace(/\s*\S*$/, '');
+            return [w[0], cut + tail];
+          }
+          return w;
+        });
+        pdf.text(lines.slice(0, 6), PAGE.side, PAGE.h - 3.2 * Math.min(lines.length, 6) - 3.5);
       });
       K.download(filename, pdf.output('blob'));
     } catch (e) {
       alert(`The PDF could not be written (${e.message}). Print can save one instead.`);
     } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = label;
+      if (host) {
+        host.disabled = false;
+        host.removeAttribute('aria-busy');
+        host.textContent = label;
       }
     }
   }

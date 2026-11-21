@@ -33,7 +33,18 @@
       r.ok ? r.json() : Promise.reject(new Error('missing'))
     ));
   }
-  const loadProtein = (acc) => loadShard(shardOf(acc)).then((sh) => sh[acc] || Promise.reject(new Error('not found')));
+  // a region's name is shown in American spelling (the source's own stays in the data)
+  const loadProtein = (acc) =>
+    loadShard(shardOf(acc)).then((sh) => {
+      const rec = sh[acc] || Promise.reject(new Error('not found'));
+      if (rec.units && !rec.usDone) {
+        rec.usDone = true;
+        rec.units.forEach((u) => {
+          u[3] = K.us(u[3]);
+        });
+      }
+      return rec;
+    });
   K.loadProtein = loadProtein; // for other modules' drawings of a protein (kit-selview.js)
 
   // ---- website.protein.order / open: the folds in the site's order, and which of them start open --------------------------
@@ -300,11 +311,14 @@
     Object.keys(SPECS).filter((n) => !(SPECS[n].present && detailOf(n)) && (attrVal(m, n) !== '' || SPECS[n].colour));
   const pillOf = (m, k) => {
     const rc = K.map.readable(K.map.attrColour(k, attrVal(m, k)));
+    const txt = String(K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k)),
+      // a trailing bracketed note is dropped in compact rows (the dot and the short name stay; the pill keeps it all)
+      cut = /^(.*?\S)\s+(\([^()]*\))$/.exec(txt);
     return (
       `<span class="state-pill" ` +
-      `style="--c:${rc.bg};--t:${rc.fg}" title="${esc(SPECS[k].label)}">${esc(
-        K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k)
-      )}</span>`
+      `style="--c:${rc.bg};--t:${rc.fg}" title="${esc(SPECS[k].label + ': ' + txt)}"><i class="sp-dot" aria-hidden="true"></i>${
+        cut ? `${esc(cut[1])}<span class="sp-x"> ${esc(cut[2])}</span>` : esc(txt)
+      }</span>`
     );
   };
   const statePill = (m) => {
@@ -460,20 +474,19 @@
   };
   // ---- numbering: a protein the site file numbers as papers do (website.protein.numbering: histones without the
   // initiator methionine, say) shows position + offset everywhere, and a link's position is read the same way ----------
-  const NUM = (D.protein_view?.numbering || []).map((n) => ({
-    ...n,
-    g: n.genes ? new RegExp(n.genes) : null,
-    nm: n.names ? new RegExp(n.names, 'i') : null,
-  }));
-  const numOf = (p) => {
-    if (!p || !NUM.length) return null;
-    if (p._num === undefined) {
-      const g = String(p.gene || '').split(/[\s;,]+/)[0];
-      p._num = NUM.find((n) => (g ? n.g?.test(g) : n.nm?.test(p.name || ''))) || null;
-    }
-    return p._num;
-  };
+  const numOf = K.numbering; // one rule for every view (kit-select.js)
+  const genesOf = (p) => D.protein_genes?.[p?.acc] || []; // the genes of a protein several genes encode
   const shownPos = (p, pos) => pos + (numOf(p)?.offset || 0);
+  // the line a download adds when the protein is numbered as papers do: the shown numbers beside UniProt's
+  const numNote = (p) =>
+    numOf(p)
+      ? ` ${numOf(p).note || 'Numbered as papers do'}: the site and shown_range columns use it, position, start and end are UniProt positions.`
+      : '';
+  // residues the page leaves out at the start (the initiator methionine, numbered 0 by the rule's -1 offset), and the
+  // length of the protein as the page numbers it
+  const dropped = (p) => Math.max(0, -(numOf(p)?.offset || 0));
+  const shownLen = (p, rec) => Math.max(0, (rec.seq || '').length - dropped(p));
+  const rangeOf = (p, a, b) => `${Math.max(1, shownPos(p, a))}–${Math.max(1, shownPos(p, b))}`;
   const uniPos = (p, n) => n - (numOf(p)?.offset || 0);
   const resAt = (p, pos) => (PV.acc === p?.acc && PV.rec?.seq?.[pos - 1]) || residueOf(p, pos);
   const siteOf = (p, pos) => `${resAt(p, pos) || ''}${shownPos(p, pos)}`;
@@ -482,6 +495,11 @@
     shownPos: (acc, pos) => shownPos(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), pos),
     siteLabel: (acc, pos) => siteOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null) || { acc }, pos),
     numbering: (acc) => numOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
+    // a stretch as the page numbers it: its first residue is 1 even where the initiator methionine (0) is inside it
+    range: (acc, a, b) => rangeOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), a, b),
+    // the first residue the page shows (2 where the initiator methionine, numbered 0, is left out) and the protein's length as numbered
+    first: (acc) => 1 + dropped(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
+    length: (acc, n) => n - dropped(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
     tables: (acc) => (PV.acc === acc ? PV.tb || null : null),
   };
 
@@ -529,6 +547,7 @@
     states: 'State by source',
     calls: 'Perturbations',
     changes: 'Changes',
+    germline: 'Germline variants',
     reported: 'Reported by',
     ...(CC.labels || {}),
   };
@@ -777,7 +796,7 @@
       group('site', 'Site', siteRows, true) +
       group('questions', 'Questions', qrows.join(''), true) +
       group('records', 'UniProt and sources', uniRow + citeRow, true) +
-      group('more-questions', `More questions (${qmore.length})`, qmore.join(''), false) +
+      group('more-questions', `Other questions (${qmore.length})`, qmore.join(''), false) +
       group('attributes', `Other attributes (${rest.length})`, restRows, false);
     const ev = ready ? K.card.evidenceBlock(c) : '',
       recs = ready ? K.card.recordsBlock(c) : '',
@@ -798,7 +817,10 @@
             : '<span class="muted">none reported at this residue</span>'
           : '<span class="muted">Loading from UniProt…</span>'
       ) +
-      ((CC.changes || []).length ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait) : '') +
+      ((CC.changes || []).length || (CC.change_counts || []).length
+        ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait)
+        : '') +
+      ((CC.variant_counts || []).length ? kv(esc(CL_WORDS.germline), ready ? K.card.variants(c) : wait) : '') +
       '</dl></section>';
     return (
       `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.mark)}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)}${
@@ -825,7 +847,7 @@
         `class="btn small" data-site-close aria-label="Close">×</button></span></div>`) +
       varBlock +
       `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site"><h4>Site</h4>${siteHtml}</section>${recs}${wr}</div>` +
-      (!ready && Object.keys(D.tables || {}).length ? '<p class="muted small">Loading tables…</p>' : '') +
+      (!ready && Object.keys(D.tables || {}).length ? K.loading('Loading tables…') : '') +
       '</section>'
     );
   }
@@ -902,6 +924,7 @@
       .forEach((g) => addName(g, acc));
     if (entry) addName(entry, acc);
   });
+  Object.entries(D.protein_genes || {}).forEach(([acc, gs]) => gs.forEach((g) => addName(g, acc))); // every gene of a protein
   Object.entries(D.protein_aliases || {}).forEach(([acc, al]) =>
     String(al)
       .split(/;\s*/)
@@ -982,10 +1005,21 @@
     if (sectionKey(at)) return '/' + (SECTION_NAMES[SECTION[at.toLowerCase()]] || at.toLowerCase());
     if (/^p-[a-z0-9]+$/i.test(at)) return '/' + at.toLowerCase();
     if (/^\d+-\d+$/.test(at)) return '/' + at;
-    const s = /^[A-Za-z]?(\d+)$/.exec(at);
+    const s = /^([A-Za-z]?)(\d+)$/.exec(at);
     if (!s) return '';
     const p = byAcc[acc];
-    return '/' + (p ? uniPos(p, +s[1]) : +s[1]);
+    if (!p) return '/' + +s[2];
+    // read as the page numbers it, unless only the UniProt reading names a site of the letter's residue (a link made
+    // before this protein was renumbered keeps opening the site it named)
+    const u = uniPos(p, +s[2]);
+    if (
+      s[1] &&
+      numOf(p) &&
+      resAt(p, u).toUpperCase() !== s[1].toUpperCase() &&
+      resAt(p, +s[2]).toUpperCase() === s[1].toUpperCase()
+    )
+      return '/' + +s[2];
+    return '/' + u;
   };
   K.routes.protein = {
     path: (arg) => {
@@ -1372,7 +1406,7 @@
             }</span></td></tr>` +
             (open
               ? `<tr class="ev-row" data-for="${m[0]}"><td colspan="${n}">${
-                  PV.tb ? K.card.evidenceRow(c) : '<p class="muted">Loading…</p>'
+                  PV.tb ? K.card.evidenceRow(c) : K.loading('Loading…')
                 }</td></tr>`
               : '')
           );
@@ -1454,8 +1488,12 @@
       PV.span = null;
       PV.spanArg = '';
     } else if (PV.spanArg !== sitePos) {
-      const a = Math.max(1, +span[1]),
-        b = Math.min(p.len, +span[2]),
+      // the region is read as the page numbers it (R2-30 on a protein numbered without its first residue is 3 to 31 in
+      // UniProt's); a span that ends past the shown length can only be a link made in UniProt's frame, read as such
+      const off = numOf(p)?.offset || 0,
+        asShown = off && +span[2] <= p.len + off,
+        a = Math.max(1, +span[1] - (asShown ? off : 0)),
+        b = Math.min(p.len, +span[2] - (asShown ? off : 0)),
         pad = Math.max(5, Math.round((b - a + 1) * 0.15));
       PV.span = [a, b];
       PV.spanArg = sitePos;
@@ -1475,11 +1513,11 @@
         PV.site
           ? ` › ${esc(PV.rec ? siteOf(p, PV.site) : PV.site)}`
           : PV.span
-            ? ` › ${int(PV.span[0])}–${int(PV.span[1])}`
+            ? ` › ${rangeOf(p, PV.span[0], PV.span[1])}`
             : ''
       }</p>` +
       protHead(p);
-    if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
+    if (!PV.rec) return head + (PV.err ? `<p class="empty">${esc(PV.err)}</p>` : K.loading('Loading the protein…'));
     const rec = PV.rec,
       sel = K.sel?.active() ? K.sel.selectedPositions(acc) : null;
     const isOpen = (id, open) => PV.open[id] ?? foldOpen(id, open);
@@ -1500,7 +1538,7 @@
         fold(
           'p-map',
           'Protein map',
-          `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(p.len)} aa${
+          `${int(rec.marks.length)} ${esc(rec.marks.length === 1 ? W.mark : W.marks)} on ${int(K.prot.length(p.acc, p.len))} aa${
             numOf(p) ? ` · ${esc(numOf(p).label || 'numbered as papers do')}` : ''
           }`,
           `<div class="card-head">${mapExp(['pdf', 'svg', 'png', 'tsv'])}</div><div ` +
@@ -1543,13 +1581,7 @@
             regionsHtml(p, rec),
             false
           ) +
-          fold(
-            'p-seq',
-            'Sequence',
-            `${int((rec.seq || '').length)} aa, and as FASTA`,
-            sequenceHtml(p, rec, sel),
-            false
-          ) +
+          fold('p-seq', 'Sequence', `${int(shownLen(p, rec))} aa, and as FASTA`, sequenceHtml(p, rec, sel), false) +
           (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '') + // kit-3d.js
           ''
       )
@@ -1579,12 +1611,21 @@
       .map(([b, t]) => `<div class="fact"><b>${b}</b><span>${esc(t)}</span></div>`)
       .join('')}</div>`;
   }
+  // other names, without the genes the page already lists
+  const aliasLine = (p) => {
+    const have = new Set(genesOf(p).map((g) => g.toUpperCase())),
+      al = String(D.protein_aliases?.[p.acc] || '')
+        .split(/;\s*/)
+        .filter((a) => a && !have.has(a.toUpperCase()));
+    return al.length ? `Also reported as ${esc(al.join(', '))}` : '';
+  };
   // the head of a protein's page: its names, function (UniProt, live), links, and its Download menu (PDF of the page, Print)
   const protHead = (p, light) =>
-    `<div class="prot-head"><h2>${esc(p.gene || p.acc)} <small>${esc(p.name)}</small></h2>` +
-    (`<p class="aliases" id="aliases">${
-      D.protein_aliases?.[p.acc] ? `Also reported as ${esc(D.protein_aliases[p.acc].replace(/;\s*/g, ', '))}` : ''
-    }</p><div ` +
+    `<div class="prot-head"><h2>${esc(p.gene || p.acc)} <small>${genesOf(p).length > 1 ? '· ' : ''}${esc(p.name)}</small></h2>` +
+    (genesOf(p).length > 1
+      ? `<p class="aliases genes" id="genes">Encoded by ${int(genesOf(p).length)} genes: ${genesOf(p).map(esc).join(', ')}</p>`
+      : '') +
+    (`<p class="aliases" id="aliases">${aliasLine(p)}</p><div ` +
       `class="fn" id="fn"><p class="muted">Asking UniProt for its function…</p></div>`) +
     (`<div class="prot-chips"><span class="chip mono">${esc(p.acc)}</span>${
       PV.rec?.entry || p.entry ? `<span class="chip ` + `mono">${esc(PV.rec?.entry || p.entry)}</span>` : ''
@@ -1619,7 +1660,7 @@
         PV.site ? ` › ${esc(siteOf(p, PV.site))}` : ''
       }</p>` +
       protHead(p, true);
-    if (!PV.rec) return head + `<p class="empty">${PV.err ? esc(PV.err) : 'Loading…'}</p>`;
+    if (!PV.rec) return head + (PV.err ? `<p class="empty">${esc(PV.err)}</p>` : K.loading('Loading the protein…'));
     const rec = PV.rec;
     const fold = (id, title, sum, body, open) =>
       `<details class="pfold" id="${id}"${(PV.open[id] ?? open) ? ' open' : ''}><summary>` +
@@ -1649,13 +1690,13 @@
       fold(
         'p-map',
         'Protein map',
-        `${int(n)} ${esc(K.shown.row())} on ${int(p.len)} aa`,
+        `${int(n)} ${esc(K.shown.row())} on ${int(K.prot.length(p.acc, p.len))} aa`,
         `<div class="card-head">${mapExp(['pdf', 'svg', 'png'])}</div><div ` +
           `id="pmap" class="pmap"></div>${siteCard(p, rec)}`,
         true
       ) +
       fold('p-sites', esc(cap(W.marks)), `${int(n)} ${esc(K.shown.row())}`, `${table}`, true) +
-      fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
+      fold('p-seq', 'Sequence', `${int(shownLen(p, rec))} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '');
     return page;
   }
@@ -1720,7 +1761,7 @@
       fold(
         'p-map',
         'Protein map',
-        `${int(p.len)} aa, no ${esc(W.mark)}`,
+        `${int(K.prot.length(p.acc, p.len))} aa, no ${esc(W.mark)}`,
         `<div class="card-head">${mapExp(['pdf', 'svg', 'png'])}</div><div ` + `id="pmap" class="pmap"></div>`,
         true
       ) +
@@ -1747,7 +1788,7 @@
             true
           )
         : '') +
-      fold('p-seq', 'Sequence', `${int((rec.seq || '').length)} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
+      fold('p-seq', 'Sequence', `${int(shownLen(p, rec))} aa, and as FASTA`, sequenceHtml(p, rec, null), false) +
       (K.s3d ? fold('p-struct', '3D structure', K.s3d.summary(), K.s3d.html(p, rec), false) : '') + // kit-3d.js
       (K.lightFolds || []).map((f) => f(p, null, fold)).join('');
     return page;
@@ -1919,7 +1960,7 @@
   const RANK = { more: 0, less: 1, same: 2, ns: 3 };
   function kindsHtml(p) {
     const sd = K.sel?.pdata(p.i);
-    if (!sd) return `<p class="muted">Loading the sets…</p>`;
+    if (!sd) return `${K.loading('Loading the sets…')}`;
     let cov = null;
     const none = [];
     const blocks = D.analyses
@@ -2002,7 +2043,7 @@
           const inside = rec.marks.filter((m) => m[0] >= s && m[0] <= e).map((m) => m[0]);
           const u = refUrl(ref);
           return (
-            `<tr><td>${esc(title(k))}</td><td class="num mono">${s}–${e}</td><td class="wrapok">${esc(lab || labs(k)[cls] || cls || '')}</td><td ` +
+            `<tr><td>${esc(title(k))}</td><td class="num mono">${rangeOf(p, s, e)}</td><td class="wrapok">${esc(lab || labs(k)[cls] || cls || '')}</td><td ` +
             `class="mono">${
               ref ? (u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(ref)}</a>` : esc(ref)) : ''
             }</td>` +
@@ -2028,8 +2069,11 @@
       rec = PV.rec,
       tracks = D.tracks || [];
     return (
-      K.preamble(`${p.gene || p.acc}: domains and regions`, `regions of ${p.acc} with the ${W.marks} inside them`) +
-      ['kind', 'start', 'end', 'label', 'class', 'ref', `${W.marks}_inside`, 'source'].join('\t') +
+      K.preamble(
+        `${p.gene || p.acc}: domains and regions`,
+        `regions of ${p.acc} with the ${W.marks} inside them` + numNote(p)
+      ) +
+      ['kind', 'start', 'end', 'shown_range', 'label', 'class', 'ref', `${W.marks}_inside`, 'source'].join('\t') +
       '\n' +
       rec.units
         .map(([k, s, e, lab, src, cls, ref]) =>
@@ -2037,6 +2081,7 @@
             (tracks.find((t) => t.kind === k) || {}).title || k,
             s,
             e,
+            rangeOf(p, s, e),
             lab || '',
             cls || '',
             ref || '',
@@ -2054,15 +2099,16 @@
 
   // ---- the sequence, with the marks in it, and as FASTA ---------------------------------------------------------
   function fasta(p, rec) {
-    const seq = rec.seq || '';
+    const seq = (rec.seq || '').slice(dropped(p));
     return (
-      `>${p.acc}${rec.entry ? '|' + rec.entry : ''} ${p.name || ''}${p.gene ? ' GN=' + p.gene : ''} [${(D.run.snapshot || {}).release || ''}; ${D.site.name}]\n` +
+      `>${p.acc}${rec.entry ? '|' + rec.entry : ''} ${p.name || ''}${p.gene ? ' GN=' + p.gene : ''} [${(D.run.snapshot || {}).release || ''}; ${D.site.name}${dropped(p) ? '; initiator methionine not shown' : ''}]\n` +
       (seq.match(/.{1,60}/g) || []).join('\n') +
       '\n'
     );
   }
   function sequenceHtml(p, rec, sel) {
-    const seq = rec.seq || '';
+    const seq = rec.seq || '',
+      d = dropped(p); // the initiator methionine is left out where the page numbers without it
     if (!seq) return `<p class="muted">No sequence is stored for this protein.</p>`;
     const at = new Map(rec.marks.map((m) => [m[0], m]));
     const res = (i) => {
@@ -2077,20 +2123,20 @@
       );
     };
     const lines = [];
-    for (let s = 1; s <= seq.length; s += 60) {
+    for (let s = d + 1; s <= seq.length; s += 60) {
       const blocks = [];
       for (let b = s; b < Math.min(s + 60, seq.length + 1); b += 10) {
         let t = '';
         for (let i = b; i < Math.min(b + 10, seq.length + 1); i++) t += res(i);
         blocks.push(t);
       }
-      lines.push(`<span class="sq-n">${s}</span>${blocks.join(' ')}`);
+      lines.push(`<span class="sq-n">${shownPos(p, s)}</span>${blocks.join(' ')}`);
     }
     return (
-      `<div class="card-head"><p class="sub">${int(seq.length)} residues (${esc(
+      `<div class="card-head"><p class="sub">${int(seq.length - d)} residues (${esc(
         (D.run.snapshot || {}).release || ''
       )}), the ${esc(W.marks)} in color ` +
-      `as on the map; hover one for its name, click it for its card.</p>` +
+      `as on the map; hover one for its name, click it for its card.${d ? ' The initiator methionine is not shown or counted.' : ''}</p>` +
       (`<span class="exp"><button class="btn small" type="button" data-fasta="copy">Copy FASTA</button><button ` +
         `class="btn small" type="button" data-fasta="dl">Download FASTA</button></span></div><pre class="seq">${lines.join('\n')}</pre>`)
     );
@@ -2194,7 +2240,7 @@
         texts.length
           ? `<p class="fn-text${PV.fn ? ' open' : ''}">${texts.map(linkPm).join(' ')}</p><p class="src">` +
               `Function, from <a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry#function">UniProt ${esc(acc)}</a> when the ` +
-              `page opens · <button type="button" class="linkish" data-fn-more>${PV.fn ? 'Less' : 'More'}</button></p>`
+              `page opens · <button type="button" class="linkish" data-fn-more>${PV.fn ? K.ACT.showLess : K.ACT.showMore}</button></p>`
           : '<p class="muted">UniProt gives no function text for this entry.</p>'
       );
       if (first) {
@@ -2360,7 +2406,8 @@
       K.preamble(
         `${W.marks} of ${p.gene || p.acc} (${p.acc})`,
         `each ${W.mark} of ${p.gene || p.acc} (${p.name}) with the ` +
-          `15 residues around it and its class in every question; the sequence is ${D.run.snapshot?.release} (MD5 ${rec.md5}).`
+          `15 residues around it and its class in every question; the sequence is ${D.run.snapshot?.release} (MD5 ${rec.md5}).` +
+          numNote(p)
       ) +
       ['site', 'position', 'window_15', ...COLS, ...AT, ...(rec.shown?.length ? ['counted'] : [])].join('\t') +
       '\n' +
@@ -2610,7 +2657,7 @@
         PV.fn = !PV.fn;
         document.querySelector('.fn-text')?.classList.toggle('open', PV.fn);
         const b = document.querySelector('[data-fn-more]');
-        if (b) b.textContent = PV.fn ? 'Less' : 'More';
+        if (b) b.textContent = PV.fn ? K.ACT.showLess : K.ACT.showMore;
       },
     ],
     [

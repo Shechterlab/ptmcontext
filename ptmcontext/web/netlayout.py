@@ -508,15 +508,18 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
     for c in sorted(shown, key=lambda c: (-size[c], c)):
         ci = pos_c[c]
         full = labels[c].get('term')
-        term = short_name(full) or ', '.join(labels[c].get('genes') or []) or f'Cluster {c + 1}'
+        genes = ', '.join(labels[c].get('genes') or [])
+        term = short_name(full) or (f'Unnamed: {genes}' if genes else f'Cluster {c + 1}')
         if full and labels[c].get('thin'):  # a term that holds for a small share: the name says how small
             term += f' \u00b7 {round(100 * labels[c]["k"] / size[c])}%'
+        elif full and labels[c].get('weak'):  # a term that is not significant after correction: the name says its q
+            term += f' \u00b7 q {labels[c]["q"]:.2f}'
         if not phone:
             lines = wrap2(term, 22)
             k_t = labels[c].get('k') if full else None
             cnt = f'{k_t} of {size[c]} proteins' if k_t is not None else f'{size[c]} proteins'
             w = max(max(text_w(s, fs, 600) for s in lines) + 14, text_w(cnt, fs - 1.5) + 14)
-            h = fs * 1.25 * len(lines) + (fs - 1.5) * 1.3
+            h = fs * 1.32 * len(lines) + (fs - 1.5) * 1.3
         else:  # a numbered badge: the list under the figure names the clusters
             lines, cnt = [str(ci + 1)], ''
             w = h = fs * 1.7
@@ -587,7 +590,7 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
     glabels = []
     for i in want:
         t = gene[i]
-        w, h = text_w(t, gfs), gfs * 1.15
+        w, h = text_w(t, gfs) * 1.18, gfs * 1.3
         cx, cy, rr = xy[i][0], xy[i][1], r[i] + 2.5
         cands = [
             (cx + rr, cy - h / 2, 'start'),

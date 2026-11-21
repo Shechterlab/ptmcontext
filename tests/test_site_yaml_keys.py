@@ -53,7 +53,7 @@ def test_residue_names_are_plural_in_the_background_wording():
 
 
 def test_any_of_row_condition_holds_when_one_part_does():
-    frame = pd.DataFrame({'sources': ['UniProt; CPLM', 'CPLM', 'iPTMnet', 'Berryhill 2023']})
+    frame = pd.DataFrame({'sources': ['UniProt; Source B', 'Source B', 'iPTMnet', 'Berryhill 2023']})
     cond = {
         'any_of': [
             {'column': 'sources', 'contains': 'UniProt'},
@@ -69,7 +69,7 @@ def test_note_numbers_come_from_the_statistics():
     stats = pd.DataFrame(
         [
             {
-                'analysis': 'q_cplm',
+                'analysis': 'q_a',
                 'category': 'near',
                 'stratum': 'all',
                 'method': 'fisher',
@@ -77,7 +77,7 @@ def test_note_numbers_come_from_the_statistics():
                 'q': 0.5,
             },
             {
-                'analysis': 'q_cplm',
+                'analysis': 'q_a',
                 'category': 'near',
                 'stratum': 'all',
                 'method': 'mantel_haenszel',
@@ -94,8 +94,8 @@ def test_note_numbers_come_from_the_statistics():
             },
         ]
     )
-    text = web.note_text('CPLM {or:q_cplm:near}; other {or:q_b:near} ({sig:q_b:near}), {sig:q_cplm:near}.', stats)
-    assert text == 'CPLM 2.42x; other 0.84x (not significant), significant.'
+    text = web.note_text('A {or:q_a:near}; other {or:q_b:near} ({sig:q_b:near}), {sig:q_a:near}.', stats)
+    assert text == 'A 2.42x; other 0.84x (not significant), significant.'
     with pytest.raises(ValueError, match='no statistics row'):
         web.note_text('{or:missing:near}', stats)
 

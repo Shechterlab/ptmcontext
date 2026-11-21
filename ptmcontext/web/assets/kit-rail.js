@@ -203,8 +203,8 @@
       (K.selEffect ? `<span class="sel-effect" title="${esc(K.selEffect())}">${esc(K.selEffect())}</span>` : '') +
       `<span class="sel-tools">${savedMenu()}<button class="btn small accent" type="button" data-sel-clear-all>Clear all` +
       `</button><span class="sel-menu"><button class="btn small" type="button" id="sel-menu-btn" data-sel-menu ` +
-      `aria-haspopup="menu" aria-expanded="false" aria-controls="sel-menu-pop" aria-label="More actions for this ` +
-      `selection" title="More actions">⋯</button><div class="sel-menu-pop" id="sel-menu-pop" role="menu" ` +
+      `aria-haspopup="menu" aria-expanded="false" aria-controls="sel-menu-pop" aria-label="Selection actions for this ` +
+      `selection" title="Selection actions">⋯</button><div class="sel-menu-pop" id="sel-menu-pop" role="menu" ` +
       `aria-labelledby="sel-menu-btn" hidden>${items}</div></span></span>`
     );
   }
@@ -285,8 +285,8 @@
             `href="${esc(x.hash)}" data-saved-open="${i}" title="Open ${esc(x.name)}">${esc(x.name)}</a> <span ` +
             `class="muted">${int(x.n)}</span>` +
             (`${
-              K.views.compare
-                ? `<button type="button" class="linkish small" data-saved-cmp="${i}" title="Compare the ${esc(W.marks)} of the current ` +
+              K.views.overlap && K.sel.active()
+                ? `<button type="button" class="linkish small" data-saved-sets="${i}" title="Compare the ${esc(W.marks)} of the current ` +
                   `selection with those of ${esc(x.name)}">Compare with this</button>`
                 : ''
             }<button type="button" ` +
@@ -297,7 +297,7 @@
   }
   document.addEventListener('click', (e) => {
     document.querySelectorAll('.saved-dd[open]').forEach((d) => {
-      if (!d.contains(e.target) || e.target.closest('[data-saved-cmp]')) d.open = false;
+      if (!d.contains(e.target) || e.target.closest('[data-saved-sets]')) d.open = false;
     });
   });
   function savedHtml() {
@@ -308,9 +308,9 @@
         (x, i) =>
           `<div class="saved-row">` +
           `<a href="${esc(x.hash)}" data-saved-open="${i}">${esc(x.name)}</a> <span class="muted">${int(x.n)}</span>${
-            K.views.compare
+            K.views.overlap && K.sel.active()
               ? `<button type="button" ` +
-                `class="linkish small" data-saved-cmp="${i}" title="Compare ${esc(x.name)} with the current selection">` +
+                `class="linkish small" data-saved-sets="${i}" title="Compare ${esc(x.name)} with the current selection">` +
                 `Compare</button>`
               : ''
           }<button type="button" class="linkish small" data-saved-del="${i}" aria-label="Delete ${esc(x.name)}">×</button></div>`
@@ -951,7 +951,7 @@
       );
     }
     const nf = K.sel.nFilters();
-    fab.innerHTML = `⏚ Filters${nf ? ` <span class="badge">${nf}</span>` : ''}`;
+    fab.innerHTML = `⏚ ${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}`;
     fab.setAttribute('aria-label', `Filters${nf ? `, ${nf} in use` : ''}`);
     document.body.classList.toggle('rail-open', open);
     if (open) {
@@ -971,7 +971,7 @@
     el.innerHTML =
       `<div class="rail-head"><span class="seg" role="group"><button type="button" ` +
       `data-rail-tab="sections" aria-pressed="${R.tab === 'sections'}">☰ Sections</button>` +
-      `<button type="button" data-rail-tab="filters" aria-pressed="${R.tab === 'filters'}">⏚ Filters${
+      `<button type="button" data-rail-tab="filters" aria-pressed="${R.tab === 'filters'}">⏚ ${K.ACT.filters}${
         Object.keys(S.f).length ? ` <span class="badge">${Object.keys(S.f).length}</span>` : ''
       }</button></span>` +
       (innerWidth >= PIN_MIN

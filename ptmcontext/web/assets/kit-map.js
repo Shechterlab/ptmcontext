@@ -312,7 +312,7 @@
       'Charge',
       'sequence',
       'Net charge along the chain: a 5-residue sliding mean on the EMBOSS charge scale ' +
-        '(K, R +1; H +0.5; D, E −1), positive up (blue), negative down (red)',
+        '(K, R +1; H +0.5; D, E −1), positive up (blue), negative down (red); the axis runs from −0.5 to +0.5, and a dot marks a mean beyond it',
     ],
     [
       'hydropathy',
@@ -964,7 +964,7 @@
     const { p, rec, uni, af } = ctx,
       L = p.len,
       seq = rec.seq || '';
-    const [za, zb] = M.zoom || [1, L],
+    const [za, zb] = M.zoom || [K.prot?.first ? K.prot.first(p.acc) : 1, L], // the whole protein as the page numbers it
       span = zb - za + 1;
     const X = (pos) => X0 + ((pos - za + 0.5) / span) * (X1 - X0),
       inView = (a, b) => b >= za && a <= zb;
@@ -986,7 +986,7 @@
     // a residue as the page numbers it (K.prot: histones without the initiator methionine), else its UniProt position
     const shown = (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, q) : q);
     const resName = (q) => (K.prot?.siteLabel ? K.prot.siteLabel(p.acc, q) : `${seq[q - 1] || ''}${q}`);
-    const span2 = (a, b) => (a === b ? resName(a) : `${shown(a)}–${shown(b)}`);
+    const span2 = (a, b) => (a === b ? resName(a) : rngOf(p.acc, a, b));
     const inside = (a, b) => rec.marks.filter((m) => m[0] >= a && m[0] <= b).map((m) => m[0]);
     const insideHtml = (a, b, full) => {
       const ins = inside(a, b);
@@ -1176,11 +1176,13 @@
           b = b0 && K.tw(b0, 10, 600) > ML - 6 ? cut(b0) : b0;
         if (a && b) {
           parts.push(
-            `<text x="2" y="${r1(yMid - 1)}" font-size="10" font-weight="600" fill="${P.muted}"${
+            `<text x="2" y="${r1(yMid - 3)}" font-size="10" font-weight="600" fill="${P.muted}"${
               ex ? '' : ` data-rowhelp="${esc(lab + ': ' + help)}"`
             }${sw}>${esc(a)}</text><text ` +
-              `x="2" y="${r1(yMid + 10)}" font-size="10" font-weight="600" fill="${P.muted}">${esc(b)}</text>`
+              `x="2" y="${r1(yMid + 9.5)}" font-size="10" font-weight="600" fill="${P.muted}">${esc(b)}</text>`
           );
+          // two lines need more than a row's own height: the next row starts lower, so its label does not meet this one's
+          if (!aside) c.y += 5;
           return;
         }
       }
@@ -1220,7 +1222,7 @@
         .filter((x) => inView(x[1], x[2]))
         .forEach((x) => {
           const tip = (full) =>
-            `<b>${esc(r.title)}</b> ${x[1]}–${x[2]}${x[4] ? '<br>' + esc(x[4]) : ''}${insideHtml(x[1], x[2], full)}<br><span ` +
+            `<b>${esc(r.title)}</b> ${rngOf(p.acc, x[1], x[2])}${x[4] ? '<br>' + esc(x[4]) : ''}${insideHtml(x[1], x[2], full)}<br><span ` +
             `class="muted">${esc(ownHelp(r))}</span>`;
           const k = it({ tip: tip(false), card: tip(true), a: x[1], b: x[2], src: { own: r, x } });
           back.push(MK.box(XA(x[1]), top + 2, XB(x[2]) - XA(x[1]), yB + 8 - top - 2, c, op, ` rx="3" data-mi="${k}"`));
@@ -1289,7 +1291,9 @@
           .slice(0, 6);
       const tip = (full) =>
         `<b>${esc(t.title)} ${span2(s, e)}</b>${over
-          .map(([k2, is, ie, lab]) => `<br>${esc(trackOf(k2).title)} ${is}–${ie}${lab ? ': ' + esc(lab) : ''}`)
+          .map(
+            ([k2, is, ie, lab]) => `<br>${esc(trackOf(k2).title)} ${rngOf(p.acc, is, ie)}${lab ? ': ' + esc(lab) : ''}`
+          )
           .join('')}<br><span ` +
         `class="muted">${esc(tracksVersion(t))}</span>${
           full && recordLinks(t, p.acc) ? '<br>' + recordLinks(t, p.acc) : ''
@@ -1619,7 +1623,7 @@
         P.boxInk,
         (f) => labOf(f.u),
         (f, full) =>
-          `<b>${esc(f.u.type)}</b> ${esc(f.u.description || '')}<br>${f.a}–${f.b}${insideHtml(f.a, f.b, full)}` +
+          `<b>${esc(f.u.type)}</b> ${esc(f.u.description || '')}<br>${rngOf(p.acc, f.a, f.b)}${insideHtml(f.a, f.b, full)}` +
           featureProv(p.acc, f.u, full)
       );
       rowLabel(row[1], c.y + 6, row[3]);
@@ -2219,7 +2223,8 @@
         const h = 34,
           mid = c.y + h / 2,
           isC = id === 'charge',
-          scale = isC ? 1 : 3,
+          scale = isC ? 0.5 : 3, // the charge axis is ±0.5: 95% of rolling means of the site's proteins lie inside it
+          clipped = [],
           cu = isC ? P.chargeP : P.hydroP,
           cd = isC ? P.chargeN : P.hydroN;
         const sm = isC
@@ -2237,6 +2242,7 @@
         for (let i = za; i <= zb; i += step) {
           const c = Math.max(-scale, Math.min(scale, sm[i - 1])) / scale,
             xx = r1(X(i));
+          if (isC && Math.abs(sm[i - 1]) > scale) clipped.push([xx, mid - Math.sign(c) * (h / 2)]);
           up += ` L${xx},${r1(mid - (Math.max(0, c) * h) / 2)}`;
           dn += ` L${xx},${r1(mid - (Math.min(0, c) * h) / 2)}`;
         }
@@ -2244,7 +2250,8 @@
         dn += ` L${r1(X(zb))},${mid} Z`;
         parts.push(
           `<line x1="${X0}" x2="${X1}" y1="${mid}" y2="${mid}" stroke="${P.line}" stroke-width="0.6"/>` +
-            `<path d="${up}" fill="${cu}" opacity="0.75"/><path d="${dn}" fill="${cd}" opacity="0.75"/>`
+            `<path d="${up}" fill="${cu}" opacity="0.75"/><path d="${dn}" fill="${cd}" opacity="0.75"/>` +
+            clipped.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.2" fill="${P.muted}"/>`).join('')
         );
         parts.push(
           `<text x="${X1 + 2}" y="${c.y + 5}" font-size="8.5" fill="${P.muted}">+${scale}</text><text x="${X1 + 2}" y="${c.y + h}" font-size="8.5" ` +
@@ -2300,10 +2307,10 @@
             xx = X(s),
             at = s === e && atMark.has(s);
           const alt = f.alternativeSequence
-            ? `${f.alternativeSequence.originalSequence || ''}${s}${(
+            ? `${f.alternativeSequence.originalSequence || ''}${shownOf(p.acc, s)}${(
                 f.alternativeSequence.alternativeSequences || []
               ).join('/')}`
-            : `${s}`;
+            : `${shownOf(p.acc, s)}`;
           const snp = [
             ...new Set((f.featureCrossReferences || []).filter((x) => x.database === 'dbSNP').map((x) => x.id)),
           ];
@@ -2336,7 +2343,7 @@
             ];
             const vt = `${
               f.alternativeSequence?.originalSequence || seq[s - 1] || ''
-            }${s}${tos.join('/')}${dis.length ? ' ' + dis[0] : ''}`;
+            }${shownOf(p.acc, s)}${tos.join('/')}${dis.length ? ' ' + dis[0] : ''}`;
             labelAt(xx, mid, vt, right, ticksX);
           }
         });
@@ -2549,9 +2556,9 @@
         : '') +
       `<span class="rows-wrap"><button type="button" class="btn small" data-map-rows aria-expanded="${M.rowsMenu}">Rows ▾</button>${M.rowsMenu ? rowsMenu() : ''}</span>` +
       (M.zoom
-        ? `<span class="map-range small" id="map-range">residues ${int(M.zoom[0])}–${int(M.zoom[1])} of ${int(M.ctx?.p?.len || 0)}</span><button ` +
+        ? `<span class="map-range small" id="map-range">residues ${K.prot?.range && M.ctx?.p ? K.prot.range(M.ctx.p.acc, M.zoom[0], M.zoom[1]) : int(M.zoom[0]) + '–' + int(M.zoom[1])} of ${int(plen(M.ctx?.p))}</span><button ` +
           `type="button" class="btn small" data-map-unzoom title="Show the whole protein again (double-click the ` +
-          `map, or press Esc)">Reset zoom</button>`
+          `map, or press Esc)">${K.ACT.resetView}</button>`
         : '') +
       '</div>'
     );
@@ -2890,10 +2897,14 @@
     });
   }
   // the residue under the pointer: what the map knows about it
+  // a position and a stretch as the protein page numbers them (K.prot, kit-proteins.js)
+  const plen = (p) => (p ? (K.prot?.length ? K.prot.length(p.acc, p.len) : p.len) : 0);
+  const shownOf = (acc, q) => (K.prot?.shownPos ? K.prot.shownPos(acc, q) : q);
+  const rngOf = (acc, a, b) => (K.prot?.range ? K.prot.range(acc, a, b) : `${a}–${b}`);
   function readout(ctx, pos) {
     const { rec, uni, af } = ctx,
       aa = (rec.seq || '')[pos - 1] || '';
-    const out = [`<b>${esc(aa)}${pos}</b>`];
+    const out = [`<b>${esc(K.prot?.siteLabel && ctx.p ? K.prot.siteLabel(ctx.p.acc, pos) : aa + pos)}</b>`];
     const mk = rec.marks.find((m) => m[0] === pos);
     if (mk) {
       const c = siteColour(mk);
@@ -2913,7 +2924,7 @@
     at.filter((u) => !domK.has(u[0])).forEach((u) => {
       const t = trackOf(u[0]);
       out.push(
-        `${esc(t.title)} ${u[1]}–${u[2]}${u[5] && segLabels(t)[u[5]] ? ' (' + esc(segLabels(t)[u[5]]) + ')' : ''}`
+        `${esc(t.title)} ${K.prot?.range && ctx.p ? K.prot.range(ctx.p.acc, u[1], u[2]) : u[1] + '–' + u[2]}${u[5] && segLabels(t)[u[5]] ? ' (' + esc(segLabels(t)[u[5]]) + ')' : ''}`
       );
     });
     (uni?.features || [])
@@ -3021,9 +3032,9 @@
     parts.push(
       `<text x="${Pd}" y="${Pd + 12}" font-size="${r1(ts)}" font-weight="bold" fill="${P.ink}">${esc(title)}</text>`
     );
-    const sub = `${p.acc} · ${int(p.len)} aa · ${int(ctx.rec.marks.length)} ${
+    const sub = `${p.acc} · ${int(plen(p))} aa · ${int(ctx.rec.marks.length)} ${
       ctx.rec.marks.length === 1 ? W.mark : W.marks
-    }${M.zoom ? ` · showing ${M.zoom[0]}–${M.zoom[1]}` : ''}`;
+    }${M.zoom ? ` · showing ${K.prot?.range ? K.prot.range(p.acc, M.zoom[0], M.zoom[1]) : M.zoom[0] + '–' + M.zoom[1]}` : ''}`;
     let y = Pd + 30;
     K.wrap(sub, FW - 2 * Pd, 11).forEach((t) => {
       parts.push(`<text x="${Pd}" y="${y}" font-size="11" fill="${P.muted}">${esc(t)}</text>`);

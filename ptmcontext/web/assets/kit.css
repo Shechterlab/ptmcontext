@@ -2422,6 +2422,31 @@ body.has-selection .tabs {
   background: var(--c);
   vertical-align: 0.15em;
 }
+.state-pill .sp-dot {
+  display: none;
+}
+/* compact rows: a small coloured dot and short text instead of the full pill */
+html[data-density='compact'] .stbl .state-pill {
+  background: none;
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+html[data-density='compact'] .stbl .state-pill .sp-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.3rem;
+  border-radius: 50%;
+  background: var(--c);
+  vertical-align: 0.02em;
+}
+html[data-density='compact'] .stbl .state-pill .sp-x {
+  display: none;
+}
 .stbl tr.faded td {
   opacity: 0.4;
 }
@@ -4152,6 +4177,10 @@ b.trend.c-increased {
 .sp-sum {
   margin: 0 0 0.4rem;
   font-size: 0.88rem;
+}
+.sp-roll {
+  margin: 0.7rem 0 0.3rem;
+  font-size: 0.92rem;
 }
 .sp-group {
   border: 1px solid var(--line);
@@ -11596,4 +11625,174 @@ html.rail-lock body {
   text-decoration: underline;
   text-underline-offset: 3px;
   min-height: 0;
+}
+
+/* a view waiting for data (K.loading): shown only after 300 ms, so a quick load does not flicker */
+.ld {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.6rem 0;
+  color: var(--muted, inherit);
+  font-size: 0.9rem;
+  opacity: 0;
+  animation: ld-in 0s linear 300ms forwards;
+}
+.ld-spin {
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent);
+  animation: sel-spin 0.8s linear infinite;
+}
+@keyframes ld-in {
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ld-spin {
+    animation: none;
+    border-top-color: var(--line-strong);
+    background: radial-gradient(circle, var(--accent) 35%, transparent 40%);
+  }
+}
+summary {
+  cursor: pointer;
+}
+@media (pointer: coarse) {
+  .skip,
+  .brand-mark,
+  .filter-btn,
+  .exp-btn,
+  .xm-p,
+  .cp-row,
+  .cell-zoom-btn,
+  .tile-link,
+  .tile-row.pick,
+  .fr-row,
+  .links-menu a,
+  .links-menu summary,
+  .tile summary,
+  #view .linkish,
+  .start-pill,
+  .tmore {
+    min-height: 44px !important; /* beats the narrower rules of each menu */
+  }
+  .tile-link,
+  .tmore {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* ---- A phone: the header's top band is short on every page (the title and mark, the site switcher, the links), without the
+   introduction line, the figures and the credit; the figures are in the Overview and the credit in the footer. */
+@media (max-width: 700px) {
+  body:not(.slim) .hero .wrap {
+    padding-block: 0.75rem 0.85rem;
+    gap: 0.5rem;
+  }
+  body:not(.slim) .hero .lede,
+  body:not(.slim) .hero-stats,
+  body:not(.slim) .hero-art {
+    display: none;
+  }
+  body:not(.slim) .hero h1 {
+    font-size: 1.4rem;
+    line-height: 1.15;
+  }
+  body:not(.slim) .hero .site-mark {
+    width: 40px;
+    height: 40px;
+  }
+  body:not(.slim) .brand-side {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+  }
+  body:not(.slim) .brand-mark small {
+    display: none;
+  }
+}
+/* the term rows and their group headings (kit-search.js, kit-terms.js) */
+.q-grp {
+  padding: 0.35rem 0.8rem 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.q-opt.q-term {
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: 0;
+}
+.q-term .q-l {
+  white-space: normal;
+}
+.q-term .q-s {
+  grid-column: 1;
+  grid-row: 2;
+}
+.q-term .q-n {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+/* germline variants card: a variant the source highlights (pathogenic or likely pathogenic) and the review stars */
+.pc-tbl tr.vc-hot td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.tag.vc-hot-tag {
+  border-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+.vc-stars {
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+}
+
+/* the "Count" label of a segmented switch sits inside the pill, before its buttons, and does not shrink onto them */
+.seg > .seg-l {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 0.25rem 0.6rem 0.25rem 0.8rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  border-right: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+/* germline table: the link column keeps its text, the first cell clears the highlight bar, the conditions wrap in a bounded column */
+.pc-vc .pc-tbl td:last-child {
+  white-space: nowrap;
+}
+.pc-vc .pc-tbl td:first-child,
+.pc-vc .pc-tbl th:first-child {
+  padding-left: 0.7rem;
+}
+.pc-vc .pc-tbl td:nth-last-child(2) {
+  min-width: 9rem;
+  max-width: 16rem;
+}
+/* the germline tables have six columns: one source a row unless the card is wide enough for two */
+.pc-grid.pc-grid-wide {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 36rem), 1fr));
+}
+
+.nw-top {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  font-weight: 400;
+}
+.nw-top li {
+  margin: 1px 0;
 }

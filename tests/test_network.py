@@ -463,12 +463,24 @@ def test_a_term_names_a_cluster_only_if_it_holds_for_a_fair_share_and_names_one_
     # with no coverage asked for, the thin term names cluster 0 and the others follow
     lax = NW.label_clusters(comm, ann, terms, {**opt, 'min_coverage': 0})
     assert lax[0]['term'] == 'beta'
+    # no term significant at max_q: the term of the smallest p that holds for a quarter of the cluster names it, marked weak
+    # (cluster 0: alpha, 6 of 20; beta holds for 4 only), with weak_p 0 it stays unnamed
+    weak = NW.label_clusters(comm, ann, terms, {**opt, 'max_q': 1e-12, 'weak_p': 0.5})
+    assert weak[0]['term'] == 'alpha, via a long mechanism' and weak[0]['weak'] and not weak[0].get('thin')
+    assert weak[0]['q'] > 1e-12 and weak[2]['term'] is None  # zeta holds for under a quarter: no weak name
+    assert NW.label_clusters(comm, ann, terms, {**opt, 'max_q': 1e-12, 'weak_p': 0})[0]['term'] is None
 
 
 @pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
 def test_the_browser_twin_names_clusters_by_the_same_coverage_and_uniqueness_rule():
     comm, ann, terms, opt = _coverage_case()
-    opts = [opt, {**opt, 'min_coverage': 0}, {**opt, 'thin_term': 'genes'}]
+    opts = [
+        opt,
+        {**opt, 'min_coverage': 0},
+        {**opt, 'thin_term': 'genes'},
+        {**opt, 'max_q': 1e-12, 'weak_p': 0.5},
+        {**opt, 'max_q': 1e-12, 'weak_p': 0},
+    ]
     want = [NW.label_clusters(comm, ann, terms, o) for o in opts]
     prog = (
         'global.window=global;const fs=require("fs");'
@@ -487,6 +499,7 @@ def test_the_browser_twin_names_clusters_by_the_same_coverage_and_uniqueness_rul
     for w, g in zip(want, got):
         assert [x.get('term') for x in w] == [x.get('term') for x in g]
         assert [bool(x.get('thin')) for x in w] == [bool(x.get('thin')) for x in g]
+        assert [bool(x.get('weak')) for x in w] == [bool(x.get('weak')) for x in g]
 
 
 def test_every_cluster_has_its_busiest_proteins_for_a_name_and_the_layout_uses_it():
@@ -529,6 +542,11 @@ def test_a_thin_term_names_its_cluster_with_its_share_in_the_figure():
     }
     out = NL.layout(view, 'desktop')
     assert any('20%' in lb['name'] for lb in out['clabels'])
+    # a weak term carries its q, and a cluster with no term is called Unnamed with its proteins
+    labels[0].update(thin=False, weak=True, q=0.1076)
+    out = NL.layout({**view, 'labels': labels}, 'desktop')
+    assert any('q 0.11' in lb['name'] for lb in out['clabels'])
+    assert any(lb['name'].startswith('Unnamed: ') for lb in out['clabels'])
 
 
 # ---- link types, enzyme roles and node size -------------------------------------------------------------------------------
@@ -710,7 +728,8 @@ def test_every_site_has_the_four_link_types_configured_and_the_roles_where_it_ha
         assert [x for x in S.network_problems(site) if 'tile' not in x] == [], name
         classes = ((site['website'].get('search') or {}).get('partners') or {}).get('classes') or {}
         has_roles = any(isinstance(c, dict) and c.get('role') for c in classes.values())
-        assert any(c['kind'] == 'role' for c in net['color_by']) == has_roles, name
+        assert (net.get('outline', {}).get('kind') == 'role') == has_roles, name
+        assert all(c['kind'] != 'role' for c in net['color_by']), name
 
 
 def test_the_role_colouring_reads_the_site_classes_and_marks_none_and_several():
@@ -740,9 +759,88 @@ def test_the_role_colouring_reads_the_site_classes_and_marks_none_and_several():
     )
     assert only['cats'] == ['Writer'] and only['v'] == [0, 0, -1, -1, -1, -1] and only['none_label'] == 'Other'
     problems = S.network_problems(
-        {'inputs': {}, 'website': {'network': {'edges': [], 'color_by': [{'id': 'r', 'kind': 'role'}]}}}
+        {'inputs': {}, 'website': {'network': {'edges': [], 'outline': {'id': 'r', 'kind': 'role'}}}}
     )
     assert any('needs website.search.partners.classes' in x for x in problems)
+
+
+def test_density_is_sites_per_100_candidates_and_the_default_view_is_drawn_by_it(tmp_path):
+    assert NW.density(5, 50) == 10.0 and NW.density(3, 0) == 100.0 and NW.density(0, 0) == 0.0
+    assert NW.size_units('sites', 7, 70) == 7.0
+    assert NW.size_units('density', 5, 50) == round(NW.DENSITY_UNIT * 10, 3)
+    assert NW.size_units('density', 1, 1000) == NW.MIN_UNITS  # a node never vanishes
+    root, p, index = _built(tmp_path, _network())
+    view = json.loads((index.parent / 'data' / 'network.json').read_text())
+    full = json.loads((index.parent / 'data' / 'network_full.json').read_text())
+    assert len(view['cand']) == len(view['size']) == len(view['nodes']) and len(full['cand']) == len(full['acc'])
+    for s, c, z in zip(view['sites'], view['cand'], view['size']):
+        assert c >= s and z == NW.size_units('density', s, c)
+    # the layout was made on the size, not the number of sites: the proteins' radii follow it
+    assert view['layout']['desktop']
+    data = json.loads(
+        re.search(r'<script id="site-data" type="application/json">(.*?)</script>', index.read_text(), re.S).group(1)
+    )
+    assert data['network']['size'] == {'default': 'density', 'unit': NW.DENSITY_UNIT}
+    root2, p2, index2 = _built(tmp_path / 'sites', _network({'size': {'default': 'sites'}}))
+    v2 = json.loads((index2.parent / 'data' / 'network.json').read_text())
+    assert v2['size'] == [float(s) for s in v2['sites']]
+
+
+def test_the_abundance_decile_and_binding_colours_read_the_runs_protein_sets(tmp_path):
+    (tmp_path / 'protein_sets.json').write_text(
+        json.dumps(
+            {
+                'abund': {
+                    'covariate': {'strata': 10, 'proteins': {'A': [1.0, '1'], 'B': [99.0, '10'], 'C': [None, 'none']}}
+                },
+                'bind': {
+                    'sets': {
+                        'r1': {'M': 3, 'marked': ['A', 'B']},
+                        'r2': {'M': 1, 'marked': ['C']},
+                        'd1': {'M': 1, 'marked': ['B', 'D']},
+                    }
+                },
+            }
+        )
+    )
+    nodes = ['A', 'B', 'C', 'D', 'E']
+    dec = NW.decile_values(tmp_path, {'id': 'ab', 'name': 'Abundance', 'analysis': 'abund'}, nodes, lambda *_: None)
+    assert dec['kind'] == 'decile' and dec['n'] == 10 and dec['v'] == [1, 10, None, None, None]
+    spec = {
+        'id': 'bd',
+        'name': 'Binding',
+        'rna': [
+            {'analysis': 'bind', 'set': 'r1'},
+            {'analysis': 'bind', 'set': 'r2'},
+            {'analysis': 'bind', 'set': 'gone'},
+        ],
+        'dna': [{'analysis': 'bind', 'set': 'd1'}],
+    }
+    got = NW.binding_values(tmp_path, spec, nodes, lambda *_: None)
+    # A RNA, B both, C RNA, D DNA, E neither
+    assert got['kind'] == 'binding' and got['cats'] == ['RNA', 'DNA', 'RNA and DNA'] and got['v'] == [0, 2, 0, 1, -1]
+    assert got['none_label'] == 'Neither'
+    assert NW.decile_values(tmp_path, {'id': 'x', 'analysis': 'nope'}, nodes, lambda *_: None) is None
+    assert (
+        NW.binding_values(tmp_path, {'id': 'x', 'rna': [{'analysis': 'nope', 'set': 's'}]}, nodes, lambda *_: None)
+        is None
+    )
+    site = {
+        'inputs': {},
+        'analyses': [{'id': 'abund'}],
+        'website': {
+            'network': {
+                'edges': [],
+                'color_by': [
+                    {'id': 'a', 'kind': 'decile', 'analysis': 'abund'},
+                    {'id': 'b', 'kind': 'binding', 'rna': [{'analysis': 'zzz', 'set': 's'}]},
+                ],
+            }
+        },
+    }
+    assert [x for x in S.network_problems(site) if 'no analysis' in x] == [
+        "website.network color_by 'b': no analysis 'zzz'"
+    ]
 
 
 def test_node_area_follows_the_sites_up_to_the_cap_in_both_layouts():
@@ -762,8 +860,85 @@ def test_the_page_draws_link_types_a_key_with_switches_and_puts_the_key_in_the_e
         'exportLinkKey(keyItem)',  # the whole-network export
         'exportSizeKey(keyItem, FX,',
         'exportColourKey(keyItem, FX,',
+        'exportOutlineKey(keyItem, FX)',  # the enzyme-role ring is in the exports' keys
+        "p.set('size', UI.size)",  # the size choice is a readable address key, omitted at the default
+        "p.set('outline', 'none')",
         '<title>${esc(whyText(',  # the tooltip that says why a link exists
         "p.set('sources', UI.src.map((i) => SRC[i].id).join())",  # readable address, defaults omitted
     ):
         assert needle in js, needle
     assert js.count('exportLinkKey(keyItem);') == 2  # the whole network and the pinned frame
+
+
+@pytest.mark.skipif(shutil.which('node') is None, reason='needs Node.js')
+def test_the_network_follows_the_selection_when_a_filters_own_file_arrives_after_the_marks():
+    """The selection text is the same before and after a filter's file arrives, but what it holds is not: the network
+    must be drawn again, not kept as the empty drawing of the first moment."""
+    from test_netlayout import _harness, _node
+
+    full = _full()
+    file = {
+        'sources': full['sources'],
+        'acc': [n[0] for n in full['nodes']],
+        'gene': [n[1] for n in full['nodes']],
+        'sites': [n[2] for n in full['nodes']],
+        'edges': [x for e in full['edges'] for x in e],
+        'terms': full['terms'],
+        'ann': full['ann'],
+    }
+    prog = _harness(
+        """
+const el=()=>({addEventListener(){}});
+global.matchMedia=()=>({matches:false,addEventListener(){}});
+global.document=el();global.document.querySelectorAll=()=>[];
+global.localStorage={getItem(){return null},setItem(){}};
+global.location={hash:'#network'};
+global.fetch=()=>Promise.resolve({ok:true,json:()=>Promise.resolve(JSON.parse(JSON.stringify(IN.file)))});
+window.PTMC_MODULES.length=0;
+eval(fs.readFileSync(IN.net,'utf8'));
+let held=false;
+const K2={D:{site:{id:'x'},counts:{proteins:40},network:{options:{steps:[400,700],min_score:700,top:300,min_cluster:5,cluster_range:[4,16,1],max_shown:8},
+ sources:[{kind:'pairs',id:'p',label:'L'},{kind:'groups',id:'g',label:'G'}],labels:[{label:'GO'},{label:'R'}],color_by:[],files:{view:'v.json',full:'f.json'}}},
+ W:{marks:'sites',mark:'site',proteins:'proteins'},esc:(s)=>String(s),int:(n)=>String(n),S:{view:'network'},netcore:K.netcore,netlayout:K.netlayout,
+ views:{},tabs:[],clicks:[],tips:[],sections:{},methods:[],afterRender:[],paramsIn:[],paramsOut:[],
+ sel:{active:()=>true,data:()=>({}),describe:()=>'als',key:()=>String(held),nProteins:()=>(held?40:0),protSelected:()=>held},
+ render:()=>{},writeHash:()=>{},link:(v)=>'#'+v,loading:(t)=>t,fold:()=>'',tabName:(v,n)=>n,ACT:{resetView:'Reset view'},fq:String,fxn:String,expBar:()=>'',tt:()=>''};
+window.PTMC_MODULES.forEach(m=>m(K2));
+const nothing=()=>{try{return /nothing to draw/.test(String(K2.views.network.render()))}catch(e){return 'ERR '+e.message}};
+K2.views.network.render();
+setTimeout(()=>{const before=nothing();held=true;const after=nothing();console.log(JSON.stringify({before,after}))},50);
+"""
+    )
+    got = _node(prog, {'net': str(ASSETS / 'kit-network.js'), 'file': file})
+    assert got == {'before': True, 'after': False}, got
+
+
+def test_the_background_decides_which_terms_are_broad_and_what_is_enriched():
+    # a selection of 20 proteins that all hold term 0: against its own proteins the term is in all of them (broad, left out);
+    # against a proteome of 1000 where 50 hold it, it names the cluster
+    comm = [0] * 10 + [1] * 10
+    ann = [[0] for _ in range(20)]
+    terms = [['chromatin organization', 0, 'C']]
+    opt = {**NW.DEFAULTS, 'min_term': 3, 'background': 'drawn'}
+    assert NW.label_clusters(comm, ann, terms, opt)[0]['term'] is None
+    bg = {'N': [1000], 'M': [50]}
+    lab = NW.label_clusters(comm, ann, terms, opt, bg)
+    assert lab[0]['term'] == 'chromatin organization' and lab[0]['M'] == 50 and lab[0]['N'] == 1000
+    # max_fraction applies to the background: a term in 30% of the proteome is dropped though it is rare in the selection
+    assert NW.label_clusters(comm, ann, terms, opt, {'N': [1000], 'M': [300]})[0]['term'] is None
+    # `site` counts every protein the network can draw; `proteome` takes the table made with the network
+    full = {'terms': terms, 'ann': [[0]] * 20 + [[]] * 180, 'nodes': [None] * 200, 'bg': bg}
+    assert NW.background(full, {'background': 'drawn'}) is None
+    assert NW.background(full, {'background': 'proteome'}) == bg
+    assert NW.background(full, {'background': 'site'}) == {'N': [200], 'M': [20]}
+
+
+def test_a_cluster_keeps_its_three_best_terms_for_the_tooltip_and_the_page_can_highlight_a_term():
+    comm = [0] * 10 + [1] * 10
+    ann = [[0, 1, 2, 3] for _ in range(10)] + [[3] for _ in range(10)]
+    terms = [[f'term {i}', 0, f'T{i}'] for i in range(4)]
+    lab = NW.label_clusters(comm, ann, terms, {**NW.DEFAULTS, 'min_term': 3, 'background': 'drawn', 'max_fraction': 1})
+    assert len(lab[0]['top']) == 3 and all(len(x) == 4 for x in lab[0]['top'])
+    assert [x[3] for x in lab[0]['top']] == sorted(x[3] for x in lab[0]['top'])
+    js = (ASSETS / 'kit-network.js').read_text()
+    assert 'data-nw-term' in js and 'data-nw-termclear' in js and 'termHits(M)' in js and 'const topTerms' in js
