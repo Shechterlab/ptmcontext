@@ -170,17 +170,15 @@
             .map((x) => `<b>${esc(x)}</b>`)
             .join(', ')}</span>`
         : '') +
-      (absent.length
-        ? `<span class="sel-miss" title="Not a gene, accession or entry name of a protein with a ${esc(W.mark)} in this explorer">No ${esc(W.marked)} protein: ${absent
-            .map((x) => `<b>${esc(x)}</b>`)
-            .join(', ')}</span>`
+      (absent.length || ignored.length
+        ? `<span class="sel-miss">${K.sel.leftOut([...absent, ...ignored].map((x) => `<b>${esc(x)}</b>`).join(', '))}</span>`
         : '') +
-      (ignored.length
-        ? `<span class="sel-miss" title="In a list of proteins, words are not searched in protein ` +
-          `names: search them on their own to do that">Not a protein, left out of the list: ${ignored
-            .map((x) => `<b>${esc(x)}</b>`)
-            .join(', ')}</span>`
-        : '') +
+      (note
+        ? ''
+        : K.sel
+            .notesOf(c.q)
+            .map((t) => `<span class="sel-miss">${esc(t)}</span>`)
+            .join('')) +
       (amb.length
         ? `<span class="sel-miss" title="Write the protein first, or alone, to list it">${amb
             .map(([t, g]) => `<b>${esc(t)}</b> read as ${esc(g)}’s site, ` + `not the protein ${esc(t)}`)

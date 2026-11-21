@@ -121,6 +121,8 @@
       if (a === b || Math.abs(a.length - b.length) > 1) return false;
       let i = 0;
       while (i < a.length && i < b.length && a[i] === b[i]) i++;
+      // a short word gains or loses a letter only at its end (ONEE for ONE), never inside it (HER2 is not HERC2)
+      if (a.length !== b.length && w.length <= 4 && i < Math.min(a.length, b.length)) return false;
       if (a.length === b.length)
         return (
           a.slice(i + 1) === b.slice(i + 1) ||
@@ -138,6 +140,63 @@
     p.acc.toLowerCase().startsWith(w) ||
     (p.name || '').toLowerCase().includes(w) ||
     (aliasesOf[p.i] || []).some((a) => a.toLowerCase().startsWith(w));
+  // the residue a protein has at a UniProt position: its sequence when the record has loaded, else the residue of a mark
+  // there (the middle of its window); '' when neither is known. A search that names a residue wants the sequence
+  // (seqWant) and is read again when it arrives
+  const SEQC = {};
+  let markRes = null;
+  const seqWant = (p) => {
+    if (p.acc in SEQC || !K.loadProtein) return;
+    SEQC[p.acc] = null;
+    K.loadProtein(p.acc).then(
+      (rec) => {
+        SEQC[p.acc] = rec.seq || '';
+        cache = { key: null };
+        K.render?.();
+      },
+      () => {
+        SEQC[p.acc] = '';
+      }
+    );
+  };
+  // resolves with the sequence ('' when it cannot be had); for the one-off checks of a form
+  const seqReady = (p) =>
+    SEQC[p.acc] != null
+      ? Promise.resolve(SEQC[p.acc])
+      : K.loadProtein
+        ? K.loadProtein(p.acc).then(
+            (rec) => (SEQC[p.acc] = rec.seq || ''),
+            () => ''
+          )
+        : Promise.resolve('');
+  const residueAt = (p, u) => {
+    const sq = SEQC[p.acc];
+    if (sq) return sq[u - 1] || '';
+    if (!SD) return '';
+    if (!markRes) {
+      markRes = {};
+      SD.marks.forEach((m) => {
+        markRes[m[0] + ':' + m[1]] = (m[4] || '')[Math.floor((m[4] || '').length / 2)] || '';
+      });
+    }
+    return markRes[p.i + ':' + u] || '';
+  };
+  // why a typed site cannot be: no such position, or another residue there. null when it can be (or cannot be checked yet)
+  function siteProblem(p, typed, letter) {
+    const u = uniPos(p, typed),
+      sq = SEQC[p.acc],
+      len = sq ? sq.length : p.len,
+      nm = nameOf(p),
+      last = len ? len + (numOf(p)?.offset || 0) : 0;
+    if (u < 1 || (len && u > len)) return `${nm} has no position ${typed}${last ? `; it ends at ${last}` : ''}.`;
+    const res = residueAt(p, u);
+    if (!letter || !res || res === letter) return null;
+    const near = [-1, 1].find((d) => residueAt(p, u + d) === letter);
+    return (
+      `${nm} position ${typed} is ${res}, not ${letter}.` +
+      (near ? ` ${letter}${typed + near} matches; the numbering may differ by one.` : '')
+    );
+  }
   S.f = {}; // filter key -> [values]; keys a:<analysis>, p:<analysis>, s:<analysis>, t:<attribute>, n:<attribute>
 
   // ---- the data: every mark with its classes and attributes (data/selection.json, or inlined) ----------------------
@@ -400,8 +459,8 @@
   // the search read is kept for the line under it: names matched by another name (via), sites with no mark
   // (missing), positions read in a protein's own numbering (numbered), and symbols one edit from a word (typos).
   const RESIDUES = new Set((D.residues || []).map((r) => String(r).toUpperCase()));
-  const POS_RE = /^[A-Z]?\d+[,;]?$/i,
-    VAR_RE = /^([A-Z])(\d+)([A-Z*])[,;]?$/i; // a position (R216) or a variant (R216C, R216*)
+  const POS_RE = /^[A-Z]?\d+$/i,
+    VAR_RE = /^([A-Z])(\d+)([A-Z*])$/i; // a position (R216) or a variant (R216C, R216*)
   const isTermKey = (k) => {
     const key = String(k).toLowerCase();
     return !!(
@@ -431,17 +490,42 @@
       typos: {},
       variants: [],
       positions: [],
+      rejected: [], // typed sites that cannot be (no such position, another residue there): why, as a sentence
+      isoforms: [], // [typed, canonical accession] for an isoform id read as its canonical entry
+      dups: [], // names that gave a protein the list already had
       nWords: 0,
       nNamed: 0,
     };
     const raw = String(q || '').trim();
-    const toks = raw.match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || [];
-    // a site of the protein(s) a name gave: each reads the position in its own numbering
+    // words are split at spaces, commas and semicolons; a key:value term keeps its commas (go:a,b) and a quoted value its spaces
+    const toks = [],
+      apart = new Set(); // tokens a comma or semicolon followed (a name in two words does not span them)
+    (raw.match(/[a-z_][\w]*:"[^"]*"|\S+/gi) || []).forEach((w) => {
+      const k = /^([a-z_][\w]*):/i.exec(w);
+      if (w.startsWith('"') || (k && (isTermKey(k[1]) || w.includes('"')))) toks.push(w);
+      else {
+        const parts = w.split(/[,;]+/).filter(Boolean);
+        parts.forEach((x, n) => {
+          toks.push(x);
+          if (n < parts.length - 1 || /[,;]$/.test(w)) apart.add(toks.length - 1);
+        });
+      }
+    });
+    const seenP = new Set();
+    // a site of the protein(s) a name gave: each reads the position in its own numbering; one that cannot be (no such
+    // position, another residue there) is not selected, and why is kept
     const addSite = (ps, typed, letter) => {
       let any = false;
-      ps.forEach((p) => {
+      const bad = ps.map((p) => siteProblem(p, typed, letter));
+      if (bad.every(Boolean)) {
+        out.rejected.push(bad[0]);
+        return;
+      }
+      ps.forEach((p, n) => {
+        if (bad[n]) return;
+        if (letter && SD && !isMark(p.i, uniPos(p, typed))) seqWant(p);
         const u = uniPos(p, typed);
-        out.sites.push([p.i, u]);
+        out.sites.push([p.i, u, letter || '']);
         if (isMark(p.i, u)) any = true;
         if (numOf(p) && !out.numbered.some((x) => x[0] === nameOf(p)))
           out.numbered.push([nameOf(p), `${letter}${typed}`, `${letter}${u}`, numOf(p)]);
@@ -461,7 +545,7 @@
         // GENE:R216 is a site, not a term
         const l = lookup(m[1]),
           s = /^([A-Z]?)(\d+)$/i.exec(m[2]);
-        if (l && s) {
+        if (l && s && (!s[1] || AA.includes(s[1].toUpperCase()))) {
           out.nWords++;
           named(m[1], l);
           addSite(l.ps, +s[2], s[1].toUpperCase());
@@ -479,9 +563,9 @@
       }
       out.nWords++;
       let l = lookup(t);
-      if (!l && i + 1 < toks.length && !toks[i + 1].includes(':')) {
+      if (!l && i + 1 < toks.length && !toks[i + 1].includes(':') && !apart.has(i)) {
         // a name in two words (hnRNP A1)
-        const l2 = lookup(t + toks[i + 1].replace(/[,;]+$/, ''));
+        const l2 = lookup(t + toks[i + 1]);
         if (l2) {
           named(t + ' ' + toks[i + 1], { ...l2, via: true });
           l2.ps.forEach((p) => out.genes.push(p.i));
@@ -491,16 +575,20 @@
       }
       if (l) {
         named(t, l);
+        if (/-\d+$/.test(t) && !byGene[t.toUpperCase()] && byAcc[t.toUpperCase().replace(/-\d+$/, '')])
+          out.isoforms.push([t, t.toUpperCase().replace(/-\d+$/, '')]);
         let j = i + 1,
           any = false;
+        // a position is a residue letter (a valid one) and digits, or digits alone; a word that is also a name (P53 is
+        // TP53) is that protein, unless it is a mark of the one before it
         while (
           j < toks.length &&
-          (POS_RE.test(toks[j]) || (VAR_RE.test(toks[j]) && RESIDUES.has(toks[j][0].toUpperCase())))
+          ((POS_RE.test(toks[j]) && (!/^[A-Z]/i.test(toks[j]) || AA.includes(toks[j][0].toUpperCase()))) ||
+            (VAR_RE.test(toks[j]) && RESIDUES.has(toks[j][0].toUpperCase())))
         ) {
-          // a token that is also a protein's name (F12) is that protein, unless it is a mark of the one before it
-          const tok = toks[j].replace(/[,;]+$/, ''),
+          const tok = toks[j],
             pos = +tok.replace(/\D/g, ''),
-            other = protOf(tok),
+            other = lookup(tok),
             vm = VAR_RE.exec(tok);
           if (vm) out.variants.push([nameOf(l.ps[0]), vm[1].toUpperCase(), pos, vm[3].toUpperCase()]);
           if (other) {
@@ -512,19 +600,25 @@
           j++;
           out.nWords++;
         }
-        if (!any) l.ps.forEach((p) => out.genes.push(p.i));
+        if (!any) {
+          if (l.ps.every((p) => seenP.has(p.i))) out.dups.push(t);
+          l.ps.forEach((p) => {
+            seenP.add(p.i);
+            out.genes.push(p.i);
+          });
+        }
         i = j - 1;
         continue;
       }
       const sep = /^(.+?)[_/-]([A-Z]?)(\d+)$/i.exec(t),
-        ls = sep && lookup(sep[1]); // GENE_216, GENE-R216, GENE/216
+        ls = sep && (!sep[2] || AA.includes(sep[2].toUpperCase())) && lookup(sep[1]); // GENE_216, GENE-R216, GENE/216
       if (ls) {
         named(sep[1], ls);
         addSite(ls.ps, +sep[3], sep[2].toUpperCase());
         continue;
       }
       const one = /^(.+?)([A-Z])(\d+)$/i.exec(t),
-        lo = one && RESIDUES.has(one[2].toUpperCase()) && lookup(one[1]); // H4R3
+        lo = one && AA.includes(one[2].toUpperCase()) && lookup(one[1]); // H4R3
       if (lo) {
         named(one[1], lo);
         addSite(lo.ps, +one[3], one[2].toUpperCase());
@@ -553,6 +647,27 @@
     });
     return out;
   }
+  // a chosen site as written in an address: accession:S15 (the UniProt position), accession:15 or accession:15:S (older
+  // links), or GENE:S15 (the position as the protein's page shows it) -> { key: accession:position, res } or null
+  function siteKey(x) {
+    const m = /^([A-Z0-9_.-]+):(?:([A-Z])(\d+)|(\d+)(?::([A-Z]))?)$/i.exec(String(x).trim());
+    if (!m) return null;
+    const name = m[1].toUpperCase(),
+      pos = +(m[3] || m[4]),
+      res = (m[2] || m[5] || '').toUpperCase();
+    if (byAcc[name]) return { key: `${name}:${pos}`, res };
+    const ps = lookup(name)?.ps;
+    return ps && ps.length === 1 ? { key: `${ps[0].acc}:${uniPos(ps[0], pos)}`, res } : null;
+  }
+  // what a search could not read as asked, as sentences (plain text): sites that cannot be, isoform ids read as the
+  // canonical entry
+  const notesOf = (q) => [
+    ...(q.rejected || []),
+    ...(q.isoforms || []).map(([, acc]) => `Using the canonical isoform ${acc}; positions refer to it.`),
+  ];
+  // one message for every list of names, with those left out (html, already escaped) and the site's noun for its marks
+  const leftOut = (listHtml) =>
+    `Not found, left out of the list (no ${esc(W.mark || 'mark')} on a protein of that name in this dataset, or a name it does not know): ${listHtml}.`;
   // a term key:value: an analysis (its class or set), or an attribute of the marks or of the proteins; a word of the
   // site's own (website.search.terms: go:rna), read first; a pattern of residues (website.search.patterns: motif:<pattern>
   // covering the mark, window:PRPR anywhere near it); or a module's (K.searchTerms). [filter key, values], or
@@ -772,6 +887,7 @@
       q.words.length ||
       q.sites.length ||
       q.positions.length ||
+      q.rejected.length ||
       cons.length ||
       q.unmatched.length ||
       unresolved.length ||
@@ -1735,6 +1851,13 @@
       describe,
       validKey,
       parse,
+      protOf: (t) => lookup(t)?.ps || null,
+      siteProblem,
+      seqReady,
+      uniPos,
+      notesOf,
+      leftOut,
+      siteKey,
       nMarks,
       nProteins,
       proteinIds: () => (active() ? compute().proteins || new Set() : new Set()),

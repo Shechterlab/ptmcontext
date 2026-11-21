@@ -2316,6 +2316,23 @@
       `<button type="button" class="linkish" data-ov-del="${i}" aria-label="Remove ${esc(lab)}">×</button></span>`
     );
   }
+  // what a pasted gene list left out or merged, as the search box says it (names it does not know, a protein named twice)
+  function listNotes() {
+    return S.ot
+      .map((id, i) => {
+        if (!id.startsWith('g:')) return '';
+        const q = K.sel.parse(id.slice(2)),
+          left = [...(q.absent || []), ...(q.unmatched || []), ...(q.ignored || [])],
+          bold = (xs) => xs.map((x) => `<b>${esc(x)}</b>`).join(', '),
+          parts = [
+            ...(left.length ? [K.sel.leftOut(bold(left))] : []),
+            ...(q.dups.length ? [`Named more than once, counted once: ${bold(q.dups)}.`] : []),
+            ...K.sel.notesOf(q).map(esc),
+          ];
+        return parts.length ? `<p class="small muted ov-note"><b>${LETTERS[i]}</b> ${parts.join(' ')}</p>` : '';
+      })
+      .join('');
+  }
   function pickerHtml() {
     const full = S.ot.length >= MAXT,
       groups = groupOrder(),
@@ -2328,6 +2345,7 @@
         .join('');
     return (
       `<div class="ov-pick"><div class="ov-chips">${S.ot.map(chipHtml).join(' ') || '<span class="muted">No set chosen yet.</span>'}</div>` +
+      listNotes() +
       `<label class="flabel" for="ov-q">${full ? `${MAXT} of ${MAXT} sets chosen` : `Add a set (${int(pool0.length)} to choose from)`}</label>` +
       `<div class="ov-gchips" role="group" aria-label="Where the sets come from">${chips}</div>` +
       `<input id="ov-q" type="search" autocomplete="off" value="${esc(UIP.q)}" placeholder="${full ? `At most ${MAXT} sets` : 'Search by name or GO id: a pathway, a location, a disease, a protein family…'}"${full ? ' disabled' : ''}>` +
