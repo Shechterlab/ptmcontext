@@ -11,7 +11,15 @@ authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"
 # No paper describes this site yet, so there is no preferred-citation; the data sources below are cited with every export.
 references:   # the data sources: cited with every export 
-  # TODO(v1.7.0 DOI): add the version DOI of PTM_Pipeline v1.7.0 here (a `type: dataset` reference with its title, authors and doi) once the release is tagged and archived
+  - type: dataset   # this release: the version DOI of PTM_Pipeline v1.7.0
+    authors:
+      - {family-names: DeAngelo, given-names: JD}
+      - {family-names: Silverstein, given-names: AM}
+      - {family-names: Shechter, given-names: D}
+    title: "Human methylarginine sites, context marks, cancer and germline variants and their mutation propensity, v1.7.0 (PTM_Pipeline)"
+    publisher: Zenodo
+    year: 2026
+    doi: "10.5281/zenodo.24429699"
   - type: dataset   # all versions: the concept DOI
     authors:
       - {family-names: DeAngelo, given-names: JD}

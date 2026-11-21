@@ -1735,8 +1735,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: RNA and DNA, analyses: [go_binding, binding_protein, crosslink, sequence_proximity]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Databases, attributes: [sources, iptmnet_sources]}
-  # TODO(v1.7.0 DOI): PTM_Pipeline v1.7.0 is untagged. Once it is tagged and archived, set the version DOI here and in whats_new.doi (and `date`, `url` to the v1.7.0 tag); the all-versions DOI 10.5281/zenodo.22696798 stays. Do not use the v1.6.0 DOI for v1.7.0 data.
-  dataset: {label: PTM_Pipeline data release, version: v1.7.0, date: "2026-11-20", doi: "", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
+  dataset: {label: PTM_Pipeline data release, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
   methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table has no license: they are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   whats_new:               # what v1.7.0 added (the Help page)
@@ -1746,7 +1745,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old flag for counts at least 3 times the protein's average."
       - "A Mutation frequency page: a waterfall of site frequencies (TCGA, DepMap, gnomAD) and an oncoprint of the top sites in TCGA tumors."
       - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
-    doi: ""   # TODO(v1.7.0 DOI): the data DOI, once the release is tagged
+    doi: "10.5281/zenodo.24429699"
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/human_phosphorylation_sites_v1.7.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}
     - {label: Data dictionary, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/data_dictionary.tsv", format: TSV, note: "every column of every file, with its codes"}

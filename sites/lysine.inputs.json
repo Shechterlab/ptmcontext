@@ -659,7 +659,7 @@
     "tcga_changes_K": {
       "file": "releases/v1.7.0/supporting/tcga_mc3_changes_K_v1.7.0.tsv.gz",
       "md5": "98bb86a2123c81ba0ac39140fb4969bc",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/tcga_mc3_changes_K_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/tcga_mc3_changes_K_v1.7.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -672,7 +672,7 @@
     "tcga_changes_S": {
       "file": "releases/v1.7.0/supporting/tcga_mc3_changes_S_v1.7.0.tsv.gz",
       "md5": "6b4ff26259a5d3be25d34e6c0f3d8fb9",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/tcga_mc3_changes_S_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/tcga_mc3_changes_S_v1.7.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -685,7 +685,7 @@
     "tcga_changes_T": {
       "file": "releases/v1.7.0/supporting/tcga_mc3_changes_T_v1.7.0.tsv.gz",
       "md5": "d8068cdf2c8ea6b12f303f143051eeed",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/tcga_mc3_changes_T_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/tcga_mc3_changes_T_v1.7.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -698,7 +698,7 @@
     "tcga_changes_Y": {
       "file": "releases/v1.7.0/supporting/tcga_mc3_changes_Y_v1.7.0.tsv.gz",
       "md5": "e36ef60ecfc6bc6f5972707e37b1c643",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/tcga_mc3_changes_Y_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/tcga_mc3_changes_Y_v1.7.0.tsv.gz",
       "version": "MC3 public MAF v0.2.8; one row per tumor sample and change, UniProt 2026_04 canonical sequences",
       "licence": "GDC open-access data (NIH Genomic Data Sharing policy; no license stated): acknowledge TCGA and the MC3 publication, and make no attempt to identify participants (https://gdc.cancer.gov/access-data/data-access-policies)",
       "role": "input",
@@ -711,7 +711,7 @@
     "depmap_changes_K": {
       "file": "releases/v1.7.0/supporting/depmap_24q4_changes_K_v1.7.0.tsv.gz",
       "md5": "9abba4e226b3bf97ab179bd66d02dfc7",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/depmap_24q4_changes_K_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/depmap_24q4_changes_K_v1.7.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -724,7 +724,7 @@
     "depmap_changes_S": {
       "file": "releases/v1.7.0/supporting/depmap_24q4_changes_S_v1.7.0.tsv.gz",
       "md5": "cfa0d44b1193f3e9d5e531bd08598227",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/depmap_24q4_changes_S_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/depmap_24q4_changes_S_v1.7.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -737,7 +737,7 @@
     "depmap_changes_T": {
       "file": "releases/v1.7.0/supporting/depmap_24q4_changes_T_v1.7.0.tsv.gz",
       "md5": "0fa9ef4dafde1469013db2578ff1a420",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/depmap_24q4_changes_T_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/depmap_24q4_changes_T_v1.7.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -750,7 +750,7 @@
     "depmap_changes_Y": {
       "file": "releases/v1.7.0/supporting/depmap_24q4_changes_Y_v1.7.0.tsv.gz",
       "md5": "8e84b4cb11be159dbec81ecd1ced811f",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/depmap_24q4_changes_Y_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/depmap_24q4_changes_Y_v1.7.0.tsv.gz",
       "version": "DepMap Public 24Q4 (Figshare+ v1, published 2024-12-10); one row per cell line and change, UniProt 2026_04 canonical sequences",
       "licence": "CC BY 4.0",
       "role": "input",
@@ -763,7 +763,7 @@
     "cancer_change_background": {
       "file": "releases/v1.7.0/supporting/cancer_change_protein_background_v1.7.0.tsv.gz",
       "md5": "03537973ea1bbde64735a38c84bd7405",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/cancer_change_protein_background_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/cancer_change_protein_background_v1.7.0.tsv.gz",
       "version": "TCGA MC3 v0.2.8 and DepMap Public 24Q4",
       "licence": "derived counts of the two tables above (GDC open-access data; CC BY 4.0)",
       "role": "input",
@@ -772,7 +772,7 @@
     "clinvar_changes_K": {
       "file": "releases/v1.7.0/supporting/clinvar_changes_K_v1.7.0.tsv.gz",
       "md5": "0b8fe5e9bfe14e8e65e2b8a353c4fc4d",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/clinvar_changes_K_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/clinvar_changes_K_v1.7.0.tsv.gz",
       "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
       "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
       "role": "input",
@@ -785,7 +785,7 @@
     "clinvar_plp_changes_K": {
       "file": "releases/v1.7.0/supporting/clinvar_changes_K_v1.7.0.tsv.gz",
       "md5": "0b8fe5e9bfe14e8e65e2b8a353c4fc4d",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/clinvar_changes_K_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/clinvar_changes_K_v1.7.0.tsv.gz",
       "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
       "licence": "NCBI places no restrictions on the use or distribution of ClinVar data (public domain); submitters may claim rights in what they submitted",
       "role": "input",
@@ -804,7 +804,7 @@
     "gnomad_changes_K": {
       "file": "releases/v1.7.0/supporting/gnomad_v4_1_changes_K_v1.7.0.tsv.gz",
       "md5": "acf63ff665963c33d85b05df6b614193",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/gnomad_v4_1_changes_K_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/gnomad_v4_1_changes_K_v1.7.0.tsv.gz",
       "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
       "licence": "CC0 1.0 (gnomAD primary data)",
       "role": "input",
@@ -817,7 +817,7 @@
     "clinvar_background": {
       "file": "releases/v1.7.0/supporting/clinvar_protein_background_v1.7.0.tsv.gz",
       "md5": "81929ddfc93711ff5b968b36d01d4d52",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/clinvar_protein_background_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/clinvar_protein_background_v1.7.0.tsv.gz",
       "version": "ClinVar files dated 2026-11-15 (hgvs4variation) and 2026-11-16 (variant_summary); UniProt 2026_03 canonical sequences",
       "licence": "derived counts of the ClinVar tables (public domain)",
       "role": "input",
@@ -826,7 +826,7 @@
     "gnomad_background": {
       "file": "releases/v1.7.0/supporting/gnomad_protein_background_v1.7.0.tsv.gz",
       "md5": "22a457f6990f903491e7d47f628b15c5",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/gnomad_protein_background_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/gnomad_protein_background_v1.7.0.tsv.gz",
       "version": "gnomAD v4.1 exomes (730,947 exomes; files dated 2024-04-17); UniProt 2026_03 canonical sequences",
       "licence": "derived counts of the gnomAD tables (CC0 1.0)",
       "role": "input",
@@ -835,7 +835,7 @@
     "variant_changes_excluded": {
       "file": "releases/v1.7.0/supporting/variant_changes_excluded_v1.7.0.tsv.gz",
       "md5": "e9d043b7798d4317a35a7e6d549dda64",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/variant_changes_excluded_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/variant_changes_excluded_v1.7.0.tsv.gz",
       "version": "PTM_Pipeline v1.7.0 release folder (commit f042367); UniProt 2026_03 canonical sequences",
       "licence": "derived from the TCGA MC3, DepMap 24Q4, ClinVar and gnomAD v4.1 change tables of the release (their licenses and credits apply)",
       "role": "input",
@@ -844,7 +844,7 @@
     "nucleic_acid_regions": {
       "file": "releases/v1.7.0/supporting/nucleic_acid_regions_v1.7.0.tsv",
       "md5": "244126e0faf5b7fe803b66b01950c9d4",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/nucleic_acid_regions_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/nucleic_acid_regions_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 release folder (commit f042367)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -853,7 +853,7 @@
     "dna_motifs": {
       "file": "releases/v1.7.0/supporting/dna_motifs_v1.7.0.tsv",
       "md5": "b5ee0ac01e31897bd36ca2b7bc3cef0b",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/dna_motifs_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/dna_motifs_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 release folder (commit f042367)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -862,7 +862,7 @@
     "rna_bind_n_seq": {
       "file": "releases/v1.7.0/supporting/rna_bind_n_seq_v1.7.0.tsv",
       "md5": "7d2bccc6ce1482943997613d3ef741c8",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/rna_bind_n_seq_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/rna_bind_n_seq_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 release folder (commit f042367)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -871,7 +871,7 @@
     "eclip": {
       "file": "releases/v1.7.0/supporting/eclip_v1.7.0.tsv",
       "md5": "acfdad3a4a6f82f9d07866e3ced0a249",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/eclip_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/eclip_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 release folder (commit f042367)",
       "licence": "CC BY-NC-SA 4.0 (the release); each record keeps its source's terms (README.md of the release, inputs/MANIFEST.tsv)",
       "role": "input",
@@ -880,7 +880,7 @@
     "htr_selex": {
       "file": "releases/v1.7.0/supporting/htr_selex_v1.7.0.tsv",
       "md5": "c89d0a813e1309bcb13fead0ca817229",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/htr_selex_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/htr_selex_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 release folder (commit f042367)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "input",
@@ -1179,7 +1179,7 @@
     "release_eclip_rna_compartments": {
       "file": "releases/v1.7.0/supporting/eclip_rna_compartments_v1.7.0.tsv",
       "md5": "feaed0917ea9ed25898d6f179b12b608",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/eclip_rna_compartments_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/eclip_rna_compartments_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 release folder (commit f042367), supporting/eclip_rna_compartments",
       "licence": "CC BY-NC-SA 4.0 (the maps: APEX-seq, Fazal et al. 2019, GEO GSE116008; TSA-seq, Chen et al. 2018, GEO GSE81553; Hi-C subcompartments, Rao et al. 2014, GEO GSE63525: no use restrictions; eCLIP: ENCODE, no use restrictions)",
       "role": "input",
@@ -1188,7 +1188,7 @@
     "site_propensity_tcga_mc3": {
       "file": "releases/v1.7.0/supporting/site_propensity_tcga_mc3_v1.7.0.tsv.gz",
       "md5": "d9a3dad9dab086ccbe864840bda4c26c",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_propensity_tcga_mc3_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/site_propensity_tcga_mc3_v1.7.0.tsv.gz",
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
@@ -1197,7 +1197,7 @@
     "site_propensity_depmap_24q4": {
       "file": "releases/v1.7.0/supporting/site_propensity_depmap_24q4_v1.7.0.tsv.gz",
       "md5": "30890b37de4d4c40e2b74017cb86ae23",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_propensity_depmap_24q4_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/site_propensity_depmap_24q4_v1.7.0.tsv.gz",
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
@@ -1206,7 +1206,7 @@
     "site_propensity_clinvar": {
       "file": "releases/v1.7.0/supporting/site_propensity_clinvar_v1.7.0.tsv.gz",
       "md5": "ee4e83add6b9c3c0bb80d454d9c980bf",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_propensity_clinvar_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/site_propensity_clinvar_v1.7.0.tsv.gz",
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
@@ -1215,7 +1215,7 @@
     "site_propensity_gnomad_v4_1": {
       "file": "releases/v1.7.0/supporting/site_propensity_gnomad_v4_1_v1.7.0.tsv.gz",
       "md5": "50803fa53cb343d3c177bff23ddfce05",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_propensity_gnomad_v4_1_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/site_propensity_gnomad_v4_1_v1.7.0.tsv.gz",
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
@@ -1224,7 +1224,7 @@
     "site_frequency_by_group": {
       "file": "releases/v1.7.0/supporting/site_frequency_by_group_v1.7.0.tsv.gz",
       "md5": "21a96268066cb3201aae0d3b65b044f8",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_frequency_by_group_v1.7.0.tsv.gz",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/site_frequency_by_group_v1.7.0.tsv.gz",
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
@@ -1233,7 +1233,7 @@
     "group_denominators": {
       "file": "releases/v1.7.0/supporting/group_denominators_v1.7.0.tsv",
       "md5": "616f018232a9bd42f31c817b1ee96085",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/group_denominators_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/group_denominators_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
@@ -1242,7 +1242,7 @@
     "sample_burden": {
       "file": "releases/v1.7.0/supporting/sample_burden_v1.7.0.tsv",
       "md5": "53b848b583f3f936d2684635b256257d",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/sample_burden_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/sample_burden_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
@@ -1251,7 +1251,7 @@
     "site_set_propensity": {
       "file": "releases/v1.7.0/supporting/site_set_propensity_v1.7.0.tsv",
       "md5": "2da4aabc358b729659f551aa34179127",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/site_set_propensity_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/site_set_propensity_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
@@ -1260,7 +1260,7 @@
     "propensity_controls": {
       "file": "releases/v1.7.0/supporting/propensity_controls_v1.7.0.tsv",
       "md5": "efc62a64c21d6e55d74a5bbd8cb2b855",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/propensity_controls_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/propensity_controls_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
@@ -1269,7 +1269,7 @@
     "propensity_validation": {
       "file": "releases/v1.7.0/supporting/propensity_validation_v1.7.0.tsv",
       "md5": "d23ba41d8765944f47203c5cecd66b62",
-      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/7fd0c2bd5f7618bebf99975dcf1012b3abcd293e/releases/v1.7.0/supporting/propensity_validation_v1.7.0.tsv",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/releases/v1.7.0/supporting/propensity_validation_v1.7.0.tsv",
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",

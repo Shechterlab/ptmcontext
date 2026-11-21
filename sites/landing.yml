@@ -23,8 +23,7 @@ footer:
     - {label: Shechter Lab, url: "https://www.shechterlab.org/"}
 references:                # lines under the intro: a label with a DOI (and all versions), or text with an optional link
   - {label: Paper, doi: "10.1016/j.chembiol.2026.09.011"}
-  # TODO(v1.7.0 DOI): PTM_Pipeline v1.7.0 is untagged. Once it is tagged and archived, set the version DOI here (and the Data text and url to the v1.7.0 tag); the all-versions DOI 10.5281/zenodo.22696798 stays. Do not use the v1.6.0 DOI for v1.7.0 data.
-  - {label: Data, all_versions: "10.5281/zenodo.22696798"}
+  - {label: Data, doi: "10.5281/zenodo.24429699", all_versions: "10.5281/zenodo.22696798"}
   - {label: Data, text: PTM_Pipeline v1.7.0, url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0"}
 whats_new:             # a short list of what a release added: the landing page and each site's Help show it
   title: What’s new in v1.7.0
@@ -33,4 +32,4 @@ whats_new:             # a short list of what a release added: the landing page 
     - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old flag for counts at least 3 times the protein's average."
     - "A Mutation frequency page: a waterfall of site frequencies (TCGA, DepMap, gnomAD) and an oncoprint of the top sites in TCGA tumors."
     - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
-  doi: ""   # TODO(v1.7.0 DOI): the data DOI, once the release is tagged
+  doi: "10.5281/zenodo.24429699"

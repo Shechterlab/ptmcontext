@@ -32,7 +32,7 @@ The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pip
 site (the methylarginine data of v1.7.0 are byte for byte those of v1.4.3). The v1.7.0 context tables come from UniProt, iPTMnet, Berryhill et al. 2023, Ochoa et al. 2020, Hendriks et al. 2017 (SUMO-2) and Akimov et al. 2018
 (ubiquitination).
 
-To cite the data, use the archive of this release, v1.7.0 (the DOI follows once the release is tagged and archived; TODO(v1.7.0 DOI)), and
+To cite the data, use the archive of this release, v1.7.0 (doi:10.5281/zenodo.24429699), and
 the archive of all versions (doi:10.5281/zenodo.22696798). Each site's Methods page (Cite) lists these with the studies and databases behind its sites.
 
 ## Build a site
