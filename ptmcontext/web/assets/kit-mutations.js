@@ -628,8 +628,8 @@
     }
     return SIBS;
   };
-  const coversWords = () =>
-    PR.residues.map((l) => (D.residue_names?.[l] ? D.residue_names[l] + 's' : l + ' residues')).join(', ');
+  // the residues this explorer covers, in words (the site's own noun: arginines, lysines, serines, threonines and tyrosines)
+  const coversWords = () => W.residues;
   // 'not in this explorer', with a link that carries the site to each explorer that covers its residue
   function notHere(key) {
     const [acc, pos] = key.split(':'),
