@@ -628,7 +628,7 @@
     }
     return SIBS;
   };
-  // the residues this explorer covers, in words (the site's own noun: arginines, lysines, serines, threonines and tyrosines)
+  // the residues this explorer covers, in words (the site's own noun for them)
   const coversWords = () => W.residues;
   // 'not in this explorer', with a link that carries the site to each explorer that covers its residue
   function notHere(key) {
