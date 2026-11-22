@@ -628,7 +628,7 @@
           : '');
     }
     return (
-      `<form class="mu-add" data-mu-gform><textarea id="mu-genes" rows="2" autocomplete="off" spellcheck="false" placeholder="TP53 FUS EWSR1" data-mu-gtext aria-label="Highlight genes: gene names or UniProt IDs, separated by spaces, commas, semicolons or new lines">${esc(M.genes.join(' '))}</textarea> ` +
+      `<form class="mu-add" data-mu-gform><textarea id="mu-genes" rows="2" autocomplete="off" spellcheck="false" placeholder="Gene names or UniProt IDs" data-mu-gtext aria-label="Highlight genes: gene names or UniProt IDs, separated by spaces, commas, semicolons or new lines">${esc(M.genes.join(' '))}</textarea> ` +
       `<button type="submit" class="btn small">Highlight genes</button>` +
       (M.genes.length ? ` <button type="button" class="btn small" data-mu-gclear>Clear</button>` : '') +
       `</form>` +
