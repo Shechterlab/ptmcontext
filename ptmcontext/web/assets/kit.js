@@ -136,7 +136,7 @@
           .replace(/-(\d[\d.]*)$/, ' $1')
       : l || '';
   const fq = (q) =>
-    q == null ? '–' : q === 0 ? '< 1e-300' : q < 1e-3 ? q.toExponential(1).replace('e-', 'e−') : q.toFixed(3);
+    q == null ? '–' : q === 0 ? '< 1e−300' : q < 1e-3 ? q.toExponential(1).replace('e-', 'e−') : q.toFixed(3);
   const PADJ = 0.05,
     MIN_EFFECT = 1.1;
   // what a row shows: the fold (share among the marks over share among the comparison) where it has one, else its

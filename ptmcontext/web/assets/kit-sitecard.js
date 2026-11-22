@@ -143,7 +143,7 @@
     if (v === '' || v == null) return '–';
     const x = +v;
     if (!isFinite(x)) return esc(v);
-    if (f === 'p') return x === 0 ? '< 1e-300' : x < 1e-3 ? x.toExponential(1).replace('e-', 'e−') : x.toFixed(3);
+    if (f === 'p') return x === 0 ? '< 1e−300' : x < 1e-3 ? x.toExponential(1).replace('e-', 'e−') : x.toFixed(3);
     if (f === 'l2') return (x > 0 ? '+' : '') + x.toFixed(2);
     return Number.isInteger(x) ? int(x) : x.toFixed(2);
   };

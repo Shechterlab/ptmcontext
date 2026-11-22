@@ -116,7 +116,7 @@
     q == null
       ? '–'
       : q === 0
-        ? '< 1e-300'
+        ? '< 1e−300'
         : q < 0.001
           ? q.toExponential(1).replace('e-', 'e−')
           : q < 0.1

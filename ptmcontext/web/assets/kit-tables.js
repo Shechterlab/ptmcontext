@@ -50,7 +50,7 @@
     if (v == null || v === '' || !isFinite(+v)) return '';
     const x = +v;
     if (f === 'l2') return (x > 0 ? '+' : x < 0 ? MINUS : '') + Math.abs(x).toFixed(2);
-    if (f === 'p') return x === 0 ? '< 1e-300' : x < 1e-3 ? x.toExponential(1).replace('e-', 'e−') : x.toFixed(3);
+    if (f === 'p') return x === 0 ? '< 1e−300' : x < 1e-3 ? x.toExponential(1).replace('e-', 'e−') : x.toFixed(3);
     if (f === 'pct') return (100 * x).toFixed(0) + '%';
     return Number.isInteger(x) ? int(x) : x.toFixed(2);
   };
