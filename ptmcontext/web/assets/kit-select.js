@@ -592,7 +592,16 @@
             vm = VAR_RE.exec(tok);
           if (vm) out.variants.push([nameOf(l.ps[0]), vm[1].toUpperCase(), pos, vm[3].toUpperCase()]);
           if (other) {
-            if (!l.ps.some((p) => isMark(p.i, uniPos(p, pos)))) break;
+            // the site when the position is a mark, or when the protein's residue there is the one typed (or one either
+            // side, as the numbering may differ by one); otherwise the name (ERBB2 P53 is TP53)
+            const want = /^[A-Z]/i.test(tok) ? tok[0].toUpperCase() : '';
+            if (want && SD) l.ps.forEach(seqWant); // read again when the sequence arrives
+            const fits = l.ps.some(
+              (p) =>
+                isMark(p.i, uniPos(p, pos)) ||
+                (want && [-1, 0, 1].some((d) => residueAt(p, uniPos(p, pos) + d) === want))
+            );
+            if (!fits) break;
             out.ambiguous.push([tok, nameOf(l.ps[0])]);
           }
           addSite(l.ps, pos, /^[A-Z]/i.test(tok) ? tok[0].toUpperCase() : '');

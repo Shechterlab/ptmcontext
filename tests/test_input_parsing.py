@@ -16,7 +16,7 @@ from test_search import _build, _page_data, _toy
 from test_search import ASSETS, P1, P2, P3  # noqa: E402
 
 
-def _run(tmp_path, body):
+def _run(tmp_path, body, aliases=None):
     root = _toy(tmp_path)
     index = _build(root)
     data = _page_data(index)
@@ -26,6 +26,7 @@ def _run(tmp_path, body):
         )
     # a name that looks like a site (P7 for TWO), as P53 is an alias of TP53
     data['protein_aliases']['P2'] = 'P7'
+    data['protein_aliases'].update(aliases or {})
     script = f"""
 const noop = () => {{}};
 global.window = global; global.addEventListener = noop; global.innerWidth = 1400; global.requestAnimationFrame = f => 0;
@@ -92,6 +93,32 @@ def test_an_off_by_one_numbering_is_suggested(tmp_path):
 """,
     )
     assert out['msg'] == 'ONE position 4 is G, not R. R5 matches; the numbering may differ by one.'
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_after_a_gene_a_residue_and_position_is_the_site_when_the_residue_fits(tmp_path):
+    # R2 and K1 are aliases of TWO (P2), as EGFR R1 is an alias of another gene; ONE is P1 (M R G G ...)
+    out = _run(
+        tmp_path,
+        """
+    await K.sel.seqReady(K.sel.byAcc.P1);
+    await K.sel.seqReady(K.sel.byAcc.P2);
+    for (const q of ['ONE R2', 'ONE K1', 'ONE R3', 'ONE K9']) {
+      const p = K.sel.parse(q);
+      out[q] = { sites: p.sites.map(x => x.slice(0, 2)), genes: names(p.genes), ambiguous: p.ambiguous, rejected: p.rejected };
+    }
+""",
+        aliases={'P2': 'R2;K1'},
+    )
+    # R at 2 is the residue there: the site, not the alias of TWO
+    assert out['ONE R2']['sites'] == [[0, 2]] and out['ONE R2']['genes'] == []
+    assert out['ONE R2']['ambiguous'] == [['R2', 'ONE']]
+    # K at 1 (M there, R at 2 but not K): no fit, so the word is the gene TWO
+    assert out['ONE K1']['sites'] == [] and out['ONE K1']['genes'] == ['P1', 'P2']
+    # R at 3 is G, and R sits at 2: the site is read and rejected with the off-by-one hint
+    assert out['ONE R3']['sites'] == [] and 'R2 matches' in out['ONE R3']['rejected'][0]
+    # K9 is no name here, so it is a site and is rejected (A at 9)
+    assert out['ONE K9']['sites'] == [] and out['ONE K9']['rejected'] == ['ONE position 9 is A, not K.']
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
