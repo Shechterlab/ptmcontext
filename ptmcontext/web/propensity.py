@@ -15,8 +15,10 @@ Three kinds of file, all read only when something asks for them:
                     that had no weighted expectation (the entry has no coding sequence that matches its UniProt sequence),
                     written with the unweighted expectation and a null q; gnomAD `l`: [row, q, ...] for the rows with
                     q_lower < 0.05 (fewer variants than expected). Numbers keep two significant digits.
-  data/wf.json      the waterfall's numbers: samples profiled per group, each known site's changed samples per group, and
-                    the curve of the other residues of the same type
+  data/wf.json      the waterfall's numbers: samples profiled per group, each known site's changed samples per group, O/E, q,
+                    k, expected and both tails of each site with a change (TCGA and DepMap: the lower tail is computed here
+                    with the release's binomial, only where it gives back the release's p_upper), and the signed-score curve
+                    of the other residues of the same type
   data/onco.json    the oncoprint's numbers: every TCGA sample (project, hypermutated or not, coding calls per Mb) and, for each
                     known site, the samples with a change at it
 
@@ -30,7 +32,9 @@ import math
 import shutil
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from scipy.stats import binom
 
 from ..snapshot import md5_file
 from . import variants as V
@@ -41,6 +45,77 @@ ZERO_ROWS = 1000  # the sites with no change listed per source (the most expecte
 CURVE_POINTS = 64  # points of the curve of the other residues (log-spaced ranks)
 Q_RING = 0.05
 HYPER_PER_MB = 10  # coding calls per Mb: the release's threshold (Campbell et al., Cell 171:1042 (2017))
+SCORE_CAP = 300  # the signed score of a p that underflows to 0 (the release stores p to 4 significant digits)
+REPRO_TOL = 6e-4  # relative: the release stores p_upper to 4 significant digits (half a unit in the fourth is 5e-4)
+CURVE_ENDS = 48  # points of the signed curve, from each end (log-spaced ranks)
+
+
+def signed_score(o, pu, pl, cap: float = SCORE_CAP):
+    """The waterfall's height of a site: -log10 of the upper-tail p when it has more than expected (O/E above 1), log10 of the
+    lower-tail p (a negative number) when it has fewer (O/E below 1), 0 at O/E 1. None when the side's p is missing (no test).
+    kit-mutations.js (K.prop.signed) is the twin."""
+    if o is None or (isinstance(o, float) and math.isnan(o)):
+        return None
+    if o == 1:
+        return 0.0
+    p = pu if o > 1 else pl
+    if p is None or (isinstance(p, float) and math.isnan(p)):
+        return None
+    if p <= 0:
+        return float(cap) if o > 1 else -float(cap)
+    s = -math.log10(p) if o > 1 else math.log10(p)
+    return max(-cap, min(cap, s))
+
+
+def signed_scores(o, pu, pl) -> np.ndarray:
+    """`signed_score` over arrays (NaN where it is None)."""
+    o, pu, pl = (np.asarray(x, dtype=float) for x in (o, pu, pl))
+    with np.errstate(divide='ignore', invalid='ignore'):
+        up = np.where(pu > 0, -np.log10(pu), SCORE_CAP)
+        dn = np.where(pl > 0, np.log10(pl), -SCORE_CAP)
+    s = np.where(o > 1, np.where(np.isnan(pu), np.nan, up), np.where(o < 1, np.where(np.isnan(pl), np.nan, dn), 0.0))
+    s = np.where(np.isnan(o), np.nan, s)
+    return np.clip(s, -SCORE_CAP, SCORE_CAP)
+
+
+def binom_tails(df: pd.DataFrame, cohort: bool) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """The release's own model for each row of a source table: k ~ Binomial(n, expected / n). Returns P(X >= k), P(X <= k) and
+    the rows where it applies (a weighted expectation and n above 0), as Series on df's index (NaN elsewhere)."""
+    s = '_no_hypermutated' if cohort else ''
+    if 'n' + s not in df:
+        nan = pd.Series(np.nan, index=df.index)
+        return nan, nan, pd.Series(False, index=df.index)
+    k, n, e = (df[c + s] for c in ('k', 'n', 'expected'))
+    ok = n.notna() & (n > 0) & e.notna() & k.notna()
+    kk, nn = k.where(ok, 0).to_numpy(float), n.where(ok, 1).to_numpy(float)
+    p = np.clip(e.where(ok, 0).to_numpy(float) / nn, 0, 1)
+    upper = pd.Series(np.where(ok, binom.sf(kk - 1, nn, p), np.nan), index=df.index)
+    lower = pd.Series(np.where(ok, binom.cdf(kk, nn, p), np.nan), index=df.index)
+    return upper, lower, ok
+
+
+def upper_reproduces(df: pd.DataFrame, cohort: bool) -> tuple[int, float, float]:
+    """Whether the release's p_upper is the binomial upper tail of its own k, n and expected, to the rounding it stores (four
+    significant digits): (rows checked, largest absolute difference, largest relative difference). The lower tail of a source
+    that has none is computed only when this holds."""
+    s = '_no_hypermutated' if cohort else ''
+    if 'n' + s not in df or 'p_upper' + s not in df:
+        return 0, math.nan, math.nan
+    upper, _, ok = binom_tails(df, cohort)
+    stored = df['p_upper' + s]
+    ok = ok & stored.notna()
+    a, b = upper[ok].to_numpy(float), stored[ok].to_numpy(float)
+    if not len(a):
+        return 0, math.nan, math.nan
+    d = np.abs(a - b)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        rel = np.where(b > 0, d / b, np.where(a > 1e-300, np.inf, 0.0))  # a stored 0 is an underflow
+    return int(len(a)), float(d.max()), float(rel.max())
+
+
+def lower_tail_ok(df: pd.DataFrame, cohort: bool) -> bool:
+    n, _, rel = upper_reproduces(df, cohort)
+    return n > 0 and rel <= REPRO_TOL
 
 
 def sig(x, digits: int = 2):
@@ -151,6 +226,7 @@ def read_source(path: Path, residues: list[str], somatic: bool, lower: bool) -> 
         'position',
         'residue',
         'k',
+        'n',
         'expected',
         'oe',
         'q_upper',
@@ -161,7 +237,7 @@ def read_source(path: Path, residues: list[str], somatic: bool, lower: bool) -> 
     if somatic:
         want += [
             f'{c}_no_hypermutated'
-            for c in ('k', 'expected', 'oe', 'q_upper', 'p_upper', 'expected_unweighted', 'oe_unweighted')
+            for c in ('k', 'n', 'expected', 'oe', 'q_upper', 'p_upper', 'expected_unweighted', 'oe_unweighted')
         ]
     if lower:
         want += ['q_lower', 'p_lower']
@@ -201,6 +277,40 @@ def curve(freqs: list[float], total: int, points: int = CURVE_POINTS) -> list:
     return [m, total, ranks, [sig(v[r - 1], 3) for r in ranks]]
 
 
+def signed_curve(scores, points: int = CURVE_ENDS) -> list:
+    """The ranked signed scores of a set of residues (NaN: no test, counted as 0), highest first, as [N, N, ranks, values] (the
+    shape of `curve`, with no flat tail): sampled at log-spaced ranks from the top and from the bottom, so that both ends of the
+    ranking keep their shape. Values keep three significant digits."""
+    v = np.sort(np.nan_to_num(np.asarray(scores, dtype=float), nan=0.0))[::-1]
+    n = len(v)
+    if not n:
+        return [0, 0, [], []]
+    steps = [int(round(n ** (i / (points - 1)))) for i in range(points)]
+    ranks = sorted({1, n} | {r for r in steps if 1 <= r <= n} | {n + 1 - r for r in steps if 1 <= r <= n})
+    return [n, n, ranks, [sig(float(v[r - 1]), 3) for r in ranks]]
+
+
+def _p(x):
+    """A raw p to two significant digits, None when missing."""
+    return None if x is None or pd.isna(x) else sig(float(x))
+
+
+def _int(x):
+    """A float that is a whole number as an int (shorter in JSON: 1 for 1.0)."""
+    return int(x) if isinstance(x, float) and x == int(x) else x
+
+
+def _cohort(o, q, k, e, pu, pl) -> list:
+    """[O/E, q, k, expected, p (more), p (fewer)] of one cohort for `stats`: the p of the side the other way (above 0.5, so a p
+    that says nothing) is left out, as null."""
+    if o is not None:
+        if o > 1 and pl is not None and pl > 0.5:
+            pl = None
+        elif o <= 1 and pu is not None and pu > 0.5:
+            pu = None
+    return [_int(x) for x in (o, q, k, e, pu, pl)]
+
+
 def frequency_payload(
     freq: pd.DataFrame,
     den: pd.DataFrame,
@@ -213,8 +323,13 @@ def frequency_payload(
 
     groups[src]: the group names; den[src]: [[profiled, profiled without hypermutated], ...] in that order, and 'all' the
     sums; sites[acc]: [[position, residue, [group index, changed, changed without hypermutated, ...] per source], ...] for
-    the known sites with a change; bg[src][cohort][residue][group index or ''] the curve of the non-site residues."""
-    out: dict = {'groups': {}, 'den': {}, 'all': {}, 'sites': {}, 'bg': {}}
+    the known sites with a change; bg[src][cohort][residue] the curve of the signed score of the non-site residues
+    (`signed_curve`); lower[src]: [all, without hypermutated], whether the site computed the lower tail (the release's p_upper
+    is reproduced by its own binomial); stats[src][acc]: [[position, c1 (6 numbers), c2 (6 numbers, left out when it equals c1)], ...],
+    each cohort c = [O/E, q, k, expected, raw p of the upper tail, raw p of the lower tail] (a p above 0.5 on the side opposite
+    to O/E is null); zero[src][cohort]: [[acc, position, residue,
+    expected, raw p of the lower tail], ...] for known sites with no change."""
+    out: dict = {'groups': {}, 'den': {}, 'all': {}, 'sites': {}, 'bg': {}, 'lower': {}}
     for s in sources:
         fs = s.get('frequency_source')
         if not fs:
@@ -246,51 +361,45 @@ def frequency_payload(
         ):
             per = sites.setdefault(a, {}).setdefault(int(p), [r] + [[] for _ in sources])
             per[1 + si] += [gi[g], int(m1), int(m2)]
-        # the curve of the residues that are not known sites
-        bg: dict = {'all': {}, 'no_hypermutated': {}}
-        non = f[~f['isite']]
-        den_by = {g: out['den'][s['id']][i] for g, i in gi.items()}
-        for cohort, mcol, k in (
-            ('all', 'samples_mutated', 0),
-            ('no_hypermutated', 'samples_mutated_no_hypermutated', 1),
-        ):
-            for res, n_total in totals.items():
-                sub = non[non['residue'] == res]
-                per_g: dict = {}
-                for g, grp in sub.groupby('group'):
-                    dn = den_by[g][k]
-                    if dn:
-                        per_g[str(gi[g])] = curve((grp[mcol] / dn).tolist(), n_total)
-                # pooled over every group: the propensity table's own counts
-                pt = pooled[s['id']]
-                pt = pt[(pt['residue'] == res) & ~pt['isite']]
-                col, dcol = (
-                    ('k', 'samples_profiled') if k == 0 else ('k_no_hypermutated', 'samples_profiled_no_hypermutated')
-                )
-                dd = pt[dcol]
-                per_g[''] = curve((pt[col] / dd.where(dd > 0)).fillna(0).tolist(), n_total)
-                bg[cohort][res] = per_g
-        out['bg'][s['id']] = bg
-        # O/E and q of each known site with a change, in both cohorts: the colors and rings of the waterfall's points
+        # the lower tail the release lacks for a somatic source, by its own model, where that model gives its p_upper back
         pt = pooled[s['id']]
-        on_ = pt[pt['isite'] & ((pt['k'] > 0) | (pt['k_no_hypermutated'] > 0))].sort_values(
-            ['canonical_UniProtAC', 'position']
-        )
+        lower_ok = [lower_tail_ok(pt, False), lower_tail_ok(pt, True)]
+        out['lower'][s['id']] = lower_ok
+        tails = []
+        for cohort in (False, True):
+            _, lo, _ = binom_tails(pt, cohort)
+            tails.append(lo if lower_ok[int(cohort)] else lo * np.nan)
+        pl1, pl2 = tails
+        # the curve of the signed score of the residues that are not known sites (the sites' own scores are in `stats`)
+        bg: dict = {'all': {}, 'no_hypermutated': {}}
+        non = ~pt['isite'].to_numpy(bool)
+        for cohort, sfx, pl in (('all', '', pl1), ('no_hypermutated', '_no_hypermutated', pl2)):
+            w = pt['expected' + sfx].notna()
+            sc = signed_scores(pt['oe' + sfx].where(w), pt['p_upper' + sfx].where(w), pl)
+            for res in totals:
+                bg[cohort][res] = signed_curve(sc[non & (pt['residue'] == res).to_numpy(bool)])
+        out['bg'][s['id']] = bg
+        # O/E, q, k, expected and both tails of each known site with a change, in both cohorts: the points of the waterfall
+        keep = pt['isite'] & ((pt['k'] > 0) | (pt['k_no_hypermutated'] > 0))
+        on_ = pt[keep].sort_values(['canonical_UniProtAC', 'position'])
         a_, b_ = _numbers(on_, False), _numbers(on_, True)
+        la, lb = pl1[on_.index], pl2[on_.index]
         st: dict[str, list] = {}
         for i, (acc_, pos_) in enumerate(zip(on_['canonical_UniProtAC'], on_['position'])):
-            st.setdefault(acc_, []).append([int(pos_), a_['o'][i], a_['q'][i], b_['o'][i], b_['q'][i]])
+            c1 = _cohort(a_['o'][i], a_['q'][i], a_['k'][i], a_['e'][i], a_['pu'][i], _p(la.iat[i]))
+            c2 = _cohort(b_['o'][i], b_['q'][i], b_['k'][i], b_['e'][i], b_['pu'][i], _p(lb.iat[i]))
+            st.setdefault(acc_, []).append([int(pos_), *c1] + ([] if c1 == c2 else c2))
         out.setdefault('stats', {})[s['id']] = st
         # the known sites with no change that a table can list: the ZERO_ROWS with the most expected changes, per cohort
         zero = {}
-        for cohort, kc, ec in (
-            ('all', 'k', 'expected'),
-            ('no_hypermutated', 'k_no_hypermutated', 'expected_no_hypermutated'),
+        for cohort, kc, ec, lo in (
+            ('all', 'k', 'expected', pl1),
+            ('no_hypermutated', 'k_no_hypermutated', 'expected_no_hypermutated', pl2),
         ):
             z = pt[pt['isite'] & (pt[kc] == 0) & pt[ec].notna()].sort_values(ec, ascending=False).head(ZERO_ROWS)
             zero[cohort] = [
-                [a_, int(p_), r_, sig(float(e_))]
-                for a_, p_, r_, e_ in zip(z['canonical_UniProtAC'], z['position'], z['residue'], z[ec])
+                [a_, int(p_), r_, _int(sig(float(e_))), _p(l_)]
+                for a_, p_, r_, e_, l_ in zip(z['canonical_UniProtAC'], z['position'], z['residue'], z[ec], lo[z.index])
             ]
         out.setdefault('zero', {})[s['id']] = zero
     out['sites'] = {
@@ -305,12 +414,15 @@ def germline_payload(changes: list[pd.DataFrame], prop: pd.DataFrame, totals: di
     over the variants) is kept for the tooltip. sites[acc]: [[position, residue, k, summed af, O/E, q (more), q (fewer),
     expected], ...] for the known sites with a variant, those with none and raw p_lower < 0.05, and the ZERO_ROWS with none and the most expected
     (p_lower: raw p of the lower tail; the last is the raw upper p); bg[residue]:
-    the curve of k over the other residues (`curve`)."""
+    the curve of the signed score over the other residues (`signed_curve`)."""
     ch = pd.concat([c[['canonical_UniProtAC', 'position', 'af']] for c in changes])
     af = ch.groupby(['canonical_UniProtAC', 'position'])['af'].sum().rename('sum_af').reset_index()
     d = prop.merge(af, on=['canonical_UniProtAC', 'position'], how='left')
     d['sum_af'] = d['sum_af'].fillna(0.0)
-    bg = {res: curve(d[(~d['isite']) & (d['residue'] == res)]['k'].tolist(), n) for res, n in totals.items()}
+    w = d['expected'].notna()
+    sc = signed_scores(d['oe'].where(w), d['p_upper'].where(w), d['p_lower'] if 'p_lower' in d else np.nan)
+    non = ~d['isite'].to_numpy(bool)
+    bg = {res: signed_curve(sc[non & (d['residue'] == res).to_numpy(bool)]) for res in totals}
     low = d['p_lower'] < 0.05 if 'p_lower' in d else pd.Series(False, index=d.index)
     zero = d[d['isite'] & (d['k'] == 0)]
     top0 = zero.sort_values('expected', ascending=False).head(ZERO_ROWS).index
@@ -515,6 +627,14 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         den = pd.read_csv(df_, sep='\t', dtype={'group': str})
         wf = frequency_payload(freq, den, marks, totals, pooled, [s for s in sources if s.get('frequency_source')])
         wf['sites_total'] = known
+        for sid, ok in wf['lower'].items():
+            for cohort, good in zip((False, True), ok):
+                n_, d_, r_ = upper_reproduces(pooled[sid], cohort)
+                log(
+                    f'  lower tail, {sid}{" without hypermutated" if cohort else ""}: p_upper {"reproduced" if good else "NOT reproduced"} '
+                    f'by Binomial(n, expected / n) for {n_:,} rows (max abs diff {d_:.2g}, max rel {r_:.2g})'
+                    + ('' if good else '; sites with O/E < 1 are drawn at 0')
+                )
         text = json.dumps(wf, separators=(',', ':'))
         (out / 'data' / 'wf.json').write_text(text)
         res['wf'] = {'file': 'data/wf.json'}

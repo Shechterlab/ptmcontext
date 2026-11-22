@@ -1402,8 +1402,15 @@ website:
 | File | Holds | Read by |
 |---|---|---|
 | `data/m/NNN.json` | per protein with a mark, `{source id: block}`, a few proteins to a file (about 150 KB). The file of a protein is `variants.hash_shard` (`hashOf` in `kit-propensity.js` is its twin). A block is columnar, one entry per residue of the site's types that is a known site or has a change: `p` position deltas, `k`, `e` (expected), `o` (O/E), `q` (null: not tested), `pu` (raw p of the upper tail). Somatic sources repeat `k2 e2 o2 q2 pu2` without hypermutated samples; gnomAD adds `pl`, the raw p of the lower tail. `u` lists the rows that fell back to the unweighted expectation (no coding sequence matches UniProt, so q is null). `l` is `[row, q_lower, ...]` where q_lower < 0.05 (gnomAD). Numbers keep two significant digits | a protein page's cards (the lollipops) and the site card's line |
-| `data/wf.json` | `groups`, `den` (samples profiled, and not hypermutated, per group), `all`, each known site's changed samples per group (`sites`: `[position, residue, per source [group, changed, changed without hypermutated]...]`), `stats` (O/E and q of the known sites with a change, both cohorts), `zero` (per source and cohort, the 1,000 known sites with no change and the most expected: `[accession, position, residue, expected]`) and `bg`, the ranked frequencies of the residues that are not sites, as `[M, N, ranks, values]` | the Mutation frequency page (waterfall) |
-| `data/gn.json` | `sites`: for each known site with a gnomAD variant, and each with none and q_lower < 0.05, `[position, residue, k, summed af, O/E, q (more), q (fewer), expected, raw p (fewer), raw p (more)]`, the sites with none being the 1,000 with the most expected and every one with a raw p_lower below 0.05; `bg`: the curve of k over the other residues. A site's height is k, the number of variants; the summed `af` is for the tooltip | the waterfall, source gnomAD |
+| `data/wf.json` | `groups`, `den` (samples profiled, and not hypermutated, per group), `all`, each known site's changed samples per group (`sites`: `[position, residue, per source [group, changed, changed without hypermutated]...]`), `stats` (per source and protein, the known sites with a change: `[position, c1 (6 numbers), c2 (6 numbers; left out when equal to c1)]`, each cohort `c` = `[O/E, q, k, expected, raw p (more), raw p (fewer)]`; the p of the side opposite to O/E is null when above 0.5), `lower` (per source, `[all, without hypermutated]`: whether the lower tail was computed, see below), `zero` (per source and cohort, the 1,000 known sites with no change and the most expected: `[accession, position, residue, expected, raw p (fewer)]`) and `bg`, the curve of the signed score of the residues that are not sites, as `[N, N, ranks, values]` sampled at log-spaced ranks from both ends | the Mutation frequency page (waterfall) |
+| `data/gn.json` | `sites`: for each known site with a gnomAD variant, and each with none and q_lower < 0.05, `[position, residue, k, summed af, O/E, q (more), q (fewer), expected, raw p (fewer), raw p (more)]`, the sites with none being the 1,000 with the most expected and every one with a raw p_lower below 0.05; `bg`: the curve of the signed score over the other residues. The summed `af` is for the tooltip | the waterfall, source gnomAD |
+
+The waterfall's height is the signed score: -log10 of the raw upper-tail p when O/E is above 1, log10 of the raw lower-tail p
+(negative) when O/E is below 1, 0 at O/E 1. The release gives p_lower for gnomAD only. For a somatic source the site computes
+it at build time, Binomial(n, expected / n), P(X <= k), but only after checking that the release's p_upper is that binomial's
+upper tail for every row of the table and cohort (to the four significant digits stored; `lower` records the result). If a
+cohort fails the check, its sites with O/E below 1 are drawn at 0. The lower tail has no q for TCGA and DepMap (the release's
+BH is over residues the site does not hold).
 | `data/onco.json` | `projects`, every TCGA sample `[id without "TCGA-", project, hypermutated, coding calls per Mb]`, and `sites`: for each known site the samples with a change (`sample index * 2 + 1` for a stop) | the oncoprint |
 
 Lollipop (protein cancer and germline cards): stick height is the count the card's table shows, circle size grows with O/E,
@@ -1412,13 +1419,16 @@ and a ring marks q < 0.05. The tooltip gives O/E, expected and q. The site card 
 The Mutation frequency page (`#mutations`, `kit-mutations.js`) draws two views of the current selection, or of the whole
 list when nothing is selected:
 
-- A waterfall ranks the sites by the share of samples with a change. Sites with no change are the flat tail. Circles are
-  colored by O/E, a solid ring marks q < 0.05, and for gnomAD a dashed ring marks q_lower < 0.05 (fewer than expected). The
-  gray curve is the other residues of the same type, with ranks scaled to the number of sites. The rank axis is log by
-  default (`mx=linear` for a linear one). The source menu has the sources with a `frequency_source`, and gnomAD when
-  `germline_changes` is set. gnomAD's height is the number of variants at the site (k). gnomAD has no hypermutated switch and no cancer-type menu. Over the whole list, one line gives
+- A waterfall ranks the sites from the most enriched to the most depleted by the signed score (above). Points are colored by O/E, a solid
+  ring marks q < 0.05, and for gnomAD a dashed ring marks q_lower < 0.05 (fewer than expected). The gray curve is the same score for the
+  other residues of the same type, with ranks scaled to the number of sites. The top 5 and bottom 5 sites (3 each on a phone, under 500 px)
+  and the sites the reader adds are labeled without overlap, with leader lines; a label opens the site's card. A click on a point, or a site
+  typed in the "Label a site" box, adds a label, kept in the address as `wl=` (up to 20; apart from `mt=`, so that labeling does not change the
+  sites chosen for a test). Hover, tap or the arrow keys read a site. p and q are pooled over the cancer types, so the waterfall has no cancer-type
+  menu. The source menu has the sources with a `frequency_source`, and gnomAD when `germline_changes` is set. gnomAD has no hypermutated
+  switch. ClinVar has no waterfall (it is descriptive: no test). Over the whole list, one line gives
   the release's test for the site set (`site_set_propensity`, matched by set, residue, source and cohort).
-- Under the waterfall, a table lists the selection's sites with no change, most expected first (gnomAD adds the raw lower-tail p). In the gnomAD waterfall a small dashed circle marks each site with no variant and a raw p below 0.05.
+- Under the waterfall, a table lists the selection's sites with no change, most expected first, with the raw lower-tail p.
 - "Test the sites you chose" (any source with a test): the reader adds up to 20 sites (`H4 R3`, in the page's numbering, or a site card's button; kept in the address as `mt=`). For each, k, expected, O/E, the raw p of each tail and a Holm-adjusted p over the chosen sites, tails and sources shown. The raw p is the right number for a site chosen in advance; q corrects across every residue of the release. The table downloads as TSV.
 - An oncoprint shows the sites with the most changed TCGA tumors against those tumors. A row's name, or a click on the row,
   opens that site's card.

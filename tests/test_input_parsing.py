@@ -165,4 +165,6 @@ eval(fs.readFileSync(ASSETS + '/kit-names.js', 'utf8')); eval(fs.readFileSync(AS
     assert out['TP53 S15'][0] == 'TP53' and 'first name only, TP53' in out['TP53 S15'][1]
     assert out['EGFR,TP53'][0] == 'EGFR' and 'first name only, EGFR' in out['EGFR,TP53'][1]
     assert out['TP53'][0] == 'TP53' and 'first name' not in out['TP53'][1]
-    assert out['FOO BAR'][0] == '' and out['FOO BAR'][1].endswith('No protein with that name or accession in these sites.')
+    assert out['FOO BAR'][0] == '' and out['FOO BAR'][1].endswith(
+        'No protein with that name or accession in these sites.'
+    )

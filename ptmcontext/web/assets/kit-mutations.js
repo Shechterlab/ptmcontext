@@ -1,10 +1,10 @@
 /* The Mutation frequency page (#mutations): two views of the sites of the current selection (the whole site list when nothing
    is selected, a site set or any search or filter otherwise), from the release's frequency tables (data/wf.json, data/onco.json;
    ptmcontext/web/propensity.py writes them, read when the page opens):
-     waterfall   every site ranked by the share of samples with a change at it, highest first (x), the share (y); the sites with
-                 no change are the flat tail on the right; a gray curve shows the other residues of the same type (the ones that
-                 are not sites), their ranks scaled to the number of sites so that both curves span the same width. A source
-                 (TCGA tumors, DepMap cell lines), a cancer type and "with / without hypermutated" choose the samples.
+     waterfall   every site ranked from the most enriched to the most depleted (x) by the signed -log10 p of the release's test (y: up
+                 for more than expected, the upper-tail p; down for fewer, the lower-tail p); a gray curve shows the other residues of the
+                 same type on the same score, their ranks scaled to the number of sites. p and q are pooled over the cancer types.
+                 Labels: the top and bottom sites and the ones the reader adds (wl in the address), placed without overlap.
      oncoprint   the sites with the most changed samples (rows) against the TCGA tumors that carry them (columns), joined to the
                  sample's burden: coding calls per Mb, with the hypermutated threshold marked.
    Hypermutated samples (more than 10 coding calls per Mb, Campbell et al., Cell 171:1042 (2017)) are left out unless the reader
@@ -23,26 +23,34 @@
   if (!SRC.length) return;
   const byAcc = Object.fromEntries((D.proteins || []).map((p) => [p[0], p]));
 
-  // ---- the choices (kept in the address: ms source, mg cancer type, mv view, mz zoom; hyper is kit-propensity's) -------------
-  const M = { src: SRC[0].id, group: '', view: 'waterfall', zoom: 0, linear: false, chosen: [], res: {}, note: '' };
-  const MAX_CHOSEN = 20;
+  // ---- the choices (kept in the address: ms source, mg cancer type, mv view, mz zoom, wl the sites labeled on the waterfall; hyper is kit-propensity's) -------------
+  const M = { src: SRC[0].id, group: '', view: 'waterfall', zoom: 0, chosen: [], labels: [], res: {}, note: '' };
+  const MAX_CHOSEN = 20,
+    MAX_LABELS = 20;
   K.paramsIn.push((p) => {
     M.src = SRC.some((s) => s.id === p.get('ms')) ? p.get('ms') : SRC[0].id;
     M.group = p.get('mg') || '';
     M.view = p.get('mv') === 'oncoprint' ? 'oncoprint' : 'waterfall';
     M.zoom = [100, 1000].includes(+p.get('mz')) ? +p.get('mz') : 0;
-    M.linear = p.get('mx') === 'linear';
-    M.chosen = [];
+    // a list of sites (mt: sites chosen for a test; wl: sites labeled on the waterfall), read as K.sel.siteKey reads them
+    const list = (v, n) => {
+      const out = [];
+      (v || '')
+        .split(',')
+        .map((x) => K.sel.siteKey(x))
+        .filter(Boolean)
+        .forEach((x) => {
+          if (out.length >= n || out.some((o) => o.key === x.key)) return;
+          out.push(x);
+        });
+      return out;
+    };
     M.res = {};
-    (p.get('mt') || '')
-      .split(',')
-      .map((x) => K.sel.siteKey(x))
-      .filter(Boolean)
-      .forEach((x) => {
-        if (M.chosen.length >= MAX_CHOSEN || M.chosen.includes(x.key)) return;
-        M.chosen.push(x.key);
-        if (x.res) M.res[x.key] = x.res;
-      });
+    M.chosen = list(p.get('mt'), MAX_CHOSEN).map((x) => {
+      if (x.res) M.res[x.key] = x.res;
+      return x.key;
+    });
+    M.labels = list(p.get('wl'), MAX_LABELS).map((x) => x.key);
   });
   const keyOut = (key) => {
     const [acc, pos] = key.split(':'),
@@ -56,7 +64,7 @@
     if (M.group) p.set('mg', M.group);
     if (M.view !== 'waterfall') p.set('mv', M.view);
     if (M.zoom) p.set('mz', String(M.zoom));
-    if (M.linear) p.set('mx', 'linear');
+    if (M.labels.length) p.set('wl', M.labels.map(keyOut).join(','));
   });
   const sourceOf = () => SRC.find((s) => s.id === M.src) || SRC[0];
 
@@ -107,14 +115,6 @@
   }
   const siteName = (acc, pos, res) =>
     `${byAcc[acc]?.[1] || acc} ${res || ''}${K.prot?.shownPos ? K.prot.shownPos(acc, pos) : pos}`.replace(/\s+/g, ' ');
-  const pct = (f) =>
-    f == null
-      ? '–'
-      : f === 0
-        ? '0%'
-        : f < 0.1
-          ? +(100 * f).toPrecision(2) + '%'
-          : (100 * f).toFixed(f < 0.1 ? 1 : 0) + '%';
   const gname = (g) => g || '(no lineage)';
 
   // ---- the waterfall's numbers ------------------------------------------------------------------------------------------------
@@ -127,7 +127,8 @@
     for (let i = 0; i < a.length; i += 3) if (gi === '' || a[i] === gi) m += a[i + (hy ? 1 : 2)];
     return m;
   }
-  // O/E and q of the known sites with a change, by position, for a source of the frequency file
+  // the numbers of the known sites with a change, by position, for a source of the frequency file: [position, ...c1, ...c2], each c
+  // [O/E, q, k, expected, p of the upper tail, p of the lower tail] (c1 all samples, c2 without hypermutated; left out: the same)
   const STATS = new Map();
   function statOf(wf, id) {
     if (!STATS.has(wf + id)) {
@@ -138,6 +139,19 @@
     }
     return STATS.get(wf + id);
   }
+  const ZEROS = new Map();
+  function zeroOf(wf, id, cohort) {
+    const key = wf.zero?.[id] && id + cohort;
+    if (!ZEROS.has(wf + key)) {
+      const map = new Map();
+      for (const z of wf.zero?.[id]?.[cohort] || []) map.set(z[0] + ':' + z[1], z);
+      ZEROS.set(wf + key, map);
+    }
+    return ZEROS.get(wf + key);
+  }
+  // most enriched first: by the signed score (a site with no test counts as 0), then by site
+  const byScore = (rows) =>
+    rows.sort((a, b) => (b.y ?? 0) - (a.y ?? 0) || (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos));
   function model() {
     const s = sourceOf(),
       sites = selSites();
@@ -150,24 +164,26 @@
       for (const [acc, list] of Object.entries(gn.sites)) for (const e of list) idx.set(acc + ':' + e[0], e);
       const rows = sites.map(([acc, pos, res]) => {
         const e = idx.get(acc + ':' + pos);
-        return {
+        const r = {
           acc,
           pos,
           res,
           m: e ? e[2] : 0,
           mAll: e ? e[2] : 0,
           f: e ? e[2] : 0,
+          k: e ? e[2] : 0,
           af: e ? e[3] : 0,
-          o: e ? e[4] : 0,
+          o: e ? e[4] : null,
           q: e ? e[5] : null,
           ql: e ? e[6] : null,
-          e: e ? e[7] : 0,
+          e: e ? e[7] : null,
           pl: e ? e[8] : null,
           pu: e ? e[9] : null,
         };
+        r.y = K.prop.signed(r.o, r.pu, r.pl);
+        return r;
       });
-      // sites with the same count (the many with none) are ranked by expected variants, highest first
-      rows.sort((a, b) => b.f - a.f || b.e - a.e || (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos));
+      byScore(rows);
       const letters = [...new Set(rows.map((r) => r.res).filter((r) => PR.residues.includes(r)))];
       return {
         gn,
@@ -175,6 +191,7 @@
         g: '',
         den: 0,
         rows,
+        index: new Map(rows.map((r, i) => [r.acc + ':' + r.pos, i])),
         letters: letters.length ? letters : PR.residues,
         n: rows.length,
         germ: true,
@@ -184,42 +201,61 @@
     }
     const wf = wfData();
     if (!wf) return null;
-    const si = PR.sources.filter((x) => x.frequency_source).indexOf(s),
-      groups = wf.groups[s.id] || [],
-      gi = M.group === '' ? '' : groups.indexOf(M.group);
-    const g = gi === -1 ? '' : gi;
-    const den = g === '' ? wf.all[s.id][hyper() ? 0 : 1] : wf.den[s.id][g][hyper() ? 0 : 1];
+    const si = PR.sources.filter((x) => x.frequency_source).indexOf(s);
+    const g = ''; // p and q are pooled over the cancer types: the waterfall does not follow the cancer type
+    const den = wf.all[s.id][hyper() ? 0 : 1];
     const idx = siteIdx(wf),
-      st = statOf(wf, s.id);
+      st = statOf(wf, s.id),
+      zero = zeroOf(wf, s.id, hyper() ? 'all' : 'no_hypermutated');
     const rows = sites.map(([acc, pos, res]) => {
-      const e = idx.get(acc + ':' + pos),
-        v = st.get(acc + ':' + pos),
+      const key = acc + ':' + pos,
+        e = idx.get(key),
+        ent = st.get(key),
+        c = ent ? (hyper() || ent.length < 8 ? ent.slice(1, 7) : ent.slice(7, 13)) : null,
+        z = c ? null : zero.get(key),
         m = changed(e, si, g);
-      return {
+      const r = {
         acc,
         pos,
         res,
         m,
         mAll: changed(e, si, g, true),
         f: den ? m / den : 0,
-        o: v ? v[hyper() ? 1 : 3] : null,
-        q: v ? v[hyper() ? 2 : 4] : null,
+        k: c ? c[2] : 0,
+        kAll: ent ? ent[3] : 0,
+        e: c ? c[3] : z ? z[3] : null,
+        o: c ? c[0] : z ? 0 : null,
+        q: c ? c[1] : null,
         ql: null,
+        pu: c ? c[4] : z ? 1 : null,
+        pl: c ? c[5] : z ? z[4] : null,
       };
+      r.y = K.prop.signed(r.o, r.pu, r.pl);
+      return r;
     });
-    rows.sort((a, b) => b.f - a.f || (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos));
+    byScore(rows);
     const letters = [...new Set(rows.map((r) => r.res).filter((r) => PR.residues.includes(r)))];
-    return { wf, s, g, den, rows, letters: letters.length ? letters : PR.residues, n: rows.length, germ: false };
+    return {
+      wf,
+      s,
+      g,
+      den,
+      rows,
+      index: new Map(rows.map((r, i) => [r.acc + ':' + r.pos, i])),
+      letters: letters.length ? letters : PR.residues,
+      n: rows.length,
+      germ: false,
+      lowerOk: !!wf.lower?.[s.id]?.[hyper() ? 0 : 1],
+    };
   }
-  // the curve of the residues that are not sites: the residue types of the selection mixed, as the value at a fraction of the
-  // way down the ranking (the twin of propensity.py rank_value for one curve; step between the segments of a mix)
+  // the curve of the signed score of the residues that are not sites: the residue types of the selection mixed, as the value at
+  // a fraction of the way down the ranking (the twin of propensity.py rank_value for one curve; step between the segments of a mix)
   function backdrop(m) {
-    const cohort = hyper() ? 'all' : 'no_hypermutated',
-      key = m.g === '' ? '' : String(m.g);
+    const cohort = hyper() ? 'all' : 'no_hypermutated';
     const segs = [];
     let total = 0;
     for (const res of m.letters) {
-      const c = m.germ ? m.gn.bg[res] : m.wf.bg[m.s.id]?.[cohort]?.[res]?.[key];
+      const c = m.germ ? m.gn.bg[res] : m.wf.bg[m.s.id]?.[cohort]?.[res];
       if (!c) continue;
       const [mm, nn, ranks, vals] = c;
       total += nn;
@@ -248,13 +284,6 @@
       return cum.length ? cum[lo][1] : 0;
     };
   }
-  const niceMax = (v) => {
-    if (!(v > 0)) return 0.01;
-    const e = 10 ** Math.floor(Math.log10(v)),
-      f = v / e;
-    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e;
-  };
-
   // ---- the waterfall's drawing: `c` the colors (the page's tokens, or fixed colors for an export) ----------------------------
   // O/E colors: blue below 1, gray at 1, red above 1, on a log scale that is full at 1/8 and 8 (the dataviz palette's diverging
   // pair; the gray is the palette's neutral). `mix` blends a pole into the gray.
@@ -300,138 +329,315 @@
     const t = Math.max(-3, Math.min(3, Math.log2(Math.max(o, 1 / 64)))) / 3;
     return c.mix(t >= 0 ? c.hot : c.cold, c.mid, Math.round(Math.abs(t) * 100));
   };
-  const POINTS = 40; // the top ranks that get a point, with every site below q 0.05
-  // a frequency on the axis or in a tooltip: a percent for samples, a plain or exponent number for allele frequencies
+  const RING_Q = 0.05;
+  // a frequency or allele frequency in a tooltip
   const afText = (v) =>
     v === 0 ? '0' : v >= 0.01 ? String(+v.toPrecision(2)) : v.toExponential(1).replace('.0e', 'e').replace('e-', 'e−');
-  const fAxis = (m, v) => (m.germ ? int(Math.round(v)) : pct(v));
-  function waterfallSvg(m, c, w) {
-    const ml = 54,
-      mr = 16,
+  const minus = (v) => String(v).replace('-', '−');
+  const niceStep = (range) => {
+    const t = Math.max(1, range) / 5,
+      e = 10 ** Math.floor(Math.log10(t)),
+      f = t / e;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e;
+  };
+  const LAST = { m: null, f: null, w: 0, cur: null };
+  // the labeled sites: the top and bottom of the ranking (3 each end on a phone, 5 otherwise) and the sites the reader added
+  const defaultLabels = (m, shown, phone) => {
+    const t = phone ? 3 : 5,
+      out = [];
+    for (let i = 0; i < Math.min(t, shown, m.n); i++) if ((m.rows[i].y ?? 0) > 0) out.push(i);
+    if (shown === m.n)
+      for (let i = m.n - 1; i >= Math.max(m.n - t, 0); i--) if ((m.rows[i].y ?? 0) < 0 && !out.includes(i)) out.push(i);
+    return out;
+  };
+  // the waterfall: x = rank from the most enriched site to the most depleted, y = the signed score (up: more than expected,
+  // down: fewer). `c` the colors; `o.links` true on the page (labels open the site's card).
+  function waterfallSvg(m, c, w, o = {}) {
+    const phone = w < 500,
+      fs = phone ? 10.5 : 11,
+      H = phone ? 330 : 350,
       mt = 14,
       mb = 46,
-      H = 300,
+      mr = phone ? 10 : 16;
+    const shown = Math.max(1, Math.min(m.n, M.zoom || m.n)),
+      rows = m.rows,
+      ys = rows.map((r) => r.y ?? 0);
+    const bg = backdrop(m),
+      bgAt = (rank) => bg(Math.min(1, rank / m.n));
+    // the scale follows the sites; the gray curve is cut at the frame (a few other residues are far beyond every site)
+    const top0 = Math.max(1, ys[0] || 0),
+      bot0 = Math.min(-1, ys[shown - 1] || 0);
+    const step = niceStep(top0 - bot0),
+      ymax = Math.ceil((top0 * 1.04) / step - 1e-9) * step,
+      ymin = Math.floor((bot0 * 1.04) / step + 1e-9) * step;
+    const ticks = [];
+    for (let v = ymin; v <= ymax + 1e-9; v += step) ticks.push(+v.toFixed(6));
+    const tl = (v) => minus(+v.toPrecision(3));
+    const tickW = Math.max(...ticks.map((v) => tl(v).length)) * fs * 0.6;
+    const ml = Math.round(24 + tickW + 8),
       pw = w - ml - mr,
       ph = H - mt - mb;
-    const shown = Math.max(1, Math.min(m.n, M.zoom || m.n));
-    const fr = m.rows.map((r) => r.f);
-    const bg = backdrop(m);
-    const bgAt = (rank) => bg(Math.min(1, rank / m.n));
-    const top = Math.max(fr[0] || 0, bgAt(1));
-    const ymax = niceMax(top * 1.05);
-    // x: the rank, on a log axis (1 to the number shown) unless the reader asks for a linear one
-    const lg = !M.linear && shown > 1,
-      L = Math.log(shown);
-    const X = (rank) => ml + (lg ? Math.log(Math.max(1, rank)) / L : (rank - 0.5) / shown) * pw,
-      Y = (f) => mt + ph * (1 - f / ymax);
-    // the first rank (1-based, fractional) of pixel column i of `cols`
-    const cols = Math.max(1, Math.floor(pw)),
-      rankAtCol = (i) => (lg ? Math.exp((L * i) / cols) : 1 + (i * shown) / cols);
-    let area = `M${ml},${Y(0).toFixed(1)}`,
-      line = '',
-      b = '';
-    for (let i = 0; i < cols; i++) {
-      const r0 = Math.min(shown, Math.floor(rankAtCol(i) + 1e-9)),
-        mid = lg ? Math.sqrt(rankAtCol(i) * rankAtCol(i + 1)) : (rankAtCol(i) + rankAtCol(i + 1)) / 2,
-        x0 = ml + (i / cols) * pw,
-        x1 = ml + ((i + 1) / cols) * pw,
-        y = Y(fr[r0 - 1] || 0).toFixed(1),
-        yb = Y(bgAt(mid)).toFixed(1);
-      area += `L${x0.toFixed(1)},${y}L${x1.toFixed(1)},${y}`;
-      line += `${i ? 'L' : 'M'}${x0.toFixed(1)},${y}L${x1.toFixed(1)},${y}`;
-      b += `${i ? 'L' : 'M'}${x0.toFixed(1)},${yb}L${x1.toFixed(1)},${yb}`;
-    }
-    area += `L${ml + pw},${Y(0).toFixed(1)}Z`;
-    let ax = `<line x1="${ml}" x2="${ml + pw}" y1="${Y(0)}" y2="${Y(0)}" stroke="${c.line}"/><line x1="${ml}" x2="${ml}" y1="${mt}" y2="${Y(0)}" stroke="${c.line}"/>`;
-    const mant = ymax / 10 ** Math.floor(Math.log10(ymax)),
-      ticks = mant === 2 ? 4 : 5; // steps of 0.2, 0.5 or 1 times a power of ten
-    for (let i = 0; i <= ticks; i++) {
-      const v = (ymax * i) / ticks;
-      ax += `<line x1="${ml - 4}" x2="${ml}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${c.line}"/><text x="${ml - 7}" y="${(Y(v) + 3.5).toFixed(1)}" text-anchor="end" font-size="11" fill="${c.muted}">${fAxis(m, v)}</text>`;
-    }
-    const xt = lg
-      ? [...Array(Math.floor(Math.log10(shown)) + 1).keys()].map((k) => 10 ** k).concat(shown)
-      : [1, ...[0.25, 0.5, 0.75, 1].map((f) => Math.round(f * shown))];
-    xt.filter((v, i, a) => a.indexOf(v) === i && !(lg && v !== shown && X(shown) - X(v) < 28)).forEach((r) => {
-      ax += `<line x1="${X(r).toFixed(1)}" x2="${X(r).toFixed(1)}" y1="${Y(0)}" y2="${Y(0) + 4}" stroke="${c.line}"/><text x="${X(r).toFixed(1)}" y="${Y(0) + 16}" text-anchor="${r === shown ? 'end' : r === 1 ? 'start' : 'middle'}" font-size="11" fill="${c.muted}">${int(r)}</text>`;
+    const X = (i) => ml + ((i + 0.5) / shown) * pw,
+      Y = (v) => mt + (ph * (ymax - v)) / (ymax - ymin);
+    const y0 = Y(0),
+      yb = mt + ph;
+    // axes: the zero line, the ticks, the titles
+    let ax = `<line x1="${ml}" x2="${ml}" y1="${mt}" y2="${yb}" stroke="${c.line}"/><line x1="${ml}" x2="${ml + pw}" y1="${y0.toFixed(1)}" y2="${y0.toFixed(1)}" stroke="${c.muted}"/>`;
+    ticks.forEach((v) => {
+      const y = Y(v).toFixed(1);
+      ax += `<line x1="${ml - 4}" x2="${ml}" y1="${y}" y2="${y}" stroke="${c.line}"/><text x="${ml - 7}" y="${(Y(v) + fs * 0.33).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${c.muted}">${tl(v)}</text>`;
     });
-    ax += `<text x="${ml + pw / 2}" y="${H - 6}" text-anchor="middle" font-size="11.5" fill="${c.muted}">${esc(W.marks)} ranked by frequency, highest first (${lg ? 'log scale' : 'linear'})${shown < m.n ? `, top ${int(shown)} of ${int(m.n)}` : ''}</text>`;
-    ax += `<text transform="translate(13,${mt + ph / 2}) rotate(-90)" text-anchor="middle" font-size="11.5" fill="${c.muted}">${m.germ ? esc(m.s.label) + ' variants at the site' : 'samples with a change'}</text>`;
-    // the tail of sites with no change: a bracket over the flat part
-    const nz = m.rows.filter((r) => r.f > 0).length;
-    let tail = '';
-    if (nz < shown) {
-      const x0 = X(nz + 1),
-        x1 = X(shown) + (lg ? 0 : 0.5 * (pw / shown));
-      tail = `<path d="M${x0.toFixed(1)},${Y(0) - 12}v-5h${(x1 - x0).toFixed(1)}v5" fill="none" stroke="${c.muted}"/><text x="${x1.toFixed(1)}" y="${Y(0) - 22}" text-anchor="end" font-size="11" fill="${c.ink}">${int(m.n - nz)} ${esc(W.marks)} with no ${m.germ ? 'variant' : 'change'}</text>`;
+    const xt = (phone ? [1, 0.5, 1] : [1, 0.25, 0.5, 0.75, 1]).map((f, k) =>
+      k === 0 ? 1 : Math.max(1, Math.round(f * shown))
+    );
+    xt.filter((v, i, a) => a.indexOf(v) === i).forEach((r, k, a) => {
+      const x = X(r - 1).toFixed(1);
+      ax += `<line x1="${x}" x2="${x}" y1="${yb}" y2="${yb + 4}" stroke="${c.line}"/><text x="${x}" y="${yb + 6 + fs}" text-anchor="${k === 0 ? 'start' : k === a.length - 1 ? 'end' : 'middle'}" font-size="${fs}" fill="${c.muted}">${int(r)}</text>`;
+    });
+    const xTitle =
+      (w - ml < 340
+        ? `${esc(W.marks)}, most enriched first`
+        : `${esc(W.marks)} ranked from most enriched to most depleted`) +
+      (shown < m.n ? `, top ${int(shown)} of ${int(m.n)}` : '');
+    ax += `<text x="${(ml + pw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="${fs}" fill="${c.muted}">${xTitle}</text>`;
+    ax += `<text transform="translate(11,${(mt + ph / 2).toFixed(1)}) rotate(-90)" text-anchor="middle" font-size="${fs}" fill="${c.muted}">signed −log10 p</text>`;
+    const sideMore = `more than expected ↑`,
+      sideLess = `fewer than expected ↓`,
+      tw = (s) => Math.round(s.length * fs * 0.58 + 4);
+    ax += `<text x="${ml + pw - 4}" y="${mt + fs}" text-anchor="end" font-size="${fs}" fill="${c.muted}">${sideMore}</text>`;
+    if (ymin < 0) ax += `<text x="${ml + 6}" y="${yb - 5}" font-size="${fs}" fill="${c.muted}">${sideLess}</text>`;
+    const fixed = [{ x: ml + pw - 4 - tw(sideMore), y: mt, w: tw(sideMore), h: fs + 4 }];
+    if (ymin < 0) fixed.push({ x: ml + 4, y: yb - 5 - fs, w: tw(sideLess), h: fs + 5 });
+    // the curve of the residues that are not sites, on the same score
+    const cols = Math.max(2, Math.floor(pw / 2));
+    let b = '';
+    const segs = [[ml, y0, ml + pw, y0]]; // the zero line and the gray curve: no label crosses them
+    let prev = null;
+    for (let j = 0; j < cols; j++) {
+      const x = ml + ((j + 0.5) / cols) * pw,
+        y = Y(Math.max(ymin, Math.min(ymax, bgAt(1 + ((j + 0.5) / cols) * shown))));
+      b += `${j ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
+      if (prev) segs.push([prev[0], prev[1], x, y]);
+      prev = [x, y];
     }
-    // a point for each of the top ranks and for every site below q 0.05 (more or fewer than expected), colored by O/E;
-    // a solid ring: more than expected; a dashed ring: fewer (germline only). The hover has every site.
-    let pts = '';
-    let drawn = 0;
-    m.rows.forEach((r, i) => {
+    // labels first (their sites are drawn emphasized), then the points
+    const user = (M.labels || []).map((k) => m.index.get(k)).filter((i) => i != null && i < shown);
+    const want = [...user, ...defaultLabels(m, shown, phone).filter((i) => !user.includes(i))];
+    const items = want.map((i) => {
+      const r = rows[i],
+        name = siteName(r.acc, r.pos, r.res);
+      return { key: i, x: X(i), y: Y(r.y ?? 0), w: tw(name), h: fs + 4, name };
+    });
+    const lay = K.prop.layoutLabels(items, { x0: ml + 2, y0: mt, x1: ml + pw, y1: yb - 1 }, fixed, segs);
+    const marked = new Set(want);
+    // points: each site, thinned where they touch (every site stays in the hover); rings q < 0.05
+    let pts = '',
+      lastAny = null,
+      lastRing = null;
+    const far = (p, x, y, g) => !p || Math.hypot(p[0] - x, p[1] - y) >= g;
+    rows.forEach((r, i) => {
       if (i >= shown) return;
-      const more = r.q != null && r.q < 0.05,
-        fewer = r.ql != null && r.ql < 0.05;
-      // a ring is always drawn (a depleted site is often one with no variant, in the flat tail); a plain point only for the top ranks
-      // and, for gnomAD, a small dashed circle for each site with no variant and a raw p below 0.05 (fewer than expected)
-      const zeroLow = m.germ && r.f === 0 && r.pl != null && r.pl < 0.05;
-      if (zeroLow && !fewer) {
-        if (drawn++ < 800)
-          pts += `<circle cx="${X(i + 1).toFixed(1)}" cy="${Y(0).toFixed(1)}" r="3" fill="none" stroke="${c.ink}" stroke-width="1" stroke-dasharray="2 1.5"/>`;
-        return;
-      }
-      if (!more && !fewer && (i >= POINTS || !(r.f > 0))) return;
-      if (drawn++ >= 800) return;
-      const x = X(i + 1).toFixed(1),
-        y = Y(r.f).toFixed(1),
-        ringed = more || fewer;
-      if (more) pts += `<circle cx="${x}" cy="${y}" r="7" fill="none" stroke="${c.ink}" stroke-width="1.5"/>`;
+      const x = X(i),
+        y = Y(r.y ?? 0),
+        more = r.q != null && r.q < RING_Q,
+        fewer = r.ql != null && r.ql < RING_Q,
+        ring = more || fewer,
+        lab = marked.has(i);
+      if (!lab && !(ring ? far(lastRing, x, y, 6) && far(lastAny, x, y, 2) : far(lastAny, x, y, 3))) return;
+      lastAny = [x, y];
+      if (ring) lastRing = [x, y];
+      const xs = x.toFixed(1),
+        ysx = y.toFixed(1);
+      if (more) pts += `<circle cx="${xs}" cy="${ysx}" r="6.5" fill="none" stroke="${c.ink}" stroke-width="1.5"/>`;
       if (fewer)
-        pts += `<circle cx="${x}" cy="${y}" r="7" fill="none" stroke="${c.ink}" stroke-width="1.5" stroke-dasharray="2.5 2"/>`;
-      pts += `<circle cx="${x}" cy="${y}" r="${ringed ? 4 : 2.8}" fill="${oeFill(r.o, c)}" stroke="${c.ink}" stroke-width="${ringed ? 0.8 : 0.6}"/>`;
+        pts += `<circle cx="${xs}" cy="${ysx}" r="6.5" fill="none" stroke="${c.ink}" stroke-width="1.5" stroke-dasharray="2.5 2"/>`;
+      pts += `<circle cx="${xs}" cy="${ysx}" r="${ring || lab ? 3.4 : 2.7}" fill="${oeFill(r.o, c)}" stroke="${r.o == null ? c.muted : c.ink}" stroke-width="${lab ? 1.6 : ring ? 0.8 : 0.6}"/>`;
     });
-    // names for the top sites, each at least 14 px from the others
-    let names = '';
-    const placed = [];
-    m.rows.slice(0, 12).forEach((r, i) => {
-      if (!(r.f > 0) || i >= shown) return;
-      const x = X(i + 1),
-        y = Y(fr[i]),
-        w2 = siteName(r.acc, r.pos, r.res).length * 6.2;
-      if (placed.some((q) => Math.abs(q.y - y) < 14 && x + 10 < q.x1 && x + 10 + w2 > q.x0)) return;
-      placed.push({ y, x0: x + 10, x1: x + 10 + w2 });
-      names += `<text x="${(x + 10).toFixed(1)}" y="${(y - 7).toFixed(1)}" font-size="11" fill="${c.ink}" stroke="${c.cap}" stroke-width="3" paint-order="stroke">${esc(siteName(r.acc, r.pos, r.res))}</text>`;
+    let labels = '';
+    lay.placed.forEach((p) => {
+      const r = rows[p.key],
+        nm = esc(items.find((x) => x.key === p.key).name);
+      const tx = p.x + 2,
+        ty = p.y + p.h - 4;
+      let g = p.leader
+        ? `<line x1="${p.leader[0].toFixed(1)}" y1="${p.leader[1].toFixed(1)}" x2="${p.leader[2].toFixed(1)}" y2="${p.leader[3].toFixed(1)}" stroke="${c.muted}" stroke-width="0.8"/>`
+        : '';
+      const t = `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" font-size="${fs}" fill="${c.ink}" stroke="${c.cap}" stroke-width="3" paint-order="stroke">${nm}</text>`;
+      g += o.links
+        ? `<a class="mu-link" href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}" aria-label="Open the card of ${nm}" data-prtip="${esc(rowTip(m, r, p.key))}">${t}</a>`
+        : t;
+      labels += g;
     });
+    const dropped = new Set(lay.dropped);
     return {
       H,
+      w,
       ml,
       pw,
       shown,
-      ymax,
-      body:
-        `<path d="${b}" fill="none" stroke="${c.bg}" stroke-width="2.2" stroke-dasharray="5 3"/>` +
-        `<path d="${area}" fill="${c.site}" fill-opacity="0.25"/><path d="${line}" fill="none" stroke="${c.site}" stroke-width="1.4"/>` +
-        ax +
-        tail +
-        pts +
-        names,
-      bgAt,
-      fr,
+      X,
+      Y,
+      dropped,
+      body: `<path d="${b}" fill="none" stroke="${c.bg}" stroke-width="2.2" stroke-dasharray="5 3"/>` + ax + pts,
+      labels,
     };
   }
+  // the words for one site of the waterfall (tooltip, readout)
+  function rowTip(m, r, i) {
+    const unit = m.germ ? ['variant', 'variants'] : [m.s.unit?.[0] || 'sample', m.s.unit?.[1] || 'samples'],
+      what = m.germ ? 'variants' : 'with a change';
+    const L = [`${siteName(r.acc, r.pos, r.res)} · rank ${int(i + 1)} of ${int(m.n)}`];
+    L.push(
+      r.k === 0
+        ? `no ${m.germ ? 'variant' : 'change'}${r.e != null ? `, expected ${K.prop.fe(r.e)}` : ''}`
+        : `${int(r.k)} ${r.k === 1 ? unit[0] : unit[1]}${m.germ ? '' : ' ' + what}${r.e != null ? `, expected ${K.prop.fe(r.e)}` : ''}`
+    );
+    if (m.germ && r.af) L[1] += `; summed allele frequency ${afText(r.af)}`;
+    if (!m.germ && !hyper() && r.kAll > r.k) L[1] += ` (without hypermutated; ${int(r.kAll)} in all)`;
+    if (r.o != null) L.push(`O/E ${K.prop.fo(r.o)}`);
+    if (r.y == null)
+      L.push(
+        r.o == null
+          ? `no test: no change, and an expected count too small to list`
+          : `no test: ${r.o < 1 && !m.germ && !m.lowerOk ? 'the release gives no lower tail for this source' : 'no coding sequence matches UniProt'}`
+      );
+    else {
+      const side = r.y > 0 ? 'more than expected' : r.y < 0 ? 'fewer than expected' : 'as expected';
+      L.push(`${side}: signed −log10 p ${minus(+r.y.toFixed(2))}`);
+    }
+    const ps = [];
+    if (r.pu != null) ps.push(`p (more) ${K.prop.fq(r.pu)}${r.q != null ? `, q ${K.prop.fq(r.q)}` : ''}`);
+    if (r.pl != null) ps.push(`p (fewer) ${K.prop.fq(r.pl)}${r.ql != null ? `, q ${K.prop.fq(r.ql)}` : ''}`);
+    if (ps.length) L.push(ps.join(' · '));
+    if (LAST.f?.dropped?.has(i)) L.push('its label is left out: no room');
+    return L.join('\n');
+  }
   const waterfallNote = (m) =>
+    `Height is the signed −log10 p of the release's binomial test: up for more ${m.germ ? 'variants' : 'changes'} than expected, down for fewer. ` +
+    `The x axis ranks the ${esc(W.marks)} from the most enriched to the most depleted in ${esc(m.s.long || m.s.label)}. ` +
     (m.germ
-      ? `The x axis ranks the ${esc(W.marks)} of the selection by their number of missense and stop variants in ${esc(m.s.long || m.s.label)}, the count k of the O/E test. `
-      : `The x axis ranks the ${esc(W.marks)} of the selection by the share of ${esc(m.s.long || m.s.label)} samples with a change${
-          M.group ? ` in ${esc(gname(M.group))}` : ''
-        } (changed samples over the ${int(m.den)} profiled). `) +
-    `The dashed gray curve is the same ranking for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. ` +
+      ? `A ${esc(W.mark)} with no variant sits on the lower side. `
+      : `p and q pool all cancer types. ` +
+        (m.lowerOk
+          ? `The release gives no lower tail for ${esc(m.s.label)}; this explorer computes it with the release's own binomial. A ${esc(W.mark)} with no change sits on the lower side. `
+          : `The release gives no lower tail for ${esc(m.s.label)}, so a ${esc(W.mark)} with fewer changes than expected is drawn at 0. `) +
+        `A ${esc(W.mark)} with no change and a small expected count has no stored test and is drawn at 0. `) +
+    `The dashed gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}. ` +
     (m.germ
       ? ''
       : hyper()
         ? 'Hypermutated samples are included.'
         : 'Hypermutated samples (more than 10 coding calls per Mb) are left out.');
+  // ---- the waterfall on the page: drawn at the width it is shown at (text keeps its size on a phone), redrawn when that changes -----
+  const wfWidth = () => Math.max(280, Math.min(800, (document.documentElement.clientWidth || 800) - 32));
+  const wfHeight = (w) => (w < 500 ? 330 : 350);
+  // the svg's content: the plot, then the layer that takes the pointer (its tooltip), the cursor ring and the labels over it
+  function wfInner(m, w) {
+    const f = waterfallSvg(m, THEME, w, { links: true });
+    if (LAST.m !== m) LAST.cur = null;
+    LAST.m = m;
+    LAST.f = f;
+    LAST.w = w;
+    const ph = wfHeight(w) - 60;
+    return (
+      f.body +
+      `<rect id="mu-hover" class="mu-hover" x="${f.ml}" y="14" width="${f.pw}" height="${ph}" fill="transparent" data-prtip=""/>` +
+      `<circle id="mu-cur" r="8" fill="none" stroke="var(--accent)" stroke-width="2" display="none" pointer-events="none"/>` +
+      f.labels
+    );
+  }
+  function fitWaterfall() {
+    const sv = document.getElementById('mu-svg');
+    if (!sv || S.view !== 'mutations' || M.view !== 'waterfall' || !LAST.m) return;
+    const w = Math.round(sv.getBoundingClientRect().width);
+    if (!w || Math.abs(w - LAST.w) < 2) return;
+    sv.setAttribute('viewBox', `0 0 ${w} ${wfHeight(w)}`);
+    sv.innerHTML = wfInner(LAST.m, w);
+  }
+  (K.afterRender ||= []).push(fitWaterfall);
+  let fitTimer = 0;
+  window.addEventListener('resize', () => {
+    cancelAnimationFrame(fitTimer);
+    fitTimer = requestAnimationFrame(fitWaterfall);
+  });
+  // the reader's labels: a point clicked or a site typed (wl in the address, apart from mt, the sites chosen for a test)
+  function labelForm() {
+    return (
+      `<form class="mu-add" data-mu-lform><input id="mu-lab-site" type="text" autocomplete="off" placeholder="H4 R3" data-mu-lsite aria-label="Label a site, as a gene and a position"> ` +
+      `<button type="submit" class="btn small"${M.labels.length >= MAX_LABELS ? ' disabled' : ''}>Label</button> <span class="small muted" data-mu-lmsg role="status"></span></form>` +
+      (M.labels.length
+        ? `<p class="mu-chips">${M.labels
+            .map((k) => {
+              const [acc, pos] = k.split(':');
+              return `<span class="mu-chip">${esc(siteName(acc, +pos, ''))} <button type="button" data-mu-ldel="${esc(k)}" aria-label="Remove the label of ${esc(siteName(acc, +pos, ''))}">×</button></span>`;
+            })
+            .join(' ')}</p>`
+        : '')
+    );
+  }
+  function toggleLabel(key) {
+    if (M.labels.includes(key)) M.labels = M.labels.filter((k) => k !== key);
+    else if (M.labels.length >= MAX_LABELS) return false;
+    else M.labels.push(key);
+    K.writeHash?.();
+    K.render();
+    return true;
+  }
+  // the site under the pointer, or at a rank
+  const rowAt = (frac) => {
+    const f = LAST.f;
+    return Math.min(f.shown - 1, Math.max(0, Math.floor(frac * f.shown)));
+  };
+  function inspect(i, tipEl) {
+    const m = LAST.m,
+      f = LAST.f;
+    if (!m || !f || !m.rows[i]) return;
+    LAST.cur = i;
+    const r = m.rows[i],
+      t = rowTip(m, r, i);
+    if (tipEl) tipEl.setAttribute('data-prtip', t);
+    const cur = document.getElementById('mu-cur');
+    if (cur) {
+      cur.setAttribute('cx', f.X(i).toFixed(1));
+      cur.setAttribute('cy', f.Y(r.y ?? 0).toFixed(1));
+      cur.setAttribute('display', 'inline');
+    }
+    const rd = document.getElementById('mu-read');
+    if (rd) rd.innerHTML = t.split('\n').map(esc).join('<br>');
+  }
+  document.addEventListener('submit', async (e) => {
+    if (!e.target.matches?.('[data-mu-lform]')) return;
+    e.preventDefault();
+    const msg = e.target.querySelector('[data-mu-lmsg]'),
+      q = K.sel.parse(e.target.querySelector('[data-mu-lsite]').value),
+      hit = (q.sites || [])[0];
+    if (!hit) {
+      msg.textContent = q.rejected?.[0] || 'Not found. Type a gene and a residue, as in H4 R3.';
+      return;
+    }
+    // the sequence settles the residue typed, as for the sites chosen for a test
+    const p = K.sel.byAcc[D.proteins[hit[0]][0]];
+    await K.sel.seqReady(p);
+    const bad = K.sel.siteProblem(p, hit[1] + (K.numbering?.(p)?.offset || 0), hit[2] || '');
+    if (bad) {
+      msg.textContent = bad;
+      return;
+    }
+    const key = `${p.acc}:${hit[1]}`,
+      m = LAST.m;
+    if (!m?.index.has(key)) msg.textContent = `Not among the ${int(m?.n || 0)} ${W.marks} of the selection.`;
+    else if (M.labels.includes(key)) msg.textContent = 'Already labeled.';
+    else if (!toggleLabel(key)) msg.textContent = `At most ${MAX_LABELS} labels.`;
+  });
+  K.clicks.push([
+    '[data-mu-ldel]',
+    (b) => {
+      M.labels = M.labels.filter((k) => k !== b.dataset.muLdel);
+      K.writeHash?.();
+      K.render();
+    },
+  ]);
+
   // ---- the oncoprint's numbers ---------------------------------------------------------------------------------------------
   const TOP = 30;
   function onco() {
@@ -554,13 +760,14 @@
             M.src
           )
         : '') +
-      (wfView && germ()
+      (wfView
         ? ''
         : `<label class="mu-ct"><span class="seg-l">Cancer type</span><select data-mu-ct aria-label="Cancer type"><option value="">All cancer types</option>` +
           groups
             .map((g) => `<option value="${esc(g)}"${g === M.group ? ' selected' : ''}>${esc(gname(g))}</option>`)
             .join('') +
-          `</select></label>${K.prop.hyperSwitch('Samples')}`) +
+          `</select></label>`) +
+      (wfView && germ() ? '' : K.prop.hyperSwitch('Samples')) +
       `</div>`
     );
   }
@@ -850,22 +1057,22 @@
 
   // ---- sites with no change, the most expected first ------------------------------------------------------------------------------
   function zeroRows(m) {
-    if (m.germ) return m.rows.filter((r) => r.f === 0 && r.e > 0).map((r) => ({ ...r, p: r.pl }));
+    if (m.germ) return m.rows.filter((r) => r.k === 0 && r.e > 0).map((r) => ({ ...r, p: r.pl }));
     const cohort = hyper() ? 'all' : 'no_hypermutated',
       sel = new Map(m.rows.map((r) => [r.acc + ':' + r.pos, r]));
     return ((m.wf.zero?.[m.s.id] || {})[cohort] || [])
       .filter(([acc, pos]) => sel.has(acc + ':' + pos))
-      .map(([acc, pos, res, e]) => ({ acc, pos, res, e, p: null }));
+      .map(([acc, pos, res, e, p]) => ({ acc, pos, res, e, p }));
   }
   const ZERO_SHOWN = 200;
   function zeroSection(m) {
     const rows = zeroRows(m);
     if (!rows.length) return '';
-    const hasP = m.germ;
+    const hasP = m.germ || m.lowerOk;
     return (
       `<section class="mu-zero"><h3>Sites with no ${m.germ ? 'variant' : 'change'}</h3>` +
       `<p class="small muted">${esc(m.s.long || m.s.label)}: the ${esc(W.marks)} of the selection with none, most expected first. The top rows are the most surprising, since they should have shown ${m.germ ? 'variants' : 'changes'}. ` +
-      `${hasP ? 'p is the release’s raw p of the lower tail (no variant or fewer). ' : 'The release gives no p for this tail in a somatic source. '}` +
+      `${hasP ? `p is the raw p of the lower tail (none or fewer)${m.germ ? ', from the release' : ", computed by this explorer with the release's binomial"}. ` : 'The release gives no p for this tail in a somatic source. '}` +
       `The table lists the ${int(PR.zero_rows || 1000)} sites with the most expected per source${hasP ? ', and every site with a raw p below 0.05' : ''}.</p>` +
       `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Expected</th>${hasP ? '<th>p (fewer)</th>' : ''}</tr></thead><tbody>` +
       rows
@@ -887,10 +1094,8 @@
       rows = zeroRows(m);
     return (
       K.preamble('Sites with no change', `${m.s.long || m.s.label}; sorted by expected, highest first`) +
-      `site\taccession\tposition\texpected${m.germ ? '\tp_fewer' : ''}\n` +
-      rows
-        .map((r) => [siteName(r.acc, r.pos, r.res), r.acc, r.pos, r.e, ...(m.germ ? [r.p ?? ''] : [])].join('\t'))
-        .join('\n') +
+      `site\taccession\tposition\texpected\tp_fewer\n` +
+      rows.map((r) => [siteName(r.acc, r.pos, r.res), r.acc, r.pos, r.e, r.p ?? ''].join('\t')).join('\n') +
       '\n'
     );
   };
@@ -935,7 +1140,7 @@
     if (M.view === 'waterfall') {
       const m = model();
       if (!m) return head + K.loading('Loading…');
-      const f = waterfallSvg(m, THEME, 760);
+      const w0 = wfWidth();
       const zoom = seg(
         'data-mu-zoom',
         'Show',
@@ -946,28 +1151,22 @@
         ],
         M.zoom
       );
-      const axis = seg(
-        'data-mu-axis',
-        'Rank axis',
-        [
-          ['log', 'Log'],
-          ['linear', 'Linear'],
-        ],
-        M.linear ? 'linear' : 'log'
-      );
+      const nUp = m.rows.filter((r) => r.y > 0).length,
+        nDn = m.rows.filter((r) => r.y < 0).length,
+        ringUp = m.rows.filter((r) => r.q != null && r.q < RING_Q).length,
+        nNone = m.rows.filter((r) => r.y == null).length;
       body =
         `<section class="mu-card"><div class="mu-top"><p class="small muted">${waterfallNote(m)}</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muwf', 'mutation frequency', 'propensity')}</div>` +
         setLine(m) +
-        `<p class="small">${int(m.n)} ${esc(W.marks)}; ${int(m.rows.filter((r) => r.f > 0).length)} with ${m.germ ? 'a variant' : 'a change'} in ${esc(m.s.long || m.s.label)}${m.germ || hyper() ? '' : `, not counting hypermutated samples (${int(m.rows.filter((r) => r.mAll > 0).length)} in all)`}.</p><div class="mu-bar">${axis}${zoom}</div>` +
-        `<svg id="mu-svg" class="mu-svg" viewBox="0 0 760 ${f.H}" role="img" aria-label="Waterfall of the frequency of each site, ranked">${f.body}` +
-        `<rect id="mu-hover" x="${f.ml}" y="0" width="${f.pw}" height="${f.H - 40}" fill="transparent" data-prtip=""/></svg>` +
-        `<p class="pr-key small muted"><span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 8H26" stroke="var(--accent)" stroke-width="2"/></svg>${esc(W.marks)} of the selection, ranked</span>` +
-        `<span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 5H26" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/></svg>${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}</span>` +
+        `<p class="small">${int(m.n)} ${esc(W.marks)}: ${int(nUp)} above 0 (${int(ringUp)} with q &lt; 0.05), ${int(nDn)} below${m.germ ? ` (${int(m.nFewer)} with q &lt; 0.05)` : ''}, ${int(nNone)} drawn at 0 with no stored test.</p><div class="mu-bar">${zoom}</div>` +
+        `<svg id="mu-svg" class="mu-svg" viewBox="0 0 ${w0} ${wfHeight(w0)}" tabindex="0" role="img" aria-label="Waterfall of the signed score of each site, ranked from most to least enriched. Use the arrow keys to step through the sites.">${wfInner(m, w0)}</svg>` +
+        `<p id="mu-read" class="small mu-read" aria-live="polite">Tap, hover or focus the chart to read a ${esc(W.mark)} (arrow keys step through the ranks). Click a point to label it; click a label to open its card.</p>` +
+        labelForm() +
+        `<p class="pr-key small muted"><span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 5H26" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/></svg>${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}</span>` +
         `<span class="pr-k"><span class="mu-grad" aria-hidden="true"></span>point color: O/E, from 1/8 (blue) through 1 (gray) to 8 (red)</span>` +
         `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/><circle cx="9" cy="9" r="4" fill="var(--wf-hot)" stroke="var(--ink)" stroke-width="0.8"/></svg>solid ring: q &lt; 0.05, more than expected</span>` +
         (m.germ
-          ? `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="2.5 2"/><circle cx="9" cy="9" r="4" fill="var(--wf-cold)" stroke="var(--ink)" stroke-width="0.8"/></svg>dashed ring: q &lt; 0.05, fewer than expected (${int(m.nFewer)} ${esc(W.marks)})</span>` +
-            `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="3" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="2 1.5"/></svg>small dashed circle: no variant, raw p &lt; 0.05 (${int(m.nZeroP)} ${esc(W.marks)})</span>`
+          ? `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="2.5 2"/><circle cx="9" cy="9" r="4" fill="var(--wf-cold)" stroke="var(--ink)" stroke-width="0.8"/></svg>dashed ring: q &lt; 0.05, fewer than expected</span>`
           : '') +
         `</p></section>`;
     } else {
@@ -1006,27 +1205,7 @@
     const box = r.getBoundingClientRect(),
       f = (e.clientX - box.left) / box.width;
     if (M.view === 'waterfall') {
-      const m = model();
-      if (!m) return;
-      const shown = Math.min(m.n, M.zoom || m.n),
-        rank = M.linear || shown < 2 ? Math.floor(f * shown) + 1 : Math.floor(Math.exp(f * Math.log(shown) + 1e-9)),
-        i = Math.min(shown - 1, Math.max(0, rank - 1)),
-        row = m.rows[i];
-      const fr = row.f;
-      const bg = backdrop(m)(Math.min(1, (i + 1) / m.n));
-      let t = `${siteName(row.acc, row.pos, row.res)} · rank ${int(i + 1)} of ${int(m.n)}`;
-      if (m.germ)
-        t += `\n${int(row.m)} ${row.m === 1 ? 'variant' : 'variants'}${row.af ? `, summed allele frequency ${afText(row.af)}` : ''}${row.e ? `; expected ${K.prop.fe(row.e)}` : ''}`;
-      else {
-        t += `\n${int(row.m)} of ${int(m.den)} ${m.s.unit?.[1] || 'samples'} with a change (${pct(fr)})`;
-        if (!hyper() && row.mAll > row.m) t += `\n${int(row.m)} without hypermutated tumors; ${int(row.mAll)} in all`;
-      }
-      if (row.o != null) {
-        t += `\nO/E ${K.prop.fo(row.o)}${row.q != null ? ', q ' + K.prop.fq(row.q) : ''}`;
-        if (row.ql != null && row.ql < 0.05) t += `\nfewer than expected: q ${K.prop.fq(row.ql)}`;
-      }
-      t += `\n${W.residues} that are not ${W.marks}, at this relative rank: ${pct(bg)}`;
-      r.setAttribute('data-prtip', t);
+      if (LAST.m) inspect(rowAt(f), r);
     } else {
       const o = onco();
       if (!o || !o.cols.length) return;
@@ -1046,6 +1225,15 @@
   });
   // a click on an oncoprint row opens that site's card, as a row of the Sites table does
   document.addEventListener('click', (e) => {
+    if (e.target.id === 'mu-hover' && M.view === 'waterfall' && LAST.m?.n) {
+      const box = e.target.getBoundingClientRect(),
+        i = rowAt((e.clientX - box.left) / box.width);
+      inspect(i, e.target);
+      const r = LAST.m.rows[i];
+      if (!toggleLabel(r.acc + ':' + r.pos))
+        document.getElementById('mu-read').textContent += ` (At most ${MAX_LABELS} labels.)`;
+      return;
+    }
     if (e.target.id !== 'mu-hover' || M.view !== 'oncoprint') return;
     const o = onco();
     if (!o) return;
@@ -1056,11 +1244,30 @@
     if (j >= 0 && j < o.top.length)
       location.hash = K.link('protein', `${o.top[j].acc}/${o.top[j].pos}`).replace(/^[^#]*#/, '');
   });
+  // the arrow keys step through the ranks (shift: 10, page keys: 100); Enter opens the card, Space labels the site
+  document.addEventListener('keydown', (e) => {
+    if (e.target.id !== 'mu-svg' || M.view !== 'waterfall' || !LAST.m?.n) return;
+    const n = LAST.f.shown,
+      k = e.key;
+    let i = LAST.cur ?? 0;
+    const r = LAST.m.rows[i];
+    if (k === 'ArrowRight' || k === 'ArrowDown') i += e.shiftKey ? 10 : 1;
+    else if (k === 'ArrowLeft' || k === 'ArrowUp') i -= e.shiftKey ? 10 : 1;
+    else if (k === 'PageDown') i += 100;
+    else if (k === 'PageUp') i -= 100;
+    else if (k === 'Home') i = 0;
+    else if (k === 'End') i = n - 1;
+    else if (k === 'Enter' && LAST.cur != null)
+      return void (location.hash = K.link('protein', `${r.acc}/${r.pos}`).replace(/^[^#]*#/, ''));
+    else if (k === ' ' && LAST.cur != null) return void (e.preventDefault(), toggleLabel(r.acc + ':' + r.pos));
+    else return;
+    e.preventDefault();
+    inspect(Math.max(0, Math.min(n - 1, i)));
+  });
   // controls
   K.clicks.push(
     ['[data-mu-view]', (b) => ((M.view = b.dataset.muView), K.render())],
     ['[data-mu-src]', (b) => ((M.src = b.dataset.muSrc), (M.group = ''), K.render())],
-    ['[data-mu-axis]', (b) => ((M.linear = b.dataset.muAxis === 'linear'), K.render())],
     ['[data-mu-zoom]', (b) => ((M.zoom = +b.dataset.muZoom), K.render())]
   );
   document.addEventListener('change', (e) => {
@@ -1078,40 +1285,41 @@
     const m = model(),
       f = waterfallSvg(m, LIGHT, 720);
     return K.figureFrame({
-      title: 'Mutation frequency of the sites',
-      sub: `${K.sel.describe() || 'every ' + W.mark}: ${int(m.n)} ${W.marks}, ${m.s.long || m.s.label}${M.group ? ', ' + gname(M.group) : ''}`,
-      body: `<g transform="translate(20,0)">${f.body}</g>`,
+      title: 'Mutation propensity of the sites',
+      sub: `${K.sel.describe() || 'every ' + W.mark}: ${int(m.n)} ${W.marks}, ${m.s.long || m.s.label}`,
+      body: `<g transform="translate(20,0)">${f.body}${f.labels}</g>`,
       bodyH: f.H,
       W: 760,
       note: waterfallNote(m).replace(/<[^>]+>/g, ''),
     });
   }
   const waterfallTsv = () => {
-    const m = model();
+    const m = model(),
+      g = (v) => v ?? '';
     return (
       K.preamble(
-        'Mutation frequency of the sites',
-        m.germ
-          ? `${m.s.long || m.s.label}; height = the number of the residue's missense and stop variants (k); summed_allele_frequency = the sum of their allele frequencies (ac / an)`
-          : `${m.s.long || m.s.label}${M.group ? ', ' + gname(M.group) : ', all cancer types'}; ${hyper() ? 'with' : 'without'} hypermutated samples; frequency = samples with a change / samples profiled (group_denominators)`
+        'Mutation propensity of the sites',
+        `${m.s.long || m.s.label}${m.germ ? '' : `; ${hyper() ? 'with' : 'without'} hypermutated samples, all cancer types`}; signed_score = -log10 of the upper-tail p when O/E > 1, log10 of the lower-tail p when O/E < 1, 0 at O/E 1 (empty: no test); ` +
+          (m.germ
+            ? "p and q from the release; summed_allele_frequency = the sum of the variants' allele frequencies (ac / an)"
+            : `p_more and q_more from the release; p_fewer ${m.lowerOk ? "computed by this explorer with the release's binomial (Binomial(n, expected / n), P(X <= k))" : 'not available'}`)
       ) +
-      (m.germ
-        ? 'rank\taccession\tsite\tvariants\tsummed_allele_frequency\texpected\toe\tq_more\tq_fewer\n'
-        : 'rank\taccession\tsite\tchanged_samples\tchanged_samples_with_hypermutated\tsamples_profiled\tfrequency\n') +
+      `rank\taccession\tsite\tk\texpected\toe\tp_more\tp_fewer\tq_more\t${m.germ ? 'q_fewer\tsummed_allele_frequency\t' : 'changed_samples\tsamples_profiled\t'}signed_score\n` +
       m.rows
         .map((r, i) =>
-          (m.germ
-            ? [i + 1, r.acc, siteName(r.acc, r.pos, r.res), r.m, r.af, r.e, r.o ?? '', r.q ?? '', r.ql ?? '']
-            : [
-                i + 1,
-                r.acc,
-                siteName(r.acc, r.pos, r.res),
-                r.m,
-                r.mAll,
-                m.den,
-                m.den ? +(r.m / m.den).toPrecision(4) : '',
-              ]
-          ).join('\t')
+          [
+            i + 1,
+            r.acc,
+            siteName(r.acc, r.pos, r.res),
+            r.k,
+            g(r.e),
+            g(r.o),
+            g(r.pu),
+            g(r.pl),
+            g(r.q),
+            ...(m.germ ? [g(r.ql), r.af] : [r.m, m.den]),
+            r.y == null ? '' : +r.y.toFixed(3),
+          ].join('\t')
         )
         .join('\n') +
       '\n'
@@ -1191,13 +1399,13 @@
       `The expected count is n × w / Σw. Here n is the number of changes or variants at the protein's residues of the same type, w is the residue's expected rate of change (the rate of each base change that alters the residue, summed over its codon, each in its trinucleotide context), and Σw is the sum of w over those residues. ` +
       `k is tested against Binomial(n, w / Σw). O/E is k over the expected count. q is the Benjamini–Hochberg value over every residue tested for the source and residue type. ` +
       `The weights need a coding sequence that translates to the UniProt sequence (18,717 of 20,416 reviewed entries). For any other entry, O/E treats every residue of the type as equally likely and there is no q. ` +
-      `The release's data dictionary defines every column (<a href="https://github.com/Shechterlab/PTM_Pipeline/blob/v1.7.0/releases/v1.7.0/README.md" target="_blank" rel="noopener">PTM_Pipeline v1.7.0, README</a>). The site adds no method of its own.</p>` +
+      `The release's data dictionary defines every column (<a href="https://github.com/Shechterlab/PTM_Pipeline/blob/v1.7.0/releases/v1.7.0/README.md" target="_blank" rel="noopener">PTM_Pipeline v1.7.0, README</a>). The only calculation the site adds is the lower tail for TCGA and DepMap, below.</p>` +
       `<p>TCGA and DepMap use each source's own spectrum: the residue-changing single-base changes in the coding sequences, per trinucleotide class. ClinVar and gnomAD use gnomAD's germline rates (mutation_rate_methylation_bins, from <a href="https://doi.org/10.1038/s41586-020-2308-7" target="_blank" rel="noopener">Karczewski et al., Nature 581:434 (2020)</a>, gnomAD v2.1.1).</p>` +
       `<p>Hypermutated samples have more than ${PR.hypermutated.per_mb} coding calls per Mb (<a href="https://pubmed.ncbi.nlm.nih.gov/29056344/" target="_blank" rel="noopener">Campbell et al., Cell 171:1042 (2017)</a>). The cards and pages leave them out by default. The release repeats the test without them, using the spectrum of the remaining samples. A switch puts them back.</p>` +
       `<p>For a site you picked beforehand, read the raw p. q corrects across every residue of that type tested in that source, which such a site does not need. The Holm p corrects only for the sites you chose, over their tails and sources. Choose the sites before you look at the results.</p>` +
       `<p>ClinVar variants reflect clinical testing and submission more than how often residues change, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
       `<p>On the cancer and germline cards, stick height is the count in the card's table, circle size grows with O/E, and a ring marks q &lt; 0.05.</p>` +
-      `<p>On the Mutation frequency page, the waterfall ranks the sites of the selection by the share of samples with a change: changed samples over the samples profiled in the chosen group (the release's group_denominators). Sites with no change form the flat tail. Circles are colored by O/E and a solid ring marks q &lt; 0.05. The gray curve is the same ranking for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. For gnomAD, height is the number of variants (k, the count of the O/E test) and the tooltip adds the summed allele frequency. A dashed ring marks q &lt; 0.05 for fewer variants than expected, including the sites with none in the flat tail. The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example). The oncoprint joins the sites with the most changed TCGA tumors to those tumors' sample_burden by sample id.</p>` +
+      `<p>On the Mutation frequency page, the waterfall ranks the sites of the selection from the most enriched to the most depleted. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example). The oncoprint joins the sites with the most changed TCGA tumors to those tumors' sample_burden by sample id.</p>` +
       (ctl.length
         ? `<p>Positive controls (H3 oncohistone residues and recurrent cancer hotspots; <a href="https://doi.org/10.1038/nbt.3391" target="_blank" rel="noopener">Chang et al., Nat Biotechnol 34:155 (2016)</a>). A control passes when q &lt; 0.05. A failed control is reported here and does not block the release.</p>` +
           `<div class="tbl-card"><table class="tbl"><thead><tr><th>Controls</th><th>Source</th><th>Samples</th><th>Pass</th><th>Fail</th><th>Not tested</th></tr></thead><tbody>` +
@@ -1227,7 +1435,7 @@
     '.mu-bar{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin:.8rem 0}.mu-ctl{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center}',
     '.mu-ct{display:inline-flex;align-items:center;gap:.4rem}.mu-ct select{font:inherit;padding:.25rem .4rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);max-width:14rem}',
     '.mu-card{margin:.6rem 0;max-width:800px}.mu-top{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:flex-start;justify-content:space-between}.mu-top p{flex:1 1 24rem;margin:0}',
-    '.mu-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0}.mu-chip{border:1px solid var(--line-strong);border-radius:999px;padding:.1rem .2rem .1rem .6rem;font-size:.85rem}.mu-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem}.mu-add{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:.5rem 0}.mu-add input{font:inherit;padding:.3rem .5rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);width:10rem}.mu-chosen,.mu-zero{margin:1.2rem 0;max-width:900px}.mu-grad{display:inline-block;width:56px;height:10px;border:1px solid var(--line-strong);background:linear-gradient(90deg,var(--wf-cold),var(--wf-mid),var(--wf-hot))}.mu-setline{margin:.4rem 0}.mu-link{cursor:pointer}.mu-link text{fill:var(--ink)}.mu-link:hover text,.mu-link:focus text{text-decoration:underline}.mu-link:focus{outline:2px solid var(--accent);outline-offset:1px}.mu-svg{width:100%;height:auto;display:block;margin:.4rem 0}.mu-set{margin:1rem 0}.mu-set summary{cursor:pointer}',
+    '.mu-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0}.mu-chip{border:1px solid var(--line-strong);border-radius:999px;padding:.1rem .2rem .1rem .6rem;font-size:.85rem}.mu-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem}.mu-add{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:.5rem 0}.mu-add input{font:inherit;padding:.3rem .5rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);width:10rem}.mu-chosen,.mu-zero{margin:1.2rem 0;max-width:900px}.mu-grad{display:inline-block;width:56px;height:10px;border:1px solid var(--line-strong);background:linear-gradient(90deg,var(--wf-cold),var(--wf-mid),var(--wf-hot))}.mu-setline{margin:.4rem 0}.mu-link{cursor:pointer}.mu-link text{fill:var(--ink)}.mu-link:hover text,.mu-link:focus text{text-decoration:underline}.mu-link:focus{outline:2px solid var(--accent);outline-offset:1px}.mu-svg{width:100%;height:auto;display:block;margin:.4rem 0}.mu-svg a{text-decoration:none}.mu-hover{cursor:pointer}.mu-read{min-height:3.6em;margin:.3rem 0}.mu-set{margin:1rem 0}.mu-set summary{cursor:pointer}',
   ].join('');
   document.head.appendChild(st);
 });

@@ -332,8 +332,8 @@
               `its O/E assumes every residue of the type is equally likely.</p>` +
               `<p>The site card has one line with the site's O/E and q in each source. ` +
               (K.views.mutations
-                ? `The <a href="${esc(K.link('mutations'))}">Mutation frequency</a> page ranks the sites of your selection by how ` +
-                  `often they are changed and draws the top sites across TCGA tumors. `
+                ? `The <a href="${esc(K.link('mutations'))}">Mutation frequency</a> page ranks the sites of your selection from the most enriched to the most depleted ` +
+                  `(signed −log10 p, up for more changes than expected) and draws the top sites across TCGA tumors. `
                 : '') +
               `Hypermutated tumors (more than ${D.propensity.hypermutated.per_mb} coding calls per Mb) are left out unless you choose ` +
               `With hypermutated. ${mlink('propensity', 'Methods › Mutation propensity')} has the test and its sources.</p>`
