@@ -912,3 +912,42 @@ def test_default_waterfall_labels_skip_flagged_sites_and_keep_the_readers_own():
     assert got['tipv'].startswith('On a protein where one residue (TP53 R175) carries 31% of the variants:')
     assert got['note'] == 'protein dominated by TP53 R175 (31% of changes)'
     assert got['pick'][0]['self'] and got['pick'][1] is None and got['pick'][2] is None
+
+
+def test_gene_list_highlights_every_site_and_labels_the_most_extreme_one_per_protein():
+    rows = [  # rank order, by signed score y
+        {'acc': 'P53', 'y': 40},
+        {'acc': 'FUS', 'y': 3},
+        {'acc': 'P53', 'y': 2},
+        {'acc': 'XXX', 'y': 1},
+        {'acc': 'FUS', 'y': 0},
+        {'acc': 'P53', 'y': -5},
+        {'acc': 'FUS', 'y': -9},
+        {'acc': 'P53', 'y': -30},
+        {'acc': 'XXX', 'y': -40},
+        {'acc': 'EWS', 'y': None},
+    ]
+    got = _node(
+        f"""const rows = {json.dumps(rows)};
+        const a = K.prop.geneHits(rows, new Set(['P53', 'FUS', 'EWS']), 10);
+        const z = K.prop.geneHits(rows, new Set(['P53', 'FUS']), 5);
+        console.log(JSON.stringify({{ a: [a.labels, [...a.marked].sort((x, y) => x - y), a.genes, a.sites, a.up, a.down],
+          z: [z.labels, z.sites, z.up, z.down], none: K.prop.geneHits(rows, new Set(), 10).labels,
+          words: K.prop.geneWords('tp53, FUS;EWSR1\\nTAF15  TP53 fus'),
+          back: K.prop.geneWords(K.prop.geneWords('tp53, FUS;EWSR1\\nTAF15').join(',')),
+          cap: K.prop.geneWords(Array.from({{ length: 80 }}, (_, i) => 'G' + i).join(' ')).length }}));""",
+        PR_DATA,
+    )
+    assert got['a'] == [
+        [0, 6, 9],
+        [0, 1, 2, 4, 5, 6, 7, 9],
+        3,
+        8,
+        3,
+        3,
+    ]  # FUS: |-9| at rank 6 beats |3|; EWS has only a null
+    assert got['z'] == [[0, 1], 7, 3, 3]  # only the ranks drawn carry a label; the counts cover every rank
+    assert got['none'] == []
+    assert got['words'] == ['tp53', 'FUS', 'EWSR1', 'TAF15']  # one entry per name, in order, any separator
+    assert got['cap'] == 60
+    assert got['back'] == got['words']  # the address: wg is the words joined by commas, and reads back the same

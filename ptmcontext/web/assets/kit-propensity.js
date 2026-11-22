@@ -144,6 +144,46 @@
     }
     return out;
   }
+  // ---- the waterfall's gene list (wg in the address): the words of a pasted list, and what its proteins' sites do on a waterfall ----
+  const MAX_GENES = 60;
+  const geneWords = (text) => {
+    const seen = new Set(),
+      out = [];
+    for (const w of String(text || '').split(/[\s,;]+/)) {
+      if (w && !seen.has(w.toLowerCase()) && out.length < MAX_GENES) (seen.add(w.toLowerCase()), out.push(w));
+    }
+    return out;
+  };
+  // rows: the waterfall's sites in rank order ({acc, y}); accs: the accessions of the listed proteins; shown: the ranks drawn.
+  // by: row numbers per protein; marked: every row of the list's proteins; labels: one row per protein, its largest |y| among the
+  // ranks drawn (the first on a tie); genes, sites, up, down: the counts over all rows
+  function geneHits(rows, accs, shown) {
+    const by = new Map();
+    let up = 0,
+      down = 0,
+      sites = 0;
+    rows.forEach((r, i) => {
+      if (!accs.has(r.acc)) return;
+      sites++;
+      if ((r.y ?? 0) > 0) up++;
+      else if ((r.y ?? 0) < 0) down++;
+      if (!by.has(r.acc)) by.set(r.acc, []);
+      by.get(r.acc).push(i);
+    });
+    const labels = [];
+    by.forEach((list) => {
+      let best = -1,
+        bv = -1;
+      for (const i of list) {
+        if (i >= shown) break;
+        const v = Math.abs(rows[i].y ?? 0);
+        if (v > bv) ((bv = v), (best = i));
+      }
+      if (best >= 0) labels.push(best);
+    });
+    labels.sort((a, b) => a - b);
+    return { by, marked: new Set([...by.values()].flat()), labels, genes: by.size, sites, up, down };
+  }
   function at(acc, id, pos, hyper = state.hyper) {
     const r = DATA[acc]?.[id]?.by.get(pos);
     if (!r) return null;
@@ -533,6 +573,8 @@
     hotNoun,
     hotTip,
     defaultLabels,
+    geneWords,
+    geneHits,
     ring: RING,
   };
 

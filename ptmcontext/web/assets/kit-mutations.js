@@ -24,7 +24,17 @@
   const byAcc = Object.fromEntries((D.proteins || []).map((p) => [p[0], p]));
 
   // ---- the choices (kept in the address: ms source, mg cancer type, mv view, mz zoom, wl the sites labeled on the waterfall; hyper is kit-propensity's) -------------
-  const M = { src: SRC[0].id, group: '', view: 'waterfall', zoom: 0, chosen: [], labels: [], res: {}, note: '' };
+  const M = {
+    src: SRC[0].id,
+    group: '',
+    view: 'waterfall',
+    zoom: 0,
+    chosen: [],
+    labels: [],
+    genes: [],
+    res: {},
+    note: '',
+  };
   const MAX_CHOSEN = 20,
     MAX_LABELS = 20;
   K.paramsIn.push((p) => {
@@ -51,6 +61,7 @@
       return x.key;
     });
     M.labels = list(p.get('wl'), MAX_LABELS).map((x) => x.key);
+    M.genes = K.prop.geneWords(p.get('wg')); // wg: the genes highlighted on the waterfall
   });
   const keyOut = (key) => {
     const [acc, pos] = key.split(':'),
@@ -65,6 +76,7 @@
     if (M.view !== 'waterfall') p.set('mv', M.view);
     if (M.zoom) p.set('mz', String(M.zoom));
     if (M.labels.length) p.set('wl', M.labels.map(keyOut).join(','));
+    if (M.genes.length) p.set('wg', M.genes.join(','));
   });
   const sourceOf = () => SRC.find((s) => s.id === M.src) || SRC[0];
 
@@ -343,6 +355,21 @@
     return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e;
   };
   const LAST = { m: null, f: null, w: 0, cur: null };
+  // the listed genes as the search reads them (names, aliases, isoforms): the accessions, the names it did not find, and the names it read as another
+  let GS = { key: null, v: null };
+  function geneSet() {
+    const key = M.genes.join(',');
+    if (GS.key === key) return GS.v;
+    const q = K.sel.parse(M.genes.join(' ')),
+      accs = new Set();
+    [...(q.genes || []), ...(q.sites || []).map((x) => x[0])].forEach(
+      (i) => D.proteins[i] && accs.add(D.proteins[i][0])
+    );
+    const notFound = [...new Set([...(q.absent || []), ...(q.unmatched || []), ...(q.ignored || [])])];
+    GS = { key, v: { accs, notFound, via: q.via || [] } };
+    return GS.v;
+  }
+  const geneHits = (m, shown) => (M.genes.length ? K.prop.geneHits(m.rows, geneSet().accs, shown) : null);
   // the labeled sites: the top and bottom of the ranking (3 each end on a phone, 5 otherwise; a site of a protein dominated by one residue is skipped, K.prop.defaultLabels) and the sites the reader added
   const defaultLabels = (m, shown, phone) => K.prop.defaultLabels(m, shown, phone);
   // the waterfall: x = rank from the most enriched site to the most depleted, y = the signed score (up: more than expected,
@@ -417,7 +444,9 @@
     }
     // labels first (their sites are drawn emphasized), then the points
     const user = (M.labels || []).map((k) => m.index.get(k)).filter((i) => i != null && i < shown);
-    const want = [...user, ...defaultLabels(m, shown, phone).filter((i) => !user.includes(i))];
+    const gh = geneHits(m, shown);
+    const want = [...user];
+    [...(gh ? gh.labels : []), ...defaultLabels(m, shown, phone)].forEach((i) => !want.includes(i) && want.push(i));
     const items = want.map((i) => {
       const r = rows[i],
         name = siteName(r.acc, r.pos, r.res);
@@ -437,12 +466,14 @@
         more = r.q != null && r.q < RING_Q,
         fewer = r.ql != null && r.ql < RING_Q,
         ring = more || fewer,
-        lab = marked.has(i);
+        hl = !!gh?.marked.has(i),
+        lab = marked.has(i) || hl;
       if (!lab && !(ring ? far(lastRing, x, y, 6) && far(lastAny, x, y, 2) : far(lastAny, x, y, 3))) return;
       lastAny = [x, y];
       if (ring) lastRing = [x, y];
       const xs = x.toFixed(1),
         ysx = y.toFixed(1);
+      if (hl) pts += `<circle cx="${xs}" cy="${ysx}" r="10" fill="none" stroke="${c.site}" stroke-width="2.2"/>`;
       if (more) pts += `<circle cx="${xs}" cy="${ysx}" r="6.5" fill="none" stroke="${c.ink}" stroke-width="1.5"/>`;
       if (fewer)
         pts += `<circle cx="${xs}" cy="${ysx}" r="6.5" fill="none" stroke="${c.ink}" stroke-width="1.5" stroke-dasharray="2.5 2"/>`;
@@ -520,6 +551,7 @@
         `A ${esc(W.mark)} with no change and a small expected count has no stored test and is drawn at 0. `) +
     `The dashed gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}. ` +
     `Where one residue carries ${Math.round((PR.hotspot?.min_share ?? 0.25) * 100)}% or more of a protein's ${m.germ ? 'variants' : 'changes'} (at least ${PR.hotspot?.min_changes ?? 20}), the expected count at the protein's other residues is inflated and they look depleted; the default labels skip those ${esc(W.marks)}, and you can still label one by a click or the Label box. ` +
+    `Highlight genes outlines every site of the proteins you list and labels each one's most extreme site; it changes no statistic. ` +
     (m.germ
       ? ''
       : hyper()
@@ -572,6 +604,52 @@
         : '')
     );
   }
+  // the genes to highlight (wg in the address): a pasted list read by the search's own parser, and a line saying what it found
+  function geneForm(m) {
+    const shown = Math.max(1, Math.min(m.n, M.zoom || m.n)),
+      gh = geneHits(m, shown);
+    let sum = '';
+    if (gh) {
+      const gs = geneSet(),
+        n = (k, one, many) => `${int(k)} ${k === 1 ? one : many}`,
+        none = [...gs.accs].filter((a) => !gh.by.has(a)).map((a) => byAcc[a]?.[1] || a),
+        bits = [
+          `${n(gh.genes, 'gene', 'genes')}, ${n(gh.sites, 'site', 'sites')}: ${int(gh.up)} above 0, ${int(gh.down)} below 0`,
+        ];
+      if (none.length) bits.push(`no ${esc(W.mark)} in this waterfall: ${none.map(esc).join(', ')}`);
+      sum =
+        `<p class="small" data-mu-gsum>${bits.join('; ')}.` +
+        (gs.via.length
+          ? ` Matched by another name: ${gs.via.map(([t, g]) => `${esc(t)} → ${esc(g.join('/'))}`).join(', ')}.`
+          : '') +
+        `</p>` +
+        (gs.notFound.length
+          ? `<p class="small muted">${K.sel.leftOut(gs.notFound.map((x) => `<b>${esc(x)}</b>`).join(', '))}</p>`
+          : '');
+    }
+    return (
+      `<form class="mu-add" data-mu-gform><textarea id="mu-genes" rows="2" autocomplete="off" spellcheck="false" placeholder="TP53 FUS EWSR1" data-mu-gtext aria-label="Highlight genes: gene names or UniProt IDs, separated by spaces, commas, semicolons or new lines">${esc(M.genes.join(' '))}</textarea> ` +
+      `<button type="submit" class="btn small">Highlight genes</button>` +
+      (M.genes.length ? ` <button type="button" class="btn small" data-mu-gclear>Clear</button>` : '') +
+      `</form>` +
+      sum
+    );
+  }
+  document.addEventListener('submit', (e) => {
+    if (!e.target.matches?.('[data-mu-gform]')) return;
+    e.preventDefault();
+    M.genes = K.prop.geneWords(e.target.querySelector('[data-mu-gtext]').value);
+    K.writeHash?.();
+    K.render();
+  });
+  K.clicks.push([
+    '[data-mu-gclear]',
+    () => {
+      M.genes = [];
+      K.writeHash?.();
+      K.render();
+    },
+  ]);
   function toggleLabel(key) {
     if (M.labels.includes(key)) M.labels = M.labels.filter((k) => k !== key);
     else if (M.labels.length >= MAX_LABELS) return false;
@@ -1159,9 +1237,13 @@
         `<svg id="mu-svg" class="mu-svg" viewBox="0 0 ${w0} ${wfHeight(w0)}" tabindex="0" role="img" aria-label="Waterfall of the signed score of each site, ranked from most to least enriched. Use the arrow keys to step through the sites.">${wfInner(m, w0)}</svg>` +
         `<p id="mu-read" class="small mu-read" aria-live="polite">Tap, hover or focus the chart to read a ${esc(W.mark)} (arrow keys step through the ranks). Click a point to label it; click a label to open its card.</p>` +
         labelForm() +
+        geneForm(m) +
         `<p class="pr-key small muted"><span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 5H26" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/></svg>${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}</span>` +
         `<span class="pr-k"><span class="mu-grad" aria-hidden="true"></span>point color: O/E, from 1/8 (blue) through 1 (gray) to 8 (red)</span>` +
         `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/><circle cx="9" cy="9" r="4" fill="var(--wf-hot)" stroke="var(--ink)" stroke-width="0.8"/></svg>solid ring: q &lt; 0.05, more than expected</span>` +
+        (M.genes.length
+          ? `<span class="pr-k"><svg width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="9.5" fill="none" stroke="var(--accent)" stroke-width="2.2"/><circle cx="11" cy="11" r="3.4" fill="var(--wf-mid)" stroke="var(--ink)" stroke-width="0.8"/></svg>outline: a site of a listed gene</span>`
+          : '') +
         (m.germ
           ? `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="2.5 2"/><circle cx="9" cy="9" r="4" fill="var(--wf-cold)" stroke="var(--ink)" stroke-width="0.8"/></svg>dashed ring: q &lt; 0.05, fewer than expected</span>`
           : '') +
@@ -1433,7 +1515,7 @@
     '.mu-bar{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin:.8rem 0}.mu-ctl{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center}',
     '.mu-ct{display:inline-flex;align-items:center;gap:.4rem}.mu-ct select{font:inherit;padding:.25rem .4rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);max-width:14rem}',
     '.mu-card{margin:.6rem 0;max-width:800px}.mu-top{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:flex-start;justify-content:space-between}.mu-top p{flex:1 1 24rem;margin:0}',
-    '.mu-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0}.mu-chip{border:1px solid var(--line-strong);border-radius:999px;padding:.1rem .2rem .1rem .6rem;font-size:.85rem}.mu-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem}.mu-add{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:.5rem 0}.mu-add input{font:inherit;padding:.3rem .5rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);width:10rem}.mu-chosen,.mu-zero{margin:1.2rem 0;max-width:900px}.mu-grad{display:inline-block;width:56px;height:10px;border:1px solid var(--line-strong);background:linear-gradient(90deg,var(--wf-cold),var(--wf-mid),var(--wf-hot))}.mu-setline{margin:.4rem 0}.mu-link{cursor:pointer}.mu-link text{fill:var(--ink)}.mu-link:hover text,.mu-link:focus text{text-decoration:underline}.mu-link:focus{outline:2px solid var(--accent);outline-offset:1px}.mu-svg{width:100%;height:auto;display:block;margin:.4rem 0}.mu-svg a{text-decoration:none}.mu-hover{cursor:pointer}.mu-read{min-height:3.6em;margin:.3rem 0}.mu-set{margin:1rem 0}.mu-set summary{cursor:pointer}',
+    '.mu-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0}.mu-chip{border:1px solid var(--line-strong);border-radius:999px;padding:.1rem .2rem .1rem .6rem;font-size:.85rem}.mu-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem}.mu-add{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:.5rem 0}.mu-add textarea{font:inherit;padding:.3rem .5rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);width:min(28rem,100%);resize:vertical}.mu-add input{font:inherit;padding:.3rem .5rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);width:10rem}.mu-chosen,.mu-zero{margin:1.2rem 0;max-width:900px}.mu-grad{display:inline-block;width:56px;height:10px;border:1px solid var(--line-strong);background:linear-gradient(90deg,var(--wf-cold),var(--wf-mid),var(--wf-hot))}.mu-setline{margin:.4rem 0}.mu-link{cursor:pointer}.mu-link text{fill:var(--ink)}.mu-link:hover text,.mu-link:focus text{text-decoration:underline}.mu-link:focus{outline:2px solid var(--accent);outline-offset:1px}.mu-svg{width:100%;height:auto;display:block;margin:.4rem 0}.mu-svg a{text-decoration:none}.mu-hover{cursor:pointer}.mu-read{min-height:3.6em;margin:.3rem 0}.mu-set{margin:1rem 0}.mu-set summary{cursor:pointer}',
   ].join('');
   document.head.appendChild(st);
 });
