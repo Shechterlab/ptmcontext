@@ -421,7 +421,9 @@
           )
             continue;
           if (it.x > b.x - 3 && it.x < b.x + b.w + 3 && it.y > b.y - 3 && it.y < b.y + b.h + 3) continue;
-          if (lines.some((l) => segBox([l[0], l[1]], [l[2], l[3]], b))) continue;
+          // lines are tested against the box with a margin, since the drawn text can run a little past its estimate
+          const bm = { x: b.x - PAD, y: b.y - PAD, w: b.w + 2 * PAD, h: b.h + 2 * PAD };
+          if (lines.some((l) => segBox([l[0], l[1]], [l[2], l[3]], bm))) continue;
           const ex = Math.max(b.x, Math.min(it.x, b.x + b.w)),
             ey = Math.max(b.y, Math.min(it.y, b.y + b.h));
           let leader = null;
@@ -437,7 +439,7 @@
               continue;
           }
           // a placed leader must not run through this box
-          if (placed.some((p) => p.leader && segBox([p.leader[0], p.leader[1]], [p.leader[2], p.leader[3]], b)))
+          if (placed.some((p) => p.leader && segBox([p.leader[0], p.leader[1]], [p.leader[2], p.leader[3]], bm)))
             continue;
           got = { key: it.key, ...b, leader };
           break;

@@ -403,7 +403,7 @@
     ax += `<text transform="translate(11,${(mt + ph / 2).toFixed(1)}) rotate(-90)" text-anchor="middle" font-size="${fs}" fill="${c.muted}">signed −log10 p</text>`;
     const sideMore = `more than expected ↑`,
       sideLess = `fewer than expected ↓`,
-      tw = (s) => Math.round(s.length * fs * 0.58 + 4);
+      tw = (s) => Math.round(s.length * fs * 0.62 + 6);
     ax += `<text x="${ml + pw - 4}" y="${mt + fs}" text-anchor="end" font-size="${fs}" fill="${c.muted}">${sideMore}</text>`;
     if (ymin < 0) ax += `<text x="${ml + 6}" y="${yb - 5}" font-size="${fs}" fill="${c.muted}">${sideLess}</text>`;
     const fixed = [{ x: ml + pw - 4 - tw(sideMore), y: mt, w: tw(sideMore), h: fs + 4 }];
