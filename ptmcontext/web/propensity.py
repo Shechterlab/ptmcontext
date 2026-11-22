@@ -22,9 +22,9 @@ Three kinds of file, all read only when something asks for them:
   data/onco.json    the oncoprint's numbers: every TCGA sample (project, hypermutated or not, coding calls per Mb) and, for each
                     known site, the samples with a change at it
 
-A protein whose changes sit mostly at one residue (TP53 R175, R248, R273) inflates the expected count at its other residues of the
+A protein whose changes sit mostly at a few enriched residues (TP53 R175, R248, R273) inflates the expected count at its other residues of the
 type, so they look depleted. `hotspots` flags such a protein per source, cohort and residue type (data/m block `h`, `h2`; data/wf.json
-`hot`; data/gn.json `hot`): [residue, position, share in percent] of its top residue. It changes no k, expected, O/E, p or q.
+`hot`; data/gn.json `hot`): [[residue, share in percent, [positions of its enriched residues, most changes first]], ...]. It changes no k, expected, O/E, p or q.
 
 The functions here are pure (they take the tables read); kit-propensity.js and kit-mutations.js read the files.
 """
@@ -53,9 +53,11 @@ SCORE_CAP = 300  # the signed score of a p that underflows to 0 (the release sto
 REPRO_TOL = 6e-4  # relative: the release stores p_upper to 4 significant digits (half a unit in the fourth is 5e-4)
 CURVE_ENDS = 48  # points of the signed curve, from each end (log-spaced ranks)
 HOT_MIN_CHANGES = (
-    20  # a protein is dominated by one residue when its changes at residues of a type total at least this ...
+    20  # a protein is dominated by its enriched residues when its changes at residues of a type total at least this ...
 )
-HOT_MIN_SHARE = 0.25  # ... and its top residue carries at least this share of them (website.propensity: hotspot_min_changes, hotspot_min_share)
+HOT_MIN_SHARE = (
+    0.30  # ... and the residues of that type with q < 0.05 carry at least this share of them (website.propensity)
+)
 
 
 def signed_score(o, pu, pl, cap: float = SCORE_CAP):
@@ -174,23 +176,27 @@ def _numbers(df: pd.DataFrame, cohort: bool) -> dict:
 def hotspots(
     df: pd.DataFrame, cohort: bool, min_changes: int = HOT_MIN_CHANGES, min_share: float = HOT_MIN_SHARE
 ) -> dict[str, list]:
-    """{accession: [[residue, position, share in percent of the top residue], ...]} for the proteins dominated by one residue: per
+    """{accession: [[residue, share in percent, [position, ...]], ...]} for the proteins dominated by their enriched residues: per
     protein and residue type, the changes (k, summed over the rows of the release table, where every row with k > 0 is present)
-    total at least `min_changes` and the residue with the most carries at least `min_share` of them (a tie goes to the lower
-    position). `cohort`: without the hypermutated samples."""
-    kc = 'k_no_hypermutated' if cohort else 'k'
-    if kc not in df:
+    total at least `min_changes` and the residues that are themselves enriched (q_upper < 0.05 in the table) carry at least
+    `min_share` of them. The positions are those enriched residues, the most changes first (a tie goes to the lower position).
+    `cohort`: without the hypermutated samples."""
+    s = '_no_hypermutated' if cohort else ''
+    kc, qc = 'k' + s, 'q_upper' + s
+    if kc not in df or qc not in df:
         return {}
-    d = df[['canonical_UniProtAC', 'residue', 'position', kc]]
+    d = df[['canonical_UniProtAC', 'residue', 'position', kc, qc]]
     d = d[d[kc] > 0].sort_values([kc, 'position'], ascending=[False, True])
     keys = ['canonical_UniProtAC', 'residue']
     tot = d.groupby(keys)[kc].sum()
-    top = d.drop_duplicates(keys).set_index(keys)
-    share = top[kc] / tot
-    hit = (tot >= min_changes) & (share >= min_share)
+    en = d[d[qc] < Q_RING]
+    got = en.groupby(keys)[kc].sum().reindex(tot.index).fillna(0)
+    share = got / tot
+    hit = (tot >= min_changes) & (share >= min_share) & (got > 0)
+    where = en.groupby(keys)['position'].apply(lambda x: [int(v) for v in x])  # already most changes first
     out: dict[str, list] = {}
-    for (a, r), pos, sh in sorted(zip(hit[hit].index, top.loc[hit[hit].index, 'position'], share[hit[hit].index])):
-        out.setdefault(a, []).append([r, int(pos), int(round(sh * 100))])
+    for a, r in sorted(hit[hit].index):
+        out.setdefault(a, []).append([r, int(round(share[(a, r)] * 100)), where[(a, r)]])
     return out
 
 
@@ -611,7 +617,7 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         df = full[
             full['canonical_UniProtAC'].isin(acc)
         ]  # the proteins with a mark: the only cards that show a lollipop
-        h = {}  # the proteins dominated by one residue (ClinVar is descriptive: no test, nothing to explain)
+        h = {}  # the proteins dominated by their enriched residues (ClinVar is descriptive: no test, nothing to explain)
         if not descriptive:
             for c in (False, True) if somatic else (False,):
                 h[c] = {a: v for a, v in hotspots(full, c, *hot_cfg).items() if a in acc}

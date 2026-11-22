@@ -6442,14 +6442,14 @@
               "type": "integer",
               "minimum": 1,
               "default": 20,
-              "description": "a protein counts as dominated by one residue (a hotspot) when its changes at residues of a type total at least this many and its top residue carries at least hotspot_min_share of them (default 20)"
+              "description": "a protein counts as dominated by its enriched residues (a hotspot) when its changes at residues of a type total at least this many and the residues of that type with q_upper < 0.05 carry at least hotspot_min_share of them (default 20)"
             },
             "hotspot_min_share": {
               "type": "number",
               "exclusiveMinimum": 0,
               "maximum": 1,
-              "default": 0.25,
-              "description": "the share of a protein's changes at one residue that makes it dominant (default 0.25); the waterfall flags the protein's sites and leaves them out of its default labels. No statistic changes"
+              "default": 0.3,
+              "description": "the share of a protein's changes (at residues of a type) carried by its enriched residues, q_upper < 0.05 in the release table for the source and cohort, that makes it dominant (default 0.3); the waterfall flags the protein's sites and leaves them out of its default labels. No statistic changes"
             }
           }
         },

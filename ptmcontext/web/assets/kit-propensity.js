@@ -100,33 +100,37 @@
 
   // ---- one residue's numbers in the chosen cohort ---------------------------------------------------------------------------
   const somatic = (id) => SRC[id]?.kind === 'somatic';
-  // ---- a protein dominated by one residue (propensity.py hotspots): its other residues look depleted -------------------------
-  // `list` is [[residue, position, share in percent], ...] for the proteins that are; the entry of the site's residue type
-  // (`res`, or the only entry when the protein has one type) is {res, pos, pct, self: the site is that residue}
+  // ---- a protein dominated by its enriched residues (propensity.py hotspots): its other residues look depleted -------------
+  // `list` is [[residue, share in percent, [positions of its enriched residues]], ...] for the proteins that are; the entry of the
+  // site's residue type (`res`, or the only entry when the protein has one type) is {res, pct, pos: [...], self: the site is one}
   function hotPick(list, res, pos) {
     const e = (list || []).find((x) => !res || x[0] === res);
-    return e ? { res: e[0], pos: e[1], pct: e[2], self: e[1] === pos } : null;
+    return e ? { res: e[0], pct: e[1], pos: e[2], self: e[2].includes(pos) } : null;
   }
+  // 'TP53 R273, R248, R175' (up to three, the most changes first; 'and 2 more' after them)
   const hotName = (acc, h) => {
-    const p = (D.proteins || []).find((x) => x[0] === acc);
-    return `${p ? p[1] : acc} ${h.res}${K.prot?.shownPos ? K.prot.shownPos(acc, h.pos) : h.pos}`;
+    const p = (D.proteins || []).find((x) => x[0] === acc),
+      sh = (n) => `${h.res}${K.prot?.shownPos ? K.prot.shownPos(acc, n) : n}`;
+    return `${p ? p[1] : acc} ${h.pos.slice(0, 3).map(sh).join(', ')}${h.pos.length > 3 ? ` and ${h.pos.length - 3} more` : ''}`;
   };
   const hotNoun = (id) => (SRC[id]?.kind === 'germline' ? 'variants' : 'changes');
-  // a short note for the site card and the chosen-sites table ('' when the protein has no dominant residue)
+  // a short note for the site card and the chosen-sites table ('' when the protein has no dominant residues)
   const hotNote = (acc, h, id) =>
     h
       ? h.self
-        ? `the residue with most ${hotNoun(id)} in its protein (${h.pct}%)`
+        ? `${h.pos.length === 1 ? 'carries' : 'one of the enriched residues that carry'} ${h.pct}% of its protein's ${hotNoun(id)}`
         : `protein dominated by ${hotName(acc, h)} (${h.pct}% of ${hotNoun(id)})`
       : '';
   // the waterfall's tooltip line for a site of such a protein; `fewer`: the site is drawn below zero
   const hotTip = (acc, h, noun, fewer) =>
     h.self
-      ? `This residue carries ${h.pct}% of the ${noun} of its protein.`
-      : `On a protein where one residue (${hotName(acc, h)}) carries ${h.pct}% of the ${noun}: the expected count at its other residues is inflated` +
+      ? h.pos.length === 1
+        ? `This residue carries ${h.pct}% of the ${noun} of its protein.`
+        : `This residue is one of the enriched residues (${hotName(acc, h)}) that carry ${h.pct}% of the ${noun} of its protein.`
+      : `On a protein where ${hotName(acc, h)} ${h.pos.length === 1 ? 'carries' : 'carry'} ${h.pct}% of the ${noun}: the expected count at its other residues is inflated` +
         (fewer ? ", so 'fewer' here mostly reflects that hotspot." : '.');
   // the default labels of the waterfall: the top and bottom of the ranking (rows sorted by signed score y; t each end), skipping
-  // the sites of a protein dominated by one residue (r.hot, unless the site is that residue); the reader's own labels are separate
+  // the sites of a protein dominated by its enriched residues (r.hot, unless the site is one of them); the reader's own labels are separate
   function defaultLabels(m, shown, phone) {
     const t = phone ? 3 : 5,
       skip = (r) => r.hot && !r.hot.self,
