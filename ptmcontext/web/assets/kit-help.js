@@ -336,7 +336,8 @@
                   `(signed −log10 p, up for more changes than expected) and draws the top sites across TCGA tumors. `
                 : '') +
               `Hypermutated tumors (more than ${D.propensity.hypermutated.per_mb} coding calls per Mb) are left out unless you choose ` +
-              `With hypermutated. ${mlink('propensity', 'Methods › Mutation propensity')} has the test and its sources.</p>`
+              `With hypermutated. A site on a protein where one residue carries most of the changes (TP53 R175, for example) is flagged, because the expected count at the protein's other residues is inflated; the waterfall's default labels skip such sites. ` +
+              `${mlink('propensity', 'Methods › Mutation propensity')} has the test and its sources.</p>`
           )
         : '') +
       '</div>'

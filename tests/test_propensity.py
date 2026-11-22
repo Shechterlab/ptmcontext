@@ -792,3 +792,123 @@ def test_labels_never_overlap_and_each_has_a_leader_or_sits_beside_its_point():
     lone = out['lone']['placed'][0]
     assert lone['leader'] is None and abs(lone['x'] - 205) < 8  # beside its point, no leader
     assert out['tight']['dropped'] and len(out['tight']['placed']) < 12  # only what cannot fit is dropped
+
+
+# ---- a protein dominated by one residue (the dominant hotspot flag) -------------------------------------------------------------
+
+
+def _hot_rows(rows):
+    return pd.DataFrame(
+        [
+            {'canonical_UniProtAC': a, 'residue': r, 'position': p, 'k': k, 'k_no_hypermutated': k2}
+            for a, r, p, k, k2 in rows
+        ]
+    )
+
+
+def test_hotspot_flag_needs_enough_changes_and_a_dominant_residue():
+    df = _hot_rows(
+        [
+            ('A', 'R', 175, 31, 31),  # 31 of 100: flagged in both cohorts
+            ('A', 'R', 248, 20, 20),
+            ('A', 'R', 10, 49, 5),  # the top residue differs without hypermutated samples
+            ('A', 'K', 1, 3, 3),  # another residue type of the same protein: its own count (3 < 20)
+            ('B', 'R', 5, 19, 19),  # below 20 changes: not flagged though it holds them all
+            ('C', 'R', 1, 10, 10),  # 20 changes, top share 10/20 = 0.5
+            ('C', 'R', 2, 10, 10),
+            ('D', 'R', 1, 4, 4),  # 20 changes spread: top share 0.2 < 0.25
+            ('D', 'R', 2, 4, 4),
+            ('D', 'R', 3, 4, 4),
+            ('D', 'R', 4, 4, 4),
+            ('D', 'R', 5, 4, 4),
+            ('E', 'R', 9, 0, 0),  # rows with no change count nothing
+        ]
+    )
+    assert PR.hotspots(df, False) == {'A': [['R', 10, 49]], 'C': [['R', 1, 50]]}
+    assert PR.hotspots(df, True) == {'A': [['R', 175, 55]], 'C': [['R', 1, 50]]}  # 31 of 56 without hypermutated
+    assert PR.hotspots(df, False, min_changes=19, min_share=0.2).keys() == {'A', 'B', 'C', 'D'}  # both are settings
+    assert PR.hotspots(df.drop(columns='k_no_hypermutated'), True) == {}
+
+
+def _flagless(x):
+    """A payload without its hotspot entries."""
+    if isinstance(x, dict):
+        return {k: _flagless(v) for k, v in x.items() if k not in ('h', 'h2', 'hot', 'hotspot')}
+    return x
+
+
+def test_the_flag_is_in_every_payload_and_no_statistic_changes(tmp_path_factory):
+    outs = {}
+    for name, extra in (('plain', {}), ('low', {'hotspot_min_changes': 4, 'hotspot_min_share': 0.5})):
+        root, sp = _toy_propensity(tmp_path_factory.mktemp(name))
+        if extra:
+            site = yaml.safe_load(sp.read_text())
+            site['website']['propensity'].update(extra)
+            sp.write_text(yaml.safe_dump(site, sort_keys=False))
+        S.run(sp, root=root / 'data', log=lambda *_: None)
+        index = web.build(sp, log=lambda *_: None)
+        d = index.parent / 'data'
+        n = _page_data(index)['propensity']['shards']
+        outs[name] = {
+            'm': {a: _shard(index, a, n)[a] for a in ('P1', 'P2')},
+            'wf': json.loads((d / 'wf.json').read_text()),
+            'gn': json.loads((d / 'gn.json').read_text()),
+            'page': _page_data(index)['propensity'],
+        }
+    plain, low = outs['plain'], outs['low']
+    # the toy's changes are few: nothing is flagged by default (P1 has 4 TCGA changes, under 20)
+    assert not any(k in b for a in plain['m'].values() for b in a.values() for k in ('h', 'h2'))
+    assert plain['wf']['hot'] == {
+        'tcga': {'all': {}, 'no_hypermutated': {}},
+        'depmap': {'all': {}, 'no_hypermutated': {}},
+    }
+    assert 'hot' not in plain['gn'] and plain['page']['hotspot'] == {'min_changes': 20, 'min_share': 0.25}
+    # with the thresholds lowered: P1 has 4 changes in all samples (3 at position 2), 2 without hypermutated (under 4)
+    p1 = low['m']['P1']
+    assert p1['tcga']['h'] == [['R', 2, 75]] and 'h2' not in p1['tcga']
+    assert p1['gnomad']['h'] == [['R', 2, 50]] and 'clinvar' not in low['wf']['hot']
+    assert 'h' not in p1['clinvar']  # descriptive: nothing to explain
+    assert low['wf']['hot']['tcga'] == {'all': {'P1': [['R', 2, 75]]}, 'no_hypermutated': {}}
+    assert low['gn']['hot'] == {'P1': [['R', 2, 50]]}
+    assert low['page']['hotspot'] == {'min_changes': 4, 'min_share': 0.5}
+    # no k, expected, O/E, p or q differs
+    assert _flagless(plain['m']) == _flagless(low['m'])
+    assert _flagless(plain['wf']) == _flagless(low['wf'])
+    assert _flagless(plain['gn']) == _flagless(low['gn'])
+
+
+def test_default_waterfall_labels_skip_flagged_sites_and_keep_the_readers_own():
+    rows = [
+        {'y': 30, 'hot': {'self': True}},  # the hotspot residue itself is a real enrichment: labeled
+        {'y': 20, 'hot': {'self': False}},  # another residue of that protein: skipped
+        {'y': 10},
+        {'y': 5},
+        {'y': 0},
+        {'y': -2},
+        {'y': -9, 'hot': {'self': False}},  # skipped
+        {'y': -12, 'hot': {'self': False}},  # skipped
+        {'y': -30},
+    ]
+    got = _node(
+        f"""const m = {{ rows: {json.dumps(rows)}, n: {len(rows)} }};
+        console.log(JSON.stringify({{ all: K.prop.defaultLabels(m, 9, false), phone: K.prop.defaultLabels(m, 9, true),
+        zoom: K.prop.defaultLabels(m, 4, false),
+        tip: K.prop.hotTip('P04637', {{ res: 'R', pos: 175, pct: 31, self: false }}, 'changes', true),
+        tipv: K.prop.hotTip('P04637', {{ res: 'R', pos: 175, pct: 31, self: false }}, 'variants', false),
+        note: K.prop.hotNote('P04637', {{ res: 'R', pos: 175, pct: 31, self: false }}, 'tcga'),
+        pick: [K.prop.hotPick([['R', 175, 31]], 'R', 175), K.prop.hotPick([['R', 175, 31]], 'K', 3), K.prop.hotPick(null, 'R', 1)] }}));""",
+        {
+            'propensity': PR_DATA['propensity'],
+            'proteins': [['P04637', 'TP53']],
+        },
+    )
+    assert got['all'] == [0, 2, 3, 8, 5]  # skipped 1, 6, 7; the top end then the bottom end
+    assert got['phone'] == [0, 2, 3, 8, 5]  # 3 each end: positives 0, 2, 3; negatives 8, 5
+    assert got['zoom'] == [0, 2, 3]  # zoomed in: only the top end shows
+    assert got['tip'] == (
+        'On a protein where one residue (TP53 R175) carries 31% of the changes: the expected count at its other residues '
+        "is inflated, so 'fewer' here mostly reflects that hotspot."
+    )
+    assert got['tipv'].startswith('On a protein where one residue (TP53 R175) carries 31% of the variants:')
+    assert got['note'] == 'protein dominated by TP53 R175 (31% of changes)'
+    assert got['pick'][0]['self'] and got['pick'][1] is None and got['pick'][2] is None

@@ -22,6 +22,10 @@ Three kinds of file, all read only when something asks for them:
   data/onco.json    the oncoprint's numbers: every TCGA sample (project, hypermutated or not, coding calls per Mb) and, for each
                     known site, the samples with a change at it
 
+A protein whose changes sit mostly at one residue (TP53 R175, R248, R273) inflates the expected count at its other residues of the
+type, so they look depleted. `hotspots` flags such a protein per source, cohort and residue type (data/m block `h`, `h2`; data/wf.json
+`hot`; data/gn.json `hot`): [residue, position, share in percent] of its top residue. It changes no k, expected, O/E, p or q.
+
 The functions here are pure (they take the tables read); kit-propensity.js and kit-mutations.js read the files.
 """
 
@@ -48,6 +52,10 @@ HYPER_PER_MB = 10  # coding calls per Mb: the release's threshold (Campbell et a
 SCORE_CAP = 300  # the signed score of a p that underflows to 0 (the release stores p to 4 significant digits)
 REPRO_TOL = 6e-4  # relative: the release stores p_upper to 4 significant digits (half a unit in the fourth is 5e-4)
 CURVE_ENDS = 48  # points of the signed curve, from each end (log-spaced ranks)
+HOT_MIN_CHANGES = (
+    20  # a protein is dominated by one residue when its changes at residues of a type total at least this ...
+)
+HOT_MIN_SHARE = 0.25  # ... and its top residue carries at least this share of them (website.propensity: hotspot_min_changes, hotspot_min_share)
 
 
 def signed_score(o, pu, pl, cap: float = SCORE_CAP):
@@ -163,6 +171,29 @@ def _numbers(df: pd.DataFrame, cohort: bool) -> dict:
     }
 
 
+def hotspots(
+    df: pd.DataFrame, cohort: bool, min_changes: int = HOT_MIN_CHANGES, min_share: float = HOT_MIN_SHARE
+) -> dict[str, list]:
+    """{accession: [[residue, position, share in percent of the top residue], ...]} for the proteins dominated by one residue: per
+    protein and residue type, the changes (k, summed over the rows of the release table, where every row with k > 0 is present)
+    total at least `min_changes` and the residue with the most carries at least `min_share` of them (a tie goes to the lower
+    position). `cohort`: without the hypermutated samples."""
+    kc = 'k_no_hypermutated' if cohort else 'k'
+    if kc not in df:
+        return {}
+    d = df[['canonical_UniProtAC', 'residue', 'position', kc]]
+    d = d[d[kc] > 0].sort_values([kc, 'position'], ascending=[False, True])
+    keys = ['canonical_UniProtAC', 'residue']
+    tot = d.groupby(keys)[kc].sum()
+    top = d.drop_duplicates(keys).set_index(keys)
+    share = top[kc] / tot
+    hit = (tot >= min_changes) & (share >= min_share)
+    out: dict[str, list] = {}
+    for (a, r), pos, sh in sorted(zip(hit[hit].index, top.loc[hit[hit].index, 'position'], share[hit[hit].index])):
+        out.setdefault(a, []).append([r, int(pos), int(round(sh * 100))])
+    return out
+
+
 def block(df: pd.DataFrame, somatic: bool, lower: bool = False) -> dict:
     """One protein's rows of one source (sorted by position) as a columnar block (see the module's docstring)."""
     df = df.sort_values('position').reset_index(drop=True)
@@ -170,6 +201,10 @@ def block(df: pd.DataFrame, somatic: bool, lower: bool = False) -> dict:
     p = [pos[0]] + [b - a for a, b in zip(pos, pos[1:])]
     a = _numbers(df, False)
     out = {'p': p, 'k': a['k'], 'e': a['e'], 'o': a['o'], 'q': a['q'], 'pu': a['pu']}
+    if (
+        'residue' in df and df['residue'].nunique() > 1
+    ):  # the residue letter of each row, where the protein has more than one type
+        out['r'] = ''.join(df['residue'])
     if a['u']:
         out['u'] = a['u']
     if somatic:
@@ -560,9 +595,10 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
     if not cfg or not listing:
         return None
     residues = list(cfg['residues'])
+    hot_cfg = (cfg.get('hotspot_min_changes', HOT_MIN_CHANGES), cfg.get('hotspot_min_share', HOT_MIN_SHARE))
     marks = {a: {m[0] for m in (r.get('marks') or [])} for a, r in records.items()}
     acc = set(marks)
-    sources, blocks, pooled, germ = [], {}, {}, {}
+    sources, blocks, pooled, germ, hot = [], {}, {}, {}, {}
     n_rows = 0
     for s in cfg['sources']:
         f = _path(run, s['table'], log, s['id'])
@@ -575,8 +611,16 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         df = full[
             full['canonical_UniProtAC'].isin(acc)
         ]  # the proteins with a mark: the only cards that show a lollipop
+        h = {}  # the proteins dominated by one residue (ClinVar is descriptive: no test, nothing to explain)
+        if not descriptive:
+            for c in (False, True) if somatic else (False,):
+                h[c] = {a: v for a, v in hotspots(full, c, *hot_cfg).items() if a in acc}
+        hot[s['id']] = h
         for a, g in df.groupby('canonical_UniProtAC'):
-            blocks.setdefault(a, {})[s['id']] = block(g, somatic, lower)
+            b = blocks.setdefault(a, {})[s['id']] = block(g, somatic, lower)
+            for c, key in ((False, 'h'), (True, 'h2')):
+                if a in h.get(c, {}):
+                    b[key] = h[c][a]
         n_rows += len(df)
         sources.append(
             {
@@ -605,6 +649,7 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         'sources': sources,
         'hypermutated': {'per_mb': HYPER_PER_MB},
         'zero_rows': ZERO_ROWS,
+        'hotspot': {'min_changes': hot_cfg[0], 'min_share': hot_cfg[1]},
         'summary': summaries(site['id'], run, cfg, log),
     }
     # the waterfall and oncoprint files
@@ -627,6 +672,11 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         den = pd.read_csv(df_, sep='\t', dtype={'group': str})
         wf = frequency_payload(freq, den, marks, totals, pooled, [s for s in sources if s.get('frequency_source')])
         wf['sites_total'] = known
+        wf['hot'] = {
+            s['id']: {'all': hot[s['id']].get(False, {}), 'no_hypermutated': hot[s['id']].get(True, {})}
+            for s in sources
+            if s.get('frequency_source') and hot.get(s['id'])
+        }
         for sid, ok in wf['lower'].items():
             for cohort, good in zip((False, True), ok):
                 n_, d_, r_ = upper_reproduces(pooled[sid], cohort)
@@ -657,6 +707,8 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         gn = germline_payload(
             [pd.read_csv(p, sep='\t', usecols=['canonical_UniProtAC', 'position', 'af']) for p in gc], prop, totals
         )
+        if hot.get(sid, {}).get(False):
+            gn['hot'] = hot[sid][False]
         text = json.dumps(gn, separators=(',', ':'))
         (out / 'data' / 'gn.json').write_text(text)
         res['gn'] = {'file': 'data/gn.json', 'source': sid}

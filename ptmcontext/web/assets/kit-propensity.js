@@ -88,7 +88,8 @@
         const out = {};
         for (const [id, b] of Object.entries(sh[acc] || {})) {
           const rows = rowsOf(b);
-          out[id] = { rows, by: new Map(rows.map((r) => [r.pos, r])) };
+          if (b.r) rows.forEach((r, i) => (r.res = b.r[i])); // the residue letter, where the protein has more than one type
+          out[id] = { rows, by: new Map(rows.map((r) => [r.pos, r])), h: b.h, h2: b.h2 };
         }
         return (DATA[acc] = out);
       },
@@ -99,13 +100,59 @@
 
   // ---- one residue's numbers in the chosen cohort ---------------------------------------------------------------------------
   const somatic = (id) => SRC[id]?.kind === 'somatic';
+  // ---- a protein dominated by one residue (propensity.py hotspots): its other residues look depleted -------------------------
+  // `list` is [[residue, position, share in percent], ...] for the proteins that are; the entry of the site's residue type
+  // (`res`, or the only entry when the protein has one type) is {res, pos, pct, self: the site is that residue}
+  function hotPick(list, res, pos) {
+    const e = (list || []).find((x) => !res || x[0] === res);
+    return e ? { res: e[0], pos: e[1], pct: e[2], self: e[1] === pos } : null;
+  }
+  const hotName = (acc, h) => {
+    const p = (D.proteins || []).find((x) => x[0] === acc);
+    return `${p ? p[1] : acc} ${h.res}${K.prot?.shownPos ? K.prot.shownPos(acc, h.pos) : h.pos}`;
+  };
+  const hotNoun = (id) => (SRC[id]?.kind === 'germline' ? 'variants' : 'changes');
+  // a short note for the site card and the chosen-sites table ('' when the protein has no dominant residue)
+  const hotNote = (acc, h, id) =>
+    h
+      ? h.self
+        ? `the residue with most ${hotNoun(id)} in its protein (${h.pct}%)`
+        : `protein dominated by ${hotName(acc, h)} (${h.pct}% of ${hotNoun(id)})`
+      : '';
+  // the waterfall's tooltip line for a site of such a protein; `fewer`: the site is drawn below zero
+  const hotTip = (acc, h, noun, fewer) =>
+    h.self
+      ? `This residue carries ${h.pct}% of the ${noun} of its protein.`
+      : `On a protein where one residue (${hotName(acc, h)}) carries ${h.pct}% of the ${noun}: the expected count at its other residues is inflated` +
+        (fewer ? ", so 'fewer' here mostly reflects that hotspot." : '.');
+  // the default labels of the waterfall: the top and bottom of the ranking (rows sorted by signed score y; t each end), skipping
+  // the sites of a protein dominated by one residue (r.hot, unless the site is that residue); the reader's own labels are separate
+  function defaultLabels(m, shown, phone) {
+    const t = phone ? 3 : 5,
+      skip = (r) => r.hot && !r.hot.self,
+      out = [];
+    for (let i = 0; i < Math.min(shown, m.n) && out.length < t; i++) {
+      if ((m.rows[i].y ?? 0) <= 0) break;
+      if (!skip(m.rows[i])) out.push(i);
+    }
+    if (shown === m.n) {
+      let c = 0;
+      for (let i = m.n - 1; i >= 0 && c < t; i--) {
+        if ((m.rows[i].y ?? 0) >= 0) break;
+        if (!skip(m.rows[i]) && !out.includes(i)) (out.push(i), c++);
+      }
+    }
+    return out;
+  }
   function at(acc, id, pos, hyper = state.hyper) {
     const r = DATA[acc]?.[id]?.by.get(pos);
     if (!r) return null;
     const nh = somatic(id) && !hyper && r.k2 !== undefined;
+    const b = DATA[acc][id];
+    const hot = hotPick(nh ? b.h2 : b.h, r.res, pos);
     return nh
-      ? { k: r.k2, e: r.e2, o: r.o2, q: r.q2, p: r.pu2, u: r.u2, kAll: r.k, nh: true }
-      : { k: r.k, e: r.e, o: r.o, q: r.q, p: r.pu, pl: r.pl, u: r.u, ql: r.ql, kAll: r.k, nh: false };
+      ? { k: r.k2, e: r.e2, o: r.o2, q: r.q2, p: r.pu2, u: r.u2, kAll: r.k, nh: true, hot }
+      : { k: r.k, e: r.e, o: r.o, q: r.q, p: r.pu, pl: r.pl, u: r.u, ql: r.ql, kAll: r.k, nh: false, hot };
   }
   const desc = (id) => !!SRC[id]?.descriptive;
   const fo = (o) =>
@@ -161,6 +208,7 @@
       lines.push(`fewer than expected: p ${fq(v.pl)}${v.ql != null ? `, q ${fq(v.ql)}` : ''}`);
     else if (v?.ql != null) lines.push(`fewer than expected: q ${fq(v.ql)}`);
     if (v && somatic(id)) lines.push(v.nh ? 'without hypermutated samples' : 'with hypermutated samples');
+    if (v?.hot) lines.push(hotNote(acc, v.hot, id));
     return lines.join('\n');
   }
 
@@ -297,7 +345,9 @@
         const text = tip(acc, s.id, pos, '', v.k).replace(/^ · /, '');
         return (
           `<span class="pr-s" title="${esc(text)}"><b>${esc(s.label)}</b> O/E ${fo(v.o)}` +
-          `<span class="muted"> (${esc(q)}${low}${v.u && !desc(s.id) ? ', no matching coding sequence' : ''})</span></span>`
+          `<span class="muted"> (${esc(q)}${low}${v.u && !desc(s.id) ? ', no matching coding sequence' : ''})</span>` +
+          (v.hot ? `<span class="muted pr-hot"> · ${esc(hotNote(acc, v.hot, s.id))}</span>` : '') +
+          `</span>`
         );
       })
       .join(' · ');
@@ -477,6 +527,12 @@
     words,
     tip,
     desc,
+    hotPick,
+    hotName,
+    hotNote,
+    hotNoun,
+    hotTip,
+    defaultLabels,
     ring: RING,
   };
 
@@ -493,7 +549,7 @@
     '.pr-pt:focus .pr-head{stroke:var(--ink);stroke-width:2}',
     '.pr-key{display:flex;flex-wrap:wrap;gap:.3rem 1rem;align-items:center;margin:.2rem 0}.pr-k{display:inline-flex;align-items:center;gap:.3rem}',
     '.pr-tip{position:fixed;z-index:60;max-width:22rem;padding:.4rem .6rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);font-size:.82rem;line-height:1.35;white-space:pre-line;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.18)}',
-    '.pr-s{white-space:nowrap}.pr-sw{margin:.4rem 0}',
+    '.pr-s{white-space:nowrap}.pr-hot{white-space:normal}.pr-sw{margin:.4rem 0}',
   ].join('');
   document.head.appendChild(st);
 });

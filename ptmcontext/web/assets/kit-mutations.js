@@ -181,6 +181,7 @@
           pu: e ? e[9] : null,
         };
         r.y = K.prop.signed(r.o, r.pu, r.pl);
+        r.hot = K.prop.hotPick(gn.hot?.[acc], res, pos);
         return r;
       });
       byScore(rows);
@@ -231,6 +232,7 @@
         pl: c ? c[5] : z ? z[4] : null,
       };
       r.y = K.prop.signed(r.o, r.pu, r.pl);
+      r.hot = K.prop.hotPick(wf.hot?.[s.id]?.[hyper() ? 'all' : 'no_hypermutated']?.[acc], res, pos);
       return r;
     });
     byScore(rows);
@@ -341,15 +343,8 @@
     return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e;
   };
   const LAST = { m: null, f: null, w: 0, cur: null };
-  // the labeled sites: the top and bottom of the ranking (3 each end on a phone, 5 otherwise) and the sites the reader added
-  const defaultLabels = (m, shown, phone) => {
-    const t = phone ? 3 : 5,
-      out = [];
-    for (let i = 0; i < Math.min(t, shown, m.n); i++) if ((m.rows[i].y ?? 0) > 0) out.push(i);
-    if (shown === m.n)
-      for (let i = m.n - 1; i >= Math.max(m.n - t, 0); i--) if ((m.rows[i].y ?? 0) < 0 && !out.includes(i)) out.push(i);
-    return out;
-  };
+  // the labeled sites: the top and bottom of the ranking (3 each end on a phone, 5 otherwise; a site of a protein dominated by one residue is skipped, K.prop.defaultLabels) and the sites the reader added
+  const defaultLabels = (m, shown, phone) => K.prop.defaultLabels(m, shown, phone);
   // the waterfall: x = rank from the most enriched site to the most depleted, y = the signed score (up: more than expected,
   // down: fewer). `c` the colors; `o.links` true on the page (labels open the site's card).
   function waterfallSvg(m, c, w, o = {}) {
@@ -509,6 +504,7 @@
     if (r.pu != null) ps.push(`p (more) ${K.prop.fq(r.pu)}${r.q != null ? `, q ${K.prop.fq(r.q)}` : ''}`);
     if (r.pl != null) ps.push(`p (fewer) ${K.prop.fq(r.pl)}${r.ql != null ? `, q ${K.prop.fq(r.ql)}` : ''}`);
     if (ps.length) L.push(ps.join(' · '));
+    if (r.hot) L.push(K.prop.hotTip(r.acc, r.hot, m.germ ? 'variants' : 'changes', r.y != null && r.y < 0));
     if (LAST.f?.dropped?.has(i)) L.push('its label is left out: no room');
     return L.join('\n');
   }
@@ -523,6 +519,7 @@
           : `The release gives no lower tail for ${esc(m.s.label)}, so a ${esc(W.mark)} with fewer changes than expected is drawn at 0. `) +
         `A ${esc(W.mark)} with no change and a small expected count has no stored test and is drawn at 0. `) +
     `The dashed gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}. ` +
+    `Where one residue carries ${Math.round((PR.hotspot?.min_share ?? 0.25) * 100)}% or more of a protein's ${m.germ ? 'variants' : 'changes'} (at least ${PR.hotspot?.min_changes ?? 20}), the expected count at the protein's other residues is inflated and they look depleted; the default labels skip those ${esc(W.marks)}, and you can still label one by a click or the Label box. ` +
     (m.germ
       ? ''
       : hyper()
@@ -919,7 +916,7 @@
             ? `<tr><td>${esc(chosenName(r.key))}</td><td colspan="8" class="muted">${notHere(r.key)}</td></tr>`
             : !r.v
               ? `<tr><td>${esc(chosenName(r.key))}</td><td>${esc(r.s.label)}</td><td colspan="7" class="muted">no row in the release</td></tr>`
-              : `<tr><td>${esc(chosenName(r.key))}</td><td>${esc(r.s.label)}</td><td>${int(r.v.k ?? 0)}</td><td>${K.prop.fe(r.v.e)}</td><td>${K.prop.fo(r.v.o)}</td>` +
+              : `<tr><td>${esc(chosenName(r.key))}${r.v.hot ? `<br><span class="small muted">${esc(K.prop.hotNote(r.key.split(':')[0], r.v.hot, r.s.id))}</span>` : ''}</td><td>${esc(r.s.label)}</td><td>${int(r.v.k ?? 0)}</td><td>${K.prop.fe(r.v.e)}</td><td>${K.prop.fo(r.v.o)}</td>` +
                 (r.s.descriptive
                   ? `<td colspan="4" class="muted">descriptive: no test</td>`
                   : `<td>${fpv(r.v.p)}</td><td>${r.s.lower_tail ? fpv(r.v.pl) : '–'}</td><td>${fpv(r.more)}</td><td>${r.s.lower_tail ? fpv(r.fewer) : '–'}</td>`) +
@@ -1405,6 +1402,7 @@
       `<p>For a site you picked beforehand, read the raw p. q corrects across every residue of that type tested in that source, which such a site does not need. The Holm p corrects only for the sites you chose, over their tails and sources. Choose the sites before you look at the results.</p>` +
       `<p>ClinVar variants reflect clinical testing and submission more than how often residues change, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
       `<p>On the cancer and germline cards, stick height is the count in the card's table, circle size grows with O/E, and a ring marks q &lt; 0.05.</p>` +
+      `<p>Expected counts are within a protein. Where one residue carries ${Math.round((PR.hotspot?.min_share ?? 0.25) * 100)}% or more of a protein's changes or variants at residues of a type (and the protein has at least ${PR.hotspot?.min_changes ?? 20}), such as TP53 R175, R248 and R273, the expected count at its other residues is inflated and they look depleted. The explorer flags such a protein per source and cohort, names its top residue on the waterfall tooltip, the site card and the tested-sites table, and leaves its ${esc(W.marks)} out of the default waterfall labels. You can still label them. The flag changes no count, expected value, O/E, p or q.</p>` +
       `<p>On the Mutation frequency page, the waterfall ranks the sites of the selection from the most enriched to the most depleted. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example). The oncoprint joins the sites with the most changed TCGA tumors to those tumors' sample_burden by sample id.</p>` +
       (ctl.length
         ? `<p>Positive controls (H3 oncohistone residues and recurrent cancer hotspots; <a href="https://doi.org/10.1038/nbt.3391" target="_blank" rel="noopener">Chang et al., Nat Biotechnol 34:155 (2016)</a>). A control passes when q &lt; 0.05. A failed control is reported here and does not block the release.</p>` +
