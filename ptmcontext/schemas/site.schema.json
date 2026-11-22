@@ -1964,6 +1964,33 @@
         "name"
       ],
       "properties": {
+          "ci": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "the site is published by CI (tools/ci_plan.py): the Pages build, the tests' link and export audits. A site without it is not built there",
+            "required": ["order"],
+            "properties": {
+              "order": {
+                "type": "integer",
+                "description": "the site's place in the list CI builds and gives `ptmc pages` (unique among the published sites)"
+              },
+              "lower_confidence": {
+                "type": "boolean",
+                "description": "the Pages build also runs and builds the variant with_lower_confidence (default false)"
+              },
+              "audit": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "the audits' parameters for this site",
+                "properties": {
+                  "workers": {"type": "integer", "minimum": 1, "description": "link audit: browser pages at once (default 4)"},
+                  "budget": {"type": "integer", "minimum": 1, "description": "link audit: minutes after which no new page is started (default 150)"},
+                  "proteins": {"type": "string", "description": "export audits: comma-separated UniProt accessions to walk (default: the walk's own)"},
+                  "selection": {"type": "string", "description": "export audits: the selection to walk (default: the walk's own)"}
+                }
+              }
+            }
+          },
           "context_window": {
             "type": "integer",
             "minimum": 1,

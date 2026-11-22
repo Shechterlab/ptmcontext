@@ -15,6 +15,7 @@ import jsonschema
 import pandas as pd
 import pytest
 import yaml
+from ci_sites import PUBLISHED
 from test_controls import _playwright
 from test_new_sources import _toy_site
 from test_search import _build, _page_data, _toy
@@ -70,7 +71,7 @@ def test_every_site_lists_the_shared_groups_in_the_shared_order(tmp_path):
     cfg = json.loads(
         (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'config' / 'overview_groups.json').read_text()
     )
-    for name in ('lysine', 'methylarginine', 'methyllysine', 'phospho'):
+    for name in PUBLISHED:
         site = S.load_site(Path(__file__).resolve().parents[1] / 'sites' / f'{name}.yaml')
         names = [x['name'] for x in site['website']['overview']['sections']]
         shared = [n for n in names if n in cfg['shared']]

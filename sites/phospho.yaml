@@ -1464,6 +1464,7 @@ outputs: {folder: out/phospho}
 citation: sites/phospho.citation.cff   # the citation, data sources, version and date: edit there
 
 website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
+  ci: {order: 3, audit: {proteins: "P04637,P31749", selection: "f=p:kinase_motifs~proline_directed"}}   # CI: published by pages.yml, in this order; the audits' parameters (CONTRACTS.md, Site CI parameters)
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Phosphorylation Site Explorer
   tagline: "Human protein phosphorylation sites from public databases."

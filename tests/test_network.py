@@ -13,6 +13,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 import yaml
+from ci_sites import PUBLISHED
 from test_set_views import MARKED, _site
 
 from ptmcontext import site as S
@@ -399,7 +400,7 @@ def test_the_marked_proteins_of_the_toy_are_the_nodes(tmp_path):
 
 def test_every_site_offers_the_disorder_colouring_first_and_the_protein_link(tmp_path):
     root = Path(__file__).resolve().parents[1]
-    for name in ('methylarginine', 'methyllysine', 'phospho', 'lysine'):
+    for name in PUBLISHED:
         net = yaml.safe_load((root / 'sites' / f'{name}.yaml').read_text())['website']['network']
         ids = [c['id'] for c in net['color_by']]
         assert ids[0] == 'disordered', (
@@ -717,7 +718,7 @@ def test_without_the_channel_columns_links_are_not_split_and_an_optional_source_
 
 def test_every_site_has_the_four_link_types_configured_and_the_roles_where_it_has_enzyme_classes():
     root = Path(__file__).resolve().parents[1]
-    for name in ('methylarginine', 'methyllysine', 'phospho', 'lysine'):
+    for name in PUBLISHED:
         site = yaml.safe_load((root / 'sites' / f'{name}.yaml').read_text())
         net = site['website']['network']
         kinds = {e['id']: e for e in net['edges']}

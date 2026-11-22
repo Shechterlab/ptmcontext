@@ -1,4 +1,4 @@
-"""The four human sites (methylarginine, methyllysine, lysine, phospho) show the same protein-page cards, in the same order,
+"""The published sites (the four human ones today) show the same protein-page cards, in the same order,
 wherever the release has data for the residue: a card one site names and another leaves out is a decision to write down, not
 an accident. Cards that read data only one residue has (PRMT perturbations, curated experiments, clustering) are the
 exceptions listed here."""
@@ -9,8 +9,9 @@ from pathlib import Path
 
 import pytest
 import yaml
+from ci_sites import PUBLISHED
 
-SITES = ('methylarginine', 'methyllysine', 'lysine', 'phospho')
+SITES = tuple(PUBLISHED)  # every published site (website.ci)
 ROOT = Path(__file__).resolve().parents[1]
 # the release has no table of these for lysine, serine, threonine or tyrosine
 ARGININE_ONLY_CARDS = {'perturbations', 'experiments', 'clustering'}

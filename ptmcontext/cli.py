@@ -61,6 +61,11 @@ def cmd_check(a) -> int:
                 L.get(x['layer'], None, x.get('with'), x['id'])
             except (ValueError, KeyError, TypeError) as exc:
                 unknown.append(f'{x["id"]}: {exc}')
+        elif x.get('layer') in L.TEMPLATES:  # a built-in layer with parameters: are the ones given its own?
+            try:
+                L.get(x['layer'], None, x.get('with'), x['id'])
+            except (ValueError, KeyError, TypeError) as exc:
+                unknown.append(f'{x["id"]}: {exc}')
         elif x.get('with'):
             unknown.append(f'{x["id"]}: layer {x.get("layer")!r} takes no with:')
     from .set_tests import roles_of, spec_problems
@@ -78,7 +83,13 @@ def cmd_check(a) -> int:
     web = (
         S.website_problems(site)
         + S.roles_missing(site)
-        + (S.mapping_problems(site, a.root) + S.mark_table_problems(site, a.root) if a.root else [])
+        + (
+            S.mapping_problems(site, a.root)
+            + S.mark_table_problems(site, a.root)
+            + S.mark_attribute_problems(site, a.root)
+            if a.root
+            else []
+        )
         + sets
     )
     print(f'{site["id"]}: mark {profile.id} ({", ".join(profile.residues)}), {len(site["analyses"])} analyses')

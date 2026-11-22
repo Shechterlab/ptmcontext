@@ -81,10 +81,11 @@ Python package, SciPy and statsmodels on random tables.
 
 `.github/workflows/pages.yml` builds every site on each push to `develop` or `main` and publishes them with a landing page on
 GitHub Pages (Settings → Pages → Source: GitHub Actions). The export audits (text overlap, legends) of each site run
-in `.github/workflows/tests.yml`. By hand:
+in `.github/workflows/tests.yml`. Which sites those are, their audit settings and the data files they read come from each site
+file's `website.ci` (`python tools/ci_plan.py` prints them; see "Adding an explorer" in ADDING_DATA.md). By hand:
 
 ```bash
-ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml sites/lysine.yaml --out _site   # after ptmc run and ptmc web for each
+ptmc pages $(python tools/ci_plan.py | python -c "import json,sys; print(json.load(sys.stdin)['pages_sites'])") --out _site   # after ptmc run and ptmc web for each
 ```
 
 ## Read next

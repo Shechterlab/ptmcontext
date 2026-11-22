@@ -563,6 +563,30 @@ def mark_table_problems(site: dict, root: str | Path) -> list[str]:
     return out
 
 
+def mark_attribute_problems(site: dict, root: str | Path) -> list[str]:
+    """The columns marks.attributes names (a value's column, its link's, its pair_with), read from the headers of the marks
+    table and of each marks.add table (and the columns an add sets), so that a column the marks table lacks fails
+    `ptmc check` instead of the run. Nothing is read when the marks table is not under the root."""
+    attrs = (site.get('marks') or {}).get('attributes') or {}
+    entries = I.load(manifest_of(site))
+    path = Path(root) / entries.get(site['marks']['input'], {}).get('file', '')
+    if not attrs or not path.is_file():
+        return []
+    have = set(pd.read_csv(path, sep='\t', nrows=0).columns)
+    for add in site['marks'].get('add') or []:
+        extra = Path(root) / entries.get(add['input'], {}).get('file', '')
+        if not extra.is_file():
+            return []  # a table of the marks is missing: its columns are not known
+        have |= set(pd.read_csv(extra, sep='\t', nrows=0).columns) | set(add.get('set') or {})
+    out = []
+    for name, a in attrs.items():
+        named = [a['column'], (a.get('link') or {}).get('column'), a.get('pair_with')]
+        missing = [c for c in named if c and c not in have]
+        if missing:
+            out.append(f'marks.attributes.{name}: the marks table has no column {missing}')
+    return out
+
+
 def presence_only_problems(site: dict) -> list[str]:
     """A presence_only value that its attribute does not list, and a map row that draws a presence-only class as a
     stretch (a row table, rather than the marks flagged with it) or lists it as a class of a table."""

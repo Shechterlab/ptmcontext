@@ -1545,6 +1545,19 @@ Blocks (`kind`):
 
 Every block offers PDF, SVG, PNG (figures) and TSV (its rows), each with the provenance block, and a Method link.
 
+## Site CI parameters (website.ci)
+
+A site is published by CI when its file has `website.ci`; a site without it (the yeast example, the ECOD variants) is not built there. `tools/ci_plan.py` reads the published sites (`sites/*.yaml` with `website.ci`) and gives the workflows everything that used to be listed by hand in `.github/workflows/pages.yml` and `tests.yml`:
+
+| Key | Meaning |
+|---|---|
+| `order` | required integer, unique among the published sites: the order of the build matrices and of the site files given to `ptmc pages` |
+| `lower_confidence` | default false: the Pages build also runs and builds the variant `with_lower_confidence` (the site file must define it) |
+| `audit.workers`, `audit.budget` | the link audit's browser pages at once (default 4) and minutes after which no new page is started (default 150) |
+| `audit.proteins`, `audit.selection` | the export audits' proteins (comma-separated accessions) and selection; empty, the walk's own defaults (the methylarginine site's) |
+
+The plan's outputs, written to `$GITHUB_OUTPUT` by `python tools/ci_plan.py --github-output "$GITHUB_OUTPUT"` in each workflow's `plan` job and read with `fromJSON` or as `sparse-checkout` lists: `pages_matrix`, `link_matrix`, `export_matrix`, `pages_sites`, and the data repository's files as `build_files` (every file the published sites and their variants read, by their manifests, and the folder of each snapshot with its release record), `audit_files` (those and the pinned release's `release.json`) and `test_files` (those and `tools/ci_test_files.txt`, the release files the parity checks compare against, which no site reads). `python tools/ci_plan.py` prints the plan. `tests/test_ci_plan.py` holds the values the hand lists had for the first four sites and fails if the plan differs.
+
 ## The landing page
 
 `ptmc pages` writes one card per built site (ptmcontext/web/landing.py), each a single link into its site. From the site file:

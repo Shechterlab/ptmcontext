@@ -11,12 +11,13 @@ from pathlib import Path
 import pytest
 import yaml
 from node_harness import ASSETS, HARNESS, toy_build
+from ci_sites import PUBLISHED
 from test_search import _page_data
 
 from ptmcontext.web import numbering as N
 
 REPO = Path(__file__).resolve().parents[1]
-SITES = ['methylarginine', 'methyllysine', 'lysine', 'phospho']
+SITES = PUBLISHED
 
 
 def _rules(site='methyllysine'):

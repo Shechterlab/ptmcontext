@@ -1458,6 +1458,7 @@ citation: sites/methylarginine.citation.cff   # the citation, data sources, vers
 
 
 website:                  # the look and words of the website (ptmc web); layout and behavior are the kit's
+  ci: {order: 1, lower_confidence: true}   # CI: published by pages.yml, in this order; the audits' parameters (CONTRACTS.md, Site CI parameters)
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methylarginine Site Explorer
   tagline: "Human arginine methylation sites from published studies and databases."
