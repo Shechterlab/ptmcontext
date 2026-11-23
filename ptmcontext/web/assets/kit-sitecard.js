@@ -941,7 +941,7 @@
     const body = !rs.length
       ? `<p class="muted small">No interaction record at ${esc(c.label)}.</p>`
       : `<p class="sp-sum">${esc(recordsSummary(c, rs))} <button ` +
-        `class="linkish small" type="button" data-rec-tsv="${c.pos}">TSV</button></p>` +
+        `class="linkish small" type="button" data-rec-tsv="${c.pos}">${esc(K.exp.label('tsv'))}</button></p>` +
         recordGroups(c, rs)
           .map(([g, m], _k, all) => {
             const roll = rollOf(g),

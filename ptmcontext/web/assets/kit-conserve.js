@@ -879,45 +879,48 @@
         `drawn; the logo uses all of them</text>`;
     }
     y += 30;
-    head(`Compared with the other ${int(s.oth.length)} ${W.marks}`);
-    y += 18;
-    g += logoSvg(co, x0, y, cw, LH, tips, `The other ${W.marks}`);
-    y += LH + 14;
-    g += offsets(co, x0, y - 2, cw, flank);
-    y += 22;
-    g +=
-      `<text x="20" y="${y + 12}" font-size="12.5" font-weight="700" fill="${K.PAL.ink}">What the selection ` +
-      `gains and loses</text>`;
-    y += 22;
-    [
-      ['up', 'More often'],
-      ['dn', 'Less often'],
-    ].forEach(([key, label]) => {
-      g += `<text x="20" y="${y + 15}" font-size="10.5" fill="${K.PAL.ink}">${label} than the others</text>`;
-      sh.forEach((d, k) => {
-        const [a, v] = d[key],
-          x = x0 + k * cw,
-          big = Math.abs(v) >= 0.02;
-        g += big
-          ? cell(a, x, y + 1, cw, 15, '') +
-            (`<text x="${x + cw / 2}" y="${y + 27}" font-size="8" ` +
-              `text-anchor="middle" fill="${K.PAL.muted}">${fmtDelta(v)}</text>`)
-          : `<text x="${x + cw / 2}" y="${y + 13}" font-size="11" ` +
-            `text-anchor="middle" fill="${K.PAL.muted}">·</text>`;
-        if (tips && cs[k].n && co[k].n)
-          g +=
-            `<rect class="cv-col" x="${x}" y="${y}" width="${cw}" height="30" ` +
-            `fill="transparent"${tipAttr(
-              `<b>Position ${rel(cs[k].rel)}</b><br>${
-                big
-                  ? `${esc(a)} ${key === 'up' ? 'gains' : 'loses'} ${Math.abs(Math.round(100 * v))} points: ${PCT((cs[k].c[a] || 0) / cs[k].n)}% of your ` +
-                    `selection, ${PCT((co[k].c[a] || 0) / co[k].n)}% of the others`
-                  : 'no residue changes by 2 points or more'
-              }`
-            )}/>`;
+    // without other sites to compare with there is no comparison to draw: no heading, logo or gains and losses
+    if (s.oth.length) {
+      head(`Compared with the other ${int(s.oth.length)} ${W.marks}`);
+      y += 18;
+      g += logoSvg(co, x0, y, cw, LH, tips, `The other ${W.marks}`);
+      y += LH + 14;
+      g += offsets(co, x0, y - 2, cw, flank);
+      y += 22;
+      g +=
+        `<text x="20" y="${y + 12}" font-size="12.5" font-weight="700" fill="${K.PAL.ink}">What the selection ` +
+        `gains and loses</text>`;
+      y += 22;
+      [
+        ['up', 'More often'],
+        ['dn', 'Less often'],
+      ].forEach(([key, label]) => {
+        g += `<text x="20" y="${y + 15}" font-size="10.5" fill="${K.PAL.ink}">${label} than the others</text>`;
+        sh.forEach((d, k) => {
+          const [a, v] = d[key],
+            x = x0 + k * cw,
+            big = Math.abs(v) >= 0.02;
+          g += big
+            ? cell(a, x, y + 1, cw, 15, '') +
+              (`<text x="${x + cw / 2}" y="${y + 27}" font-size="8" ` +
+                `text-anchor="middle" fill="${K.PAL.muted}">${fmtDelta(v)}</text>`)
+            : `<text x="${x + cw / 2}" y="${y + 13}" font-size="11" ` +
+              `text-anchor="middle" fill="${K.PAL.muted}">·</text>`;
+          if (tips && cs[k].n && co[k].n)
+            g +=
+              `<rect class="cv-col" x="${x}" y="${y}" width="${cw}" height="30" ` +
+              `fill="transparent"${tipAttr(
+                `<b>Position ${rel(cs[k].rel)}</b><br>${
+                  big
+                    ? `${esc(a)} ${key === 'up' ? 'gains' : 'loses'} ${Math.abs(Math.round(100 * v))} points: ${PCT((cs[k].c[a] || 0) / cs[k].n)}% of your ` +
+                      `selection, ${PCT((co[k].c[a] || 0) / co[k].n)}% of the others`
+                    : 'no residue changes by 2 points or more'
+                }`
+              )}/>`;
+        });
+        y += 34;
       });
-      y += 34;
-    });
+    }
     const lg = legend(20, y + 6, Wd);
     g += lg.svg;
     y += lg.h + 6;

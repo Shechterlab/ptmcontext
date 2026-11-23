@@ -1974,7 +1974,7 @@ body.has-selection .tabs {
 }
 .trow .lab {
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word; /* a break at a space or hyphen; a word only when it is longer than the column */
 }
 .trow svg {
   width: 100%;
@@ -3320,7 +3320,7 @@ a.exp-btn {
 }
 .qrow .ln {
   flex: 0 1 auto;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word; /* a break at a space or hyphen; a word only when it is longer than the row */
 }
 .qrow .lh {
   flex: 1 1 0;

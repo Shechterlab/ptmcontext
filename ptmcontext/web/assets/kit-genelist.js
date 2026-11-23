@@ -171,7 +171,9 @@
       (`Your list was chosen, not drawn at random: p and q say how unusual this overlap would be for the same ` +
         `number of ${esc(W.marked)} proteins taken at random; they say nothing about ${esc(W.marks)} themselves.</p>`) +
       (n
-        ? table + more + `<p class="actions"><button type="button" class="btn small" data-gl-tsv>TSV</button></p>`
+        ? table +
+          more +
+          `<p class="actions"><button type="button" class="btn small" data-gl-tsv>${esc(K.exp.label('tsv'))}</button></p>`
         : `<p>None of ` + `the names is a ${esc(W.marked)} protein here, so there is nothing to test.</p>`)
     );
   }

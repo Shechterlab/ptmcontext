@@ -2266,7 +2266,7 @@
         sel.length > SELMAX
           ? `Over ${SELMAX} proteins: too many for a link`
           : `The selection holds the ${sel.length} protein${sel.length === 1 ? '' : 's'} with ${W.marks}; the ${sites ? '' : `${int(items.length - withSites.length)} without `}cannot be selected`
-      }">Use the ${int(sel.length)}${sites ? '' : ` of ${int(items.length)}`} with ${esc(W.marks)} as the selection</button> <button type="button" class="btn small" data-ov-list>TSV</button> <button type="button" class="linkish" data-ov-close>Close</button></p>` +
+      }">Use the ${int(sel.length)}${sites ? '' : ` of ${int(items.length)}`} with ${esc(W.marks)} as the selection</button> <button type="button" class="btn small" data-ov-list>${esc(K.exp.label('tsv'))}</button> <button type="button" class="linkish" data-ov-close>Close</button></p>` +
       `<ul class="ov-list">${shown.map(li).join('')}</ul>` +
       (items.length > shown.length
         ? `<p class="muted">The first ${shown.length} of ${int(items.length)}; the TSV has all.</p>`
