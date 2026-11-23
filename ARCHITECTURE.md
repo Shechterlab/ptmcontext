@@ -133,6 +133,7 @@ fewer than 10 proteins or 30 marks is shown, not tested. The browser's numbers m
 | `kit-help.js` | the start panel, the Help page, keyboard shortcuts, focus and screen-reader help |
 | `kit-conserve.js` | conservation across species and the selection's sequence logo (`website.protein.conservation`) |
 | `kit-sitetable.js` | the protein page's folded table of its sites and their variants (`website.protein.site_table`) |
+| `kit-few.js` | the "about these sites" layout for a small selection (`K.few`): a header and key-fact chips per site, folded sections |
 | `kit-interactions.js` | pages of sections laid out by the site file (`website.pages`; the Interactions page) |
 | `kit-pcards.js` | the protein page's context cards (`website.protein.cards`) |
 | `kit-pnet.js` | protein interactions (STRING, live) and interaction evidence at a glance |

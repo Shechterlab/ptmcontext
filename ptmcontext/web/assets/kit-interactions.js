@@ -2193,6 +2193,7 @@
   // ---- the page's head: its question, the answer, highlights ---------------------------------------------------------
   function answerHtml(pg) {
     if (!pg.answer || !pg.answer.rows.length) return '';
+    if (selOn() && !ready()) return ''; // the selection's data are still coming: no counts to state yet
     if (selOn() && !testable())
       return (
         `<p class="ix-answer">Too few to compare with the other ${esc(W.residues)}: the tests ` +
@@ -2214,8 +2215,26 @@
           )
     }</p>`;
   }
+  // a page with no answer sentence and no highlight cards: one line on the evidence it has, and that nothing is tested
+  function evidenceLine(pg) {
+    if ((pg.answer && pg.answer.rows.length) || pg.highlights.length) return '';
+    const titles = pg.sections.map((x) => x.title.replace(/^./, (ch) => ch.toLowerCase()));
+    if (!titles.length) return '';
+    const tested = pg.sections.some((x) =>
+      x.blocks.some((b) => ['forest', 'lines', 'matrix', 'checker'].includes(b.kind))
+    );
+    const list =
+      titles.length < 2 ? titles.join('') : titles.slice(0, -1).join(', ') + ' and ' + titles[titles.length - 1];
+    return (
+      `<p class="ix-answer">This page lists the evidence: ${esc(list)}.` +
+      `${tested ? '' : ' No test is run on it for this explorer, so there is no summary figure.'}</p>`
+    );
+  }
   function highlightValue(h) {
     if (h.rows && h.rows.length) {
+      // a selection under the test minimums ran no test: say so, not "n.s." with no q
+      if (selOn() && ready() && !testable())
+        return ['Not tested', 'ns', `needs ${K.sel.MIN.proteins}+ proteins and ${K.sel.MIN.marks}+ ${W.marks}`];
       const rs = rowsFor(h.rows, 'mantel_haenszel').map(shown).filter(Boolean),
         d = rs.filter((r) => dirOf(r) === 'more' || dirOf(r) === 'less');
       // a tile of several tests quotes the significant ones only, and says how many of them that is
@@ -2309,6 +2328,150 @@
       `class="ppills">${pills}</div>`
     );
   }
+  // ---- a small selection: each selected site's own interaction evidence (the site card's block) ---------------------
+  const OWN_TB = {},
+    OWN_WAIT = new Set();
+  let ownRedraw = 0;
+  const ownOn = (pg) =>
+    pg.id === 'interactions' &&
+    selOn() &&
+    ready() &&
+    !!K.card?.evidenceBlock &&
+    !!K.few &&
+    K.few.active(K.sel.nMarks());
+  function ownNeed(acc) {
+    if (OWN_TB[acc] !== undefined || OWN_WAIT.has(acc)) return;
+    OWN_WAIT.add(acc);
+    K.card.load(acc).then((tb) => {
+      OWN_TB[acc] = tb || {};
+      OWN_WAIT.delete(acc);
+      if (!ownRedraw)
+        ownRedraw = requestAnimationFrame(() => {
+          ownRedraw = 0;
+          if (S.view === 'interactions') {
+            const y = scrollY;
+            K.render();
+            scrollTo(0, y);
+          }
+        });
+    });
+  }
+  const ownCtx = (m, tb) => {
+    const p = K.tables?.P?.[m[0]] || { acc: prot(m[0])[0], gene: gene(m[0]) },
+      label = K.prot?.siteLabel ? K.prot.siteLabel(p.acc, m[1]) : residueLetter() + m[1];
+    return {
+      p,
+      m,
+      tb,
+      acc: p.acc,
+      pos: m[1],
+      gene: p.gene || p.acc,
+      label,
+      seq: '',
+      window: m[4],
+      rec: { marks: [] },
+      shown: (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, q) : q),
+      attr: (n) => K.tables.attrStr(m, n),
+      attrHtml: (n, v) => K.sel.listHtml(n, [v], [], p.acc, true),
+      isListed: () => true,
+    };
+  };
+  // the first parts of a one-line summary, whole parts only
+  const lead = (t, max = 80) => {
+    if (t.length <= max) return t;
+    const k = t.lastIndexOf(' · ', max);
+    return (k > 0 ? t.slice(0, k) : t.slice(0, max)) + ' …';
+  };
+  const plain = (h) =>
+    h
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  // one site's sections, from the site card's own blocks, and the key facts that open them
+  function ownSite(m, tb) {
+    const c = ownCtx(m, tb),
+      K2 = K.card,
+      entries = K2.entries(c, 1e9),
+      tags = K2.tags(c),
+      cont = K2.sequences(c),
+      near = K2.around(c),
+      whole = K2.wholeProtein(c),
+      ids = new Set([...entries.matchAll(/data-entry3d="([^"]+)"/g)].map((x) => x[1])),
+      hidden = [...entries.matchAll(/class="muted" title="[^"]*">\+(\d+)</g)].reduce((a, x) => a + +x[1], 0),
+      nStruct = ids.size + hidden,
+      nTags = (tags.match(/class="tag t-/g) || []).length,
+      nWin = K2.windowsOf(c).length,
+      nNear = K2.aroundRows(c).length,
+      names = [
+        ...new Set(
+          [...tags.matchAll(/class="tag t-[^"]*"[^>]*title="[^"]*?: ([^"]*)"/g)].flatMap((x) =>
+            x[1].split(', ').map((y) => y.replace(/&amp;/g, '&').replace(/ [\d.]+$/, ''))
+          )
+        ),
+      ],
+      n = (k, w) => `${int(k)} ${w}${k === 1 ? '' : 's'}`;
+    const badge = K2.badge(c);
+    return {
+      key: `${m[0]}-${m[1]}`,
+      head: `${siteLink(m[0], m[1])} <span class="muted">${esc(prot(m[0])[2] || '')}</span>`,
+      facts: [
+        badge ? { text: badge } : null,
+        names.length
+          ? {
+              text: esc(names.slice(0, 3).join(', ') + (names.length > 3 ? ` +${names.length - 3}` : '')),
+              to: 'partners',
+            }
+          : null,
+        nTags ? { text: n(nTags, 'evidence type'), to: 'partners' } : null,
+        nStruct ? { text: n(nStruct, 'solved structure'), to: 'partners' } : null,
+        nWin ? { text: n(nWin, 'bound window'), to: 'contacts' } : null,
+        nNear ? { text: n(nNear, 'feature') + ' nearby', to: 'near' } : null,
+        whole ? { text: 'whole protein', to: 'protein' } : null,
+      ].filter(Boolean),
+      sections: [
+        {
+          id: 'partners',
+          title: 'Partners and structures',
+          sum: [nTags && n(nTags, 'evidence type'), nStruct && n(nStruct, 'structure')].filter(Boolean).join(', '),
+          body: tags + entries,
+        },
+        { id: 'contacts', title: 'RNA and DNA contacts', sum: n(nWin, 'bound window'), body: cont },
+        { id: 'near', title: 'Around the site', sum: lead(plain(near)), body: near },
+        {
+          id: 'protein',
+          title: 'Whole protein',
+          sum: lead(plain(whole.replace(/<span class="flabel">.*?<\/span>/, ''))),
+          body: whole,
+        },
+      ],
+    };
+  }
+  function ownHtml(pg) {
+    if (!ownOn(pg)) return '';
+    const sd = SD(),
+      all = [...(K.sel.compute().marks || [])]
+        .map((i) => sd.marks[i])
+        .filter(Boolean)
+        .sort((a, b) => a[0] - b[0] || a[1] - b[1]),
+      ms = all.slice(0, K.few.MAX),
+      sites = ms.map((m) => {
+        const acc = prot(m[0])[0];
+        ownNeed(acc);
+        return OWN_TB[acc]
+          ? ownSite(m, OWN_TB[acc])
+          : {
+              key: `${m[0]}-${m[1]}`,
+              head: siteLink(m[0], m[1]),
+              sections: [{ id: 'w', title: 'Loading', body: K.loading('Loading…') }],
+            };
+      });
+    return K.few.html({
+      title: `Your selected ${marksWord(all.length)}: interaction evidence`,
+      note: `Each ${W.mark}'s own partners, solved structures and contacts, as on its site card. The line marked whole protein describes the protein, not the ${W.mark}.`,
+      sites,
+      more: all.length - ms.length,
+    });
+  }
   const keyLine = () =>
     `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>` +
     `less often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>` +
@@ -2321,7 +2484,9 @@
     return (
       `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools">${K.exp.pageMenu()}</span></div>` +
       selLine() +
+      ownHtml(pg) +
       answerHtml(pg) +
+      evidenceLine(pg) +
       highlightsHtml(pg) +
       top
         .map((s) =>
