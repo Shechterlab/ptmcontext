@@ -531,6 +531,7 @@
             : 'Across all proteins: Fisher’s exact test, the Haldane–Anscombe odds ratio'
         }; q: Benjamini–Hochberg ` + `within the question.</p></details>`
       );
+    if (K.sel.loading?.()) return K.loading(K.sel.loadingText());
     if (!testable())
       return (
         `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. The rows ` +
@@ -2326,6 +2327,8 @@
             `href="${esc(K.link('protein', prot(+pi)[0]))}">${esc(gene(+pi))} <span>${int(k)}</span></a>`
         )
         .join('');
+    if (K.sel.loading?.())
+      return `<p class="sel-lead">Your selection: ${esc(K.sel.describe())} · ${esc(K.sel.loadingText())}</p>`;
     return (
       `<p class="sel-lead">Your selection: ${esc(K.sel.describe())} · <b>${int(K.sel.nMarks())}</b> ${esc(marksWord(K.sel.nMarks()))} on <b>${int(K.sel.nProteins())}</b> protein${K.sel.nProteins() === 1 ? '' : 's'}</p><div ` +
       `class="ppills">${pills}</div>`

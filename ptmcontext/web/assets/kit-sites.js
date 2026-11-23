@@ -1021,7 +1021,7 @@
 
   // ---- register ---------------------------------------------------------------------------------------------------
   K.views.sites = { render: view, title: () => 'Sites' };
-  K.tabs.push(() => ['sites', 'Sites', K.sel?.active() ? K.sel.nMarks() : D.counts.marks]);
+  K.tabs.push(() => ['sites', 'Sites', K.sel?.active() ? (K.sel.loading() ? '…' : K.sel.nMarks()) : D.counts.marks]);
   K.sections.sites = () => [
     ['view', 'Sites', 1],
     ...(K.sel?.active() && document.getElementById('sel-card') ? [['sel-card', 'Your selection', 1]] : []),

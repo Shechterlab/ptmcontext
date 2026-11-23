@@ -2097,6 +2097,9 @@
     const c = K.sel.compute(),
       n = (c.marks || []).length,
       np = c.proteins ? c.proteins.size : 0;
+    // the marks are still coming: no count (it would read 0) and no verdict until they are in
+    if (K.sel.loading?.())
+      return `<div class="page-head"><h2>Your selection</h2></div><p class="sel-lead">${esc(K.sel.describe())} · ${esc(K.sel.loadingText())}</p>`;
     if (K.sel.data() && n === 0)
       return (
         `<div class="page-head"><h2>Your selection</h2></div><p class="note">No ${esc(W.mark)} matches ` +
@@ -2151,13 +2154,15 @@
     return (
       head +
       circ +
-      (K.sel.testable()
-        ? row
-        : against +
-          (`<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. Compare ` +
-            `it with the other ${esc(W.marks)} instead, or see its ${esc(W.marks)} on the Proteins${
-              K.views.sites ? ' and Sites pages' : ' page'
-            }.</p>`))
+      (K.sel.loading?.()
+        ? K.loading(K.sel.loadingText())
+        : K.sel.testable()
+          ? row
+          : against +
+            (`<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. Compare ` +
+              `it with the other ${esc(W.marks)} instead, or see its ${esc(W.marks)} on the Proteins${
+                K.views.sites ? ' and Sites pages' : ' page'
+              }.</p>`))
     );
   }
   // log2 of the odds ratio or fold: the displayed value stays "2.0×" with an arrow for its direction; the table beside it
@@ -2269,6 +2274,7 @@
           `independent observation, so the shares are shown without a test; the protein-level questions are tested.</span>`
         : '') +
       `</p>`;
+    if (K.sel.loading?.()) return who + K.loading(K.sel.loadingText());
     if (!K.sel.testable()) {
       const c = K.sel.compute();
       return (
@@ -5840,11 +5846,13 @@
     const sel = d.querySelector('.dock-sel');
     if (sel && K.sel?.nMarks) {
       const on = K.sel.active?.();
-      sel.innerHTML =
-        `<span aria-hidden="true">⏚</span> <b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)}</span><span class="dock-sel-p"> · <b>${int(
-          K.sel.nProteins()
-        )}</b> ${K.sel.nProteins() === 1 ? 'protein' : 'proteins'}</span>` +
-        (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');
+      sel.innerHTML = K.sel.loading?.()
+        ? `<span aria-hidden="true">⏚</span> <span class="dock-sel-w">Loading…</span>` +
+          (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '')
+        : `<span aria-hidden="true">⏚</span> <b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)}</span><span class="dock-sel-p"> · <b>${int(
+            K.sel.nProteins()
+          )}</b> ${K.sel.nProteins() === 1 ? 'protein' : 'proteins'}</span>` +
+          (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');
       sel.title = on ? 'A selection is on: open the filters' : 'Open the filters';
     }
   }

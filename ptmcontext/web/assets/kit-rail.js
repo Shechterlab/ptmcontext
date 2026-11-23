@@ -678,9 +678,11 @@
         })
         .join('') +
       (K.hl?.section?.() || '') +
-      `<div class="rail-foot"><span><b>${int(nMarks())}</b> ${esc(nMarks() === 1 ? W.mark : W.marks)} on <b>${int(nProteins())}</b> protein${nProteins() === 1 ? '' : 's'}${active() ? '' : ' (all)'}</span>${
-        active() ? '<button class="linkish" type="button" data-sel-clear-all>Clear all</button>' : ''
-      }</div>`
+      `<div class="rail-foot"><span>${
+        K.sel.loading?.()
+          ? esc(K.sel.loadingText())
+          : `<b>${int(nMarks())}</b> ${esc(nMarks() === 1 ? W.mark : W.marks)} on <b>${int(nProteins())}</b> protein${nProteins() === 1 ? '' : 's'}${active() ? '' : ' (all)'}`
+      }</span>${active() ? '<button class="linkish" type="button" data-sel-clear-all>Clear all</button>' : ''}</div>`
     );
   }
   // every page, as the tab bar lists them, with the Overview's sections under it (no other page lists its own), in their groups (as the

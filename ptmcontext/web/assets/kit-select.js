@@ -223,7 +223,8 @@
       /* fall back to the file */
     }
   }
-  let loading = null;
+  let loading = null,
+    loadFailed = false;
   const ready = () =>
     (loading ||= SD
       ? Promise.resolve(SD)
@@ -235,7 +236,10 @@
               prepare();
               return d;
             },
-            () => null
+            () => {
+              loadFailed = true;
+              return null;
+            }
           )
           .then((d) => {
             if (d) K.render();
@@ -970,6 +974,9 @@
     }
     return { all, sets };
   };
+  // a selection is on but the marks it is read from are still coming: its counts are not known yet, so no count and no
+  // verdict ("too few to test") is shown until they are in
+  const isLoading = () => active() && !SD && !loadFailed;
   const nMarks = () => (active() ? (compute().marks || []).length : D.counts.marks);
   const nProteins = () => (active() ? (compute().proteins || new Set()).size : D.counts.proteins);
   const protSelected = (acc) => !active() || (compute().proteins && compute().proteins.has(byAcc[acc]?.i));
@@ -1868,6 +1875,8 @@
       siteKey,
       nMarks,
       nProteins,
+      loading: isLoading,
+      loadingText: () => `Loading ${D.counts.marks.toLocaleString('en-US')} ${W.marks}…`,
       proteinIds: () => (active() ? compute().proteins || new Set() : new Set()),
       protSelected,
       selectedPositions,

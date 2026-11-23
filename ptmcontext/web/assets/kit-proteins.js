@@ -2496,7 +2496,7 @@
       return p ? (p.gene || p.acc) + (at && /^\d+$/.test(at) ? ' ' + siteOf(p, +at) : '') : a;
     },
   };
-  K.tabs.push(() => ['proteins', 'Proteins', K.sel?.active() ? K.sel.nProteins() : P.length]);
+  K.tabs.push(() => ['proteins', 'Proteins', K.sel?.active() ? (K.sel.loading() ? '…' : K.sel.nProteins()) : P.length]);
   K.clicks.push(
     [
       '[data-sexp]',

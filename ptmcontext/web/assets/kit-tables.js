@@ -301,7 +301,11 @@
     const nMarks = sel ? K.sel.nMarks() : D.counts.marks;
     const sorted = (id) => (PS.sort === id ? (PS.desc ? 'descending' : 'ascending') : '');
     const head =
-      `<div class="page-head results-head"><div><h2>Proteins</h2><p class="cx">${int(rows.length)} of ${int(P.length)} proteins · ${int(nMarks)} ${esc(nMarks === 1 ? W.mark : W.marks)}</p></div>` +
+      `<div class="page-head results-head"><div><h2>Proteins</h2><p class="cx">${
+        sel && K.sel.loading?.()
+          ? esc(K.sel.loadingText())
+          : `${int(rows.length)} of ${int(P.length)} proteins · ${int(nMarks)} ${esc(nMarks === 1 ? W.mark : W.marks)}`
+      }</p></div>` +
       `<div class="actions">${
         rows.length
           ? `<button class="btn small" type="button" data-copy-genes title="Every ` +
