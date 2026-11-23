@@ -2,7 +2,7 @@
 per-residue tables: for each source (TCGA, DepMap, ClinVar, gnomAD) the changes observed at a residue against the changes its
 codon predicts (O/E, with a q from a binomial test; the release's data dictionary defines every column).
 
-Three kinds of file, all read only when something asks for them:
+Four kinds of file, all read only when something asks for them:
 
   data/m/NNN.json   per protein, like data/g: {accession: {source id: block}}, a few proteins to a file, the file of a protein
                     by variants.hash_shard (kit-propensity.js computes the same). A block is columnar, one entry per residue
@@ -21,6 +21,8 @@ Three kinds of file, all read only when something asks for them:
                     of the other residues of the same type
   data/onco.json    the oncoprint's numbers: every TCGA sample (project, hypermutated or not, coding calls per Mb) and, for each
                     known site, the samples with a change at it
+  data/cv.json      the Disease variants page's inherited view: the ClinVar pathogenic and likely pathogenic variants at the known
+                    sites, each with its conditions, and the disease family of each condition (the release's own rules)
 
 A protein whose changes sit mostly at a few enriched residues (TP53 R175, R248, R273) inflates the expected count at its other residues of the
 type, so they look depleted. `hotspots` flags such a protein per source, cohort and residue type (data/m block `h`, `h2`; data/wf.json
@@ -41,6 +43,7 @@ import pandas as pd
 from scipy.stats import binom
 
 from ..snapshot import md5_file
+from . import disease_families as DF
 from . import variants as V
 
 DIR = 'data/m'
@@ -525,6 +528,49 @@ def onco_payload(burden: pd.DataFrame, changes: list[pd.DataFrame], marks: dict[
 # ---- the build -----------------------------------------------------------------------------------------------------------
 
 
+def clinvar_payload(changes: list[pd.DataFrame], marks: dict[str, set[int]], rules: dict) -> dict:
+    """The ClinVar pathogenic and likely pathogenic variants (clinsig_simple 1) at the known sites, by disease family.
+    `fam` lists the families by their total number of variants (`other`: the place of the catch-all family, -1 if none); `cond` is each condition name in use with its family
+    (a place in `fam`); `sites` is `{accession: [[position, [[variation_id, review stars, alt, [conditions]], ...]], ...]}`.
+    A variant is kept when it names a condition; `unnamed` counts those that name none ('not specified' and the like).
+    The page counts a variant once per family."""
+    df = pd.concat(changes, ignore_index=True)
+    df = df[df['clinsig_simple'].astype(str) == '1']
+    df = df[[a in marks and p in marks[a] for a, p in zip(df['canonical_UniProtAC'], df['position'])]]
+    fam_of: dict[str, str] = {}
+    unnamed = 0
+    rows = []
+    for r in df.itertuples(index=False):
+        names = DF.condition_names(r.conditions)
+        if not names:
+            unnamed += 1
+            continue
+        for n in names:
+            if n not in fam_of:
+                fam_of[n] = DF.family(rules, n)
+        rows.append(
+            (r.canonical_UniProtAC, int(r.position), int(r.variation_id), int(r.review_stars), str(r.alt), names)
+        )
+    total: dict[str, int] = {}
+    for *_, names in rows:
+        for f in {fam_of[n] for n in names}:
+            total[f] = total.get(f, 0) + 1
+    fams = sorted(total, key=lambda f: (f == DF.UNASSIGNED, -total[f], f))
+    fi = {f: i for i, f in enumerate(fams)}
+    conds = sorted({n for *_, names in rows for n in names}, key=lambda n: (fi[fam_of[n]], n))
+    ci = {n: i for i, n in enumerate(conds)}
+    sites: dict[str, dict[int, list]] = {}
+    for acc, pos, vid, stars, alt, names in sorted(rows, key=lambda x: (x[0], x[1], x[2])):
+        sites.setdefault(acc, {}).setdefault(pos, []).append([vid, stars, alt, [ci[n] for n in names]])
+    return {
+        'fam': fams,
+        'other': fams.index(DF.UNASSIGNED) if DF.UNASSIGNED in fams else -1,
+        'cond': [[n, fi[fam_of[n]]] for n in conds],
+        'sites': {a: [[p, v] for p, v in ps.items()] for a, ps in sites.items()},
+        'unnamed': unnamed,
+    }
+
+
 def _path(run: dict, name: str | None, log, what: str) -> Path | None:
     rec = (run.get('inputs') or {}).get(name or '')
     f = Path(rec['file']) if rec else None
@@ -596,7 +642,7 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
     (`D.propensity`); None when the site has none or its tables are missing."""
     cfg = (site.get('website') or {}).get('propensity')
     shutil.rmtree(out / DIR, ignore_errors=True)
-    for f in ('wf.json', 'onco.json', 'gn.json'):
+    for f in ('wf.json', 'onco.json', 'gn.json', 'cv.json'):
         (out / 'data' / f).unlink(missing_ok=True)
     if not cfg or not listing:
         return None
@@ -719,4 +765,25 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         (out / 'data' / 'gn.json').write_text(text)
         res['gn'] = {'file': 'data/gn.json', 'source': sid}
         log(f'  germline frequency: gn.json {len(text) / 1e3:.0f} KB')
+    cc = [p for p in (_path(run, c, log, c) for c in cfg.get('clinvar_changes') or []) if p]
+    fam = _path(run, cfg.get('disease_families'), log, 'disease_families') if cc else None
+    if cc and fam:
+        cols = [
+            'canonical_UniProtAC',
+            'position',
+            'alt',
+            'variation_id',
+            'clinsig_simple',
+            'review_stars',
+            'conditions',
+        ]
+        cv = clinvar_payload(
+            [pd.read_csv(p, sep='\t', usecols=cols, dtype={'conditions': str}) for p in cc], marks, DF.read_rules(fam)
+        )
+        text = json.dumps(cv, separators=(',', ':'))
+        (out / 'data' / 'cv.json').write_text(text)
+        res['cv'] = {'file': 'data/cv.json'}
+        log(
+            f'  disease variants: cv.json {len(text) / 1e3:.0f} KB ({sum(len(v) for v in cv["sites"].values()):,} sites)'
+        )
     return res

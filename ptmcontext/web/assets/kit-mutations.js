@@ -1,12 +1,16 @@
-/* The Mutation frequency page (#mutations): two views of the sites of the current selection (the whole site list when nothing
-   is selected, a site set or any search or filter otherwise), from the release's frequency tables (data/wf.json, data/onco.json;
-   ptmcontext/web/propensity.py writes them, read when the page opens):
-     waterfall   every site ranked from the most enriched to the most depleted (x) by the signed -log10 p of the release's test (y: up
+/* The Disease variants page (#mutations): views of the sites of the current selection (the whole site list when nothing
+   is selected, a site set or any search or filter otherwise), from the release's frequency tables (data/wf.json, data/onco.json,
+   data/gn.json, data/cv.json; ptmcontext/web/propensity.py writes them, read when the page opens):
+     ranked      three short tables, each the sites with q < 0.05 ranked by p: more changes than expected in tumors and in cell
+                 lines (upper tail), fewer inherited variants than expected (gnomAD, lower tail). The default view (mv=ranked).
+     oncoprint   Cancer: tumors (mv=oncoprint): the sites with the most changed samples (rows) against the TCGA tumors that carry
+                 them (columns), joined to the sample's burden: coding calls per Mb, with the hypermutated threshold marked.
+     clinvar     Inherited disease (mv=clinvar): the sites with a ClinVar pathogenic or likely pathogenic variant (rows) against
+                 disease families (columns), a cell the number of variants; the families come from the release's own rules at build time.
+     waterfall   (mv=waterfall; "Show all sites as a chart") every site ranked from the most enriched to the most depleted (x) by the signed -log10 p of the release's test (y: up
                  for more than expected, the upper-tail p; down for fewer, the lower-tail p); a gray curve shows the other residues of the
                  same type on the same score, their ranks scaled to the number of sites. p and q are pooled over the cancer types.
                  Labels: the top and bottom sites and the ones the reader adds (wl in the address), placed without overlap.
-     oncoprint   the sites with the most changed samples (rows) against the TCGA tumors that carry them (columns), joined to the
-                 sample's burden: coding calls per Mb, with the hypermutated threshold marked.
    Hypermutated samples (more than 10 coding calls per Mb, Campbell et al., Cell 171:1042 (2017)) are left out unless the reader
    puts them back. Frequencies are changed samples over samples profiled in the chosen group (group_denominators). A module of
    the site kit; without website.propensity and its frequency tables it does nothing. */
@@ -27,7 +31,11 @@
   const M = {
     src: SRC[0].id,
     group: '',
-    view: 'waterfall',
+    view: 'ranked',
+    stars: 0,
+    cell: '',
+    all: {},
+    rows: 50,
     zoom: 0,
     chosen: [],
     labels: [],
@@ -35,12 +43,18 @@
     res: {},
     note: '',
   };
+  const VIEWS = ['ranked', 'oncoprint', 'clinvar', 'waterfall'];
   const MAX_CHOSEN = 20,
     MAX_LABELS = 20;
   K.paramsIn.push((p) => {
     M.src = SRC.some((s) => s.id === p.get('ms')) ? p.get('ms') : SRC[0].id;
     M.group = p.get('mg') || '';
-    M.view = p.get('mv') === 'oncoprint' ? 'oncoprint' : 'waterfall';
+    // an address from before the views were renamed has no mv, or mv=waterfall; one that carries a waterfall's labels, genes, zoom
+    // or source opens the waterfall
+    const mv = p.get('mv');
+    M.view = VIEWS.includes(mv) ? mv : ['wl', 'wg', 'mz', 'ms'].some((k) => p.has(k)) ? 'waterfall' : 'ranked';
+    if (M.view === 'clinvar' && !PR.cv) M.view = 'ranked';
+    M.stars = [1, 2].includes(+p.get('mr')) ? +p.get('mr') : 0; // mr: the least ClinVar review stars
     M.zoom = [100, 1000].includes(+p.get('mz')) ? +p.get('mz') : 0;
     // a list of sites (mt: sites chosen for a test; wl: sites labeled on the waterfall), read as K.sel.siteKey reads them
     const list = (v, n) => {
@@ -73,7 +87,9 @@
     if (S.view !== 'mutations') return;
     if (M.src !== SRC[0].id) p.set('ms', M.src);
     if (M.group) p.set('mg', M.group);
-    if (M.view !== 'waterfall') p.set('mv', M.view);
+    // mv is left out for the default view, unless a waterfall's own choices are in the address (they would open the waterfall)
+    if (M.view !== 'ranked' || M.labels.length || M.genes.length || M.zoom || M.src !== SRC[0].id) p.set('mv', M.view);
+    if (M.stars && M.view === 'clinvar') p.set('mr', String(M.stars));
     if (M.zoom) p.set('mz', String(M.zoom));
     if (M.labels.length) p.set('wl', M.labels.map(keyOut).join(','));
     if (M.genes.length) p.set('wg', M.genes.join(','));
@@ -164,9 +180,8 @@
   // most enriched first: by the signed score (a site with no test counts as 0), then by site
   const byScore = (rows) =>
     rows.sort((a, b) => (b.y ?? 0) - (a.y ?? 0) || (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos));
-  function model() {
-    const s = sourceOf(),
-      sites = selSites();
+  function model(s = sourceOf()) {
+    const sites = selSites();
     if (!sites) return null;
     if (s.kind === 'germline') {
       // germline: a site's frequency is the sum of its variants' allele frequencies; no groups, no hypermutated samples
@@ -325,6 +340,7 @@
     cold: 'var(--wf-cold)',
     mid: 'var(--wf-mid)',
     mix: (a, b, p) => `color-mix(in srgb, ${a} ${p}%, ${b})`,
+    seq: ['var(--accent)', 'var(--surface)'], // one hue, light to full: the counts of the inherited view
   };
   const LIGHT = {
     ink: '#1f2937',
@@ -337,6 +353,7 @@
     cold: '#2a78d6',
     mid: '#f0efec',
     mix: hexMix,
+    seq: ['#1f5fa8', '#ffffff'],
   };
   const oeFill = (o, c) => {
     if (o == null) return 'none';
@@ -504,7 +521,7 @@
       X,
       Y,
       dropped,
-      body: `<path d="${b}" fill="none" stroke="${c.bg}" stroke-width="2.2" stroke-dasharray="5 3"/>` + ax + pts,
+      body: `<path d="${b}" fill="none" stroke="${c.bg}" stroke-width="1.4" stroke-opacity="0.65"/>` + ax + pts,
       labels,
     };
   }
@@ -549,7 +566,7 @@
           ? `The release gives no lower tail for ${esc(m.s.label)}; this explorer computes it with the release's own binomial. A ${esc(W.mark)} with no change sits on the lower side. `
           : `The release gives no lower tail for ${esc(m.s.label)}, so a ${esc(W.mark)} with fewer changes than expected is drawn at 0. `) +
         `A ${esc(W.mark)} with no change and a small expected count has no stored test and is drawn at 0. `) +
-    `The dashed gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}. ` +
+    `The thin gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}. ` +
     `Where the enriched residues (q < 0.05) carry ${Math.round((PR.hotspot?.min_share ?? 0.3) * 100)}% or more of a protein's ${m.germ ? 'variants' : 'changes'} (at least ${PR.hotspot?.min_changes ?? 20}), the expected count at its other residues is inflated and they look depleted; the default labels skip those ${esc(W.marks)}, and you can still label one by a click or the Label box. ` +
     `Highlight genes outlines every site of the proteins you list and labels each one's most extreme site; it changes no statistic. ` +
     (m.germ
@@ -822,12 +839,12 @@
       .join('') +
     '</div>';
   function controls(wf) {
-    const s = sourceOf(),
-      groups = wf.groups[s.id] || [],
-      wfView = M.view === 'waterfall';
+    const V = M.view;
+    if (V === 'clinvar') return '';
+    const groups = wf?.groups[SRC[0].id] || [];
     return (
       `<div class="mu-ctl">` +
-      (SRC.length > 1 && wfView
+      (SRC.length > 1 && V === 'waterfall'
         ? seg(
             'data-mu-src',
             'Source',
@@ -835,39 +852,19 @@
             M.src
           )
         : '') +
-      (wfView
-        ? ''
-        : `<label class="mu-ct"><span class="seg-l">Cancer type</span><select data-mu-ct aria-label="Cancer type"><option value="">All cancer types</option>` +
+      (V === 'oncoprint'
+        ? `<label class="mu-ct"><span class="seg-l">Cancer type</span><select data-mu-ct aria-label="Cancer type"><option value="">All cancer types</option>` +
           groups
             .map((g) => `<option value="${esc(g)}"${g === M.group ? ' selected' : ''}>${esc(gname(g))}</option>`)
             .join('') +
-          `</select></label>`) +
-      (wfView && germ() ? '' : K.prop.hyperSwitch('Samples')) +
+          `</select></label>`
+        : '') +
+      (V === 'waterfall' && germ() ? '' : K.prop.hyperSwitch('Samples')) +
       `</div>`
     );
   }
   // a residue letter spelled out: "Serine (S)"
   const resLabel = (l) => (D.residue_names?.[l] ? `${cap1(D.residue_names[l])} (${l})` : l);
-  // one line for the whole list when it is the site set of the release (site_set_propensity): the set's own test
-  function setLine(m) {
-    const rows = PR.summary?.sets || [];
-    if (K.sel.active() || !rows.length || !m.s.set_source) return '';
-    const cohort = m.germ || hyper() ? 'all' : 'no_hypermutated';
-    const num = (v) => (v == null ? '–' : v >= 100 ? int(Math.round(v)) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
-    const fp = (v) => (v == null ? '–' : v < 0.001 ? v.toExponential(1).replace('e-', 'e−') : v.toPrecision(2));
-    const lines = rows
-      .filter((r) => r.source === m.s.set_source && r.cohort === cohort)
-      .map((r) => {
-        let t = `observed ${int(r.observed)}, expected ${num(r.expected)}, O/E ${num(r.oe)}`;
-        if (r.oe_status === 'descriptive') t += ' (descriptive)';
-        else if (r.oe < 1)
-          t += `; fewer than expected, p = ${fp(r.p_lower)} (permutation, ${int(PR.summary.iterations || 0)} draws)`;
-        else if (r.oe > 1)
-          t += `; more than expected, p = ${fp(r.p_upper)} (permutation, ${int(PR.summary.iterations || 0)} draws)`;
-        return `${PR.residues.length > 1 ? esc(resLabel(r.residue)) + ': ' : ''}${esc(t)}`;
-      });
-    return lines.length ? `<p class="small mu-setline"><b>This set:</b> ${lines.join('<br>')}</p>` : '';
-  }
   function setSummary() {
     const rows = PR.summary?.sets || [];
     if (!rows.length || K.sel.active()) return '';
@@ -877,8 +874,8 @@
     const fp = (v) => (v == null ? '–' : v < 0.001 ? v.toExponential(1).replace('e-', 'e−') : v.toFixed(3));
     return (
       `<details class="mu-set"><summary>Whole list against expectation (the release's site set test)</summary>` +
-      `<p class="small muted">${esc(PR.summary.set_label || '')}: the observed changes at the ${esc(W.marks)} against the expected changes, summed over their proteins (each protein's changes at its residues of the type, times the ${esc(W.marks)}' share of its expected rate of change). p comes from ${int(PR.summary.iterations || 10000)} permutation draws; the smallest possible p is about 1e−4. This table does not change with your selection.</p>` +
-      `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Source</th><th>Residue</th><th>Samples</th><th>${esc(cap1(W.marks))}</th><th>Observed</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th></tr></thead><tbody>` +
+      `<p class="small muted">${esc(PR.summary.set_label || '')}: the changes (k) at the ${esc(W.marks)} against the expected count, summed over their proteins (each protein's changes at its residues of the type, times the ${esc(W.marks)}' share of its expected rate of change). p comes from ${int(PR.summary.iterations || 10000)} permutation draws; the smallest possible p is about 1e−4. This table does not change with your selection.</p>` +
+      `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Source</th><th>Residue</th><th>Samples</th><th>${esc(cap1(W.marks))}</th><th>k</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th></tr></thead><tbody>` +
       pick
         .map(
           (r) =>
@@ -978,7 +975,7 @@
     return { rows, n: ps.length };
   }
   function chosenSection() {
-    const { rows, n } = chosenRows();
+    const { rows } = chosenRows();
     // a site that no source has a row for (a residue this site's tables do not cover) is one line
     const none = new Set(
       M.chosen.filter(
@@ -1003,8 +1000,7 @@
       .join('');
     return (
       `<section class="mu-chosen" id="mu-chosen"><h3>Test the sites you chose</h3>` +
-      `<p class="small muted">Choose sites before looking at the results. The adjusted p corrects only for the sites you chose (Holm, over ${int(n)} p values here), not for sites tried and removed. ` +
-      `Up to ${MAX_CHOSEN} sites; they are kept in the address. Samples follow the hypermutated switch above.</p>` +
+      `<p class="small muted">Pick sites before you look at the results. Up to ${MAX_CHOSEN}, kept in the address.</p>` +
       `<form class="mu-add" data-mu-form>` +
       `<input id="mu-site" type="text" autocomplete="off" placeholder="H4 R3" data-mu-site aria-label="Add a site, as a gene and a position"> ` +
       `<button type="submit" class="btn small"${M.chosen.length >= MAX_CHOSEN ? ' disabled' : ''}>Add</button> <span class="small muted" data-mu-msg role="status">${esc(M.note)}</span></form>` +
@@ -1146,9 +1142,7 @@
     const hasP = m.germ || m.lowerOk;
     return (
       `<section class="mu-zero"><h3>Sites with no ${m.germ ? 'variant' : 'change'}</h3>` +
-      `<p class="small muted">${esc(m.s.long || m.s.label)}: the ${esc(W.marks)} of the selection with none, most expected first. The top rows are the most surprising, since they should have shown ${m.germ ? 'variants' : 'changes'}. ` +
-      `${hasP ? `p is the raw p of the lower tail (none or fewer)${m.germ ? ', from the release' : ", computed by this explorer with the release's binomial"}. ` : 'The release gives no p for this tail in a somatic source. '}` +
-      `The table lists the ${int(PR.zero_rows || 1000)} sites with the most expected per source${hasP ? ', and every site with a raw p below 0.05' : ''}.</p>` +
+      `<p class="small muted">Most expected first${hasP ? '; p is the raw lower-tail p' : ''}.</p>` +
       `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Expected</th>${hasP ? '<th>p (fewer)</th>' : ''}</tr></thead><tbody>` +
       rows
         .slice(0, ZERO_SHOWN)
@@ -1189,16 +1183,393 @@
           ),
   ]);
 
-  function view() {
+  // ---- Ranked sites: the sites with q < 0.05 of each source, ranked by p ---------------------------------------------------------
+  const RANK_N = 20;
+  const geneOf = (acc) => byAcc[acc]?.[1] || acc;
+  const shownPos = (acc, pos) => (K.prot?.shownPos ? K.prot.shownPos(acc, pos) : pos);
+  const siteOnly = (r) => `${r.res || ''}${shownPos(r.acc, r.pos)}`;
+  const goTo = (acc, pos) => (location.hash = K.link('protein', `${acc}/${pos}`).replace(/^[^#]*#/, ''));
+  const rankTitle = (s) =>
+    s.kind === 'germline'
+      ? `Fewer inherited ${s.unit?.[1] || 'variants'} than expected (${s.label})`
+      : `Changed more than expected in ${s.unit?.[1] || 'samples'} (${s.label})`;
+  // the lists, one per source with a test: somatic sources by the upper tail, the germline source with a lower tail by its lower
+  // tail (the dashed-ring rows of the waterfall); null while a file is being read
+  function rankedLists() {
+    const lists = [];
+    for (const s of SRC) {
+      const g = s.kind === 'germline';
+      if (g) {
+        if (!s.lower_tail || PR.gn?.source !== s.id) continue;
+        const d = gnData();
+        if (d === undefined) return null;
+        if (d === null) continue;
+      }
+      const m = model(s);
+      if (!m) return null;
+      const rows = m.rows
+        .map((r) => ({ ...r, qq: g ? r.ql : r.q, pp: g ? r.pl : r.pu }))
+        .filter((r) => r.qq != null && r.qq < RING_Q);
+      rows.sort(
+        (a, b) =>
+          (a.pp ?? 1) - (b.pp ?? 1) ||
+          (g ? (a.o ?? 0) - (b.o ?? 0) : (b.o ?? 0) - (a.o ?? 0)) ||
+          (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos)
+      );
+      lists.push({ s, g, rows, n: m.n });
+    }
+    return lists;
+  }
+  function rankSection(l) {
+    const { s, rows } = l,
+      title = rankTitle(s),
+      all = !!M.all[s.id],
+      shown = all ? rows : rows.slice(0, RANK_N);
     const head =
-      `<div class="page-head results-head"><div><h2>Mutation frequency</h2><p class="cx">How often each ${esc(W.mark)} of the selection is changed ` +
-      `in tumors or cell lines, or carries a gnomAD variant, and which tumors carry the most changes. Hypermutated tumors are left out unless you include them.</p></div></div>`;
-    if (!K.sel.data()) return head + K.loading(`Loading the ${W.marks}…`);
-    const wf = wfData();
-    if (wf === undefined || (germ() && M.view === 'waterfall' && gnData() === undefined))
-      return head + K.loading('Loading the frequencies…');
-    if (wf === null || (germ() && M.view === 'waterfall' && gnData() === null))
-      return head + '<p class="muted">The frequencies could not be read.</p>';
+      `<div class="mu-top"><div><h3>${esc(title)}</h3><p class="small muted">${int(rows.length)} ${rows.length === 1 ? 'site' : 'sites'} with q &lt; 0.05</p></div>` +
+      (rows.length ? K.expBar(['tsv'], 'murank', title, 'propensity') : '') +
+      `</div>`;
+    if (!rows.length)
+      return `<section class="mu-rank" data-mu-rank="${esc(s.id)}">${head}<p class="muted small">${
+        l.n ? `No ${esc(W.mark)} of the selection has q &lt; 0.05 here.` : `The selection has no ${esc(W.marks)}.`
+      }</p></section>`;
+    const body = shown
+      .map((r) => {
+        const note = r.hot ? `<br><span class="small muted">${esc(K.prop.hotNote(r.acc, r.hot, s.id))}</span>` : '';
+        return (
+          `<tr class="mu-go" data-mu-go="${esc(r.acc)}:${r.pos}"><td>${esc(geneOf(r.acc))}${note}</td>` +
+          `<td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteOnly(r))}</a></td>` +
+          `<td class="num">${int(r.k)}</td><td class="num">${K.prop.fe(r.e)}</td><td class="num">${K.prop.fo(r.o)}</td><td class="num">${fpv(r.qq)}</td></tr>`
+        );
+      })
+      .join('');
+    return (
+      `<section class="mu-rank" data-mu-rank="${esc(s.id)}">${head}` +
+      `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Gene</th><th>Site</th><th class="num">k</th><th class="num">Expected</th><th class="num">O/E</th><th class="num" title="p and q pool all cancer types">q</th></tr></thead><tbody>${body}</tbody></table></div>` +
+      (rows.length > RANK_N
+        ? `<p class="small"><button type="button" class="btn small" data-mu-all="${esc(s.id)}" aria-expanded="${all}">${all ? `Show the top ${RANK_N}` : `Show all ${int(rows.length)}`}</button></p>`
+        : '') +
+      `</section>`
+    );
+  }
+  const rankTsv = (id) => {
+    const l = (rankedLists() || []).find((x) => x.s.id === id);
+    if (!l) return '';
+    const g = l.g;
+    return (
+      K.preamble(
+        rankTitle(l.s),
+        `${l.s.long || l.s.label}; q < 0.05, sorted by p (${g ? 'fewer' : 'more'}); ${K.sel.describe() || 'every ' + W.mark}${g ? '' : `; ${hyper() ? 'with' : 'without'} hypermutated samples`}`
+      ) +
+      `rank\tgene\taccession\tsite\tk\texpected\toe\tp_${g ? 'fewer' : 'more'}\tq_${g ? 'fewer' : 'more'}\tprotein_flag\n` +
+      l.rows
+        .map((r, i) =>
+          [
+            i + 1,
+            geneOf(r.acc),
+            r.acc,
+            siteOnly(r),
+            r.k,
+            r.e ?? '',
+            r.o ?? '',
+            r.pp ?? '',
+            r.qq,
+            r.hot ? K.prop.hotNote(r.acc, r.hot, l.s.id) : '',
+          ].join('\t')
+        )
+        .join('\n') +
+      '\n'
+    );
+  };
+  function rankedBody() {
+    const lists = rankedLists();
+    if (!lists) return null;
+    return lists.map(rankSection).join('');
+  }
+  K.clicks.push(
+    [
+      '[data-murank]',
+      (b) =>
+        K.exportFigure('tsv', null, `${D.site.id}_ranked_sites_${b.closest('[data-mu-rank]').dataset.muRank}`, b, () =>
+          rankTsv(b.closest('[data-mu-rank]').dataset.muRank)
+        ),
+    ],
+    ['[data-mu-all]', (b) => ((M.all[b.dataset.muAll] = !M.all[b.dataset.muAll]), K.render())],
+    [
+      '[data-mu-go]',
+      (r, e) => {
+        if (e?.target?.closest?.('a')) return;
+        const [acc, pos] = r.dataset.muGo.split(':');
+        goTo(acc, pos);
+      },
+    ]
+  );
+
+  // ---- Inherited disease: ClinVar pathogenic and likely pathogenic variants by disease family -------------------------------------
+  const cvData = () => (PR.cv ? (get('cv', PR.cv.file), FILES['cv:v']) : null);
+  // the release's family names, in American spelling
+  const famName = (t) =>
+    String(t)
+      .replace(/behavioural/g, 'behavioral')
+      .replace(/haematological/g, 'hematological');
+  const starWord = (n) => `${n} ${n === 1 ? 'star' : 'stars'}`;
+  let CV_IDX = null;
+  // the rows (sites with at least one variant that passes the review filter), the columns (families with at least one), and
+  // each cell's variants: [variation id, review stars, alt, [conditions]]. A variant counts once in each of its families.
+  function clinvarModel() {
+    const cv = cvData(),
+      sites = selSites();
+    if (!cv || !sites) return null;
+    if (!CV_IDX || CV_IDX.cv !== cv) {
+      const map = new Map();
+      for (const [acc, list] of Object.entries(cv.sites)) for (const [pos, vs] of list) map.set(acc + ':' + pos, vs);
+      CV_IDX = { cv, map };
+    }
+    const rows = [],
+      tot = new Array(cv.fam.length).fill(0);
+    for (const [acc, pos, res] of sites) {
+      const vs = (CV_IDX.map.get(acc + ':' + pos) || []).filter((v) => v[1] >= M.stars);
+      if (!vs.length) continue;
+      const cells = new Map();
+      for (const v of vs)
+        for (const f of new Set(v[3].map((c) => cv.cond[c][1]))) {
+          if (!cells.has(f)) cells.set(f, []);
+          cells.get(f).push(v);
+        }
+      cells.forEach((a, f) => (tot[f] += a.length));
+      rows.push({ acc, pos, res, vs, cells });
+    }
+    rows.sort((a, b) => b.vs.length - a.vs.length || (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos));
+    // by total, the catch-all family last
+    const cols = cv.fam
+      .map((_, i) => i)
+      .filter((i) => tot[i])
+      .sort((a, b) => (a === cv.other) - (b === cv.other) || tot[b] - tot[a] || a - b);
+    const max = rows.reduce((m, r) => r.cells.forEach((a) => (m = Math.max(m, a.length))) || m, 0);
+    return {
+      cv,
+      rows,
+      cols,
+      tot,
+      max,
+      nVar: rows.reduce((n, r) => n + r.vs.length, 0),
+      nSites: rows.length,
+      nSelected: sites.length,
+    };
+  }
+  const cvLink = (id) => `https://www.ncbi.nlm.nih.gov/clinvar/variation/${id}/`;
+  const varName = (r, v) => `${r.res || ''}${shownPos(r.acc, r.pos)}${v[2]}`;
+  // a variant's conditions that put it in the family
+  // all of a variant's condition names (ClinVar's own), the ones that put it in the family first
+  const famConds = (g, f, v) => {
+    const cs = v[3].map((c) => g.cv.cond[c]);
+    return [...cs.filter((c) => c[1] === f), ...cs.filter((c) => c[1] !== f)].map((c) => c[0]);
+  };
+  // a cell's shade: one hue, from light (one variant) to full (the most in any cell), by the square root of the count
+  const cellShade = (n, max, c) =>
+    c.mix(c.seq[0], c.seq[1], Math.round(14 + 54 * Math.sqrt((n - 1) / Math.max(1, max - 1))));
+  const cellTip = (g, r, f) => {
+    const a = r.cells.get(f);
+    return (
+      `${siteName(r.acc, r.pos, r.res)} · ${famName(g.cv.fam[f])}: ${a.length} ${a.length === 1 ? 'variant' : 'variants'}\n` +
+      a
+        .slice(0, 6)
+        .map((v) => `${varName(r, v)} · ${starWord(v[1])} · ${famConds(g, f, v).join('; ')}`.slice(0, 160))
+        .join('\n') +
+      (a.length > 6 ? `\nand ${a.length - 6} more (click the cell)` : '')
+    );
+  };
+  function clinvarDetail(g) {
+    const [key, fs] = M.cell.split('|'),
+      f = +fs,
+      r = g.rows.find((x) => x.acc + ':' + x.pos === key);
+    const a = r?.cells.get(f);
+    if (!a) return '';
+    return (
+      `<div class="mu-cvd"><h4>${esc(siteName(r.acc, r.pos, r.res))} · ${esc(famName(g.cv.fam[f]))}</h4><ul>` +
+      a
+        .map(
+          (v) =>
+            `<li><a href="${cvLink(v[0])}" target="_blank" rel="noopener">${esc(varName(r, v))}</a> (ClinVar ${v[0]}) · ${esc(starWord(v[1]))} · ${esc(famConds(g, f, v).join('; '))}</li>`
+        )
+        .join('') +
+      `</ul></div>`
+    );
+  }
+  function clinvarBody() {
+    const g = clinvarModel();
+    if (!g) return null;
+    const stars = seg(
+      'data-mu-stars',
+      'Review',
+      [
+        [0, 'Any'],
+        [1, '1+ stars'],
+        [2, '2+ stars'],
+      ],
+      M.stars
+    );
+    if (!g.rows.length)
+      return `<div class="mu-bar">${stars}</div><p class="muted">No ${esc(W.mark)} of the selection has a pathogenic or likely pathogenic ClinVar variant${M.stars ? ` with ${M.stars}+ review stars` : ''}.</p>`;
+    const shown = g.rows.slice(0, M.rows);
+    const th = g.cols
+      .map(
+        (f) => `<th class="mu-fam" title="${esc(famName(g.cv.fam[f]))}"><span>${esc(famName(g.cv.fam[f]))}</span></th>`
+      )
+      .join('');
+    const tr = shown
+      .map(
+        (r) =>
+          `<tr><th class="mu-site" scope="row"><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteName(r.acc, r.pos, r.res))}</a></th><td class="num mu-all">${int(r.vs.length)}</td>` +
+          g.cols
+            .map((f) => {
+              const a = r.cells.get(f);
+              return a
+                ? `<td class="mu-c"><button type="button" class="mu-cell" style="background:${cellShade(a.length, g.max, THEME)}" data-mu-cell="${esc(r.acc)}:${r.pos}|${f}" aria-label="${esc(cellTip(g, r, f).split('\n')[0])}" data-prtip="${esc(cellTip(g, r, f))}">${int(a.length)}</button></td>`
+                : '<td class="mu-c"></td>';
+            })
+            .join('') +
+          `</tr>`
+      )
+      .join('');
+    const key = [1, Math.max(2, Math.round(g.max / 2)), g.max]
+      .filter((v, i, a) => v <= g.max && a.indexOf(v) === i)
+      .map(
+        (v) =>
+          `<span class="pr-k"><span class="mu-sw" style="background:${cellShade(v, g.max, THEME)}"></span>${int(v)}</span>`
+      )
+      .join('');
+    return (
+      `<div class="mu-bar">${stars}</div>` +
+      `<section class="mu-card mu-cv"><div class="mu-top"><p class="small muted">${int(g.nSites)} ${g.nSites === 1 ? esc(W.mark) : esc(W.marks)} with ${int(g.nVar)} ${g.nVar === 1 ? 'variant' : 'variants'}, in ${int(g.cols.length)} disease ${g.cols.length === 1 ? 'family' : 'families'}.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mucv', 'inherited disease', 'propensity')}</div>` +
+      `<div class="tbl-wrap mu-cvw"><table class="tbl mu-cvt"><thead><tr><th class="mu-site">Site</th><th class="num">All</th>${th}</tr></thead><tbody>${tr}</tbody></table></div>` +
+      (g.rows.length > shown.length
+        ? `<p class="small"><button type="button" class="btn small" data-mu-more>Show ${Math.min(50, g.rows.length - shown.length)} more</button> <span class="muted">${int(shown.length)} of ${int(g.rows.length)} shown; the download has all.</span></p>`
+        : '') +
+      `<div id="mu-cvd" aria-live="polite">${M.cell ? clinvarDetail(g) : ''}</div>` +
+      `<p class="pr-key small muted">${key}<span class="pr-k">variants per cell</span></p></section>`
+    );
+  }
+  // the figure: the rows shown, the families as vertical labels
+  function clinvarSvg(g, c, w) {
+    const rows = g.rows.slice(0, M.rows),
+      ml = 126,
+      top = 176,
+      rh = 15,
+      n = g.cols.length,
+      cw = Math.max(14, Math.min(30, (w - ml - 10) / n)),
+      H = top + rows.length * rh + 14;
+    let s = '';
+    g.cols.forEach((f, k) => {
+      const nm = famName(g.cv.fam[f]);
+      s += `<text transform="translate(${(ml + k * cw + cw / 2 + 3.5).toFixed(1)},${top - 6}) rotate(-90)" font-size="10" fill="${c.ink}">${esc(nm.length > 34 ? nm.slice(0, 33) + '…' : nm)}</text>`;
+    });
+    s += `<text x="${ml - 24}" y="${top - 6}" text-anchor="end" font-size="10" fill="${c.muted}">all</text>`;
+    rows.forEach((r, j) => {
+      const y = top + j * rh;
+      s += `<text x="${ml - 34}" y="${y + rh - 4}" text-anchor="end" font-size="10.5" fill="${c.ink}">${esc(siteName(r.acc, r.pos, r.res))}</text>`;
+      s += `<text x="${ml - 24}" y="${y + rh - 4}" text-anchor="end" font-size="10.5" fill="${c.muted}">${int(r.vs.length)}</text>`;
+      g.cols.forEach((f, k) => {
+        const a = r.cells.get(f);
+        const x = ml + k * cw;
+        if (!a)
+          return void (s += `<rect x="${x.toFixed(1)}" y="${y}" width="${(cw - 1).toFixed(1)}" height="${rh - 1}" fill="${c.mix(c.seq[0], c.seq[1], 4)}"/>`);
+        const p = 14 + 54 * Math.sqrt((a.length - 1) / Math.max(1, g.max - 1));
+        s += `<rect x="${x.toFixed(1)}" y="${y}" width="${(cw - 1).toFixed(1)}" height="${rh - 1}" fill="${c.mix(c.seq[0], c.seq[1], Math.round(p))}"/><text x="${(x + cw / 2 - 0.5).toFixed(1)}" y="${y + rh - 4}" text-anchor="middle" font-size="10" fill="${p > 50 ? '#ffffff' : c.ink}">${int(a.length)}</text>`;
+      });
+    });
+    return { svg: s, H };
+  }
+  const cvNote = () =>
+    `ClinVar pathogenic and likely pathogenic variants (clinsig_simple 1) at the ${W.marks} of the selection, by disease family; ${
+      M.stars ? `${M.stars}+ review stars; ` : ''
+    }a variant counts once in each of its families. The families are the release's rules applied to each condition name. ClinVar reflects clinical testing, so these counts are not tested.`;
+  function clinvarFigure() {
+    const g = clinvarModel(),
+      f = clinvarSvg(g, LIGHT, 720);
+    return K.figureFrame({
+      title: 'Inherited disease: ClinVar pathogenic variants',
+      sub: `${K.sel.describe() || 'every ' + W.mark}: ${int(g.nSites)} ${W.marks}, ${int(g.nVar)} variants`,
+      body: `<g transform="translate(20,0)">${f.svg}</g>`,
+      bodyH: f.H,
+      W: 760,
+      note: cvNote(),
+    });
+  }
+  const clinvarTsv = () => {
+    const g = clinvarModel();
+    return (
+      K.preamble(
+        'Inherited disease: ClinVar pathogenic and likely pathogenic variants by disease family',
+        `${K.sel.describe() || 'every ' + W.mark}; ${M.stars ? `${M.stars}+ review stars` : 'any review status'}; a variant is listed once for each family; conditions are ClinVar's, families the release's rules`
+      ) +
+      'site\taccession\tposition\tdisease_family\tvariation_id\tvariant\treview_stars\tconditions\n' +
+      g.rows
+        .flatMap((r) =>
+          g.cols.flatMap((f) =>
+            (r.cells.get(f) || []).map((v) =>
+              [
+                siteName(r.acc, r.pos, r.res),
+                r.acc,
+                r.pos,
+                famName(g.cv.fam[f]),
+                v[0],
+                varName(r, v),
+                v[1],
+                v[3].map((c) => g.cv.cond[c][0]).join('; '),
+              ].join('\t')
+            )
+          )
+        )
+        .join('\n') +
+      '\n'
+    );
+  };
+  K.clicks.push(
+    [
+      '[data-mu-stars]',
+      (b) => ((M.stars = +b.dataset.muStars), (M.cell = ''), (M.rows = 50), K.writeHash?.(), K.render()),
+    ],
+    ['[data-mu-more]', () => ((M.rows += 50), K.render())],
+    [
+      '[data-mu-cell]',
+      (b) => {
+        M.cell = M.cell === b.dataset.muCell ? '' : b.dataset.muCell;
+        K.render();
+        if (M.cell) document.getElementById('mu-cvd')?.scrollIntoView({ block: 'nearest' });
+      },
+    ],
+    [
+      '[data-mucv]',
+      (b) => K.exportFigure(b.dataset.mucv, clinvarFigure, `${D.site.id}_inherited_disease`, b, clinvarTsv),
+    ]
+  );
+
+  const CHART_LINK = `<button type="button" class="mu-linkbtn" data-mu-view="waterfall">Show all sites as a chart</button>`;
+  function view() {
+    const page = (line, inner) =>
+      `<div class="page-head results-head"><div><h2>Disease variants</h2>${line ? `<p class="cx">${line}</p>` : ''}</div></div>${inner}`;
+    // while a file is read: the view buttons stay, and a block as tall as the page will be keeps the layout from jumping
+    const viewBar = () =>
+      `<div class="mu-bar">${seg(
+        'data-mu-view',
+        'View',
+        [
+          ['ranked', 'Ranked sites'],
+          ['oncoprint', 'Cancer: tumors'],
+          ...(PR.cv ? [['clinvar', 'Inherited disease']] : []),
+        ],
+        M.view
+      )}</div>`;
+    const head = (inner) => page('', viewBar() + `<div class="mu-skel" role="status">${inner}</div>`);
+    if (!K.sel.data()) return head(K.loading(`Loading the ${W.marks}…`));
+    const V = M.view === 'clinvar' && !PR.cv ? 'ranked' : M.view;
+    const needWf = V !== 'clinvar',
+      wf = needWf ? wfData() : null;
+    if (needWf && (wf === undefined || (V === 'waterfall' && germ() && gnData() === undefined)))
+      return head(K.loading('Loading the tumor, cell line and gnomAD counts…'));
+    if (needWf && (wf === null || (V === 'waterfall' && germ() && gnData() === null)))
+      return head('<p class="muted">The frequencies could not be read.</p>');
     const note = K.sel.active()
       ? ''
       : `<div class="filter-note">Nothing is selected, so this shows every ${esc(W.mark)}.</div>`;
@@ -1206,15 +1577,28 @@
       'data-mu-view',
       'View',
       [
-        ['waterfall', 'Waterfall'],
-        ['oncoprint', 'Oncoprint'],
+        ['ranked', 'Ranked sites'],
+        ['oncoprint', 'Cancer: tumors'],
+        ...(PR.cv ? [['clinvar', 'Inherited disease']] : []),
       ],
-      M.view
+      V
     );
-    let body = '';
-    if (M.view === 'waterfall') {
+    const bar = `<div class="mu-bar">${tabs}${controls(wf)}${V === 'waterfall' ? '' : CHART_LINK}</div>`;
+    let line = '',
+      body = '';
+    if (V === 'ranked') {
+      line = `Sites of the selection with more changes than expected in tumors or cell lines, or fewer inherited variants than expected.`;
+      body = rankedBody();
+      if (body === null)
+        return page(line, note + bar + `<div class="mu-skel" role="status">${K.loading('Loading…')}</div>`);
+    } else if (V === 'clinvar') {
+      line = `Pathogenic and likely pathogenic ClinVar variants by disease family; click a cell to list them. ClinVar reflects clinical testing, so these counts are not tested.`;
+      body = cvData() === undefined ? K.loading('Loading…') : clinvarBody();
+      if (body === null)
+        body = cvData() === null ? '<p class="muted">The variants could not be read.</p>' : K.loading('Loading…');
+    } else if (V === 'waterfall') {
       const m = model();
-      if (!m) return head + K.loading('Loading…');
+      if (!m) return page('', note + bar + `<div class="mu-skel" role="status">${K.loading('Loading…')}</div>`);
       const w0 = wfWidth();
       const zoom = seg(
         'data-mu-zoom',
@@ -1229,18 +1613,19 @@
       const nUp = m.rows.filter((r) => r.y > 0).length,
         nDn = m.rows.filter((r) => r.y < 0).length,
         ringUp = m.rows.filter((r) => r.q != null && r.q < RING_Q).length,
+        nZero = m.rows.filter((r) => r.y === 0).length,
         nNone = m.rows.filter((r) => r.y == null).length;
+      line = `${int(m.n)} ${esc(W.marks)}: ${int(nUp)} above 0 (${int(ringUp)} with q &lt; 0.05), ${int(nDn)} below${m.germ ? ` (${int(m.nFewer)} with q &lt; 0.05)` : ''}, ${int(nZero)} at 0 (O/E 1), ${int(nNone)} drawn at 0 with no stored test.`;
       body =
-        `<section class="mu-card"><div class="mu-top"><p class="small muted">${waterfallNote(m)}</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muwf', 'mutation frequency', 'propensity')}</div>` +
-        setLine(m) +
-        `<p class="small">${int(m.n)} ${esc(W.marks)}: ${int(nUp)} above 0 (${int(ringUp)} with q &lt; 0.05), ${int(nDn)} below${m.germ ? ` (${int(m.nFewer)} with q &lt; 0.05)` : ''}, ${int(nNone)} drawn at 0 with no stored test.</p><div class="mu-bar">${zoom}</div>` +
-        `<svg id="mu-svg" class="mu-svg" viewBox="0 0 ${w0} ${wfHeight(w0)}" tabindex="0" role="img" aria-label="Waterfall of the signed score of each site, ranked from most to least enriched. Use the arrow keys to step through the sites.">${wfInner(m, w0)}</svg>` +
-        `<p id="mu-read" class="small mu-read" aria-live="polite">Tap, hover or focus the chart to read a ${esc(W.mark)} (arrow keys step through the ranks). Click a point to label it; click a label to open its card.</p>` +
+        `<section class="mu-card"><h3>All sites as a chart</h3><div class="mu-top mu-end">${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muwf', 'all sites as a chart', 'propensity')}</div>` +
+        `<div class="mu-bar">${zoom}</div>` +
+        `<svg id="mu-svg" class="mu-svg" viewBox="0 0 ${w0} ${wfHeight(w0)}" tabindex="0" role="img" aria-label="Chart of the signed score of each site, ranked from most to least enriched. Use the arrow keys to step through the sites.">${wfInner(m, w0)}</svg>` +
+        `<p id="mu-read" class="small mu-read" aria-live="polite">Hover, tap or focus the chart to read a ${esc(W.mark)}.</p>` +
         labelForm() +
         geneForm(m) +
-        `<p class="pr-key small muted"><span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 5H26" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/></svg>${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}</span>` +
+        `<p class="pr-key small muted"><span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 5H26" stroke="var(--muted)" stroke-width="1.4" stroke-opacity="0.8"/></svg>${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}</span>` +
         `<span class="pr-k"><span class="mu-grad" aria-hidden="true"></span>point color: O/E, from 1/8 (blue) through 1 (gray) to 8 (red)</span>` +
-        `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/><circle cx="9" cy="9" r="4" fill="var(--wf-hot)" stroke="var(--ink)" stroke-width="0.8"/></svg>solid ring: q &lt; 0.05, more than expected</span>` +
+        `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/><circle cx="9" cy="9" r="4" fill="var(--wf-hot)" stroke="var(--ink)" stroke-width="0.8"/></svg>ring: q &lt; 0.05, more than expected</span>` +
         (M.genes.length
           ? `<span class="pr-k"><svg width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="9.5" fill="none" stroke="var(--accent)" stroke-width="2.2"/><circle cx="11" cy="11" r="3.4" fill="var(--wf-mid)" stroke="var(--ink)" stroke-width="0.8"/></svg>outline: a site of a listed gene</span>`
           : '') +
@@ -1250,23 +1635,24 @@
         `</p></section>`;
     } else {
       const o = onco();
-      if (!o) return head + K.loading('Loading…');
+      if (!o) return page('', note + bar + `<div class="mu-skel" role="status">${K.loading('Loading…')}</div>`);
+      line = `${int(o.top.length)} of the ${int(o.nSites)} ${esc(W.marks)} with a changed tumor${M.group ? ` in ${esc(M.group)}` : ''}; hypermutated tumors are ${hyper() ? 'included' : 'left out'}.`;
       if (!o.top.length)
         body = `<p class="muted">No ${esc(W.mark)} of the selection has a tumor with a change${hyper() ? '' : ' (hypermutated tumors left out)'}.</p>`;
       else {
         const f = oncoprintSvg(o, { ...ONC_THEME }, 760, ['var(--onc-1)', 'var(--onc-2)'], true);
         body =
-          `<section class="mu-card"><div class="mu-top"><p class="small muted">${oncoNote(o)}</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muon', 'oncoprint', 'propensity')}</div>` +
-          `<svg id="mu-svg" class="mu-svg" viewBox="0 0 760 ${f.H}" role="img" aria-label="Oncoprint of the top sites across TCGA tumors">${f.svg}` +
+          `<section class="mu-card"><div class="mu-top"><h3>Top sites across TCGA tumors</h3>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muon', 'top sites across TCGA tumors', 'propensity')}</div>` +
+          `<svg id="mu-svg" class="mu-svg" viewBox="0 0 760 ${f.H}" role="img" aria-label="Top sites across TCGA tumors, with the tumors that carry them">${f.svg}` +
           `<rect id="mu-hover" class="mu-link" x="${f.ml}" y="0" width="${f.pw}" height="${f.H}" fill="transparent" data-prtip=""/></svg>` +
-          `<p class="small muted">Click a ${esc(W.mark)} name or a row to open its card.</p>` +
           `<p class="pr-key small muted"><span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-1)"/></svg>missense change</span>` +
           `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-2)"/></svg>stop gained</span>` +
           `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--muted)"/></svg>burden, below the threshold</span>` +
           `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-3)"/></svg>burden, hypermutated</span></p></section>`;
       }
     }
-    return `${head}${note}<div class="mu-bar">${tabs}${controls(wf)}</div>${body}${M.view === 'waterfall' ? (model() ? zeroSection(model()) : '') + setSummary() : ''}${chosenSection()}`;
+    const extra = V === 'waterfall' ? (model() ? zeroSection(model()) : '') + setSummary() : '';
+    return page(line, `${note}${bar}${body}${extra}${V === 'clinvar' ? '' : chosenSection()}`);
   }
   const ONC_THEME = {
     ink: 'var(--ink)',
@@ -1285,7 +1671,7 @@
       f = (e.clientX - box.left) / box.width;
     if (M.view === 'waterfall') {
       if (LAST.m) inspect(rowAt(f), r);
-    } else {
+    } else if (M.view === 'oncoprint') {
       const o = onco();
       if (!o || !o.cols.length) return;
       const box2 = document.getElementById('mu-svg').getBoundingClientRect(),
@@ -1345,7 +1731,7 @@
   });
   // controls
   K.clicks.push(
-    ['[data-mu-view]', (b) => ((M.view = b.dataset.muView), K.render())],
+    ['[data-mu-view]', (b) => ((M.view = b.dataset.muView), (M.cell = ''), K.writeHash?.(), K.render())],
     ['[data-mu-src]', (b) => ((M.src = b.dataset.muSrc), (M.group = ''), K.render())],
     ['[data-mu-zoom]', (b) => ((M.zoom = +b.dataset.muZoom), K.render())]
   );
@@ -1408,7 +1794,7 @@
     const o = onco(),
       f = oncoprintSvg(o, ONC_LIGHT, 720, ['#2a78d6', '#eb6834']);
     return K.figureFrame({
-      title: 'Oncoprint of the top sites in TCGA',
+      title: 'Top sites across TCGA tumors',
       sub: `${K.sel.describe() || 'every ' + W.mark}: ${int(o.top.length)} ${W.marks}, ${int(o.cols.length)} tumors`,
       body: `<g transform="translate(20,0)">${f.svg}</g>`,
       bodyH: f.H,
@@ -1420,7 +1806,7 @@
     const o = onco();
     return (
       K.preamble(
-        'Oncoprint of the top sites in TCGA',
+        'Top sites across TCGA tumors',
         `${hyper() ? 'with' : 'without'} hypermutated tumors; sample burden from sample_burden`
       ) +
       'site\taccession\tsample_id\tproject\tchange\tcoding_calls_per_mb\thypermutated\n' +
@@ -1446,14 +1832,13 @@
   K.clicks.push(
     [
       '[data-muwf]',
-      (b) =>
-        K.exportFigure(b.dataset.muwf, waterfallFigure, `${D.site.id}_mutation_frequency_waterfall`, b, waterfallTsv),
+      (b) => K.exportFigure(b.dataset.muwf, waterfallFigure, `${D.site.id}_sites_chart`, b, waterfallTsv),
     ],
-    ['[data-muon]', (b) => K.exportFigure(b.dataset.muon, oncoFigure, `${D.site.id}_oncoprint`, b, oncoTsv)]
+    ['[data-muon]', (b) => K.exportFigure(b.dataset.muon, oncoFigure, `${D.site.id}_top_sites_tcga_tumors`, b, oncoTsv)]
   );
 
-  K.views.mutations = { render: view, title: () => 'Mutation frequency', follows: true };
-  K.tabs.push(() => ['mutations', 'Mutation frequency', K.sel?.active() ? 'selection' : null]);
+  K.views.mutations = { render: view, title: () => 'Disease variants', follows: true };
+  K.tabs.push(() => ['mutations', 'Disease variants', K.sel?.active() ? 'selection' : null]);
 
   // ---- Method and Help ----------------------------------------------------------------------------------------------------------
   const sumC = (kind, source, cohort) => {
@@ -1485,7 +1870,12 @@
       `<p>ClinVar variants reflect clinical testing and submission more than how often residues change, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
       `<p>On the cancer and germline cards, stick height is the count in the card's table, circle size grows with O/E, and a ring marks q &lt; 0.05.</p>` +
       `<p>Expected counts are within a protein. Where the residues of a type that are themselves enriched (q &lt; 0.05) carry ${Math.round((PR.hotspot?.min_share ?? 0.3) * 100)}% or more of a protein's changes or variants (and the protein has at least ${PR.hotspot?.min_changes ?? 20}), such as TP53 R273, R248 and R175, the expected count at its other residues is inflated and they look depleted. The explorer flags such a protein per source and cohort, names up to three of those residues on the waterfall tooltip, the site card and the tested-sites table, and leaves its ${esc(W.marks)} out of the default waterfall labels. You can still label them. The flag changes no count, expected value, O/E, p or q.</p>` +
-      `<p>On the Mutation frequency page, the waterfall ranks the sites of the selection from the most enriched to the most depleted. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example). The oncoprint joins the sites with the most changed TCGA tumors to those tumors' sample_burden by sample id.</p>` +
+      `<p><b>Disease variants page.</b> It has three views of the sites of your selection, or of every ${esc(W.mark)} when nothing is selected, and a chart of all sites. Hypermutated tumors are left out unless you choose With hypermutated. Cancer types are pooled, so p and q do not change with them.</p>` +
+      `<p><b>Ranked sites.</b> Each table lists the sites with q &lt; 0.05 in one source, ranked by p, with the top 20 shown and a Show all button. The first two (tumors, cell lines) hold sites with more changes than expected (q is the release's, for the upper tail). The third holds sites with fewer inherited gnomAD variants than expected (q for the lower tail, the dashed-ring sites of the chart). k is the count, expected the count the residue's codon predicts, and O/E their ratio. A protein flagged as dominated by a few enriched residues (see above) says so in its row. A row opens the site's card.</p>` +
+      `<p><b>Cancer: tumors.</b> This is an oncoprint. The ${esc(W.marks)} with the most changed TCGA tumors are the rows, the tumors that carry them are the columns, and the bar above each tumor is its coding calls per Mb from the release's sample_burden (capped at 40; the dashed line is the hypermutated threshold). A tumor with two changes at one site counts once, so a table that counts changes can show a higher number.</p>` +
+      `<p><b>Inherited disease.</b> Each row is a ${esc(W.mark)} with at least one ClinVar variant classified pathogenic or likely pathogenic (clinsig_simple 1 in the release's ClinVar change tables). Columns are disease families. Each condition name of a variant (split at | and ;; "not specified", "not provided" and "see cases" dropped) gets the family of the first rule it matches in the release's name rules for its DisGeNET disease families (PTM_Pipeline scripts/disease_families.py), applied here to ClinVar condition names and read as text when the explorer is built, so a few conditions can land in a broader family than a specialist would choose; the detail of a cell always lists ClinVar's own condition names; a name no rule matches goes to Other / unassigned, which is listed last. A variant counts once in each of its families, so a row's cells can add up to more than its All count. A cell is the number of variants, shaded from light (one) to full (the most in any cell); click it to list the variants, their conditions and review stars, with links to ClinVar. The review filter keeps variants with at least that many ClinVar review stars. A variant that names no condition is not shown. These counts come from clinical testing and submission, not from a test against expectation, so they carry no p or q.</p>` +
+      `<p><b>All sites as a chart.</b> The chart ranks the sites from the most enriched to the most depleted. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side; one with a small expected count has no stored test and is drawn at 0. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The top and bottom sites are labeled, except those of a flagged protein; click a point to label it too (up to 20, kept in the address). Highlight genes outlines every site of the genes you paste and labels each one's most extreme site; it changes no statistic. Under the chart, a table lists the ${esc(W.marks)} with no change, most expected first, with the raw lower-tail p. Whole list against expectation is the release's own test for the site set.</p>` +
+      `<p>The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example).</p>` +
       (ctl.length
         ? `<p>Positive controls (H3 oncohistone residues and recurrent cancer hotspots; <a href="https://doi.org/10.1038/nbt.3391" target="_blank" rel="noopener">Chang et al., Nat Biotechnol 34:155 (2016)</a>). A control passes when q &lt; 0.05. A failed control is reported here and does not block the release.</p>` +
           `<div class="tbl-card"><table class="tbl"><thead><tr><th>Controls</th><th>Source</th><th>Samples</th><th>Pass</th><th>Fail</th><th>Not tested</th></tr></thead><tbody>` +
@@ -1512,6 +1902,8 @@
   st.id = 'kit-mutations-css';
   st.textContent = [
     ':root{--onc-1:#2a78d6;--onc-2:#eb6834;--onc-3:#1baf7a;--wf-hot:#e34948;--wf-cold:#2a78d6;--wf-mid:#f0efec}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--onc-1:#3987e5;--onc-2:#d95926;--onc-3:#199e70;--wf-hot:#e66767;--wf-cold:#3987e5;--wf-mid:#383835}}:root[data-theme="dark"]{--onc-1:#3987e5;--onc-2:#d95926;--onc-3:#199e70;--wf-hot:#e66767;--wf-cold:#3987e5;--wf-mid:#383835}',
+    '.mu-skel{min-height:26rem}.mu-end{justify-content:flex-end}.mu-linkbtn{border:0;background:none;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;padding:0}.mu-rank{margin:1.2rem 0;max-width:720px}.mu-rank h3{margin:.2rem 0}.mu-rank p{margin:.1rem 0}.mu-rt .num,.mu-cvt .num{text-align:right;font-variant-numeric:tabular-nums}.mu-rt td:first-child{min-width:8rem}.mu-go{cursor:pointer}.mu-go:hover td{background:var(--surface-2)}',
+    '.mu-cv{max-width:100%}.mu-cvw{max-width:100%;overflow-x:auto}.mu-cvt{border-collapse:separate;border-spacing:0}.mu-cvt .mu-site{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;white-space:nowrap;padding-right:.6rem}.mu-fam{height:11rem;vertical-align:bottom;padding:.2rem .1rem;width:2rem;min-width:2rem}.mu-fam span{writing-mode:vertical-rl;transform:rotate(180deg);display:block;max-height:10.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:.78rem}.mu-c{padding:1px;text-align:center}.mu-all{color:var(--muted);padding:0 .5rem}.mu-cell{display:block;width:100%;min-width:1.9rem;height:1.6rem;border:0;border-radius:3px;font:inherit;font-size:.8rem;color:var(--ink);cursor:pointer}.mu-cell:hover,.mu-cell:focus-visible{outline:2px solid var(--ink)}.mu-sw{display:inline-block;width:18px;height:12px;border:1px solid var(--line-strong);vertical-align:-1px;margin-right:4px}.mu-cvd{margin:.8rem 0}.mu-cvd h4{margin:.2rem 0}.mu-cvd ul{margin:.3rem 0;padding-left:1.1rem;font-size:.9rem}',
     '.mu-bar{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin:.8rem 0}.mu-ctl{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center}',
     '.mu-ct{display:inline-flex;align-items:center;gap:.4rem}.mu-ct select{font:inherit;padding:.25rem .4rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);max-width:14rem}',
     '.mu-card{margin:.6rem 0;max-width:800px}.mu-top{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:flex-start;justify-content:space-between}.mu-top p{flex:1 1 24rem;margin:0}',

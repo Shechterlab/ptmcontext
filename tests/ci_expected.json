@@ -198,7 +198,8 @@
   "releases/v1.7.0/supporting/tcga_mc3_changes_T_v1.7.0.tsv.gz",
   "releases/v1.7.0/supporting/tcga_mc3_changes_Y_v1.7.0.tsv.gz",
   "releases/v1.7.0/supporting/variant_changes_excluded_v1.7.0.tsv.gz",
-  "releases/v1.7.0/supporting/writer_perturbations_v1.7.0.tsv"
+  "releases/v1.7.0/supporting/writer_perturbations_v1.7.0.tsv",
+  "scripts/disease_families.py"
  ],
  "audit_files": [
   "inputs/annotation/cdcode_condensates_2026-03-18.csv",
@@ -343,7 +344,8 @@
   "releases/v1.7.0/supporting/tcga_mc3_changes_T_v1.7.0.tsv.gz",
   "releases/v1.7.0/supporting/tcga_mc3_changes_Y_v1.7.0.tsv.gz",
   "releases/v1.7.0/supporting/variant_changes_excluded_v1.7.0.tsv.gz",
-  "releases/v1.7.0/supporting/writer_perturbations_v1.7.0.tsv"
+  "releases/v1.7.0/supporting/writer_perturbations_v1.7.0.tsv",
+  "scripts/disease_families.py"
  ],
  "test_files": [
   "inputs/annotation/cdcode_condensates_2026-03-18.csv",
@@ -520,6 +522,7 @@
   "releases/v1.7.0/supporting/tcga_mc3_changes_T_v1.7.0.tsv.gz",
   "releases/v1.7.0/supporting/tcga_mc3_changes_Y_v1.7.0.tsv.gz",
   "releases/v1.7.0/supporting/variant_changes_excluded_v1.7.0.tsv.gz",
-  "releases/v1.7.0/supporting/writer_perturbations_v1.7.0.tsv"
+  "releases/v1.7.0/supporting/writer_perturbations_v1.7.0.tsv",
+  "scripts/disease_families.py"
  ]
 }

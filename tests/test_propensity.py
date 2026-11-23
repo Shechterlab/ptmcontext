@@ -101,6 +101,32 @@ def _toy_propensity(tmp_path):
             'af': [1e-5, 2e-5, 1e-6, 5e-5],
         }
     ).to_csv(data / 'gchg.tsv', sep='\t', index=False)
+    # ClinVar changes: P1 2 has two named pathogenic variants and one with no condition; P1 5 is benign; P1 11 is not a site
+    pd.DataFrame(
+        {
+            'canonical_UniProtAC': ['P1', 'P1', 'P1', 'P1', 'P1', 'P2'],
+            'position': [2, 2, 2, 5, 11, 25],
+            'alt': ['H', 'C', '*', 'K', 'Q', 'L'],
+            'variation_id': [101, 102, 103, 104, 105, 106],
+            'clinsig_simple': [1, 1, 1, 0, 1, 1],
+            'review_stars': [2, 1, 0, 1, 3, 1],
+            'conditions': [
+                'Toy cancer syndrome|not specified',
+                'Toy cancer syndrome; Rare thing',
+                'not provided',
+                'Toy cancer syndrome',
+                'Toy cancer syndrome',
+                'Rare thing',
+            ],
+        }
+    ).to_csv(data / 'cv_chg.tsv', sep='\t', index=False)
+    # the release's family rules, as a file that must be read and never run
+    (data / 'fam_rules.py').write_text(
+        'FAMILY_RULES = [("Cancer / neoplasia", r"cancer")]\n'
+        'ADDITIONAL_FAMILY_RULES = [("Eye and ear", r"retina")]\n'
+        'CURATED_OVERRIDES = {"Rare thing": ("Eye and ear", "included", "curated")}\n'
+        'raise RuntimeError("the family file was run")\n'
+    )
     freq = pd.DataFrame(
         [
             ('P1', 2, 'R', 'tcga_mc3', 'TCGA-AA', 2, 60, 1, 50),
@@ -205,6 +231,8 @@ def _toy_propensity(tmp_path):
         'toy_burden': 'burden.tsv',
         'toy_chg': 'chg.tsv',
         'toy_gchg': 'gchg.tsv',
+        'toy_cv': 'cv_chg.tsv',
+        'toy_fam': 'fam_rules.py',
         'toy_sets': 'sets.tsv',
         'toy_ctl': 'ctl.tsv',
         'toy_val': 'val.tsv',
@@ -248,6 +276,8 @@ def _toy_propensity(tmp_path):
         'burden': 'toy_burden',
         'changes': ['toy_chg'],
         'germline_changes': ['toy_gchg'],
+        'clinvar_changes': ['toy_cv'],
+        'disease_families': 'toy_fam',
         'site_sets': 'toy_sets',
         'controls': 'toy_ctl',
         'validation': 'toy_val',
@@ -295,6 +325,42 @@ def test_the_page_is_told_what_the_files_hold(built):
         ('oncohistone', 'fail', 1),
         ('recurrent hotspot', 'pass', 2),
     }
+
+
+def test_the_inherited_disease_file_counts_variants_by_the_release_families(built):
+    _, _, index, data = built
+    assert data['propensity']['cv'] == {'file': 'data/cv.json'}
+    cv = json.loads((index.parent / 'data' / 'cv.json').read_text())
+    # the families by total, the catch-all (none here) last; each condition name once, with its family
+    assert cv['fam'] == ['Cancer / neoplasia', 'Eye and ear'] and cv['other'] == -1
+    assert cv['cond'] == [['Toy cancer syndrome', 0], ['Rare thing', 1]]
+    assert cv['unnamed'] == 1  # a variant that names no condition is counted, not listed
+    sites = {a: dict((p, v) for p, v in rows) for a, rows in cv['sites'].items()}
+    assert set(sites) == {'P1', 'P2'} and set(sites['P1']) == {
+        2
+    }  # a benign variant and a residue that is no site are left out
+    assert sites['P1'][2] == [[101, 2, 'H', [0]], [102, 1, 'C', [0, 1]]]
+    assert sites['P2'][25] == [[106, 1, 'L', [1]]]
+
+
+def test_the_family_rules_are_read_as_text_and_the_release_rule_is_applied(tmp_path):
+    from ptmcontext.web import disease_families as DF
+
+    f = tmp_path / 'rules.py'
+    f.write_text(
+        'FAMILY_RULES = [("A", r"alpha"), ("B", r"beta")]\nADDITIONAL_FAMILY_RULES = [("C", r"gamma")]\n'
+        'CURATED_OVERRIDES = {"beta alpha": ("C", "included", "x")}\nraise SystemExit("run")\n'
+    )
+    rules = DF.read_rules(f)  # the file would stop the interpreter if it were run
+    assert DF.family(rules, 'Alpha beta') == 'A'  # the first audited rule wins, case does not matter
+    assert DF.family(rules, 'beta alpha') == 'C'  # an override comes first
+    assert DF.family(rules, 'a gamma thing') == 'C'  # then the additional rules
+    assert DF.family(rules, 'nothing') == DF.UNASSIGNED
+    assert DF.condition_names('Alpha| not specified ;See cases;beta ; alpha;;') == ['Alpha', 'beta', 'alpha']
+    assert DF.condition_names(None) == [] and DF.condition_names(float('nan')) == []
+    f.write_text('FAMILY_RULES = []\n')
+    with pytest.raises(ValueError):
+        DF.read_rules(f)
 
 
 def test_a_protein_block_has_its_rows_in_both_cohorts(built):

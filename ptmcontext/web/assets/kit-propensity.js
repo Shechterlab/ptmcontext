@@ -359,7 +359,7 @@
       key(headR(10), 'O/E 10') +
       (desc(o.id)
         ? `<span class="pr-k">ClinVar is descriptive: no ring, no q</span>`
-        : `<span class="pr-k"><svg width="30" height="30" aria-hidden="true"><circle class="pr-ring" cx="15" cy="15" r="12"/><circle class="pr-head known" cx="15" cy="15" r="7"/></svg>ring: q &lt; ${RING}</span>`) +
+        : `<span class="pr-k"><svg width="30" height="30" aria-hidden="true"><circle class="pr-ring" cx="15" cy="15" r="12"/><circle class="pr-head known" cx="15" cy="15" r="7"/></svg>ring: q &lt; ${RING}, more than expected</span>`) +
       (s.lower_tail && !desc(o.id)
         ? `<span class="pr-k"><svg width="30" height="30" aria-hidden="true"><circle class="pr-ring dash" cx="15" cy="15" r="12"/><circle class="pr-head known" cx="15" cy="15" r="7"/></svg>dashed ring: q &lt; ${RING}, fewer than expected</span>`
         : '') +

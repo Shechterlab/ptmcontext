@@ -1392,19 +1392,21 @@ website:
     burden: sample_burden              # the oncoprint's samples
     changes: [tcga_changes_R]          # TCGA change tables (a row per sample and change)
     germline_changes: [gnomad_changes_R]  # gnomAD change tables (a row per variant, with af)
-    site_sets: site_set_propensity     # the Mutation frequency page's line for the whole list
+    clinvar_changes: [clinvar_changes_R]  # ClinVar change tables (a row per variation, with clinsig_simple, review_stars, conditions): the inherited disease view
+    disease_families: disease_families # the release's disease family rules (scripts/disease_families.py), read as text, never run
+    site_sets: site_set_propensity     # the Disease variants page's line for the whole list
     controls: propensity_controls
     validation: propensity_validation
     hotspot_min_changes: 20            # optional: a protein is dominated by its enriched residues when its changes at residues of a type total at least this ...
     hotspot_min_share: 0.30            # ... and the residues of that type with q < 0.05 carry at least this share (these are the defaults)
 ```
 
-`ptmc web` (`ptmcontext/web/propensity.py`) writes four kinds of file. Each is read when something asks for it.
+`ptmc web` (`ptmcontext/web/propensity.py`) writes five kinds of file. Each is read when something asks for it.
 
 | File | Holds | Read by |
 |---|---|---|
 | `data/m/NNN.json` | per protein with a mark, `{source id: block}`, a few proteins to a file (about 150 KB). The file of a protein is `variants.hash_shard` (`hashOf` in `kit-propensity.js` is its twin). A block is columnar, one entry per residue of the site's types that is a known site or has a change: `p` position deltas, `k`, `e` (expected), `o` (O/E), `q` (null: not tested), `pu` (raw p of the upper tail). Somatic sources repeat `k2 e2 o2 q2 pu2` without hypermutated samples; gnomAD adds `pl`, the raw p of the lower tail. `u` lists the rows that fell back to the unweighted expectation (no coding sequence matches UniProt, so q is null). `l` is `[row, q_lower, ...]` where q_lower < 0.05 (gnomAD). `h` (and `h2` without hypermutated samples) is present only when the protein is dominated by its enriched residues (below): `[[residue, share in percent, [positions of the enriched residues, most changes first]], ...]`, one entry per residue type; `r` is the residue letter of each row, only where the protein has more than one type. Numbers keep two significant digits | a protein page's cards (the lollipops) and the site card's line |
-| `data/wf.json` | `groups`, `den` (samples profiled, and not hypermutated, per group), `all`, each known site's changed samples per group (`sites`: `[position, residue, per source [group, changed, changed without hypermutated]...]`), `stats` (per source and protein, the known sites with a change: `[position, c1 (6 numbers), c2 (6 numbers; left out when equal to c1)]`, each cohort `c` = `[O/E, q, k, expected, raw p (more), raw p (fewer)]`; the p of the side opposite to O/E is null when above 0.5), `lower` (per source, `[all, without hypermutated]`: whether the lower tail was computed, see below), `zero` (per source and cohort, the 1,000 known sites with no change and the most expected: `[accession, position, residue, expected, raw p (fewer)]`) and `bg`, the curve of the signed score of the residues that are not sites, as `[N, N, ranks, values]` sampled at log-spaced ranks from both ends, and `hot` (per source, `all` and `no_hypermutated`, `{accession: [[residue, share in percent, [positions]], ...]}`, the proteins dominated by their enriched residues) | the Mutation frequency page (waterfall) |
+| `data/wf.json` | `groups`, `den` (samples profiled, and not hypermutated, per group), `all`, each known site's changed samples per group (`sites`: `[position, residue, per source [group, changed, changed without hypermutated]...]`), `stats` (per source and protein, the known sites with a change: `[position, c1 (6 numbers), c2 (6 numbers; left out when equal to c1)]`, each cohort `c` = `[O/E, q, k, expected, raw p (more), raw p (fewer)]`; the p of the side opposite to O/E is null when above 0.5), `lower` (per source, `[all, without hypermutated]`: whether the lower tail was computed, see below), `zero` (per source and cohort, the 1,000 known sites with no change and the most expected: `[accession, position, residue, expected, raw p (fewer)]`) and `bg`, the curve of the signed score of the residues that are not sites, as `[N, N, ranks, values]` sampled at log-spaced ranks from both ends, and `hot` (per source, `all` and `no_hypermutated`, `{accession: [[residue, share in percent, [positions]], ...]}`, the proteins dominated by their enriched residues) | the Disease variants page (waterfall) |
 | `data/gn.json` | `sites`: for each known site with a gnomAD variant, and each with none and q_lower < 0.05, `[position, residue, k, summed af, O/E, q (more), q (fewer), expected, raw p (fewer), raw p (more)]`, the sites with none being the 1,000 with the most expected and every one with a raw p_lower below 0.05; `bg`: the curve of the signed score over the other residues. The summed `af` is for the tooltip. `hot`: `{accession: [[residue, share in percent, [positions]], ...]}`, the proteins dominated by their enriched residues | the waterfall, source gnomAD |
 
 The waterfall's height is the signed score: -log10 of the raw upper-tail p when O/E is above 1, log10 of the raw lower-tail p
@@ -1414,6 +1416,7 @@ upper tail for every row of the table and cohort (to the four significant digits
 cohort fails the check, its sites with O/E below 1 are drawn at 0. The lower tail has no q for TCGA and DepMap (the release's
 BH is over residues the site does not hold).
 | `data/onco.json` | `projects`, every TCGA sample `[id without "TCGA-", project, hypermutated, coding calls per Mb]`, and `sites`: for each known site the samples with a change (`sample index * 2 + 1` for a stop) | the oncoprint |
+| `data/cv.json` | the ClinVar pathogenic and likely pathogenic variants (`clinsig_simple` 1) at the known sites, from `clinvar_changes`: `fam` (the disease families, by total number of variants, the catch-all last), `other` (the place of the catch-all family, -1 if none), `cond` (each condition name in use, `[name, place in fam]`), `sites` (`{accession: [[position, [[variation_id, review stars, alt, [places in cond]], ...]], ...]}`) and `unnamed` (the variants that name no condition, left out of `sites`). A condition cell is split on `\|` and `;`; names are stripped; `not specified`, `not provided` and `see cases` (any case) are dropped. Each name gets the family of `classify` in the release's `scripts/disease_families.py`: a curated override, else the first audited rule, else the first additional rule, else `Other / unassigned`. The build reads FAMILY_RULES, ADDITIONAL_FAMILY_RULES and CURATED_OVERRIDES from that file as text (`ast`, no import: a file of another repository is data, checked against its MD5 in the manifest) and applies the same rule | the inherited disease view |
 
 Dominant hotspot. Expected counts are within a protein. Where a few residues carry most of a protein's changes (TP53 R273, R248,
 R175), the expected count at the protein's other residues of the type is inflated and they look depleted. For each source with a
@@ -1428,8 +1431,25 @@ of the enriched residues and their share; an enriched residue says that it is on
 Lollipop (protein cancer and germline cards): stick height is the count the card's table shows, circle size grows with O/E,
 and a ring marks q < 0.05. The tooltip gives O/E, expected and q. The site card has one line per site (O/E and q per source).
 
-The Mutation frequency page (`#mutations`, `kit-mutations.js`) draws two views of the current selection, or of the whole
-list when nothing is selected:
+The Disease variants page (`#mutations`, `kit-mutations.js`; called Mutation frequency before) draws views of the current selection, or of the whole
+list when nothing is selected. One segmented control picks the view, kept in the address as `mv=`: `ranked` (the default, left out of the address),
+`oncoprint` (Cancer: tumors), `clinvar` (Inherited disease, only when `cv.json` is written; `mr=1` or `mr=2` is its least review stars) and
+`waterfall` ("Show all sites as a chart", a link on every other view). An address from before the rename has no `mv` or `mv=waterfall`: it opens the
+waterfall, and so does one with no `mv` that carries `wl`, `wg`, `mz` or `ms`. `mg`, `mt` and `hyper` keep their meaning. Each view has one short line of
+text; the rest is in Help and Methods.
+
+- Ranked sites: three compact tables, each following the selection and the hypermutated switch as the waterfall does: sites with q_upper < 0.05
+  in each somatic source (TCGA, DepMap), by raw upper-tail p; and sites with q_lower < 0.05 in the germline source with `lower_tail` (gnomAD, the
+  dashed-ring rows), by raw lower-tail p. Titles come from the source's `unit` and `label`. Top 20 with a Show all button and a TSV (every row); a
+  header says `N sites with q < 0.05`; columns gene, site, k, expected, O/E, q; a flagged protein carries the dominant hotspot note; a row opens the site card.
+- Inherited disease: the selection's known sites with at least one variant in `cv.json` (after the review filter) as rows, ranked by number of variants (top 50,
+  Show more adds 50), against the disease families as columns, ordered by total (the catch-all last). A variant counts once in each of its families. A
+  cell is the number of variants, shaded in one hue; a click lists its variants (conditions, review stars, a link to ClinVar's variation page). Downloads
+  PDF, SVG, PNG (the rows shown) and TSV (a row per variant and family, all rows). ClinVar reflects clinical testing, so the counts are not tested.
+- Cancer: tumors (the oncoprint, below).
+- The waterfall (below).
+
+The waterfall and the oncoprint keep the rules that follow.
 
 - A waterfall ranks the sites from the most enriched to the most depleted by the signed score (above). Points are colored by O/E, a solid
   ring marks q < 0.05, and for gnomAD a dashed ring marks q_lower < 0.05 (fewer than expected). The gray curve is the same score for the
@@ -1438,11 +1458,11 @@ list when nothing is selected:
   typed in the "Label a site" box, adds a label, kept in the address as `wl=` (up to 20; apart from `mt=`, so that labeling does not change the
   sites chosen for a test). "Highlight genes" takes a pasted list of gene names or UniProt IDs (spaces, new lines, commas or semicolons; read by the search's own parser, so aliases, isoforms and "not found" behave as in the search box), kept in the address as `wg=` (comma-separated, up to 60). Every site of those proteins in the current waterfall gets an accent outline, and each protein's most extreme site (largest absolute signed score) gets a label after the reader's own, even a site of a hotspot-dominated protein. One line says `N genes, M sites: K above 0, J below 0`, and names the proteins with no site there and the names not found. It changes no selection and no statistic; the set line stays as is. Hover, tap or the arrow keys read a site. p and q are pooled over the cancer types, so the waterfall has no cancer-type
   menu. The source menu has the sources with a `frequency_source`, and gnomAD when `germline_changes` is set. gnomAD has no hypermutated
-  switch. ClinVar has no waterfall (it is descriptive: no test). Over the whole list, one line gives
-  the release's test for the site set (`site_set_propensity`, matched by set, residue, source and cohort).
+  switch. ClinVar has no waterfall (it is descriptive: no test). Under the waterfall, a fold, Whole list against
+  expectation, tabulates the release's test for the site set (`site_set_propensity`, matched by set, residue, source and cohort) when nothing is selected.
 - Under the waterfall, a table lists the selection's sites with no change, most expected first, with the raw lower-tail p.
-- "Test the sites you chose" (any source with a test): the reader adds up to 20 sites (`H4 R3`, in the page's numbering, or a site card's button; kept in the address as `mt=`). For each, k, expected, O/E, the raw p of each tail and a Holm-adjusted p over the chosen sites, tails and sources shown. The raw p is the right number for a site chosen in advance; q corrects across every residue of the release. The table downloads as TSV.
-- An oncoprint shows the sites with the most changed TCGA tumors against those tumors. A row's name, or a click on the row,
+- "Test the sites you chose" (below every view except Inherited disease; any source with a test): the reader adds up to 20 sites (`H4 R3`, in the page's numbering, or a site card's button; kept in the address as `mt=`). For each, k, expected, O/E, the raw p of each tail and a Holm-adjusted p over the chosen sites, tails and sources shown. The raw p is the right number for a site chosen in advance; q corrects across every residue of the release. The table downloads as TSV.
+- An oncoprint (Cancer: tumors, `mv=oncoprint`) shows the sites with the most changed TCGA tumors against those tumors. A row's name, or a click on the row,
   opens that site's card.
 
 Hypermutated samples are left out by default (`hyper=1` in the address puts them back). A cancer-type menu limits the groups
@@ -1596,7 +1616,7 @@ The Overview's start panel and each landing-page card draw three pictures from t
 in the site file they are computed; `website.start` (`share: {analysis, classes, labels}`, `findings: [{analysis, class}]`,
 `protein`) names them, and `website.landing` (`share`, `findings`, `tagline`) overrides them for the landing card; `website.landing.from_section: <Overview section>` chooses the landing card's result from that section's questions only (the card that draws the cell stands for the `website.cell` maps), so the card's result (`landing_findings` in `glance.json`) matches what the Overview opens with; the start panel keeps its own. `website.landing.unlisted: true` builds the
 site's folder with `ptmc pages` but leaves its card off the landing page. `ptmc pages` also writes `sites.json` beside the folders
-(`{sites: [{id, label, listed, in_switcher, residues}]}`, `residues` the letters of `website.propensity.residues`, which the Mutation frequency page uses to send a chosen site to the explorer that covers its residue; the label being `landing.label` or the mark profile's name): the header's "Mark" menu
+(`{sites: [{id, label, listed, in_switcher, residues}]}`, `residues` the letters of `website.propensity.residues`, which the Disease variants page uses to send a chosen site to the explorer that covers its residue; the label being `landing.label` or the mark profile's name): the header's "Mark" menu
 (kit-switch.js) reads it, lists the listed sites, lists an unlisted site only in the menu of an unlisted site or where its own
 `landing.in_switcher` is true, and opens the chosen site with the reader's search (`q=`), highlight (`hl=`) and filters (`f=`); the
 filters the target does not have are dropped, and the target says how many in a short notice. A site served alone has no

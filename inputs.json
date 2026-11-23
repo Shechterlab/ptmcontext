@@ -1899,7 +1899,7 @@
       "version": "PTM_Pipeline v1.7.0 mutation propensity; UniProt 2026_03 canonical sequences",
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
-      "note": "Samples changed and profiled per residue and TCGA project or DepMap lineage, all and without hypermutated samples: the numbers of the Mutation frequency page's waterfall. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+      "note": "Samples changed and profiled per residue and TCGA project or DepMap lineage, all and without hypermutated samples: the numbers of the Disease variants page's waterfall. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
     },
     "group_denominators": {
       "file": "releases/v1.7.0/supporting/group_denominators_v1.7.0.tsv",
@@ -1945,6 +1945,15 @@
       "licence": "CC BY-NC-SA 4.0 (the release); sources keep their own terms (TCGA MC3 via the GDC, DepMap 24Q4, ClinVar, gnomAD v4.1)",
       "role": "input",
       "note": "The binomial test against a permutation test on up to 1,000 protein and residue-type units per source. From the PTM_Pipeline v1.7.0 release folder; this repository checks the bytes."
+    },
+    "disease_families": {
+      "file": "scripts/disease_families.py",
+      "md5": "8bc54d17a27d9823d8397639da56849a",
+      "source": "https://github.com/Shechterlab/PTM_Pipeline/blob/07e0e88bba86a7b91c30e166d4cd01cffb9400ef/scripts/disease_families.py",
+      "version": "PTM_Pipeline v1.7.0 (commit 07e0e88)",
+      "licence": "MIT (the PTM_Pipeline repository)",
+      "role": "input",
+      "note": "The release's disease family rules for its DisGeNET families (FAMILY_RULES, ADDITIONAL_FAMILY_RULES, CURATED_OVERRIDES). Read as text for those three tables and never run: the Disease variants page's inherited view gives each ClinVar condition name the family of the first rule it matches. This repository checks the bytes."
     }
   }
 }

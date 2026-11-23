@@ -745,6 +745,9 @@
       if (r) (!PQ || PQ.has(g.analyses[0]) || g.primary ? qrows : qmore).push(r);
     });
     const amv = PV.af?.am?.get?.(m[0]),
+      // AlphaMissense is less reliable in disordered regions: say so when the site lies in one (the map's disorder tracks)
+      amKinds = new Set((D.tracks || []).filter((t) => t.style === 'disorder').map((t) => t.kind)),
+      amDis = (PV.rec?.units || []).some((u) => amKinds.has(u[0]) && m[0] >= u[1] && m[0] <= u[2]),
       amCls = (v) => (v >= 0.564 ? 'likely pathogenic' : v >= 0.34 ? 'ambiguous' : 'likely benign');
     const afRow =
       pl != null || amv
@@ -755,10 +758,10 @@
             }${
               amv?.n
                 ? `${pl != null ? ' · ' : ''}<span title="Mean ` +
-                  `AlphaMissense pathogenicity of the ${amv.n} substitutions of this residue">AlphaMissense ${(amv.sum / amv.n).toFixed(2)} <span class="muted">(${amCls(amv.sum / amv.n)})</span></span>`
+                  `AlphaMissense pathogenicity of the ${amv.n} substitutions of this residue">AlphaMissense ${(amv.sum / amv.n).toFixed(2)} <span class="muted">(${amCls(amv.sum / amv.n)})</span>${amDis ? ' <span class="muted">· disordered region: less reliable</span>' : ''}</span>`
                 : ''
             }`,
-            'AlphaFold DB: the model’s confidence at this residue and the mean AlphaMissense score of its substitutions'
+            'AlphaFold DB: the model’s confidence at this residue and the mean AlphaMissense score of its substitutions (AlphaMissense is less reliable in disordered regions)'
           )
         : '';
     // the card's rows in groups, each a fold: the site itself, the questions it answers, and the rest (the less used closed)

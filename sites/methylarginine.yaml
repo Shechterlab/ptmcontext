@@ -2530,7 +2530,7 @@ website:                  # the look and words of the website (ptmc web); layout
       include_any: [{column: source_ref, in: [R]}, {column: canonical_ref, in: [R]}]
   # Mutation propensity (CONTRACTS.md, "Mutation propensity"): for every candidate residue, the changes seen in each source against
   # the changes its codon predicts (PTM_Pipeline v1.7.0 supporting tables, joined on accession and position). It draws the lollipops
-  # on the protein cards, the line on the site card and the Mutation frequency page (waterfall and oncoprint).
+  # on the protein cards, the line on the site card and the Disease variants page (ranked sites, tumors, inherited disease and the waterfall).
   propensity:
     residues: [R]
     sources:
@@ -2543,6 +2543,8 @@ website:                  # the look and words of the website (ptmc web); layout
     burden: sample_burden
     changes: [tcga_changes_R]
     germline_changes: [gnomad_changes_R]   # gnomAD change tables: the germline waterfall's tooltip sums each residue's allele frequencies
+    clinvar_changes: [clinvar_changes_R]   # ClinVar change tables: the Disease variants page's inherited view counts the pathogenic and likely pathogenic variants
+    disease_families: disease_families   # the release's disease family rules, read as text and never run: a family for each ClinVar condition
     site_sets: site_set_propensity
     controls: propensity_controls
     validation: propensity_validation

@@ -189,7 +189,7 @@
     ['h-filters', 'Filters'],
     ['h-read', 'Reading a figure'],
     ['h-terms', 'Badges and terms'],
-    ...(D.propensity ? [['h-mutations', 'Mutation propensity']] : []),
+    ...(D.propensity ? [['h-mutations', 'Disease variants']] : []),
   ];
   // The kit's shared glossary: a term the site's own words use gets its entry here, in every site that uses it. The site's
   // own glossary (website.front.glossary) adds terms and takes the place of a shared one of the same name.
@@ -315,6 +315,10 @@
             'Controls',
             `The same question repeated with one change each. ${mlink('controls', 'Methods › Controls')} lists them.`
           ) +
+          term(
+            'AlphaMissense',
+            `A model's score from 0 to 1 for how likely a missense change is to be harmful (0.564 and above: likely pathogenic). Cards and the 3D view show a residue's mean over its substitutions. It is less reliable in disordered regions (<a href="https://doi.org/10.1186/s12864-025-11534-9" target="_blank" rel="noopener">Luppino et al., BMC Genomics 2025</a>), and a card or the 3D view says so when a site lies in one.`
+          ) +
           glossaryTerms()
             .map(([t, d]) => term(esc(t), esc(cap(d))))
             .join('') +
@@ -332,11 +336,16 @@
               `its O/E assumes every residue of the type is equally likely.</p>` +
               `<p>The site card has one line with the site's O/E and q in each source. ` +
               (K.views.mutations
-                ? `The <a href="${esc(K.link('mutations'))}">Mutation frequency</a> page ranks the sites of your selection from the most enriched to the most depleted ` +
-                  `(signed −log10 p, up for more changes than expected) and draws the top sites across TCGA tumors. `
+                ? `The <a href="${esc(K.link('mutations'))}">Disease variants</a> page has three views of the sites of your selection (every ${esc(W.mark)} when nothing is selected) and a chart of all of them. ` +
+                  `<b>Ranked sites</b> lists, for tumors, cell lines and gnomAD, the sites with q below 0.05, ranked by p: more changes than expected in tumors and cell lines, fewer inherited variants than expected in gnomAD. Each table shows the top 20; Show all lists the rest and the download has every row. A protein flagged as dominated by a few enriched residues (TP53 R273, R248 and R175, for example) says so, because the expected count at its other residues is inflated. ` +
+                  `<b>Cancer: tumors</b> is an oncoprint: the sites with the most changed TCGA tumors against the tumors that carry them, with each tumor's coding calls per Mb above it. ` +
+                  (D.propensity.cv
+                    ? `<b>Inherited disease</b> counts ClinVar pathogenic and likely pathogenic variants by disease family, one row per site and one column per family; a cell is the number of variants, and clicking it lists them with their conditions, review stars and links to ClinVar. A variant counts once in each of its families. Families come from the release's name rules for its DisGeNET disease families, applied to ClinVar condition names, so a few conditions can land in a broader family; a cell's list always shows ClinVar's own condition names. A name that no rule matches is listed as Other / unassigned, and a variant that names no condition is not shown. The review filter keeps variants with at least 1 or 2 ClinVar review stars. These counts reflect clinical testing, so they are not tested against expectation. `
+                    : '') +
+                  `<b>Show all sites as a chart</b> ranks every site from the most enriched to the most depleted (signed −log10 p, up for more changes than expected); a solid ring marks q below 0.05 for more, a dashed ring for fewer. Highlight genes takes a pasted list of genes and outlines their sites, and the default labels skip sites of flagged proteins. `
                 : '') +
               `Hypermutated tumors (more than ${D.propensity.hypermutated.per_mb} coding calls per Mb) are left out unless you choose ` +
-              `With hypermutated. A site on a protein where a few enriched residues carry much of the changes (TP53 R273, R248 and R175, for example) is flagged, because the expected count at the protein's other residues is inflated; the waterfall's default labels skip such sites. On the waterfall, Highlight genes takes a pasted list of genes and outlines their sites. ` +
+              `With hypermutated. ` +
               `${mlink('propensity', 'Methods › Mutation propensity')} has the test and its sources.</p>`
           )
         : '') +

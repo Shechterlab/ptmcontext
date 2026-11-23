@@ -6320,7 +6320,7 @@
         "propensity": {
           "type": "object",
           "additionalProperties": false,
-          "description": "Mutation propensity (CONTRACTS.md, 'Mutation propensity'): per-residue tables of the release that give, for each source, the changes seen at a residue (k), the changes its codon predicts (expected), O/E and a binomial q. Draws lollipops on the protein cards (stick: count, head: O/E, ring: q < 0.05), a line on the site card and the Mutation frequency page (waterfall, oncoprint). Every name is a manifest input.",
+          "description": "Mutation propensity (CONTRACTS.md, 'Mutation propensity'): per-residue tables of the release that give, for each source, the changes seen at a residue (k), the changes its codon predicts (expected), O/E and a binomial q. Draws lollipops on the protein cards (stick: count, head: O/E, ring: q < 0.05), a line on the site card and the Disease variants page (ranked sites, tumors, inherited disease, waterfall). Every name is a manifest input.",
           "required": [
             "residues",
             "sources"
@@ -6375,7 +6375,7 @@
                   },
                   "set_source": {
                   "type": "string",
-                  "description": "the value of `source` in site_set_propensity for this source (the Mutation frequency page's line for the whole list)"
+                  "description": "the value of `source` in site_set_propensity for this source (the Disease variants page's line for the whole list)"
                 },
                 "frequency_source": {
                     "type": "string",
@@ -6425,6 +6425,17 @@
                 "type": "string"
               },
               "description": "manifest inputs: the gnomAD change tables of the site's residues (a row per variant, with af); the waterfall's tooltip shows the sum of a residue's variants' af"
+            },
+            "clinvar_changes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "manifest inputs: the ClinVar change tables of the site's residues (a row per variation, with clinsig_simple, review_stars and conditions); the Disease variants page's inherited view counts the pathogenic and likely pathogenic ones (clinsig_simple 1) by disease family"
+            },
+            "disease_families": {
+              "type": "string",
+              "description": "manifest input: the release's disease family rules (PTM_Pipeline scripts/disease_families.py: FAMILY_RULES, ADDITIONAL_FAMILY_RULES, CURATED_OVERRIDES). Read as text for those three tables and never run; each ClinVar condition name gets the family of the first rule it matches"
             },
             "site_sets": {
               "type": "string",

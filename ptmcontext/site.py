@@ -655,6 +655,7 @@ def propensity_problems(site: dict) -> list[str]:
         cfg[k] for k in ('frequency', 'denominators', 'burden', 'site_sets', 'controls', 'validation') if cfg.get(k)
     ]
     names += list(cfg.get('changes') or []) + list(cfg.get('germline_changes') or [])
+    names += list(cfg.get('clinvar_changes') or []) + ([cfg['disease_families']] if cfg.get('disease_families') else [])
     if have is not None:
         out += [f'website.propensity: no manifest input {n!r}' for n in names if n not in have]
     ids = [s['id'] for s in cfg.get('sources') or []]
