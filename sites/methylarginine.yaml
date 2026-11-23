@@ -1901,7 +1901,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Studies and databases, attributes: [studies, n_studies, localised_by]}
   dataset: {label: Data release, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
   methods_note: "Sequences use UniProt 2026_03 and the other modifications UniProt 2026_04. The other modifications come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
-  license: "Data: CC BY-NC-SA 4.0 (non-commercial, share-alike); PhosphoSitePlus records CC BY-NC-SA 3.0."
+  license: "Data: CC BY-NC-SA 4.0 (non-commercial, share-alike); PhosphoSitePlus records CC BY-NC-SA 3.0. For commercial use, contact info@shechterlab.org."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
   whats_new:               # the data releases' notes, newest first (the Help page; the same list as the landing page's)
     title: What’s new in each data release
@@ -2760,10 +2760,6 @@ website:                  # the look and words of the website (ptmc web); layout
         offset: -1
         label: histone numbering
         note: "Histone numbering, without the initiator methionine"
-      - removed_met: sites/data/uniprot_init_met_removed.tsv     # UniProt: initiator methionine, Removed
-        offset: -1
-        label: numbered without the initiator methionine
-        note: "Numbered without the initiator methionine, which UniProt records as removed"
     facts:                 # the headline cards under the map: each opens its section, with a hover
       - {count: marks, of: candidates, label: "{residues} methylated", kind: Sites, glyph: pins, opens: p-seq,
          tip: {values: [{attribute: arg_enrichment, label: "Arginine methylation enrichment: log2", format: l2}, {attribute: arg_enrichment_q, label: q, format: p}]}}

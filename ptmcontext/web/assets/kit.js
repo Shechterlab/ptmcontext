@@ -1721,10 +1721,6 @@
         followsTest(a)
           ? ` <span class="tsw" title="This tile changes with the Test switch"><span aria-hidden="true">⇄</span><span class="vh"> changes with the Test switch</span></span>`
           : ''
-      }${
-        a.new && D.run.parity
-          ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>'
-          : ''
       }</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
       (ans ? `<p class="tans">${ans}</p>` : '') +
       (shown.length
@@ -3464,7 +3460,7 @@
       D.analyses
         .map(
           (a) =>
-            `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td ` +
+            `<tr><td>${esc(a.title)}</td><td ` +
             `class="wrapok">${esc(madeByText(a.id))}</td></tr>`
         )
         .join('') +
@@ -3536,9 +3532,7 @@
             .join('')}</dl></details>`
         : '';
     return (
-      `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}${
-        a.new && RUN.parity ? ' <span class="newtag">new</span>' : ''
-      }</h3>` +
+      `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}</h3>` +
       (a.question ? `<p class="qm-q">${esc(a.question)}</p>` : '') +
       (a.sub ? `<p>${esc(a.sub)}.</p>` : '') +
       (a.describe && a.describe !== D.site.default_background

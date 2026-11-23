@@ -22,7 +22,7 @@ footer:
     - {label: Cite, url: "https://github.com/Shechterlab/ptmcontext/blob/main/CITATION.cff"}
     - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Shechter Lab, url: "https://www.shechterlab.org/"}
-license: "Data: CC BY-NC-SA 4.0 (non-commercial, share-alike); PhosphoSitePlus records CC BY-NC-SA 3.0 where used. Each explorer’s Download page gives its terms."
+license: "Data: CC BY-NC-SA 4.0 (non-commercial, share-alike); PhosphoSitePlus records CC BY-NC-SA 3.0 where used. Each explorer’s Download page gives its terms. For commercial use, contact info@shechterlab.org."
 references:                # lines under the intro: a label with a DOI (and all versions), or text with an optional link
   - {label: Paper, doi: "10.1016/j.chembiol.2026.09.011"}
   - {label: Data, doi: "10.5281/zenodo.24429699", all_versions: "10.5281/zenodo.22696798"}

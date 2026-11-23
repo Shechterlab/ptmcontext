@@ -5,8 +5,8 @@
                  lines (upper tail), fewer inherited variants than expected (gnomAD, lower tail). The default view (mv=ranked).
      oncoprint   Cancer: tumors (mv=oncoprint): the sites with the most changed samples (rows) against the TCGA tumors that carry
                  them (columns), joined to the sample's burden: coding calls per Mb, with the hypermutated threshold marked.
-     clinvar     Inherited disease (mv=clinvar): the sites with a ClinVar pathogenic or likely pathogenic variant (rows) against
-                 disease families (columns), a cell the number of variants; the families come from the release's own rules at build time.
+     clinvar     Inherited disease (mv=clinvar): the sites with a ClinVar pathogenic or likely pathogenic variant, one row each,
+                 with a chip and a count for each disease family it has; the families come from the release's own rules at build time.
      waterfall   (mv=waterfall; "Show all sites as a chart") every site ranked from the most enriched to the most depleted (x) by the signed -log10 p of the release's test (y: up
                  for more than expected, the upper-tail p; down for fewer, the lower-tail p); a gray curve shows the other residues of the
                  same type on the same score, their ranks scaled to the number of sites. p and q are pooled over the cancer types.
@@ -33,6 +33,7 @@
     group: '',
     view: 'ranked',
     stars: 0,
+    cvs: 'n', // the inherited list's order: n (most variants first) or site
     cell: '',
     all: {},
     rows: 50,
@@ -1760,7 +1761,8 @@
       cells.forEach((a, f) => (tot[f] += a.length));
       rows.push({ acc, pos, res, vs, cells });
     }
-    rows.sort((a, b) => b.vs.length - a.vs.length || (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos));
+    const bySite = (a, b) => (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos);
+    rows.sort((a, b) => (M.cvs === 'site' ? 0 : b.vs.length - a.vs.length) || bySite(a, b));
     // by total, the catch-all family last
     const cols = cv.fam
       .map((_, i) => i)
@@ -1831,34 +1833,35 @@
       ],
       M.stars
     );
+    const order = seg(
+      'data-mu-order',
+      'Order',
+      [
+        ['n', 'Most variants'],
+        ['site', 'Site'],
+      ],
+      M.cvs
+    );
     if (!g.rows.length)
       return `<div class="mu-bar">${stars}</div><p class="muted">No ${esc(W.mark)} of the selection has a pathogenic or likely pathogenic ClinVar variant${M.stars ? ` with ${M.stars}+ review stars` : ''}.</p>`;
     const shown = g.rows.slice(0, M.rows);
-    const th = g.cols
-      .map(
-        (f) => `<th class="mu-fam" title="${esc(famName(g.cv.fam[f]))}"><span>${esc(famName(g.cv.fam[f]))}</span></th>`
-      )
-      .join('');
-    // the rotated headers are as tall as the longest family name needs, so none is cut
-    const famH = Math.min(
-      24,
-      Math.max(7, Math.ceil(Math.max(...g.cols.map((f) => famName(g.cv.fam[f]).length)) * 0.44) + 1)
-    );
+    // one row per site: its name, its variant total, then a chip for each disease family it has, with the count (the chips wrap, so the
+    // list is as wide as the page and never scrolls sideways)
     const tr = shown
       .map(
         (r) =>
-          `<tr><th class="mu-site" scope="row"><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteName(r.acc, r.pos, r.res))}</a>${
+          `<li class="mu-cvr"><span class="mu-site"><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteName(r.acc, r.pos, r.res))}</a>${
             uniNote(r.acc, r.pos, r.res) ? `<span class="muted small">${esc(uniNote(r.acc, r.pos, r.res))}</span>` : ''
-          }</th><td class="num mu-all">${int(r.vs.length)}</td>` +
+          }</span><span class="num mu-all" title="Variants at this ${esc(W.mark)}">${int(r.vs.length)}</span><span class="mu-chipset">` +
           g.cols
+            .filter((f) => r.cells.get(f))
             .map((f) => {
-              const a = r.cells.get(f);
-              return a
-                ? `<td class="mu-c"><button type="button" class="mu-cell" style="background:${cellShade(a.length, g.max, THEME)}" data-mu-cell="${esc(r.acc)}:${r.pos}|${f}" aria-label="${esc(cellTip(g, r, f).split('\n')[0])}" data-prtip="${esc(cellTip(g, r, f))}">${int(a.length)}</button></td>`
-                : '<td class="mu-c"></td>';
+              const a = r.cells.get(f),
+                id = `${r.acc}:${r.pos}|${f}`;
+              return `<button type="button" class="mu-cell" style="background:${cellShade(a.length, g.max, THEME)}" aria-pressed="${M.cell === id}" data-mu-cell="${esc(id)}" aria-label="${esc(cellTip(g, r, f).split('\n')[0])}" data-prtip="${esc(cellTip(g, r, f))}">${esc(famName(g.cv.fam[f]))} <b>${int(a.length)}</b></button>`;
             })
             .join('') +
-          `</tr>`
+          `</span></li>`
       )
       .join('');
     const key = [1, Math.max(2, Math.round(g.max / 2)), g.max]
@@ -1869,9 +1872,10 @@
       )
       .join('');
     return (
-      `<div class="mu-bar">${stars}</div>` +
+      `<div class="mu-bar">${stars}${order}</div>` +
       `<section class="mu-card mu-cv"><div class="mu-top"><p class="small muted">${int(g.nSites)} ${g.nSites === 1 ? esc(W.mark) : esc(W.marks)} with ${int(g.nVar)} ${g.nVar === 1 ? 'variant' : 'variants'}, in ${int(g.cols.length)} disease ${g.cols.length === 1 ? 'family' : 'families'}.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mucv', 'inherited disease', 'propensity')}</div>` +
-      `<div class="tbl-wrap mu-cvw"><table class="tbl mu-cvt" style="--famh:${famH}rem"><thead><tr><th class="mu-site">Site</th><th class="num">All</th>${th}</tr></thead><tbody>${tr}</tbody></table></div>` +
+      `<div class="mu-cvh" aria-hidden="true"><span>Site</span><span class="num">All</span><span>Disease families, with the number of variants</span></div>` +
+      `<ul class="mu-cvl" aria-label="Sites with their disease families">${tr}</ul>` +
       (g.rows.length > shown.length
         ? `<p class="small"><button type="button" class="btn small" data-mu-more>Show ${Math.min(50, g.rows.length - shown.length)} more</button> <span class="muted">${int(shown.length)} of ${int(g.rows.length)} shown; the download has all.</span></p>`
         : '') +
@@ -1961,6 +1965,7 @@
       '[data-mu-stars]',
       (b) => ((M.stars = +b.dataset.muStars), (M.cell = ''), (M.rows = 50), K.writeHash?.(), K.render()),
     ],
+    ['[data-mu-order]', (b) => ((M.cvs = b.dataset.muOrder === 'site' ? 'site' : 'n'), (M.rows = 50), K.render())],
     ['[data-mu-more]', () => ((M.rows += 50), K.render())],
     [
       '[data-mu-cell]',
@@ -2029,7 +2034,7 @@
       if (body === null)
         return page(line, note + bar + `<div class="mu-skel" role="status">${K.loading('Loading…')}</div>`);
     } else if (V === 'clinvar') {
-      line = `Pathogenic and likely pathogenic ClinVar variants by disease family; click a cell to list them. ClinVar reflects clinical testing, so these counts are not tested.`;
+      line = `Pathogenic and likely pathogenic ClinVar variants by disease family; click a family to list them. ClinVar reflects clinical testing, so these counts are not tested.`;
       body = cvData() === undefined ? K.loading('Loading…') : clinvarBody();
       if (body === null)
         body = cvData() === null ? '<p class="muted">The variants could not be read.</p>' : K.loading('Loading…');
@@ -2310,7 +2315,7 @@
       `<p><b>Disease variants page.</b> It has three views of the sites of your selection, or of every ${esc(W.mark)} when nothing is selected, and a chart of all sites. Hypermutated tumors are left out unless you choose With hypermutated. Cancer types are pooled, so p and q do not change with them.</p>` +
       `<p><b>Ranked sites.</b> Each table lists the sites of one source ranked by p. The top 20 are shown whether or not q is below 0.05; the header counts the sites with q &lt; 0.05, and a row above that line is lighter and shows its q. Show opens the sites with q &lt; 0.05, or the top 100 if there are fewer; the download has every tested site. The first two (tumors, cell lines) hold sites with more changes than expected (q is the release's, for the upper tail). The third holds sites with fewer inherited gnomAD variants than expected (q for the lower tail, the dashed-ring sites of the chart). k is the count, expected the count the residue's codon predicts, and O/E their ratio. A protein flagged as dominated by a few enriched residues (see above) says so in its row. A row opens the site's card.</p>` +
       `<p><b>Cancer: tumors.</b> This is an oncoprint. The ${esc(W.marks)} with the most changed TCGA tumors are the rows, the tumors that carry them are the columns, and the bar above each tumor is its coding calls per Mb from the release's sample_burden (capped at 40; the dashed line is the hypermutated threshold). A tumor with two changes at one site counts once, so a table that counts changes can show a higher number.</p>` +
-      `<p><b>Inherited disease.</b> Each row is a ${esc(W.mark)} with at least one ClinVar variant classified pathogenic or likely pathogenic (clinsig_simple 1 in the release's ClinVar change tables). Columns are disease families. Each condition name of a variant (split at | and ;; "not specified", "not provided" and "see cases" dropped) gets the family of the first rule it matches in the release's name rules for its DisGeNET disease families (PTM_Pipeline scripts/disease_families.py), applied here to ClinVar condition names and read as text when the explorer is built, so a few conditions can land in a broader family than a specialist would choose; the detail of a cell always lists ClinVar's own condition names; a name no rule matches goes to Other / unassigned, which is listed first, right after All. A variant counts once in each of its families, so a row's cells can add up to more than its All count. A cell is the number of variants, shaded from light (one) to full (the most in any cell); click it to list the variants, their conditions and review stars, with links to ClinVar. The review filter keeps variants with at least that many ClinVar review stars. A variant that names no condition is not shown. These counts come from clinical testing and submission, not from a test against expectation, so they carry no p or q.</p>` +
+      `<p><b>Inherited disease.</b> Each row is a ${esc(W.mark)} with at least one ClinVar variant classified pathogenic or likely pathogenic (clinsig_simple 1 in the release's ClinVar change tables). A chip is a disease family, with its number of variants. Each condition name of a variant (split at | and ;; "not specified", "not provided" and "see cases" dropped) gets the family of the first rule it matches in the release's name rules for its DisGeNET disease families (PTM_Pipeline scripts/disease_families.py), applied here to ClinVar condition names and read as text when the explorer is built, so a few conditions can land in a broader family than a specialist would choose; the detail of a cell always lists ClinVar's own condition names; a name no rule matches goes to Other / unassigned, which is listed first, right after All. A variant counts once in each of its families, so a row's chips can add up to more than its All count. A chip is shaded from light (one variant) to full (the most in any chip); click it to list the variants, their conditions and review stars, with links to ClinVar. The review filter keeps variants with at least that many ClinVar review stars. A variant that names no condition is not shown. These counts come from clinical testing and submission, not from a test against expectation, so they carry no p or q.</p>` +
       `<p><b>All sites as a chart.</b> The chart ranks the sites from most above to most below the expected count. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side; one with a small expected count has no stored test and is drawn at 0. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The top and bottom sites are labeled, except those of a flagged protein; click a point to label it too (up to 20, saved in the link). Highlight genes outlines every site of the genes you paste and labels each one's most extreme site; it changes no statistic. Under the chart, a table lists the ${esc(W.marks)} with no change, most expected first, with the raw lower-tail p. Whole list against expectation is the release's own test for the site set.</p>` +
       `<p>The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example).</p>` +
       (ctl.length
@@ -2339,8 +2344,8 @@
   st.id = 'kit-mutations-css';
   st.textContent = [
     ':root{--onc-1:#2a78d6;--onc-2:#eb6834;--onc-3:#1baf7a;--wf-hot:#e34948;--wf-cold:#2a78d6;--wf-mid:#f0efec}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--onc-1:#3987e5;--onc-2:#d95926;--onc-3:#199e70;--wf-hot:#e66767;--wf-cold:#3987e5;--wf-mid:#383835}}:root[data-theme="dark"]{--onc-1:#3987e5;--onc-2:#d95926;--onc-3:#199e70;--wf-hot:#e66767;--wf-cold:#3987e5;--wf-mid:#383835}',
-    '.mu-skel{min-height:26rem}.mu-end{justify-content:flex-end}.mu-linkbtn{border:0;background:none;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;padding:0}.mu-rank{margin:1.2rem 0;max-width:720px}.mu-rank h3{margin:.2rem 0}.mu-rank p{margin:.1rem 0}.mu-rt .num,.mu-cvt .num{text-align:right;font-variant-numeric:tabular-nums}.mu-rt td:first-child{min-width:8rem}.mu-go{cursor:pointer}.mu-go:hover td{background:var(--surface-2)}.mu-faint td{opacity:.62}.mu-list label{font-weight:600}.mu-lt .num,.mu-rt .num{text-align:right}',
-    '.mu-cv{max-width:100%}.mu-cvw{max-width:100%;overflow-x:auto}.mu-cvt{border-collapse:separate;border-spacing:0}.mu-cvt .mu-site{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;white-space:nowrap;padding-right:.6rem}.mu-fam{height:var(--famh,11rem);vertical-align:bottom;padding:.2rem .1rem;width:2rem;min-width:2rem}.mu-fam span{writing-mode:vertical-rl;transform:rotate(180deg);display:block;white-space:nowrap;font-weight:600;font-size:.78rem}.mu-c{padding:1px;text-align:center}.mu-all{color:var(--muted);padding:0 .5rem}.mu-cell{display:block;width:100%;min-width:1.9rem;height:1.6rem;border:0;border-radius:3px;font:inherit;font-size:.8rem;color:var(--ink);cursor:pointer}.mu-cell:hover,.mu-cell:focus-visible{outline:2px solid var(--ink)}.mu-sw{display:inline-block;width:18px;height:12px;border:1px solid var(--line-strong);vertical-align:-1px;margin-right:4px}.mu-cvd{margin:.8rem 0}.mu-cvd h4{margin:.2rem 0}.mu-cvd ul{margin:.3rem 0;padding-left:1.1rem;font-size:.9rem}',
+    '.mu-skel{min-height:26rem}.mu-end{justify-content:flex-end}.mu-linkbtn{border:0;background:none;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;padding:0}.mu-rank{margin:1.2rem 0;max-width:720px}.mu-rank h3{margin:.2rem 0}.mu-rank p{margin:.1rem 0}.mu-rt .num{text-align:right;font-variant-numeric:tabular-nums}.mu-rt td:first-child{min-width:8rem}.mu-go{cursor:pointer}.mu-go:hover td{background:var(--surface-2)}.mu-faint td{opacity:.62}.mu-list label{font-weight:600}.mu-lt .num,.mu-rt .num{text-align:right}',
+    '.mu-cv{max-width:100%}.mu-cvl{list-style:none;margin:0;padding:0}.mu-cvh,.mu-cvr{display:grid;grid-template-columns:minmax(6rem,max-content) 3rem minmax(0,1fr);gap:.2rem .7rem;align-items:start}.mu-cvh{font-size:.78rem;font-weight:600;color:var(--muted);border-bottom:1px solid var(--line-strong);padding:.3rem 0}.mu-cvr{padding:.35rem 0;border-bottom:1px solid var(--line)}.mu-cvr .mu-site{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}.mu-cvr .mu-all,.mu-cvh .num{text-align:right}.mu-all{color:var(--muted);font-variant-numeric:tabular-nums}.mu-chipset{display:flex;flex-wrap:wrap;gap:.25rem}.mu-cell{border:1px solid var(--line);border-radius:999px;padding:.12rem .6rem;font:inherit;font-size:.8rem;color:var(--ink);cursor:pointer;text-align:left}.mu-cell b{font-variant-numeric:tabular-nums}.mu-cell:hover,.mu-cell:focus-visible,.mu-cell[aria-pressed=true]{outline:2px solid var(--ink)}.mu-sw{display:inline-block;width:18px;height:12px;border:1px solid var(--line-strong);vertical-align:-1px;margin-right:4px}.mu-cvd{margin:.8rem 0}.mu-cvd h4{margin:.2rem 0}.mu-cvd ul{margin:.3rem 0;padding-left:1.1rem;font-size:.9rem}@media (max-width:600px){.mu-cvh,.mu-cvr{grid-template-columns:minmax(0,1fr) 3rem}.mu-cvh span:nth-child(3){display:none}.mu-chipset{grid-column:1/-1}}',
     '.mu-bar{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin:.8rem 0}.mu-ctl{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center}',
     '.mu-ct{display:inline-flex;align-items:center;gap:.4rem}.mu-ct select{font:inherit;padding:.25rem .4rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);max-width:14rem}',
     '.mu-card{margin:.6rem 0;max-width:800px}.mu-top{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:flex-start;justify-content:space-between}.mu-top p{flex:1 1 24rem;margin:0}',

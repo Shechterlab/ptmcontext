@@ -1469,8 +1469,13 @@
     }
     if (sel0 && M.seeds) {
       const np = M.nodes.length - M.seedIdx.size;
+      // one protein: its own STRING partners, asked live, are on its protein page (the card drawn when the site file has website.partners)
+      const one = M.seeds === 1 && D.partners ? M.nodes[[...M.seedIdx][0]] : null;
       slot.push(
-        `Your selection has ${int(M.seeds)} ${plural(M.seeds, 'protein', 'proteins')}: ${M.seeds === 1 ? 'it is' : 'they are'} drawn with ${M.seeds === 1 ? 'its' : 'their'} ${int(np)} ${plural(np, 'partner', 'partners')}.`
+        `Your selection has ${int(M.seeds)} ${plural(M.seeds, 'protein', 'proteins')}: ${M.seeds === 1 ? 'it is' : 'they are'} drawn with ${M.seeds === 1 ? 'its' : 'their'} ${int(np)} ${plural(np, 'partner', 'partners')}.` +
+          (one?.acc
+            ? ` <a href="${esc(K.link('protein', `${one.acc}/interactions`))}">${esc(one.gene)}’s live STRING partners are on its protein page</a>.`
+            : '')
       );
     } else if (sel0 && M.picked != null && M.nodes.length)
       slot.push(
@@ -2633,6 +2638,8 @@
         : `<span class="nw-prev" data-nw-prev="${esc(p.acc)}" data-href="${href}"></span>`)
     );
   });
+  // the protein page's STRING card links here: this protein as the selection, drawn with its partners (a protein the sources do not link has none)
+  K.netHref = (p) => (NC.protein_link === false || !hasLinks(p) ? '' : K.link('network', '', { q: p.gene || p.acc }));
   let viewP = null;
   const loadViewFile = () =>
     (viewP ||= fetch(NC.files.view)

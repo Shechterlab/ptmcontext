@@ -68,11 +68,7 @@
       fs = factors(id);
     return (
       `<article class="tile fm-tile${card.wide ? ' wide' : ''}" id="tile-${esc(id)}" data-tile="${esc(id)}" data-fid="${esc(id)}" tabindex="0">` +
-      `<header><h3>${esc(card.title || a.title)}${
-        a.new && D.run.parity
-          ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>'
-          : ''
-      }</h3>` +
+      `<header><h3>${esc(card.title || a.title)}</h3>` +
       `${K.detailsLink(id)}</header>` +
       `<p class="tstat">Odds ratio, taking all factors together</p>` +
       `<div class="fm-rows">${fs

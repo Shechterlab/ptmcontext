@@ -816,9 +816,7 @@ The site card and the sites table read the site file's `website.protein.card` an
 words: the codes' labels, the sentences, the marks of each call, which columns the Columns menu offers and which show
 first. `website.protein.numbering` numbers some proteins as papers do: a list of rules, each an `offset` (-1: without the
 initiator methionine) and what it applies to, the first rule that matches winning. A rule names proteins by a gene or
-name pattern (`genes`, `names`: the histones) or by `removed_met`, a tab-separated table with an `accession` column (lines
-starting with `#` are comments) of the proteins whose UniProt entry records the initiator methionine as removed
-(feature INIT_MET, note "Removed"); the kit ships one for reviewed human entries, `sites/data/uniprot_init_met_removed.tsv`.
+name pattern (`genes`, `names`: the histones) or by `removed_met`, a tab-separated table with an `accession` column (lines starting with `#` are comments) of proteins to number the same way (the four human sites use only the histone rule: every other protein keeps UniProt's numbering).
 Every view shows and reads a numbered protein's sites in it (the card, map, sequence, regions, Sites page, network, search
 and links); a table download keeps the UniProt `position` (or `start`, `end`) and adds the shown `site` (or `shown_range`),
 with a line in its header saying so. A link's letter and number is read as shown, unless only the UniProt reading names a

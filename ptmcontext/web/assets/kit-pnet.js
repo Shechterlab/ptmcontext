@@ -687,6 +687,11 @@
       ``
     );
   };
+  // a line to the Network view with this protein as the selection (kit-network.js; absent when the site has no network)
+  const netLine = (p) => {
+    const href = K.netHref?.(p);
+    return href ? `<p class="small pn-cross"><a href="${esc(href)}">See this protein in the Network view</a></p>` : '';
+  };
   function ixFold(p, rec, fold) {
     if (!IXP) return '';
     const g = p.gene || p.acc;
@@ -713,6 +718,7 @@
         'who binds its ' + esc(W.marks) + ', partners, complexes and the network',
         K.pix.html(p, rec, K.prot.tables(p.acc)) +
           ifaceFold(p, rec) +
+          netLine(p) +
           (`<details class="pn-fold"><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING; ` +
             `drag the nodes${
               hasIface ? '; open to draw it' : `; folded, as no ${esc(W.mark)} is at an interface`
@@ -724,7 +730,8 @@
       'p-ix',
       'Protein interactions',
       'STRING; drag the nodes',
-      `<div class="card-head">` +
+      netLine(p) +
+        `<div class="card-head">` +
         (`${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${optionsHtml()}<div class="pn-box" ` +
           `id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>`) +
         `<div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +

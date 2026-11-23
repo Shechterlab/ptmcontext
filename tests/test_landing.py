@@ -330,3 +330,13 @@ def test_an_older_whats_new_block_is_one_release_and_a_site_help_reads_the_same_
         mine = [r['title'] for r in LP.whats_new(spec['website']['whats_new'])['releases']]
         land = [r['title'] for r in LP.whats_new(yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'landing.yml').read_text())['whats_new'])['releases']]
         assert mine == land and all('data release (' in t for t in land)
+
+
+def test_the_license_lines_name_the_commercial_contact_and_no_new_badge_is_drawn():
+    root = Path(__file__).resolve().parents[1]
+    lines = [yaml.safe_load((root / 'sites' / 'landing.yml').read_text())['license']]
+    for site in ('methylarginine', 'methyllysine', 'lysine', 'phospho'):
+        lines.append(yaml.safe_load((root / 'sites' / f'{site}.yaml').read_text())['website']['license'])
+    assert all('For commercial use, contact info@shechterlab.org' in x for x in lines)
+    assets = root / 'ptmcontext' / 'web' / 'assets'
+    assert not [f.name for f in assets.glob('kit*') if 'newtag' in f.read_text()]
