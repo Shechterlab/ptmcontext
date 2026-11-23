@@ -1227,7 +1227,7 @@
       shown = all ? rows : rows.slice(0, RANK_N);
     const head =
       `<div class="mu-top"><div><h3>${esc(title)}</h3><p class="small muted">${int(rows.length)} ${rows.length === 1 ? 'site' : 'sites'} with q &lt; 0.05</p></div>` +
-      (rows.length ? K.expBar(['tsv'], 'murank', title, 'propensity') : '') +
+      (rows.length ? K.expBar(['pdf', 'svg', 'png', 'tsv'], 'murank', title, 'propensity') : '') +
       `</div>`;
     if (!rows.length)
       return `<section class="mu-rank" data-mu-rank="${esc(s.id)}">${head}<p class="muted small">${
@@ -1289,10 +1289,16 @@
   K.clicks.push(
     [
       '[data-murank]',
-      (b) =>
-        K.exportFigure('tsv', null, `${D.site.id}_ranked_sites_${b.closest('[data-mu-rank]').dataset.muRank}`, b, () =>
-          rankTsv(b.closest('[data-mu-rank]').dataset.muRank)
-        ),
+      (b) => {
+        const sec = b.closest('[data-mu-rank]'),
+          id = sec.dataset.muRank,
+          name = `${D.site.id}_ranked_sites_${id}`;
+        return b.dataset.murank === 'tsv'
+          ? K.exportFigure('tsv', null, name, b, () => rankTsv(id))
+          : K.tableExport(b.dataset.murank, b, sec, { title: sec.querySelector('h3').textContent }, name, () =>
+              rankTsv(id)
+            );
+      },
     ],
     ['[data-mu-all]', (b) => ((M.all[b.dataset.muAll] = !M.all[b.dataset.muAll]), K.render())],
     [

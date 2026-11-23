@@ -1440,7 +1440,7 @@ text; the rest is in Help and Methods.
 
 - Ranked sites: three compact tables, each following the selection and the hypermutated switch as the waterfall does: sites with q_upper < 0.05
   in each somatic source (TCGA, DepMap), by raw upper-tail p; and sites with q_lower < 0.05 in the germline source with `lower_tail` (gnomAD, the
-  dashed-ring rows), by raw lower-tail p. Titles come from the source's `unit` and `label`. Top 20 with a Show all button and a TSV (every row); a
+  dashed-ring rows), by raw lower-tail p. Titles come from the source's `unit` and `label`. Top 20 with a Show all button and a download (PDF, SVG, PNG of the table; TSV with every row); a
   header says `N sites with q < 0.05`; columns gene, site, k, expected, O/E, q; a flagged protein carries the dominant hotspot note; a row opens the site card.
 - Inherited disease: the selection's known sites with at least one variant in `cv.json` (after the review filter) as rows, ranked by number of variants (top 50,
   Show more adds 50), against the disease families as columns, ordered by total (the catch-all last). A variant counts once in each of its families. A
