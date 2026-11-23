@@ -204,9 +204,10 @@
         tagAids().length
           ? ' · ' +
             (SV.window?.label ||
-              tagAids()
-                .map((a) => (A[a]?.title || a).toLowerCase())
-                .join(', '))
+              // the tags' titles, each once, two at most (the rest are in the column's title)
+              ((t) => t.slice(0, 2).join(', ') + (t.length > 2 ? ` +${t.length - 2}` : ''))([
+                ...new Set(tagAids().map((a) => (A[a]?.title || a).toLowerCase())),
+              ]))
           : ''
       }`,
       text: true,

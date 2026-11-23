@@ -3215,6 +3215,7 @@ a.exp-btn {
 }
 .vswitch {
   margin-left: auto;
+  flex: none; /* in the phone's scrolling tab bar it keeps its width and scrolls into view, never cut */
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
