@@ -17,6 +17,157 @@ order: [methylarginine, methyllysine, lysine, phospho]
 groups:                    # a card goes in the group its site file names (website.landing.group), else the first
   - {id: human, title: null}
   - {id: other, title: Other organisms, compact: true}
+compare:                   # the Compare marks page (compare/index.html): CONTRACTS.md, "Compare marks"
+  title: Compare marks
+  lede: The same questions, asked of each explorer
+  intro: "Pick the explorers and the questions to see how marks differ on the same class."
+  statement: "This page only places each explorer's published numbers side by side. Nothing is recomputed, pooled or adjusted across explorers."
+  columns:                 # each explorer's short name here (default: its landing label)
+    methylarginine: Methylarginine
+    methyllysine: Methyllysine
+    lysine: Modified lysines
+    phospho: Phosphosites
+  how:
+    - "Each row is a class of a question that two or more explorers test. Each column is one explorer. A cell is that explorer's own result for the class, as its page shows it."
+    - "The number is a fold: the share of the marks in the class over the share of the comparison group in it. For a protein set (PANTHER, condensates, cell locations, GO, disease) it is the fold enrichment of the marked proteins. The q is the explorer's own Benjamini–Hochberg q for its test."
+    - "Each question row names the test and the comparison group, one line per explorer. They can differ between explorers, so read them before you compare numbers. The page flags a different test."
+    - "The dot shows the reading the explorers use. Filled with a ring: q is 0.05 or less and the fold is at least 1.1 or at most 1/1.1 (red ▲ more often, slate ▼ less often). Gray filled: q is 0.05 or less but the fold is within 1.1. Hollow: q is above 0.05. The circle grows with the fold. A hollow dot also marks a fold and a test that point different ways."
+    - "Not tested means the explorer does not test that class, or has too few marks to test it. It does not mean zero."
+    - "Download gives the rows you see as a table (TSV) or as a figure (SVG, PNG, PDF). Each file names every explorer's data release and DOI."
+  groups:
+    - id: disorder
+      title: Disorder and structure
+      questions:
+        - id: disorder
+          analysis: disorder
+          title: Disorder context
+          classes:
+            - {class: disordered, label: "In a disordered region (IDR)"}
+            - {class: disorder_boundary, label: "Ordered, within 20 aa of an IDR"}
+            - {class: ordered, label: "Ordered, more than 20 aa from an IDR"}
+        - id: structure
+          analysis: structure_context
+          title: Structural context
+          classes:
+            - {class: domain_folded, label: "Folded domain"}
+            - {class: domain_disordered, label: "Disordered domain"}
+            - {class: ordered_outside_domain, label: "Ordered, outside domains"}
+            - {class: idr_near_domain, label: "IDR within 10 aa of a domain"}
+            - {class: idr_mid_domain, label: "IDR 11 to 30 aa from a domain"}
+            - {class: idr_far_from_domain, label: "IDR more than 30 aa from a domain"}
+        - id: interface
+          analysis: pdb_interface
+          title: Interfaces in PDB structures
+          classes:
+            - {class: protein, label: "Protein interface"}
+            - {class: any, label: "Any interface"}
+    - id: motifs
+      title: Sequence motifs
+      note: Only motifs that two or more explorers test. Motifs of one mark stay on that explorer's page.
+      questions:
+        - id: motif
+          analysis: motif
+          title: Sequence motifs
+          classes:
+            - {class: ST_after, label: "Ser or Thr at +1"}
+            - {class: G_before, label: "Gly at −1"}
+            - {class: R_before, label: "Arg at −1"}
+            - {class: KK, label: "Another Lys at −1 or +1"}
+            - {class: basic_neighbours, label: "Lys or Arg within ±3"}
+    - id: condensates
+      title: Condensates, stress granules and P-bodies
+      questions:
+        - id: condensate
+          analysis: condensate_proteome
+          title: Condensates (CD-CODE)
+          classes:
+            - {class: DEE660B4, label: "Stress granule"}
+            - {class: A40D6D0A, label: "DHX9 stress granule"}
+            - {class: 232F8A39, label: "P-body"}
+            - {class: 81D2A7B6, label: "Nuclear stress body"}
+        - id: organelle_ip
+          analysis: cell_organelle_ip
+          title: Organelle IP
+          classes:
+            - {class: stress_granule, label: "Stress granule"}
+            - {class: p-body, label: "P-body"}
+            - {class: translation, label: "Translation machinery"}
+            - {class: proteasome, label: "Proteasome"}
+    - id: cell
+      title: Cell compartments
+      questions:
+        - id: hpa
+          analysis: hpa_location
+          title: Where in the cell (Human Protein Atlas)
+          classes:
+            - {class: Nucleoplasm, label: "Nucleoplasm"}
+            - {class: Nucleoli, label: "Nucleoli"}
+            - {class: Nuclear speckles, label: "Nuclear speckles"}
+            - {class: Nuclear bodies, label: "Nuclear bodies"}
+            - {class: Cytosol, label: "Cytosol"}
+            - {class: Mitochondria, label: "Mitochondria"}
+            - {class: Endoplasmic reticulum, label: "Endoplasmic reticulum"}
+            - {class: Golgi apparatus, label: "Golgi apparatus"}
+            - {class: Plasma membrane, label: "Plasma membrane"}
+        - id: hcm
+          analysis: cell_hcm_compartment
+          title: Human Cell Map compartments
+          classes:
+            - {class: nucleolus, label: "Nucleolus"}
+            - {class: nuclear body, label: "Nuclear body"}
+            - {class: chromatin, label: "Chromatin"}
+            - {class: cytoplasmic ribonucleoprotein granule, label: "Cytoplasmic RNP granule"}
+            - {class: plasma membrane, label: "Plasma membrane"}
+    - id: nucleic
+      title: RNA and DNA binding
+      questions:
+        - id: go_binding
+          analysis: go_binding
+          title: RNA and DNA binding (GO)
+          classes:
+            - {class: rna_binding, label: "RNA binding"}
+            - {class: rna_binding_experimental, label: "RNA binding, experimental evidence"}
+            - {class: dna_binding, label: "DNA binding"}
+            - {class: dna_binding_experimental, label: "DNA binding, experimental evidence"}
+        - id: crosslink
+          analysis: crosslink
+          title: RNA and DNA crosslinks in cells
+          classes:
+            - {class: rna_crosslink, label: "RNA-crosslinked residue"}
+            - {class: rbrid_residue, label: "RBR-ID positive residue"}
+            - {class: dna_crosslink, label: "DNA-crosslinked residue"}
+    - id: panther
+      title: Protein classes (PANTHER)
+      questions:
+        - id: panther
+          analysis: panther_group
+          title: Protein classes (PANTHER), grouped
+          classes:
+            - {class: RNA processing and translation, label: "RNA processing and translation"}
+            - {class: "Transcription, chromatin and DNA", label: "Transcription, chromatin and DNA"}
+            - {class: Protein-modifying enzymes, label: "Protein-modifying enzymes"}
+            - {class: Metabolic enzymes, label: "Metabolic enzymes"}
+            - {class: "Scaffolds, adaptors and chaperones", label: "Scaffolds, adaptors and chaperones"}
+            - {class: "Cytoskeleton, adhesion and matrix", label: "Cytoskeleton, adhesion and matrix"}
+            - {class: "Signalling: receptors, ligands and modulators", label: "Signaling: receptors, ligands and modulators"}
+            - {class: Transport and membrane traffic, label: "Transport and membrane traffic"}
+            - {class: Immunity and defence, label: "Immunity and defense"}
+            - {class: Other PANTHER classes, label: "Other PANTHER classes"}
+    - id: disease
+      title: Disease families
+      questions:
+        - id: disease
+          analysis: disease_family
+          title: Disease families (DisGeNET)
+          classes:
+            - {class: Cancer / neoplasia, label: "Cancer / neoplasia"}
+            - {class: ALS / motor neuron / FTD, label: "ALS / motor neuron / FTD"}
+            - {class: Alzheimer / tau / dementia, label: "Alzheimer / tau / dementia"}
+            - {class: Parkinsonism, label: "Parkinsonism"}
+            - {class: Ataxia / cerebellar degeneration, label: "Ataxia / cerebellar degeneration"}
+            - {class: Myopathy / muscle / cardiomyopathy, label: "Myopathy / muscle / cardiomyopathy"}
+            - {class: Developmental / congenital syndromes, label: "Developmental / congenital syndromes"}
+            - {class: Immune / inflammatory, label: "Immune / inflammatory"}
 footer:
   links:
     - {label: Cite, url: "https://github.com/Shechterlab/ptmcontext/blob/main/CITATION.cff"}

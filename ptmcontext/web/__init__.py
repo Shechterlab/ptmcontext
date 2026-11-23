@@ -2261,6 +2261,7 @@ def pages(
         str, list
     ] = {}  # accession -> [gene, name, indexes of the listed sites that have it, genes, symbols], for the landing search
     listed_ids: list[dict] = []
+    for_compare: list[tuple] = []  # the listed sites built: what the Compare marks page reads (compare.py)
     switcher_label = (cfg.get('switcher') or {}).get('label')
     for sp in site_paths:
         site = load_site(sp)
@@ -2299,6 +2300,7 @@ def pages(
         if landing.get('unlisted'):  # its folder is published; its card is not on the landing page
             log(f'  {site["id"]} -> {dest} (unlisted)')
             continue
+        for_compare.append((site, src.parent, web, registry[-1]['label'], profile))
 
         # the landing search: the proteins this site has marks on (a site's own protein list, its proteins.tsv)
         plist = src.parent / 'proteins.tsv'
@@ -2360,8 +2362,17 @@ def pages(
     # the sites' own header menu reads this list (kit-switch.js)
     rank = {k: i for i, k in enumerate(str(x) for x in cfg.get('order') or [])}
     registry.sort(key=lambda r: rank.get(r['id'], len(rank)))  # the menu lists the sites in the landing page's order
+    cmp_data = _compare_data(cfg, for_compare, rank, log)  # the Compare marks page's data (None: no page)
+    cmp_spec = cfg.get('compare') or {}
+    pages_list = (
+        [{'id': 'compare', 'label': cmp_spec.get('title') or 'Compare marks', 'href': 'compare/'}] if cmp_data else []
+    )
     (out / 'sites.json').write_text(
-        json.dumps({'switcher_label': switcher_label, 'brand': cfg.get('title') or '', 'sites': registry}, indent=1)
+        json.dumps(
+            {'switcher_label': switcher_label, 'brand': cfg.get('title') or '', 'sites': registry}
+            | ({'pages': pages_list} if pages_list else {}),
+            indent=1,
+        )
     )
     # the landing page's own logo (landing.yml `logo`: an SVG file, relative to the working directory or the first site's repository)
     logo_href = favicon_href = None
@@ -2406,10 +2417,58 @@ def pages(
         favicon=favicon_href,
         search=bool(found),
     )
+    if cmp_data:
+        from . import compare as CP
+
+        text = CP.add_link(text, cmp_spec)
+        skipped = [f'{s} is not built, so it is not in this comparison.' for s in cmp_data.get('skipped', [])]
+        CP.write(
+            out,
+            cmp_data,
+            CP.page(
+                cmp_data,
+                cmp_spec,
+                cfg=cfg,
+                kit_css=f'{first_built}/assets/kit.css' if first_built else None,
+                fonts_css=f'{first_built}/{LOCAL_FONTS}' if first_built else FONTS['stylesheet'],
+                lab_html=lab_html,
+                built_with=built_with,
+                logo=logo_href,
+                favicon=favicon_href,
+                skipped=skipped,
+            ),
+        )
+        log(f'  -> {out / "compare" / "index.html"}')
     (out / 'index.html').write_text(text)
     _link_previews(out, cards, cfg)
     log(f'  -> {out / "index.html"}')
     return out / 'index.html'
+
+
+def _compare_data(cfg: dict, built: list, rank: dict, log) -> dict | None:
+    """The Compare marks page's data (compare.py) from the listed sites built, in the landing page's order: each site's
+    statistics and its analyses' words. Built sites the config does not name are left out; the names of sites it
+    names that are not built go in `skipped`. None without a `compare` block."""
+    from . import compare as CP
+
+    spec = cfg.get('compare')
+    if not spec:
+        return None
+    cols = spec.get('columns') or {}
+    entries = []
+    for site, folder, web_cfg, label, profile in sorted(built, key=lambda b: rank.get(b[0]['id'], len(rank))):
+        if cols and site['id'] not in cols:
+            continue
+        e = CP.explorer_entry(site, folder, web_cfg, label, cols.get(site['id']), f'../{site["id"]}/')
+        e['rows'] = CP.read_rows(folder / 'statistics.tsv')
+        e['analyses'] = site_data(site, folder, profile)['analyses']
+        entries.append(e)
+    data = CP.build_data(cfg, entries, log)
+    if data is not None:
+        data['skipped'] = [c for c in cols if c not in {e['id'] for e in entries}]
+        for s in data['skipped']:
+            log(f'  compare: {s} is not built; left out of the comparison')
+    return data
 
 
 def _link_previews(out: Path, cards: list, cfg: dict) -> None:

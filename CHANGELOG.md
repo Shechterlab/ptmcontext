@@ -4,11 +4,12 @@
 
 > A Disease variants page: ranked sites, tumors, inherited disease, and a chart of all sites.
 > Paste a list of genes, accessions or sites to test it, with the result in one sentence.
-> A small selection gets an "about these sites" block on every tab.
+> A small selection gets an "about these sites" block on every tab, and a Compare marks page sets the explorers side by side.
 > Link previews, plainer wording and UniProt numbering for proteins that papers number differently.
 > Two labeled versions everywhere: App: PTMcontext 0.6.0 and Data: PTM_Pipeline v1.7.0.
 
 - Versioning: the app version is one number for the whole website (`pyproject.toml`, `ptmcontext/__init__.py`, `CITATION.cff` and every site's citation file). Pages and downloads read "App: PTMcontext 0.6.0" and "Data: PTM_Pipeline v1.7.0 (doi:...)". `VERSIONING.md` has the rules (MAJOR, MINOR, PATCH), the release checklist and the 1.0.0 deploy plan. Help has a "What changed in the site" section, made from the headings of this file when the explorer is built. `.zenodo.json` gives Zenodo the software's metadata. `tests/test_release_version_consistency.py` fails when the versions, this file and the documents disagree.
+- Compare marks: a page beside the landing page (`compare/index.html`, data in `compare/compare.json`) that puts each explorer's own published result for the shared questions side by side (disorder and structure, sequence motifs, condensates, cell compartments, RNA and DNA binding, PANTHER classes, disease families). Pick the explorers and a question group, sort by an explorer's fold, download a table or a figure. Nothing is recomputed or pooled. The pairs come from the landing config's `compare` block; each explorer's header and switcher menu link to the page.
 - Usability fixes from four walkthroughs of the live explorers:
   - While a selection's data load, counts and the "too few to test" verdict give way to "Loading 138,022 phosphosites…" (the rail, the bar, the tab counts, the Overview and Proteins pages).
   - Site rows say "3 changes (k) · O/E 22 · q 0.03"; one change reads "1 change" with its O/E muted. The protein page's table of sites shows the UniProt position beside a site the page numbers differently, and has readable column names in its TSV (`tcga_tumors_changed`, `tcga_oe`, `clinvar_pathogenic_n`, `hotspot_note`, `disordered` ...) and an AlphaMissense column once AlphaFold DB answers.

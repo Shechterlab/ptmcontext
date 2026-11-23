@@ -1644,6 +1644,51 @@ and `soon`: cards without a link for sites not built yet (`id`, `name`, `tagline
 
 **Link previews.** `ptmc pages` writes a 1200×630 image for each listed site (`<id>/preview.png`: its band colors, name, tagline and the card's numbers) and one for the landing page (`preview.png`: one tile per listed site), and puts Open Graph and Twitter card tags in each page's head (ptmcontext/web/preview.py; https://ogp.me/). The landing config's `url` (where the published folder lives) makes the image and page addresses absolute, which the services that draw link cards need; without it the pages get title and description tags only. The images need Pillow (a dependency); without it the tags carry no image. A link's part after `#` never reaches those services, so every link into a site shares that site's card.
 
+## Compare marks
+
+`ptmc pages` writes a page beside the landing page, `compare/index.html`, and its data, `compare/compare.json`, when the
+landing config has a `compare` block and two or more of the sites it names are built. The page places each explorer's own
+published numbers side by side, one row per class of a question and one column per explorer. It never recomputes, pools or
+adjusts a statistic across explorers; the page says so in one line. The landing page links to it (`land-compare`, above the
+explorers), `sites.json` lists it as `pages: [{id, label, href}]`, and each explorer's header and switcher menu link to it
+(kit-switch.js). Code: `ptmcontext/web/compare.py` (data and page) and `ptmcontext/web/assets/land-compare.js` (the page's script).
+
+The `compare` block of the landing config (`sites/landing.yml`):
+
+| key | meaning |
+|---|---|
+| `title`, `lede`, `intro`, `statement` | the page's title, the line under it in the header, one short intro line, and the one line saying it only places published numbers side by side |
+| `how` | paragraphs of the "How to read this" disclosure |
+| `columns` | `{site id: short name}`: the explorers to show, in the landing order; a built site not named is left out, a named site that is not built goes in `skipped` and the page says so |
+| `groups` | `[{id, title, note?, questions: [...]}]`: the question groups the reader can pick |
+| a question | `{id, title, analysis, classes: [{class, label, per?}], per?}`: the analysis id the explorers share and the classes to pair, each with the page's label; `per: {site id: {analysis?, class?}}` names another analysis or class for one explorer |
+
+A cell is read from the explorer's own `statistics.tsv`, the way its page reads a row (kit.js `decorate`, `dir`, `testLine`):
+for a residue question the row of its default test (`mantel_haenszel`, within each protein) with the fold from that row's
+counts (the share of the marks in the class over the share of the comparison residues in it) beside the odds ratio, its
+interval and q; for a protein-set question the `enricher` row's fold enrichment, with q and the direction read from the row's
+test within abundance deciles where there is one. `compare.json` is
+`{version, title, statement, explorers, groups, notes, skipped}`. Each explorer is `{id, label, short, href, band, release:
+{version, date, doi, url}, app: {version, date, doi}, cite: {text, doi}}` (the release and DOI are `website.dataset`, the
+citation is its citation file). A group's question is `{id, title, analysis, same_test, tests, rows}`: `tests` is
+`{site id: {test, kind, title, analysis, group}}`, the test's name and the comparison group (the rows' `background`) each
+explorer used, and an explorer with none of the question's classes has no entry. A row is `{id, class, label, cells,
+own_labels?}`; a cell is `null` when the explorer has no row for the class ("not tested", never 0) or
+`{state: ok|few, analysis, title, v, big, measure, or, lo, hi, q, dir, split, n, test, q_test, group, label}`:
+`v` the fold shown (`big`: 1,000 or more, printed "> 1,000"), `or`, `lo`, `hi` and `q` the test's, `dir` the explorers' reading
+(`more`, `less`, `same`, `ns`: q at most 0.05 and a fold of at least 1.1 or at most 1/1.1), `split` true when q is 0.05 or less
+but the fold and the test point different ways (no reading), `n` the marks (proteins, for a set) in the class, `label` the
+explorer's own name for the class, and `state: few` a row with too few to test. `notes` lists what the build found odd: a
+question the explorers test differently, a class they name differently.
+
+The page draws a dot per cell (filled with a ring when q is at most 0.05 and the fold is at least 1.1 either way: red and ▲ more
+often, slate and ▼ less often; gray when within 1.1; hollow when q is above 0.05; its size grows with the fold), lets the reader
+pick the explorers (all four by default) and a question group, sorts the rows by an explorer's fold or by name, and downloads
+the rows shown as a table (TSV, one line per class and explorer) or a figure (SVG, PNG, PDF). Every file starts with the standard citation
+header: the page, the one-line statement, and each explorer shown with its data release, DOI, version and citation, and the
+export time and address. The choices are in the address (`#x=` explorers, `g=` group, `s=` sort). A wide table scrolls in its
+own frame, not the page.
+
 ## The entry pictures
 
 The Overview's start panel and each landing-page card draw three pictures from the site's own statistics (`web/glance.json`,
@@ -1652,7 +1697,7 @@ The Overview's start panel and each landing-page card draw three pictures from t
 in the site file they are computed; `website.start` (`share: {analysis, classes, labels}`, `findings: [{analysis, class}]`,
 `protein`) names them, and `website.landing` (`share`, `findings`, `tagline`) overrides them for the landing card; `website.landing.from_section: <Overview section>` chooses the landing card's result from that section's questions only (the card that draws the cell stands for the `website.cell` maps), so the card's result (`landing_findings` in `glance.json`) matches what the Overview opens with; the start panel keeps its own. `website.landing.unlisted: true` builds the
 site's folder with `ptmc pages` but leaves its card off the landing page. `ptmc pages` also writes `sites.json` beside the folders
-(`{sites: [{id, label, listed, in_switcher, residues}]}`, `residues` the letters of `website.propensity.residues`, which the Disease variants page uses to send a chosen site to the explorer that covers its residue; the label being `landing.label` or the mark profile's name): the header's "Mark" menu
+(`{sites: [{id, label, listed, in_switcher, residues}], pages: [{id, label, href}]}`, `pages` the pages beside the explorers, Compare marks, below, `residues` the letters of `website.propensity.residues`, which the Disease variants page uses to send a chosen site to the explorer that covers its residue; the label being `landing.label` or the mark profile's name): the header's "Mark" menu
 (kit-switch.js) reads it, lists the listed sites, lists an unlisted site only in the menu of an unlisted site or where its own
 `landing.in_switcher` is true, and opens the chosen site with the reader's search (`q=`), highlight (`hl=`) and filters (`f=`); the
 filters the target does not have are dropped, and the target says how many in a short notice. A site served alone has no
