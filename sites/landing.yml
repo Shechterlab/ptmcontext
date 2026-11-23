@@ -2,6 +2,7 @@
 # the cards of sites not built yet. Each built site's card comes from its site file (website.name, band, accent, art,
 # landing.tagline / question / cta, stats) and its build (the numbers, the strongest result). CONTRACTS.md, "The landing page".
 title: PTMcontext
+url: https://shechterlab.github.io/ptmcontext/   # where the published folder lives: link previews need absolute image addresses
 lede: Analysis tools for protein post-translational modifications
 description: "PTMcontext: analysis tools for protein post-translational modifications."
 logo: sites/art/ptmcontext_logo.svg

@@ -1588,6 +1588,8 @@ e.g. other organisms), `footer: {links: [{label, url}], note}`, `references` (li
 and `soon`: cards without a link for sites not built yet (`id`, `name`, `tagline`, `question`, `band`, `accent`,
 `accent_dark`, `art`, `badge`, `cta`). Replace a `soon` entry by the site's file in the command when it is built.
 
+**Link previews.** `ptmc pages` writes a 1200×630 image for each listed site (`<id>/preview.png`: its band colors, name, tagline and the card's numbers) and one for the landing page (`preview.png`: one tile per listed site), and puts Open Graph and Twitter card tags in each page's head (ptmcontext/web/preview.py; https://ogp.me/). The landing config's `url` (where the published folder lives) makes the image and page addresses absolute, which the services that draw link cards need; without it the pages get title and description tags only. The images need Pillow (a dependency); without it the tags carry no image. A link's part after `#` never reaches those services, so every link into a site shares that site's card.
+
 ## The entry pictures
 
 The Overview's start panel and each landing-page card draw three pictures from the site's own statistics (`web/glance.json`,

@@ -11796,3 +11796,6 @@ summary {
 .nw-top li {
   margin: 1px 0;
 }
+.contacts > .sp-more[open] {
+  display: block;
+}
