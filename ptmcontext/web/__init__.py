@@ -110,6 +110,7 @@ MODULES = (
     'kit-network.js',
     'kit-tile.js',
     'kit-figures.js',
+    'kit-listtest.js',
     'kit-mutations.js',
     'kit.js',
 )
