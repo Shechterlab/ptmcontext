@@ -208,6 +208,7 @@
   });
   K.exp = {
     menu,
+    label: (k) => LABELS[k] || k.toUpperCase(), // the menus' word for a format, for a menu a module draws itself
     pageMenu,
     printPage,
     presets: () => PRESETS,

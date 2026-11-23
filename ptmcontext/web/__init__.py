@@ -773,7 +773,7 @@ NOTE_NUMBER = re.compile(r'\{(or|sig):([a-z0-9_]+):([A-Za-z0-9_]+)\}')
 def note_text(note: str, stats) -> str:
     """A question's note with its numbers read from the statistics, so that they are not typed: {or:<question>:<class>}
     is the odds ratio of that class in the question's within-protein test (Mantel-Haenszel; the pooled test where the
-    question has none), to two decimals and x; {sig:<question>:<class>} says whether that row is significant (q < 0.05).
+    question has none), to two decimals and x; {sig:<question>:<class>} says whether that row is significant (q at most 0.05, the rule of the class tests).
     A question that is not in the statistics is an error."""
 
     def value(m):
@@ -785,7 +785,7 @@ def note_text(note: str, stats) -> str:
         method = 'mantel_haenszel' if 'mantel_haenszel' in methods else sorted(methods)[0]
         row = rows[rows['method'] == method].iloc[0]
         if kind == 'sig':
-            return 'significant' if float(row['q']) < 0.05 else 'not significant'
+            return 'significant' if float(row['q']) <= 0.05 else 'not significant'
         return f'{float(row["odds_ratio"]):.2f}x'
 
     return NOTE_NUMBER.sub(value, note)

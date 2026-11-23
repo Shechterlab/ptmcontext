@@ -753,7 +753,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       families: {rules: sites/data/methylarginine_cell_regions.yaml}
     whole_universe: true
     min_size: 5
-    background: "the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
+    background: "the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_region_organelle_ip
     test: protein_sets
@@ -780,7 +780,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
     whole_universe: true
     min_size: 5
-    background: the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments)
+    background: the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments)
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_hcm_domain
     test: protein_sets
@@ -1178,17 +1178,17 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
     tests:
       - {category: any_within_4a, inside: {role: na_any, where: [{column: class, at_most: 4}]}, covered_by: na_any, label: "RNA or DNA within 4 Å",
-         background: other arginines of the same proteins modelled in a PDB entry with RNA or DNA}
+         background: other arginines of the same proteins modeled in a PDB entry with RNA or DNA}
       - {category: any_within_8a, inside: {role: na_any, where: [{column: class, at_most: 8}]}, covered_by: na_any, label: "RNA or DNA within 8 Å",
-         background: other arginines of the same proteins modelled in a PDB entry with RNA or DNA}
+         background: other arginines of the same proteins modeled in a PDB entry with RNA or DNA}
       - {category: dna_within_4a, inside: {role: na_dna, where: [{column: class, at_most: 4}]}, covered_by: na_dna, label: "DNA within 4 Å",
-         background: other arginines of the same proteins modelled in a PDB entry with DNA}
+         background: other arginines of the same proteins modeled in a PDB entry with DNA}
       - {category: dna_within_8a, inside: {role: na_dna, where: [{column: class, at_most: 8}]}, covered_by: na_dna, label: "DNA within 8 Å",
-         background: other arginines of the same proteins modelled in a PDB entry with DNA}
+         background: other arginines of the same proteins modeled in a PDB entry with DNA}
       - {category: rna_within_4a, inside: {role: na_rna, where: [{column: class, at_most: 4}]}, covered_by: na_rna, label: "RNA within 4 Å",
-         background: other arginines of the same proteins modelled in a PDB entry with RNA}
+         background: other arginines of the same proteins modeled in a PDB entry with RNA}
       - {category: rna_within_8a, inside: {role: na_rna, where: [{column: class, at_most: 8}]}, covered_by: na_rna, label: "RNA within 8 Å",
-         background: other arginines of the same proteins modelled in a PDB entry with RNA}
+         background: other arginines of the same proteins modeled in a PDB entry with RNA}
   - id: intact
     title: IntAct mutations and binding regions
     question: "Are methylarginines where IntAct maps interactions?"

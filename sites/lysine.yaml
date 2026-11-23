@@ -531,7 +531,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       families: {rules: sites/data/methylarginine_cell_regions.yaml}
     whole_universe: true
     min_size: 5
-    background: "the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
+    background: "the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
   - id: cell_region_organelle_ip
     new: true
@@ -560,7 +560,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
     whole_universe: true
     min_size: 5
-    background: the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments)
+    background: the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments)
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", with each abundance decile analyzed separately"}
   - id: cell_hcm_domain
     new: true

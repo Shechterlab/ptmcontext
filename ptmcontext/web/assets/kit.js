@@ -1152,7 +1152,7 @@
             } ${esc(r.label)}"`
           : ''
       }>` +
-      `<span class="lab"${r.help ? ` title="${esc(r.help)}"` : ''}><span class="ln">${esc(r.label)}</span>${
+      `<span class="lab" title="${esc(r.help ? `${r.label}: ${r.help}` : r.label)}"><span class="ln">${esc(r.label)}</span>${
         shortHelp(r) ? `<span class="lh">` + `<span class="sep">&nbsp;·&nbsp;</span>${esc(r.help)}</span>` : ''
       }</span>` +
       `<span class="cnt">${kfmt(r.a)} / ${kfmt(r.a + r.b)}</span><span class="cnt o">${kfmt(r.c)} / ${kfmt(r.c + r.d)}</span>` +
@@ -1591,7 +1591,7 @@
       rows
         .map(
           (r) =>
-            `<div class="trow pick" data-r="${reg(r)}"${pickAttrs(r)}><span class="lab">${esc(r.label)}</span><svg ` +
+            `<div class="trow pick" data-r="${reg(r)}"${pickAttrs(r)}><span class="lab" title="${esc(r.label)}">${esc(r.label)}</span><svg ` +
             `aria-hidden="true">${grid.join('')}` +
             (ciOf(r) ? `<line class="whisker ${r.dir}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" ` + `y2="50%"/>` : '') +
             `<circle class="dot ${r.dir}" cx="${X(valOf(r))}" cy="50%" r="4.6"/>${

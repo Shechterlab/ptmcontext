@@ -3258,7 +3258,7 @@
                 )
                 .join('')
             ).join('') +
-            `<button type="button" class="exp-btn" data-cell-exp="tsv" data-cell-fig="${esc(DRAWINGS[0].drawing)}" title="${esc(K.EXP_HELP.tsv)}">TSV</button>`
+            `<button type="button" class="exp-btn" data-cell-exp="tsv" data-cell-fig="${esc(DRAWINGS[0].drawing)}" title="${esc(K.EXP_HELP.tsv)}">${esc(K.exp.label('tsv'))}</button>`
         );
     return (
       `<article class="tile wide cell-tile" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header>` +
