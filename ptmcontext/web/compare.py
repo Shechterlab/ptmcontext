@@ -63,6 +63,7 @@ CSS = """
 .cmp-table thead th a { color: inherit; }
 .cmp-table tbody th[scope=row] { position: sticky; left: 0; z-index: 1; background: var(--surface); font-weight: 500; min-width: 11rem; max-width: 16rem; }
 .cmp-table thead th:first-child { left: 0; z-index: 3; }
+.cmp-table tbody th[scope=row], .cmp-table tr.q > th, .cmp-table thead th:first-child { border-right: 1px solid var(--line-strong); }
 .cmp-sort { font: inherit; font-size: 0.8rem; background: none; border: 0; padding: 0.15rem 0; color: var(--muted); cursor: pointer; text-decoration: underline dotted; min-height: 24px; display: block; }
 .cmp-sort[aria-pressed=true] { color: var(--ink); font-weight: 600; }
 .cmp-table tr.q > th, .cmp-table tr.q > td { background: var(--surface-2); font-size: 0.8rem; color: var(--ink-2); font-weight: 400; border-bottom: 1px solid var(--line-strong); }
@@ -71,6 +72,8 @@ CSS = """
 .cmp-table tr.q .q-group { display: block; color: var(--muted); }
 .cmp-table tr.q .q-flag { display: block; color: var(--more); font-weight: 600; }
 .cmp-gh td { background: var(--surface); padding: 0.9rem 0.7rem 0.3rem; border-bottom: 0; }
+.cmp-gh td > * { position: sticky; left: 0.7rem; max-width: min(40rem, calc(100vw - 4.5rem)); }
+.cmp-table tr.q > th { position: sticky; left: 0; z-index: 1; min-width: 11rem; max-width: 16rem; }
 .cmp-gh h2 { margin: 0; font-size: 1.1rem; }
 .cmp-gh p { margin: 0.15rem 0 0; font-size: 0.85rem; color: var(--ink-2); }
 .cmp-table td.c { white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -88,7 +91,7 @@ CSS = """
 .cmp-dot-ns { fill: var(--surface); stroke: var(--same); stroke-width: 1.5; }
 .cmp-ring { fill: none; stroke-width: 1.2; opacity: 0.55; }
 .cmp-ring.more { stroke: var(--more); } .cmp-ring.less { stroke: var(--less); } .cmp-ring.same { stroke: var(--same); }
-@media (max-width: 640px) { .cmp-dl { margin-left: 0; } .cmp-bar { gap: 0.6rem 1rem; } .cmp-table tbody th[scope=row] { min-width: 7.5rem; max-width: 9rem; font-size: 0.85rem; } .cmp-table th, .cmp-table td { padding: 0.4rem 0.5rem; } }
+@media (max-width: 640px) { .cmp-table tr.q > th { min-width: 7.5rem; max-width: 9rem; font-size: 0.85rem; } .cmp-dl { margin-left: 0; } .cmp-bar { gap: 0.6rem 1rem; } .cmp-table tbody th[scope=row] { min-width: 7.5rem; max-width: 9rem; font-size: 0.85rem; } .cmp-table th, .cmp-table td { padding: 0.4rem 0.5rem; } }
 """
 
 
