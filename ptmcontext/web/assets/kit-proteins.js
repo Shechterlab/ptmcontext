@@ -278,6 +278,36 @@
   }
   // a mark's attributes, as the site file describes them: with links for a list that has them (each study to its paper)
   const attrVal = (m, name) => K.cols.markAttr(m, name) ?? '';
+  // the cell lines (or other entities) the site file names for each change of a list attribute at this site (a map row's
+  // from.names), each linked where the row gives a link; '' while the map's items load or when no row names any
+  function namedLines(m, name) {
+    const N = K.map?.namedChanges?.(PV.acc, SPECS[name].column),
+      hits = N && N.at.get(m[0]);
+    if (!hits?.length) return '';
+    const p = byAcc[PV.acc] || PV.lightP,
+      one = ([id, nm, group]) =>
+        N.link
+          ? `<a href="${esc(N.link.replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener" title="${esc(
+              [group, id].filter(Boolean).join(' · ')
+            )}">${esc(nm || id)}</a>`
+          : esc(nm || id);
+    return hits
+      .map(
+        (h) =>
+          `<div class="sc-names small"><span class="muted">${esc(N.title)}, </span><b>${esc(
+            h.change.replace(/^([A-Za-z])(\d+)(?=[A-Za-z*])/, (m0, a, d) => (+d === m[0] ? a + shownPos(p, m[0]) : m0))
+          )}</b>: ${h.list.map(one).join(', ')}${h.more ? ` and ${int(h.more)} more` : ''}</div>`
+      )
+      .join('');
+  }
+  (K.mapReady ||= []).push(() => {
+    if (
+      PV.rec &&
+      PV.site &&
+      Object.values(SPECS).some((s) => s.kind === 'list' && K.map?.namedChanges?.(PV.acc, s.column))
+    )
+      K.render();
+  });
   function attrHtml(m, name, full) {
     const s = SPECS[name],
       v = attrVal(m, name);
@@ -299,7 +329,7 @@
           `more" title="${esc(vals.map((x) => vLabel(name, x)).join('\n'))}">+${vals.length - 1}</span></span>`
         );
       }
-      return K.sel.listHtml(name, vals, ids, PV.acc, full);
+      return K.sel.listHtml(name, vals, ids, PV.acc, full) + (full ? namedLines(m, name) : '');
     }
     return esc(K.sel?.valueLabel ? K.sel.valueLabel(name, v) : v);
   }
@@ -501,6 +531,16 @@
     first: (acc) => 1 + dropped(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
     length: (acc, n) => n - dropped(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
     tables: (acc) => (PV.acc === acc ? PV.tb || null : null),
+    // a mark's state as its colored pill and as text (the site's first colored category attribute); '' without one
+    statePill: (m) => statePill(m),
+    stateLabel: () => {
+      const k = Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category');
+      return k ? SPECS[k].label : '';
+    },
+    stateText: (m) => {
+      const k = Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category');
+      return k ? String(K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k)) : '';
+    },
   };
 
   // ---- the site card: one mark, everything the site knows about it, from its attributes and tables ----------------

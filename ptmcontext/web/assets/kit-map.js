@@ -808,6 +808,7 @@
         )
         .then(() => {
           if (M.ctx && shardKey(M.ctx.p.acc) === key) redraw();
+          (K.mapReady || []).forEach((f) => f(key));
         });
       return null;
     }
@@ -820,6 +821,48 @@
     const k = ROW_INDEX.indexOf(r.id);
     return all.filter((x) => x[0] === k);
   };
+  // the entities (cell lines) a site row names for each change (website.protein.map.rows[].from.names), for the cards and the
+  // protein page's site table: `column` is the marks column the row's labels come from (an attribute's column). false when no row
+  // names entities for it, null while the protein's items load, else {title, row, link, at: Map(position -> [{change, n, list:
+  // [[id, name, group]], more}])}: the row's words for them, its title, the link ({id}) and, at each residue, each change's
+  // lines (n counts all of them; `more` is how many the list leaves out)
+  const namedRow = (column) =>
+    OWN_ROWS.map((r) => ({ r, f: ownTables(r).find((x) => x && x.names && x.marks) })).find(
+      (x) => x.f && x.f.columns?.label === column
+    );
+  // the site rows that name entities, [{column, row (the row's title), title (the entities' word), link}]
+  const namedRows = () =>
+    OWN_ROWS.map((r) => ({ r, f: ownTables(r).find((x) => x && x.names && x.marks) }))
+      .filter((x) => x.f?.columns?.label)
+      .map(({ r, f }) => ({
+        column: f.columns.label,
+        row: r.title,
+        title: f.names.title || 'Listed',
+        link: f.names.link || '',
+      }));
+  function namedChanges(acc, column) {
+    const hit = namedRow(column);
+    if (!hit) return false;
+    const its = ownItems(acc, hit.r);
+    if (!its) return null;
+    const at = new Map();
+    for (const x of its) {
+      if (!x[6]) continue;
+      const list = String(x[6])
+        .split('||')
+        .filter(Boolean)
+        .map((e) => e.split('|'));
+      if (!list.length) continue;
+      if (!at.has(x[1])) at.set(x[1], []);
+      at.get(x[1]).push({
+        change: String(x[4] || ''),
+        n: +x[5] || list.length,
+        list,
+        more: Math.max(0, (+x[5] || 0) - list.length),
+      });
+    }
+    return { title: hit.f.names.title || 'Listed', row: hit.r.title, link: hit.f.names.link || '', at };
+  }
   // runs of a motif in the sequence (website.protein.map.rows[].sequence): at least min matches, each within gap
   // residues of the one before; strong ones counted apart and naming the run when there are enough
   function motifRuns(seq, sq) {
@@ -3651,6 +3694,8 @@
     nearby,
     contextMarks,
     ctxIds: () => CTX_IDS.slice(),
+    namedChanges,
+    namedRows,
     figure,
     fileName,
     siteColour,
