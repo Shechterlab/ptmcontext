@@ -199,7 +199,8 @@
       );
     return (
       (K.selEffect ? `<span class="sel-effect" title="${esc(K.selEffect())}">${esc(K.selEffect())}</span>` : '') +
-      `<span class="sel-tools">${savedMenu()}<button class="btn small accent" type="button" data-sel-clear-all>Clear all` +
+      `<span class="sel-tools">${savedMenu()}<button class="btn small" type="button" aria-live="polite" data-sel-share title="Copy a link that opens this ` +
+      `selection, with a description of it">Copy link</button><button class="btn small accent" type="button" data-sel-clear-all>Clear all` +
       `</button><span class="sel-menu"><button class="btn small" type="button" id="sel-menu-btn" data-sel-menu ` +
       `aria-haspopup="menu" aria-expanded="false" aria-controls="sel-menu-pop" aria-label="Selection actions for this ` +
       `selection" title="Selection actions">⋯</button><div class="sel-menu-pop" id="sel-menu-pop" role="menu" ` +
@@ -1132,6 +1133,22 @@
             menuSet(false, false);
           }, 1600);
         });
+      },
+    ],
+    [
+      '[data-sel-share]',
+      (el) => {
+        const done = (t) => {
+          el.textContent = t;
+          setTimeout(() => (el.textContent = 'Copy link'), 1600);
+        };
+        const w = navigator.clipboard?.writeText(`${location.href}\n${summary()}`);
+        if (w)
+          w.then(
+            () => done('Link copied'),
+            () => done('Could not copy')
+          );
+        else done('Could not copy');
       },
     ],
     ['[data-sel-menu]', () => menuSet(menuEls().pop.hidden, false)],

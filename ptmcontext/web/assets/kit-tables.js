@@ -383,8 +383,8 @@
   // a figures page, when a module draws one
   const figuresBtn = () =>
     K.views.figures
-      ? `<a class="btn small" href="${esc(K.link('figures'))}" title="Figure ` +
-        `panels of this selection">Make figures</a>`
+      ? `<a class="btn small" href="${esc(K.link('figures'))}" title="The sequence logo of the ` +
+        `selected ${esc(W.marks)}, aligned at the ${esc(W.mark)}">Sequence logo</a>`
       : '';
 
   function proteinsTsv() {

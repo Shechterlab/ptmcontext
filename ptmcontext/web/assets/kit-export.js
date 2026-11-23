@@ -59,8 +59,9 @@
   };
   const isFig = (k) => k === 'pdf' || k === 'svg' || k === 'png';
   const help = (k) => esc(K.EXP_HELP[k] || '');
-  const item = (k, attrs) =>
-    `<button type="button" class="exp-btn xm-item" role="menuitem" data-${attrs}="${k}" title="${help(k)}">${esc(LABELS[k] || k.toUpperCase())}</button>`;
+  // `names`: a menu's own word for a format ({tsv: 'Site table (TSV)'}), where "Data (TSV)" would not say what the file is
+  const item = (k, attrs, names) =>
+    `<button type="button" class="exp-btn xm-item" role="menuitem" data-${attrs}="${k}" title="${help(k)}">${esc(names?.[k] || LABELS[k] || k.toUpperCase())}</button>`;
   const sizes = () =>
     PRESETS.length > 1
       ? `<div class="xm-sz" role="group" aria-label="Figure size"><span class="xm-h">Size</span>${PRESETS.map(
@@ -77,13 +78,13 @@
       fig = fs.some(isFig);
     if (o.inline)
       // inside a menu of its own (an Overview tile's Download)
-      return `<div class="exp fr-exp" data-xm role="group" aria-label="Download ${esc(label)}">${sizes()}<div class="xm-items" role="menu">${fs.map((k) => item(k, attrs)).join('')}</div>${methodHtml}</div>`;
+      return `<div class="exp fr-exp" data-xm role="group" aria-label="Download ${esc(label)}">${sizes()}<div class="xm-items" role="menu">${fs.map((k) => item(k, attrs, o.names)).join('')}</div>${methodHtml}</div>`;
     if (!fig || fs.length < 2)
-      return `<div class="exp" data-xm role="group" aria-label="Download ${esc(label)}">${fs.map((k) => item(k, attrs).replace(' role="menuitem"', '')).join('')}${methodHtml}</div>`;
+      return `<div class="exp" data-xm role="group" aria-label="Download ${esc(label)}">${fs.map((k) => item(k, attrs, o.names).replace(' role="menuitem"', '')).join('')}${methodHtml}</div>`;
     return (
       `<div class="exp" data-xm role="group" aria-label="Download ${esc(label)}">` +
       `<span class="xm-wrap"><button type="button" class="exp-btn xm-toggle" data-xm-toggle aria-haspopup="menu" aria-expanded="false" title="Download ${esc(label)}">Download ▾</button>` +
-      `<div class="xm-pop" hidden>${sizes()}<div class="xm-items" role="menu">${fs.map((k) => item(k, attrs)).join('')}</div></div></span>${methodHtml}</div>`
+      `<div class="xm-pop" hidden>${sizes()}<div class="xm-items" role="menu">${fs.map((k) => item(k, attrs, o.names)).join('')}</div></div></span>${methodHtml}</div>`
     );
   }
   // ---- the menu's behavior: open on a tap, one at a time, closed by a choice, a tap elsewhere or Escape -------------------

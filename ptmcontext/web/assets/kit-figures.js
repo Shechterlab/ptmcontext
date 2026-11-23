@@ -1,4 +1,4 @@
-/* The figure panels page ("Make figures" on the Proteins and Sites pages): the figures of the current selection that no single
+/* The sequence logo page ("Sequence logo" on the Proteins and Sites pages): the figures of the current selection that no single
    page draws, each a fold that draws when it is opened, with the export buttons of every other figure. Today one panel: the
    selected sites aligned at the mark with their sequence logo (kit-conserve.js draws and exports it, K.logoPanel). With no search
    or filter set, the panels use the whole dataset, and the page says so. The page exists only where a panel can be drawn, so
@@ -11,9 +11,11 @@
   function view() {
     const lp = K.sel.data() ? K.logoPanel?.() : null; // the panel reads the marks: not before they are loaded
     const head =
-      `<div class="page-head results-head"><div><h2>Figure panels</h2><p class="cx">The figures of the ` +
-      `current selection that no single page draws: ${int(lp ? lp.n : 0)} ${esc(W.marks)} with a sequence ` +
-      `window. Every chart and table elsewhere has its own export buttons.</p></div></div>`;
+      `<div class="page-head results-head"><div><h2>Sequence logo</h2><p class="cx">The selected ${esc(W.marks)} aligned at the ` +
+      `${esc(W.mark)}, with their sequence logo: ${int(lp ? lp.n : 0)} ${esc(W.marks)} with a sequence window. This ` +
+      `page follows your selection. For a map of a protein, open the protein: its page draws the map with its ` +
+      `${esc(W.marks)}, and a small selection has Protein maps of your selection on the Overview. Every chart and ` +
+      `table elsewhere has its own export buttons.</p></div></div>`;
     if (!K.sel.data()) return head + K.loading(`Loading the ${W.marks}…`);
     const note = K.sel.active()
       ? ''
@@ -36,5 +38,5 @@
     },
     true
   );
-  K.views.figures = { render: view, title: () => 'Figure panels' };
+  K.views.figures = { render: view, title: () => 'Sequence logo', follows: true };
 });

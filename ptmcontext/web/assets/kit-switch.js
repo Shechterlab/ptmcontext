@@ -169,6 +169,20 @@
       if (!menu.hidden && !wrap.contains(e.target)) close(false);
     });
   };
+  // from a selection that has a search: "Same genes in <other explorer>", each the other explorer's address with this q=
+  // (not its filters, which that explorer may not have). The list is sites.json, read once; the bar is drawn again when it is in.
+  let others = [];
+  (K.selTools ||= []).push(() =>
+    S.q && others.length
+      ? others
+          .map(
+            (s) =>
+              `<a class="btn small" href="../${encodeURIComponent(s.id)}/#overview?q=${encodeURIComponent(S.q)}" ` +
+              `data-same-genes="${esc(s.id)}">Same genes in ${esc(s.label)}</a>`
+          )
+          .join('')
+      : ''
+  );
   const build = (list, word, brand) => {
     const side = document.querySelector('.brand-side');
     // the way back to the landing page, which sits beside the sites' folders (where sites.json is): the brand line above the
@@ -216,6 +230,8 @@
         mine = all.find((s) => s.id === here),
         // unlisted sites are in the menu of an unlisted site, and where their own file says so
         list = all.filter((s) => s.listed || s.in_switcher || s.id === here || (mine && !mine.listed));
+      others = list.filter((s) => s.id !== here);
+      if (others.length && S.q) K.render?.();
       build(list, reg.switcher_label || 'Explorer', reg.brand || '');
     } catch (e) {
       /* served alone: no list of sites, no menu */

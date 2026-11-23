@@ -692,7 +692,8 @@
         ['pdf', 'svg', 'png', 'tsv'],
         'sites-exp',
         'the sites',
-        'data'
+        'data',
+        { names: { tsv: 'Site table (TSV)' } }
       )}</div></div>`;
     const sorted = (id) => (T.sort === id ? ` aria-sort="${T.desc ? 'descending' : 'ascending'}"` : '');
     const q = quick(lz);

@@ -1050,7 +1050,9 @@
       opt = (v, cur, t) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(t)}</option>`;
     return (
       `<div class="cv-card"><div class="cv-top">` +
-      K.expBar(['svg', 'png', 'tsv'], 'lgexp', 'the site alignment and logo', 'logo') +
+      K.expBar(['svg', 'png', 'tsv'], 'lgexp', 'the site alignment and logo', 'logo', {
+        names: { tsv: 'Sequence logo counts (TSV)' },
+      }) +
       '</div>' +
       `<div class="cv-ctl"><label>Flank <select id="lg-flank">${FLANKS.filter((f) => f <= s.span)
         .map((f) => opt(f, LUI.flank, '±' + f))
@@ -1124,7 +1126,7 @@
       K.exportFigure(
         btn.dataset.lgexp,
         () => logoFigure(false),
-        `${D.site.id}_site_alignment_logo_selection`,
+        `${D.site.id}_sequence_logo${btn.dataset.lgexp === 'tsv' ? '_counts' : ''}`,
         btn,
         logoTsv
       ),

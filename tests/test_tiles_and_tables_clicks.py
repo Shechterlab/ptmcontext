@@ -53,7 +53,8 @@ def test_the_figure_panels_page_is_registered_and_gives_the_sites_page_its_butto
     assert 'kit-figures.js' in web.MODULES and web.MODULES.index('kit-figures.js') < web.MODULES.index('kit.js')
     fig, tables, sites = _js('kit-figures.js'), _js('kit-tables.js'), _js('kit-sites.js')
     assert 'K.views.figures = ' in fig and 'if (!K.logoPanel) return;' in fig
-    assert 'K.views.figures ?' in tables and 'Make figures' in tables and 'K.tables.figuresBtn()' in sites
+    assert 'K.views.figures' in tables and '>Sequence logo</a>' in tables and 'K.tables.figuresBtn()' in sites
+    assert 'follows: true' in fig  # the page follows the selection, so no "not filtered" line
     assert 'K.logoPanel = ' in _js('kit-conserve.js')
 
 
