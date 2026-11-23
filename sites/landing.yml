@@ -31,7 +31,7 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
     - "Each row is a class of a question that two or more explorers test. Each column is one explorer. A cell is that explorer's own result for the class, as its page shows it."
     - "The number is a fold: the share of the marks in the class over the share of the comparison group in it. For a protein set (PANTHER, condensates, cell locations, GO, disease) it is the fold enrichment of the marked proteins. The q is the explorer's own Benjamini–Hochberg q for its test."
     - "Each question row names the test and the comparison group, one line per explorer. They can differ between explorers, so read them before you compare numbers. The page flags a different test."
-    - "Dots follow the explorers' own reading. Filled with a ring: q is 0.05 or less and the fold is at least 1.1 or at most 1/1.1 (red ▲ more often, slate ▼ less often). Gray filled: q is 0.05 or less but the fold is within 1.1. Hollow: q is above 0.05. The circle grows with the fold. A hollow dot also marks a fold and a test that point different ways."
+    - "Filled with a ring: q is 0.05 or less and the fold is at least 1.1 or at most 1/1.1 (red ▲ more often, slate ▼ less often). Gray filled: q is 0.05 or less but the fold is within 1.1. Hollow: q is above 0.05. The circle grows with the fold. A hollow dot also marks a fold and a test that point different ways."
     - "Not tested: the explorer doesn't test that class or has too few marks. It isn't zero."
     - "Download gives the rows you see as a table (TSV) or as a figure (SVG, PNG, PDF). Each file names every explorer's data release and DOI."
   groups:
