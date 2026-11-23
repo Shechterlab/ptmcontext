@@ -204,7 +204,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       noun: kinase motif
       title: Kinase motif classes
       question: "Which kinase motif classes do phosphosites follow, against the residues of their own type in their proteins?"
-      sub: "Each class is tested against residues of its own type, in the same proteins: the serine and threonine classes against the other serines and threonines, (a class tested against tyrosines too would partly show the residue type: Yph alone is 0.39x of all residues). Tyrosine has no class of its own here, since every Yph is a tyrosine kinase site; the Yph motifs are in the reader motifs, tested against the other tyrosines. The sequence class a kinase family prefers: proline-directed, basophilic (Arg at -3 or -2) and acidophilic. A class is a sequence pattern, not a kinase assignment; a site may fit several"
+      sub: "Each class is tested against residues of its own type, in the same proteins: the serine and threonine classes against the other serines and threonines. A class tested against tyrosines too would partly show the residue type: Yph alone is 0.39× of all residues. Tyrosine has no class of its own here, since every Yph is a tyrosine kinase site; the Yph motifs are in the reader motifs, tested against the other tyrosines. The sequence class a kinase family prefers: proline-directed, basophilic (Arg at -3 or -2) and acidophilic. A class is a sequence pattern, not a kinase assignment; a site may fit several"
       section: Which kinases?
       families:
         - {name: proline_directed, label: "S/T-P (proline-directed)", pattern: "[ST]P", start: 0, among: ST,
@@ -282,7 +282,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near acetylation sites (±10 residues)
     question: "Are phosphosites more often near an acetylation site than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein reduces that effect but does not remove it"
     section: Other modifications
   - id: near_other_acylation
     layer: near_marks
@@ -290,7 +290,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near other acylation sites (±10 residues)
     question: "Are phosphosites more often near another lysine acylation than the other serines, threonines and tyrosines of their protein?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein reduces the effect of heavily studied proteins but does not remove it"
     section: Other modifications
   - id: near_ubiquitination
     layer: near_marks
@@ -350,7 +350,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Predicted interfaces
     question: "Are phosphosites at predicted protein interfaces?"
-    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly restates disorder; the ordered and disordered rows compare like with like"
+    sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly reflects disorder; the ordered and disordered rows compare like with like"
     section: Protein interactions
     counting: every_candidate
     background: other Ser/Thr/Tyr residues of the same proteins
@@ -612,7 +612,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     test: protein_sets
     title: Regions of the cell (Human Protein Atlas)
-    question: "Where do phosphorylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do phosphorylated proteins localize in the cell, by Human Protein Atlas locations: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Phosphorylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
     sets:
@@ -629,7 +629,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     test: protein_sets
     title: Regions of the cell (Human Cell Map)
-    question: "Where do phosphorylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do phosphorylated proteins localize in the cell, by Human Cell Map compartments: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Phosphorylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
     sets:
@@ -645,7 +645,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     test: protein_sets
     title: Regions of the cell (organelle IP)
-    question: "Where do phosphorylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do phosphorylated proteins localize in the cell, by organelle IP clusters: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Phosphorylated proteins against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
     sets:
@@ -863,7 +863,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       question: "Is a phosphosite changed in tumors or cancer cell lines more or less often than the other serines, threonines and tyrosines of its protein?"
       sub: "Phosphosites against the other serines, threonines and tyrosines of the phosphorylated proteins whose gene DepMap screened: a missense or stop change in at least one TCGA tumor (MC3) or DepMap 24Q4 cell line. Not adjusted for codon or sequence context, which may differ between the phosphosites and the other serines, threonines and tyrosines"
       section: Disease and cancer
-      labels: {tcga_tumours: Mutated in a TCGA tumor, depmap_cell_lines: Mutated in a DepMap cell line}
+      labels: {tcga_tumours: Changed in a TCGA tumor, depmap_cell_lines: Changed in a DepMap cell line}
       help:
         tcga_tumours: "A missense or stop change of the residue in at least one TCGA tumor (MC3 public calls from the GDC, 33 projects; FILTER PASS, and in OV and LAML also wga alone)"
         depmap_cell_lines: "A missense or stop change of the residue in at least one DepMap 24Q4 cell line (OmicsSomaticMutations, on the canonical UniProt isoform)"
@@ -881,7 +881,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       noun: residue with a pathogenic ClinVar variant
       title: ClinVar pathogenic variants
       question: "Does a phosphosite carry a pathogenic or likely pathogenic ClinVar variant more or less often than the other serines, threonines and tyrosines of its protein?"
-      sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins: a ClinVar single-residue substitution or stop classified pathogenic or likely pathogenic. ClinVar lists the genes and regions that clinical testing covers, so a well-studied protein has more variants at every residue; the comparison within each protein limits that, not removes it. Not adjusted for codon or sequence context, which may differ between the phosphosites and the other serines, threonines and tyrosines"
+      sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins: a ClinVar single-residue substitution or stop classified pathogenic or likely pathogenic. ClinVar lists the genes and regions that clinical testing covers, so a well-studied protein has more variants at every residue; the comparison within each protein reduces that effect but does not remove it. Not adjusted for codon or sequence context, which may differ between the phosphosites and the other serines, threonines and tyrosines"
       section: Disease and cancer
       labels: {clinvar_plp: Pathogenic or likely pathogenic in ClinVar}
       help:
@@ -1188,7 +1188,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Next to aromatic residues (within 3)
     question: Are phosphorylation sites more often next to aromatic residues than the other serines, threonines and tyrosines of their protein?
-    sub: Phosphorylation sites against the other serines, threonines and tyrosines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) are within 3 residues on either side. Aromatic residues pair with serine, threonine and tyrosine in condensates (cation–π), and methylation weakens that contact
+    sub: Phosphorylation sites against the other serines, threonines and tyrosines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) are within 3 residues on either side. Aromatic residues pair with serine, threonine and tyrosine in condensates (cation–π)
     section: Position in the protein
   - id: sticker_context_5
     family: Next to aromatic residues
@@ -1319,7 +1319,7 @@ controls:
   - id: inidr
     label: inside IDRs
     when: "only serines, threonines and tyrosines inside disordered regions are compared"
-    note: "Only the serines, threonines and tyrosines inside intrinsically disordered regions (MobiDB) count, phosphosites and other serines, threonines and tyrosines alike, so the result is not a matter of disorder"
+    note: "Only the serines, threonines and tyrosines inside intrinsically disordered regions (MobiDB) count, phosphosites and other serines, threonines and tyrosines alike, so the comparison shows whether the result holds inside disordered regions"
     analyses: [near_methylarginine, near_methyllysine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
     only_in: idr
   - id: detect
@@ -1474,7 +1474,7 @@ website:                  # the look and words of the website (ptmc web); layout
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human protein phosphorylation sites from public databases."
-    question: "Where are phosphosites in human proteins, which kinase motifs do they match, and which are likely functional?"
+    question: "Where are phosphosites in human proteins, which kinase motifs do they match, and which have a high predicted functional score?"
     in_switcher: true
   band: ["#1e40af", "#172554"]      # the header gradient: blue
   accent: "#0e7490"                 # the cyan rule, active tab and links
@@ -1674,7 +1674,7 @@ website:                  # the look and words of the website (ptmc web); layout
       attribute: bound_by
       tested_by: partner_class_test        # the table under the bars: is each class enriched among the partners of the proteins?
       title: Kinases, phosphatases and readers
-      question: "Which phosphosites are on proteins that bind a kinase, a phosphatase or a reader?"
+      question: "Which phosphosites are on proteins with a STRING partner that is a kinase, a phosphatase or a reader?"
       sub: "Phosphosites on proteins with a STRING physical partner (score 0.7 or more) in each kinase, phosphatase or reader class"
       unit: [class, classes]
       noun: partner classes
@@ -1739,15 +1739,15 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Databases, attributes: [sources, iptmnet_sources]}
   dataset: {label: Data release, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
-  methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
+  methods_note: "Sequences use UniProt 2026_03 and the other modifications UniProt 2026_04. The other modifications come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table has no license: they are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   whats_new:               # what v1.7.0 added (the Help page)
     title: What’s new in v1.7.0
     items:
-      - "Mutation propensity: O/E and q for every candidate residue in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar, from the release."
-      - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old flag for counts at least 3 times the protein's average."
-      - "A Mutation frequency page: a waterfall of site frequencies (TCGA, DepMap, gnomAD) and an oncoprint of the top sites in TCGA tumors."
-      - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
+      - "Mutation propensity: O/E and q for every serine, threonine and tyrosine in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar, from the release."
+      - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the earlier flag for counts at least 3 times the protein's average."
+      - "A Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), Inherited disease (ClinVar variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
+      - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
     doi: "10.5281/zenodo.24429699"
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/human_phosphorylation_sites_v1.7.0.tsv", format: TSV, note: "every phosphorylation record: one row per residue, with its evidence class, sources, Ochoa 2020 functional score and mass-spectrometry evidence (Ochoa 2020 rows included, not open access)"}

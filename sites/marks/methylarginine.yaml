@@ -39,7 +39,7 @@ enzymes:
 motifs:            # read in the 15-residue window centered on the arginine (window_flank 7)
   window_flank: 7
   families:        # labels and definitions as the Methylarginine Site Explorer shows them
-    - {name: CARM1_hydrophobic_proline, label: "Pro ±5 + Φ ±3", help: "Pro within ±5 and a hydrophobic residue (AILMFWVY) within ±3 (CARM1-like)", all: [{within: [-5, 5], in: P}, {within: [-3, 3], in: AILMFWVY}]}
+    - {name: CARM1_hydrophobic_proline, label: "Pro ±5 + hydrophobic ±3", help: "Pro within ±5 and a hydrophobic residue (AILMFWVY) within ±3 (the CARM1 motif)", all: [{within: [-5, 5], in: P}, {within: [-3, 3], in: AILMFWVY}]}
     - {name: CARM1_proline_rich, label: "Pro ±5", help: "Pro within ±5 (CARM1-like)", all: [{within: [-5, 5], in: P}]}
     - {name: DR,  help: "Asp at −1", all: [{at: -1, in: D}]}
     - {name: ER,  help: "Glu at −1", all: [{at: -1, in: E}]}

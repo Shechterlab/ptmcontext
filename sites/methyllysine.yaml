@@ -180,7 +180,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Predicted interfaces
     question: "Are methyllysines at predicted protein interfaces?"
-    sub: "Methyllysines against the other lysines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly restates disorder; the ordered and disordered rows compare like with like"
+    sub: "Methyllysines against the other lysines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly reflects disorder; the ordered and disordered rows compare like with like"
     section: Protein interactions
     counting: every_candidate
     background: other lysines of the same proteins
@@ -471,7 +471,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     test: protein_sets
     title: Regions of the cell (Human Protein Atlas)
-    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do methylated proteins localize in the cell, by Human Protein Atlas locations: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
     sets:
@@ -488,7 +488,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     test: protein_sets
     title: Regions of the cell (Human Cell Map)
-    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do methylated proteins localize in the cell, by Human Cell Map compartments: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
     sets:
@@ -504,7 +504,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     test: protein_sets
     title: Regions of the cell (organelle IP)
-    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do methylated proteins localize in the cell, by organelle IP clusters: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
     sets:
@@ -728,7 +728,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       question: "Is a methyllysine changed in tumors or cancer cell lines more or less often than the other lysines of its protein?"
       sub: "Methyllysines against the other lysines of the methylated proteins whose gene DepMap screened: a missense or stop change in at least one TCGA tumor (MC3) or DepMap 24Q4 cell line. Not adjusted for codon or sequence context, which may differ between the methyllysines and the other lysines"
       section: Disease and cancer
-      labels: {tcga_tumours: Mutated in a TCGA tumor, depmap_cell_lines: Mutated in a DepMap cell line}
+      labels: {tcga_tumours: Changed in a TCGA tumor, depmap_cell_lines: Changed in a DepMap cell line}
       help:
         tcga_tumours: "A missense or stop change of the residue in at least one TCGA tumor (MC3 public calls from the GDC, 33 projects; FILTER PASS, and in OV and LAML also wga alone)"
         depmap_cell_lines: "A missense or stop change of the residue in at least one DepMap 24Q4 cell line (OmicsSomaticMutations, on the canonical UniProt isoform)"
@@ -746,7 +746,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       noun: lysine with a pathogenic ClinVar variant
       title: ClinVar pathogenic variants
       question: "Does a methyllysine carry a pathogenic or likely pathogenic ClinVar variant more or less often than the other lysines of its protein?"
-      sub: "Methyllysines against the other lysines of the same proteins: a ClinVar single-residue substitution or stop classified pathogenic or likely pathogenic. ClinVar lists the genes and regions that clinical testing covers, so a well-studied protein has more variants at every residue; the comparison within each protein limits that, not removes it. Not adjusted for codon or sequence context, which may differ between the methyllysines and the other lysines"
+      sub: "Methyllysines against the other lysines of the same proteins: a ClinVar single-residue substitution or stop classified pathogenic or likely pathogenic. ClinVar lists the genes and regions that clinical testing covers, so a well-studied protein has more variants at every residue; the comparison within each protein reduces that effect but does not remove it. Not adjusted for codon or sequence context, which may differ between the methyllysines and the other lysines"
       section: Disease and cancer
       labels: {clinvar_plp: Pathogenic or likely pathogenic in ClinVar}
       help:
@@ -777,7 +777,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near phosphosites (±10 residues)
     question: "Are methyllysines more often near a phosphosite than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) is within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methyllysines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) is within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methyllysines is also likely to have more recorded phosphosites; the comparison within each protein reduces that effect but does not remove it"
     section: Other modifications
   - id: near_phospho_high
     family_label: All states
@@ -786,7 +786,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near high-score phosphosites (±10 residues)
     question: "Are methyllysines more often near a high-score phosphosite than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) is within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) is within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein reduces the effect of heavily studied proteins but does not remove it"
     section: Other modifications
   - id: near_methylarginine
     family_label: All states
@@ -809,7 +809,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near acetylation sites (±10 residues)
     question: "Are methyllysines more often near an acetylation site than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein reduces that effect but does not remove it"
     section: Other modifications
   - id: near_other_acylation
     family_label: All states
@@ -818,7 +818,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near other acylation sites (±10 residues)
     question: "Are methyllysines more often near another lysine acylation than the other lysines of their protein?"
-    sub: "Methyllysines against the other lysines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    sub: "Methyllysines against the other lysines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein reduces the effect of heavily studied proteins but does not remove it"
     section: Other modifications
   # Both marks on one lysine: is a methyllysine more often also reported acetylated than the other lysines of its
   # protein? The comparison within each protein (Mantel-Haenszel over proteins) holds the protein fixed, so how much it
@@ -865,7 +865,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: which_factor
     test: conditional_logit
     new: true
-    title: Which factor matters most?
+    title: Which factors still matter when the others are held fixed?
     question: "Taking all factors together, which ones distinguish a methyllysine from the other lysines of its protein?"
     sub: "One model: each methyllysine against the other lysines of its protein, all four factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
     section: Motif, disorder and structure
@@ -1133,7 +1133,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Next to aromatic residues (within 3)
     question: Are methyllysines more often next to aromatic residues than the other lysines of their protein?
-    sub: Methyllysines against the other lysines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) are within 3 residues on either side. Aromatic residues pair with lysine in condensates (cation–π), and methylation weakens that contact
+    sub: Methyllysines against the other lysines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) are within 3 residues on either side. Aromatic residues pair with lysine in condensates (cation–π), and methylation may weaken that contact
     section: Position in the protein
   - id: sticker_context_5
     family: Next to aromatic residues
@@ -1305,7 +1305,7 @@ controls:
   - id: inidr
     label: inside IDRs
     when: "only lysines inside disordered regions are compared"
-    note: "Only the lysines inside intrinsically disordered regions (MobiDB) count, methyllysines and other lysines alike, so the result is not a matter of disorder"
+    note: "Only the lysines inside intrinsically disordered regions (MobiDB) count, methyllysines and other lysines alike, so the comparison shows whether the result holds inside disordered regions"
     analyses: [near_phospho, near_phospho_high, near_methylarginine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
     only_in: idr
   # High-confidence lysines: reported by at least two independent studies. Only experimental records count (by-similarity,
@@ -1674,7 +1674,7 @@ website:                  # the look and words of the website (ptmc web); layout
       attribute: bound_by
       tested_by: partner_class_test        # the table under the bars: is each class enriched among the partners of the proteins?
       title: Writers, erasers and readers
-      question: "Which methyllysines are on proteins that bind a writer, an eraser or a reader?"
+      question: "Which methyllysines are on proteins with a STRING partner that is a writer, an eraser or a reader?"
       sub: "Methyllysines on proteins with a STRING physical partner (score 0.7 or more) in each writer, eraser or reader class"
       unit: [class, classes]
       noun: partner classes
@@ -1725,15 +1725,15 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: RNA and DNA, analyses: [pdb_interface_na, go_binding, binding_protein, crosslink, sequence_proximity]}
     - {name: Studies and databases, attributes: [sources, berryhill_cell_lines, berryhill_enrichment, iptmnet_sources]}
   dataset: {label: Data release, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
-  methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
+  methods_note: "Sequences use UniProt 2026_03 and the other modifications UniProt 2026_04. The other modifications come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). Berryhill et al., Sci Rep 13:377 (2023), doi:10.1038/s41598-022-27175-x (the article is CC BY 4.0; its Supplementary Table 5 has no separate license notice and is included) is cited, and the CC BY-NC-SA 4.0 gives no rights in it beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   whats_new:               # what v1.7.0 added (the Help page)
     title: What’s new in v1.7.0
     items:
-      - "Mutation propensity: O/E and q for every candidate residue in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar, from the release."
-      - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old flag for counts at least 3 times the protein's average."
-      - "A Mutation frequency page: a waterfall of site frequencies (TCGA, DepMap, gnomAD) and an oncoprint of the top sites in TCGA tumors."
-      - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
+      - "Mutation propensity: O/E and q for every lysine in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar, from the release."
+      - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the earlier flag for counts at least 3 times the protein's average."
+      - "A Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), Inherited disease (ClinVar variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
+      - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
     doi: "10.5281/zenodo.24429699"
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/human_methyllysine_sites_v1.7.0.tsv", format: TSV, note: "every methyllysine record: one row per lysine and degree, with its evidence class, sources and Berryhill 2023 fields (5,746 rows)"}

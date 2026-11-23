@@ -187,9 +187,9 @@ marks:
       query: tcga_mutated
       column: tcga_changes
       present: true
-      label: Mutated in tumors (TCGA)
+      label: Changed in tumors (TCGA)
       kind: category
-      values: {"yes": Mutated in tumors, "no": Not mutated}
+      values: {"yes": Changed in a tumor, "no": Not changed}
       colours: {"yes": "#B42318", "no": "#D9DEE2"}
       colour: true
       filter: true
@@ -727,7 +727,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_hpa
     test: protein_sets
     title: Regions of the cell (Human Protein Atlas)
-    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do methylated proteins localize in the cell, by Human Protein Atlas locations: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
@@ -743,7 +743,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_hcm
     test: protein_sets
     title: Regions of the cell (Human Cell Map)
-    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do methylated proteins localize in the cell, by Human Cell Map compartments: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
@@ -758,7 +758,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_organelle_ip
     test: protein_sets
     title: Regions of the cell (organelle IP)
-    question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
+    question: "Where do methylated proteins localize in the cell, by organelle IP clusters: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
@@ -913,7 +913,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       question: "Is a methylated arginine changed in tumors or cancer cell lines more or less often than the other arginines of its protein?"
       sub: "Methylarginines against the other arginines of the methylated proteins whose gene DepMap screened (so its tumor count is smaller than the sites with a change in the Filter, which covers every methylated protein): a missense or stop change in at least one TCGA tumor (MC3) or DepMap 24Q4 cell line. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most in cancers, and the codons of methylated and other arginines may differ"
       section: Disease and cancer
-      labels: {tcga_tumours: Mutated in a TCGA tumor, depmap_cell_lines: Mutated in a DepMap cell line}
+      labels: {tcga_tumours: Changed in a TCGA tumor, depmap_cell_lines: Changed in a DepMap cell line}
       help:
         tcga_tumours: "A missense or stop change of the arginine in at least one TCGA tumor (MC3 public calls from the GDC, 33 projects; FILTER PASS, and in OV and LAML also wga alone)"
         depmap_cell_lines: "A missense or stop change of the arginine in at least one DepMap 24Q4 cell line (OmicsSomaticMutations, on the canonical UniProt isoform)"
@@ -931,7 +931,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       noun: arginine with a pathogenic ClinVar variant
       title: ClinVar pathogenic variants
       question: "Does a methylarginine carry a pathogenic or likely pathogenic ClinVar variant more or less often than the other arginines of its protein?"
-      sub: "Methylarginines against the other arginines of the same proteins: a ClinVar single-residue substitution or stop classified pathogenic or likely pathogenic. ClinVar lists the genes and regions that clinical testing covers, so a well-studied protein has more variants at every residue; the comparison within each protein limits that, not removes it. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most, and the codons of methylated and other arginines may differ"
+      sub: "Methylarginines against the other arginines of the same proteins: a ClinVar single-residue substitution or stop classified pathogenic or likely pathogenic. ClinVar lists the genes and regions that clinical testing covers, so a well-studied protein has more variants at every residue; the comparison within each protein reduces that effect but does not remove it. Not adjusted for codon: arginine codons with a CpG (CGN) mutate most, and the codons of methylated and other arginines may differ"
       section: Disease and cancer
       labels: {clinvar_plp: Pathogenic or likely pathogenic in ClinVar}
       help:
@@ -970,7 +970,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Next to aromatic residues (within 3)
     question: "Are methylarginines more often next to aromatic residues than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) are within 3 residues on either side. Aromatic residues pair with arginine in condensates (cation–π), and methylation weakens that contact"
+    sub: "Methylarginines against the other arginines of the same proteins, by how many aromatic residues (Tyr, Phe, Trp) are within 3 residues on either side. Aromatic residues pair with arginine in condensates (cation–π), and methylation may weaken that contact"
     section: Position in the protein
   - id: sticker_context_5
     family: Next to aromatic residues
@@ -1009,7 +1009,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near phosphosites (±10 residues)
     question: "Are methylarginines more often near a phosphosite than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) is within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methylarginines is also likely to have more recorded phosphosites; the comparison within each protein limits that, not removes it"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite (UniProt, iPTMnet and Ochoa 2020, by-similarity records left out) is within 10 residues on either side. Phosphosites are heavily studied, so a protein with many methylarginines is also likely to have more recorded phosphosites; the comparison within each protein reduces that effect but does not remove it"
     section: Other modifications
   - id: near_phospho_high
     layer: near_marks
@@ -1017,7 +1017,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near high-score phosphosites (±10 residues)
     question: "Are methylarginines more often near a high-score phosphosite than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) is within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a phosphosite with an Ochoa et al. 2020 functional score of 0.5 or more (about 10,900 sites; the score is a model of how likely a site is functionally important) is within 10 residues on either side. Sites without a score are not counted as high-score. The comparison within each protein reduces the effect of heavily studied proteins but does not remove it"
     section: Other modifications
   - id: near_methyllysine
     layer: near_marks
@@ -1033,7 +1033,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near acetylation sites (±10 residues)
     question: "Are methylarginines more often near an acetylation site than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein limits that effect, not removes it"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether an acetylation site (UniProt and iPTMnet, by-similarity records left out) is within 10 residues on either side. Acetylation is among the most studied lysine modifications and heavily studied proteins carry many records of every kind, so the comparison within each protein reduces that effect but does not remove it"
     section: Other modifications
   - id: near_other_acylation
     layer: near_marks
@@ -1041,7 +1041,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     new: true
     title: Near other acylation sites (±10 residues)
     question: "Are methylarginines more often near another lysine acylation than the other arginines of their protein?"
-    sub: "Methylarginines against the other arginines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein limits the effect of heavily studied proteins, not removes it"
+    sub: "Methylarginines against the other arginines of the same proteins, by whether a lysine acylation other than acetylation (UniProt and iPTMnet, by-similarity records left out; 12 acyl types) is within 10 residues on either side. These modifications (crotonyl, 2-hydroxyisobutyryl, succinyl, malonyl, beta-hydroxybutyryl and others) come from far fewer studies than acetylation; the comparison within each protein reduces the effect of heavily studied proteins but does not remove it"
     section: Other modifications
   - id: near_ubiquitination
     layer: near_marks
@@ -1064,7 +1064,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: which_factor
     test: conditional_logit
     new: true
-    title: Which factor matters most?
+    title: Which factors still matter when the others are held fixed?
     question: "Taking all factors together, which ones distinguish a methylarginine from the other arginines of its protein?"
     sub: "One model: each methylarginine against the other arginines of its protein, all five factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
     section: Position in the protein
@@ -1100,7 +1100,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: predicted_interface
     title: Predicted interfaces
     question: "Are methylarginines at predicted protein interfaces?"
-    sub: "Methylarginines against the other arginines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly restates disorder; the ordered and disordered rows compare like with like"
+    sub: "Methylarginines against the other arginines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly reflects disorder; the ordered and disordered rows compare like with like"
     section: Interactions and binding
     counting: every_candidate
     candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
@@ -1236,7 +1236,7 @@ controls:
   - id: noab
     label: found without antibodies
     when: "only the sites found without methylarginine antibodies are compared"
-    note: "Only the sites a source that did not enrich with methylarginine antibodies reports (Lu 2025, SMN Tudor domain; UniProt; IEDB); the other sites are counted on neither side"
+    note: "Only the sites reported by a source that did not enrich with methylarginine antibodies (Lu 2025 used the SMN Tudor domain; UniProt; IEDB). The other sites are counted on neither side"
     analyses: [motif, disorder]
     marks_where:
       column: studies
@@ -1247,7 +1247,7 @@ controls:
   - id: inidr
     label: inside IDRs
     when: "only arginines inside disordered regions are compared"
-    note: "Only the arginines inside intrinsically disordered regions (MobiDB) count, methylarginines and other arginines alike, so the result is not a matter of disorder"
+    note: "Only the arginines inside intrinsically disordered regions (MobiDB) count, methylarginines and other arginines alike, so the comparison shows whether the result holds inside disordered regions"
     analyses: [near_phospho, near_phospho_high, near_methyllysine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
     only_in: idr
 
@@ -1589,7 +1589,7 @@ website:                  # the look and words of the website (ptmc web); layout
       near_phospho: "Near phosphosites"
       near_phospho_high: "Near high-score phosphosites"
       near_methyllysine: "Near methyllysines"
-      which_factor: "Which factor matters most?"
+      which_factor: "Which factors still matter when the others are held fixed?"
       pdb_interface: "PDB interfaces"
       predicted_interface: "Predicted interfaces"
       crosslink: "RNA/DNA crosslinks"
@@ -1615,13 +1615,13 @@ website:                  # the look and words of the website (ptmc web); layout
     glossary:
       "IDR": "an intrinsically disordered region, a stretch with no fixed fold."
       "PRMT": "a protein arginine methyltransferase, an enzyme that adds methyl groups to arginines."
-      "CAPRI": "peptides crosslinked to RNA in living cells (UV crosslinking and mass spectrometry)."
+      "CAPRI": "the RNA crosslinking method of Panhale et al. 2019: peptides crosslinked to RNA in living cells (UV crosslinking and mass spectrometry). Not the protein-docking assessment of the same name."
       "RBR-ID": "residues whose peptides drop after UV crosslinking to RNA in cells, a sign of RNA contact."
-      "pDockQ": "confidence of a predicted protein-protein interface (AlphaFold); 0.23 is likely, 0.5 confident."
+      "pDockQ": "confidence of a predicted protein-protein interface (AlphaFold); a pDockQ of 0.23 or more suggests a real interface; 0.5 or more is a stronger signal."
       "pCLAP": "peptides crosslinked to RNA in cells (summary test only)."
       "RBDmap": "protein fragments that stay crosslinked to RNA (summary test only)."
       "methylarginine": "an arginine carrying one methyl group (Rme1, monomethyl) or two (Rme2a asymmetric, Rme2s symmetric), added by PRMT enzymes."
-      "RGG": "RGG / RG: arginine-glycine(-glycine) repeats, the motifs PRMTs methylate most; often in disordered regions of RNA-binding proteins."
+      "RGG": "RGG / RG: arginine-glycine(-glycine) repeats, a common PRMT motif; often in disordered regions of RNA-binding proteins."
     examples:
       - {label: "FUS", query: "FUS"}
       - {label: "FUS R216", query: "FUS R216"}
@@ -1641,7 +1641,7 @@ website:                  # the look and words of the website (ptmc web); layout
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
-    question: "Which proteins are arginine methylated?"
+    question: "Which proteins are methylated?"
     rows: 5
     random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end (open: true opens it; enabled: false leaves it out)
     starting_points:       # under the sections: proteins to start from, and ready-made selections (the explorer's)
@@ -1835,7 +1835,7 @@ website:                  # the look and words of the website (ptmc web); layout
       kind: values
       attribute: bound_by
       title: Methylation enzymes and readers
-      question: "Which methylarginines are on proteins that bind a writer, a reader or a cofactor?"
+      question: "Which methylarginines are on proteins with a STRING partner that is a writer, a reader or a cofactor?"
       sub: "Methylarginines on proteins with a STRING physical partner (score 0.7 or more) in each writer, reader or cofactor class"
       distribution: "Classes of partner of each protein carrying a {mark}"
       unit: [class, classes]
@@ -1881,12 +1881,12 @@ website:                  # the look and words of the website (ptmc web); layout
         - {name: CARM1 KO, note: MCF7 cells, short: CARM1 KO MCF7, group: Rme2a, attribute: perturbation, value: carm1_ko_mcf7, table: carm1_ko, where: {cell_line: MCF7}, change: log2_ko_over_wt}
         - {name: CARM1 KO, note: MDA-MB-231 cells, short: CARM1 KO MDA-MB-231, group: Rme2a, attribute: perturbation, value: carm1_ko_mdamb231, table: carm1_ko, where: {cell_line: MDA-MB-231}, change: log2_ko_over_wt}
         - {name: "PRMT7 KO, HCT116", note: "Szewczyk et al. 2020 · twofold, q < 0.05", kind: knockout, attribute: perturbation, value: prmt7_ko_hct116, table: writer_perturbations, where: {perturbation: prmt7_ko_hct116}, change: log2_treated_over_control}
-        - {name: "PRMT1 KD, HEK293T", note: "Hartel et al. 2019 · published call", kind: knockdown, attribute: perturbation, value: prmt1_kd_hek293t, table: writer_perturbations, where: {perturbation: prmt1_kd_hek293t}, change: log2_treated_over_control}
+        - {name: "PRMT1 knockdown, HEK293T", note: "Hartel et al. 2019 · published call", kind: knockdown, attribute: perturbation, value: prmt1_kd_hek293t, table: writer_perturbations, where: {perturbation: prmt1_kd_hek293t}, change: log2_treated_over_control}
         - {name: "PRMT5i EPZ015666, HeLa", note: "Lu et al. 2024 · twofold, q < 0.05", kind: inhibitor, attribute: perturbation, value: prmt5i_epz015666_hela, table: writer_perturbations, where: {perturbation: prmt5i_epz015666_hela}, change: log2_treated_over_control}
-        - {name: "PRMT7 KD, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: prmt7_kd_hek293, table: writer_perturbations, where: {perturbation: prmt7_kd_hek293}, change: log2_treated_over_control}
+        - {name: "PRMT7 knockdown, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: prmt7_kd_hek293, table: writer_perturbations, where: {perturbation: prmt7_kd_hek293}, change: log2_treated_over_control}
         - {name: "PRMT7i SGC3027, HEK293", note: "Li WJ et al. 2021 · published call", kind: inhibitor, attribute: perturbation, value: prmt7i_sgc3027_hek293, table: writer_perturbations, where: {perturbation: prmt7i_sgc3027_hek293}, change: log2_treated_over_control}
-        - {name: "CARM1 KD, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: carm1_kd_hek293, table: writer_perturbations, where: {perturbation: carm1_kd_hek293}, change: log2_treated_over_control}
-        - {name: "PRMT5 KD, HEK293", note: "Li WJ et al. 2021 · published call; decreased sites only", kind: knockdown, listed: true, attribute: perturbation, value: prmt5_kd_hek293, table: writer_perturbations, where: {perturbation: prmt5_kd_hek293}, change: log2_treated_over_control}
+        - {name: "CARM1 knockdown, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: carm1_kd_hek293, table: writer_perturbations, where: {perturbation: carm1_kd_hek293}, change: log2_treated_over_control}
+        - {name: "PRMT5 knockdown, HEK293", note: "Li WJ et al. 2021 · published call; decreased sites only", kind: knockdown, listed: true, attribute: perturbation, value: prmt5_kd_hek293, table: writer_perturbations, where: {perturbation: prmt5_kd_hek293}, change: log2_treated_over_control}
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant], attributes: [tcga_any, depmap_any]}
     - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, reactome_top_level], proteins: [marks, arg_enrichment_q]}
@@ -1899,15 +1899,15 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Interactions and binding, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Studies and databases, attributes: [studies, n_studies, localised_by]}
   dataset: {label: Data release, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
-  methods_note: "Sequences use UniProt 2026_03 and the context marks UniProt 2026_04: the marks come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
+  methods_note: "Sequences use UniProt 2026_03 and the other modifications UniProt 2026_04. The other modifications come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 and PhosphoSitePlus records under CC BY-NC-SA 3.0. Cite the paper, the archive and the studies and databases that report the sites you use (How to cite)."
   whats_new:               # what v1.7.0 added (the Help page)
     title: What’s new in v1.7.0
     items:
-      - "Mutation propensity: O/E and q for every candidate residue in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar, from the release."
-      - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old flag for counts at least 3 times the protein's average."
-      - "A Mutation frequency page: a waterfall of site frequencies (TCGA, DepMap, gnomAD) and an oncoprint of the top sites in TCGA tumors."
-      - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
+      - "Mutation propensity: O/E and q for every arginine in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar, from the release."
+      - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the earlier flag for counts at least 3 times the protein's average."
+      - "A Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), Inherited disease (ClinVar variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
+      - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
     doi: "10.5281/zenodo.24429699"
   downloads:               # the release's files, at the commit the site was built from
     - {label: Sites, url: "https://raw.githubusercontent.com/Shechterlab/PTM_Pipeline/v1.7.0/releases/v1.7.0/human_methylarginine_sites_v1.7.0.xlsx", format: Excel, note: "every site with its evidence, one row per site"}
@@ -2178,13 +2178,13 @@ website:                  # the look and words of the website (ptmc web); layout
     columns:
       - {id: map, label: Site map, show: map, fixed: true, hide: xs}
       - {id: ix, label: Interaction evidence, menu: Interaction evidence (sites), default: true,
-         counts: {attribute: interaction, values: {experimental: exp., predicted_only: pred.}, dashed: [predicted_only]},
+         counts: {attribute: interaction, values: {experimental: experimental, predicted_only: predicted only}, dashed: [predicted_only]},
          help: "Sites in this selection with experimental interaction evidence, and with predicted evidence only"}
       - {id: idr, label: In IDR, classes: {analysis: disorder, classes: [disordered]}, default: true, hide: xs, help: "The share of the protein's sites in an IDR"}
       - {id: cond, label: Condensates, attribute: condensates, format: count, default: true, hide: sm, help: "CD-CODE condensates (human, not synthetic) the protein is a member of"}
       - {id: loc, label: Location (HPA), attribute: hpa, hide: sm,
          help: "Subcellular locations in the Human Protein Atlas (reliability Approved or better)"}
-      - {id: density, label: Top cluster window, template: "{dense_sites} in {dense_window} aa", where: {attribute: dense_q, max: 0.05}, sort: dense_sites, default: true, hide: sm,
+      - {id: density, label: Most significant cluster, template: "{dense_sites} in {dense_window} aa", where: {attribute: dense_q, max: 0.05}, sort: dense_sites, default: true, hide: sm,
          help: "The window most significant against the same-protein arginine null (lowest q), not necessarily the densest"}
       - {id: arg, label: Arg enrichment, attribute: arg_enrichment, format: l2, hide: sm,
          help: "log2 of the shrinkage-estimated share of this protein's arginines that are methylated, over the proteome-wide rate"}
@@ -2239,7 +2239,7 @@ website:                  # the look and words of the website (ptmc web); layout
       label: Tests (the record that passes most)
       attributes: [test_evidence, test_named, test_unique, test_methyl, test_localised]
     also: [earlier]
-    note: "{all} lower-confidence sites are shown hatched beside the {others} sites. Counts, charts and tests include the {counted} whose own evidence covers the arginine and leaves the methyl group on it. The other {shown} are shown only."
+    note: "{all} lower-confidence sites are shown hatched beside the {others} sites. Counts, charts and tests include the {counted} whose own evidence covers the arginine and leaves the methyl group on it. The other {shown} are shown but not counted."
   sites:                   # the Sites page: the explorer's columns (kit-sites.js)
     quick: [interaction]                   # the quick filters above the table (default: every colored attribute)
     state_label: State
@@ -2261,7 +2261,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: ip, label: Maron IP, menu: Maron methyl-IP, attribute: methyl_ip, hide: sm}
       - {id: dom, label: Nearest domain, show: [nearest_domain], hide: sm}
       - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
-      - {id: tcga, label: Mutated in tumors (TCGA), attribute: tcga_any, hide: sm}
+      - {id: tcga, label: Changed in tumors (TCGA), attribute: tcga_any, hide: sm}
     download:              # the explorer's 54 columns where the release has them, and its own additions
       - {name: gene, value: gene}
       - {name: uniprot_accession, value: accession}
@@ -2877,9 +2877,9 @@ website:                  # the look and words of the website (ptmc web); layout
       calls:               # a mark per decrease or increase: site_measurements tables and category attributes
         tables: [perturbations]
         attributes: {gsk591: GSK591, ms023: MS023}
-        conditions: {carm1_ko_mcf7: CARM1 KO (MCF7), carm1_ko_mdamb231: CARM1 KO (MDA-MB-231), prmt7_ko_hct116: PRMT7 KO, prmt1_kd_hek293t: PRMT1 KD,
-                     prmt5i_epz015666_hela: PRMT5i EPZ015666, prmt7_kd_hek293: PRMT7 KD, prmt7i_sgc3027_hek293: PRMT7i SGC3027, carm1_kd_hek293: CARM1 KD,
-                     prmt5_kd_hek293: PRMT5 KD}
+        conditions: {carm1_ko_mcf7: CARM1 KO (MCF7), carm1_ko_mdamb231: CARM1 KO (MDA-MB-231), prmt7_ko_hct116: PRMT7 KO, prmt1_kd_hek293t: PRMT1 knockdown,
+                     prmt5i_epz015666_hela: PRMT5i EPZ015666, prmt7_kd_hek293: PRMT7 knockdown, prmt7i_sgc3027_hek293: PRMT7i SGC3027, carm1_kd_hek293: CARM1 knockdown,
+                     prmt5_kd_hek293: PRMT5 knockdown}
         marks: {decreased: "▼", increased: "▲", mixed: "↕"}
         words: {decreased: decreased, increased: increased, mixed: mixed, no_significant_change: no significant change}
         quiet: n.s.                          # the word for "measured, no change"
@@ -3194,7 +3194,7 @@ website:                  # the look and words of the website (ptmc web); layout
             columns: {accession: uniprot_accession, position: position, label: "{studies}: {reasons}"}
             values:
               reasons: {below_threshold: "localization score below the study's threshold", several_residues: "the methyl group is on one of several residues",
-                        search_disagrees: "the study's confident spectra disagree on the residue", no_localising_evidence: "no spectrum or score localises it",
+                        search_disagrees: "the study's confident spectra disagree on the residue", no_localising_evidence: "no spectrum or score localizes it",
                         window_fits_several: "the study's window fits several arginines", several_sites: "the same sequence occurs at several sites",
                         other_protein: "the sequence names a site in another protein", not_in_reference: "the sequence is not in the reviewed protein"}
           mark: tick

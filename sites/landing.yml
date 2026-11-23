@@ -25,12 +25,12 @@ footer:
 references:                # lines under the intro: a label with a DOI (and all versions), or text with an optional link
   - {label: Paper, doi: "10.1016/j.chembiol.2026.09.011"}
   - {label: Data, doi: "10.5281/zenodo.24429699", all_versions: "10.5281/zenodo.22696798"}
-  - {label: Data, text: PTM_Pipeline v1.7.0, url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0"}
+  - {label: Pipeline, text: PTM_Pipeline v1.7.0, url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0"}
 whats_new:             # a short list of what a release added: the landing page and each site's Help show it
   title: What’s new in v1.7.0
   items:
-    - "Mutation propensity: O/E and q for every candidate residue in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar, from the release."
-    - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old flag for counts at least 3 times the protein's average."
-    - "A Mutation frequency page: a waterfall of site frequencies (TCGA, DepMap, gnomAD) and an oncoprint of the top sites in TCGA tumors."
-    - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."
+    - "Mutation propensity: O/E and q for every residue the explorers test in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar, from the release."
+    - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the earlier flag for counts at least 3 times the protein's average."
+    - "A Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), Inherited disease (ClinVar variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
+    - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
   doi: "10.5281/zenodo.24429699"
