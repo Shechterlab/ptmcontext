@@ -2376,6 +2376,12 @@
       isListed: () => true,
     };
   };
+  // the first parts of a one-line summary, whole parts only
+  const lead = (t, max = 80) => {
+    if (t.length <= max) return t;
+    const k = t.lastIndexOf(' · ', max);
+    return (k > 0 ? t.slice(0, k) : t.slice(0, max)) + ' …';
+  };
   const plain = (h) =>
     h
       .replace(/<[^>]*>/g, ' ')
@@ -2396,6 +2402,13 @@
       nTags = (tags.match(/class="tag t-/g) || []).length,
       nWin = K2.windowsOf(c).length,
       nNear = K2.aroundRows(c).length,
+      names = [
+        ...new Set(
+          [...tags.matchAll(/class="tag t-[^"]*"[^>]*title="[^"]*?: ([^"]*)"/g)].flatMap((x) =>
+            x[1].split(', ').map((y) => y.replace(/&amp;/g, '&').replace(/ [\d.]+$/, ''))
+          )
+        ),
+      ],
       n = (k, w) => `${int(k)} ${w}${k === 1 ? '' : 's'}`;
     const badge = K2.badge(c);
     return {
@@ -2403,7 +2416,13 @@
       head: `${siteLink(m[0], m[1])} <span class="muted">${esc(prot(m[0])[2] || '')}</span>`,
       facts: [
         badge ? { text: badge } : null,
-        nTags ? { text: n(nTags, 'kind of evidence'), to: 'partners' } : null,
+        names.length
+          ? {
+              text: esc(names.slice(0, 3).join(', ') + (names.length > 3 ? ` +${names.length - 3}` : '')),
+              to: 'partners',
+            }
+          : null,
+        nTags ? { text: n(nTags, 'evidence type'), to: 'partners' } : null,
         nStruct ? { text: n(nStruct, 'solved structure'), to: 'partners' } : null,
         nWin ? { text: n(nWin, 'bound window'), to: 'contacts' } : null,
         nNear ? { text: n(nNear, 'feature') + ' nearby', to: 'near' } : null,
@@ -2413,15 +2432,15 @@
         {
           id: 'partners',
           title: 'Partners and structures',
-          sum: [nTags && n(nTags, 'kind of evidence'), nStruct && n(nStruct, 'structure')].filter(Boolean).join(', '),
+          sum: [nTags && n(nTags, 'evidence type'), nStruct && n(nStruct, 'structure')].filter(Boolean).join(', '),
           body: tags + entries,
         },
         { id: 'contacts', title: 'RNA and DNA contacts', sum: n(nWin, 'bound window'), body: cont },
-        { id: 'near', title: 'Around the site', sum: plain(near).slice(0, 90), body: near },
+        { id: 'near', title: 'Around the site', sum: lead(plain(near)), body: near },
         {
           id: 'protein',
           title: 'Whole protein',
-          sum: plain(whole.replace(/<span class="flabel">.*?<\/span>/, '')).slice(0, 90),
+          sum: lead(plain(whole.replace(/<span class="flabel">.*?<\/span>/, ''))),
           body: whole,
         },
       ],
