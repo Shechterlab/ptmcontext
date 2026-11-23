@@ -769,7 +769,7 @@
       mt = 12,
       burdenH = 34,
       gap = 8,
-      rowH = 13,
+      rowH = 16,
       pw = w - ml - mr;
     return {
       ml,
@@ -798,7 +798,7 @@
     });
     s += `<line x1="${ml}" x2="${ml + pw}" y1="${yb(th).toFixed(1)}" y2="${yb(th).toFixed(1)}" stroke="${c.line}" stroke-dasharray="3 3"/><text x="${ml - 6}" y="${(yb(th) + 3.5).toFixed(1)}" text-anchor="end" font-size="10.5" fill="${c.muted}">${th} per Mb</text>`;
     s += `<text x="${ml - 6}" y="${mt + 8}" text-anchor="end" font-size="10.5" fill="${c.muted}">calls per Mb</text>`;
-    s += `<text x="${ml + pw + 6}" y="${mt + burdenH + 4}" font-size="10.5" fill="${c.muted}">${hyper() ? 'tumors' : 'tumors (in all)'}</text>`;
+    s += `<text x="${ml + pw + 6}" y="${mt + burdenH - 2}" font-size="10.5" fill="${c.muted}">${hyper() ? 'tumors' : 'tumors (in all)'}</text>`;
     const y0 = geo.y0;
     o.top.forEach((r, j) => {
       const y = y0 + j * rowH;
@@ -809,12 +809,12 @@
         s += `<rect x="${(ml + k * cw).toFixed(2)}" y="${y}" width="${Math.max(0.8, cw - (cw > 3 ? 0.6 : 0)).toFixed(2)}" height="${rowH - 2}" fill="${cellColors[st]}"/>`;
       });
       const nm = esc(siteName(r.acc, r.pos, r.res)),
-        lab = `<text x="${ml - 6}" y="${y + rowH - 4}" text-anchor="end" font-size="11" fill="${c.ink}">${nm}</text>`;
+        lab = `<text x="${ml - 6}" y="${y + rowH - 5}" text-anchor="end" font-size="11" fill="${c.ink}">${nm}</text>`;
       // on the page a row's name opens the site's card (a link: the keyboard reaches it)
       s += links
         ? `<a class="mu-link" href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}" aria-label="Open the card of ${nm}">${lab}</a>`
         : lab;
-      s += `<text x="${ml + pw + 6}" y="${y + rowH - 4}" font-size="11" fill="${c.ink}">${int(r.cells.length)}${!hyper() && r.nAll > r.cells.length ? `<tspan fill="${c.muted}" font-size="10.5"> (${int(r.nAll)} in all)</tspan>` : ''}</text>`;
+      s += `<text x="${ml + pw + 6}" y="${y + rowH - 5}" font-size="11" fill="${c.ink}">${int(r.cells.length)}${!hyper() && r.nAll > r.cells.length ? `<tspan fill="${c.muted}" font-size="10.5"> (${int(r.nAll)} in all)</tspan>` : ''}</text>`;
     });
     s += `<text x="${ml + pw / 2}" y="${H - 8}" text-anchor="middle" font-size="11.5" fill="${c.muted}">${int(o.cols.length)} TCGA tumors with a change at one of these ${esc(W.marks)}</text>`;
     return { svg: s, H, ml, pw, cw, y0, rowH };
