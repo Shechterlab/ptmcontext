@@ -294,3 +294,39 @@ def test_the_scope_and_license_lines_come_from_the_site_file(tmp_path):
     assert '"license":"Data: toy license."' in page.replace('": "', '":"')
     kit = (Path(web.__file__).parent / 'assets' / 'kit.js').read_text()
     assert 'class="dl-license"' in kit and 'D.license' in kit
+
+
+WN = {
+    'title': 'What’s new in each data release',
+    'releases': [
+        {'title': 'Toy_Pipeline v2.0 data release (2026-02-02)', 'items': ['Newer thing.'], 'doi': '10.1/new'},
+        {'title': 'Toy_Pipeline v1.0 data release (2026-01-01)', 'items': ['Older thing.']},
+    ],
+}
+
+
+def test_whats_new_is_a_closed_disclosure_at_the_foot_with_one_entry_per_data_release(tmp_path):
+    root, a = _built(tmp_path)
+    cfg = tmp_path / 'landing.yml'
+    cfg.write_text(yaml.safe_dump({**CFG, 'whats_new': WN}))
+    land = web.pages([a], tmp_path / 'site', out_root=root, log=lambda *_: None, landing_config=cfg).read_text()
+    assert '<details class="land-new"><summary>What’s new in each data release</summary>' in land
+    assert '<details class="land-new" open' not in land
+    new, old = land.index('Toy_Pipeline v2.0 data release (2026-02-02)'), land.index('Toy_Pipeline v1.0 data release')
+    assert new < old  # newest first, as written
+    assert land.index('Toy toya') < land.index('class="land-new"') < land.index('</main>')  # below the cards
+    assert 'href="https://doi.org/10.1/new"' in land
+    assert LP.whats_new(None) == {'title': 'What’s new', 'releases': []}
+
+
+def test_an_older_whats_new_block_is_one_release_and_a_site_help_reads_the_same_list():
+    one = LP.whats_new({'title': 'What’s new in v1', 'items': ['A.'], 'doi': '10.1/x'})
+    assert one['releases'] == [{'title': 'What’s new in v1', 'items': ['A.'], 'doi': '10.1/x'}]
+    assert LP.whats_new(WN)['releases'][1]['doi'] == ''
+    help_js = (Path(web.__file__).parent / 'assets' / 'kit-help.js').read_text()
+    assert 'D.whats_new' in help_js and 'WN?.releases' in help_js and '<details${n > 4' in help_js
+    for site in ('methylarginine', 'methyllysine', 'lysine', 'phospho'):
+        spec = yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / f'{site}.yaml').read_text())
+        mine = [r['title'] for r in LP.whats_new(spec['website']['whats_new'])['releases']]
+        land = [r['title'] for r in LP.whats_new(yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'landing.yml').read_text())['whats_new'])['releases']]
+        assert mine == land and all('data release (' in t for t in land)

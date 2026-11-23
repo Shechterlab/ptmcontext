@@ -224,6 +224,24 @@
     ];
   }
   K.glossaryTerms = glossaryTerms;
+  // the data releases' notes, newest first, as the landing page lists them; closed when long
+  function whatsNew() {
+    const WN = D.whats_new,
+      rel = WN?.releases || [];
+    if (!rel.length) return '';
+    const n = rel.reduce((t, r) => t + r.items.length, 0);
+    return (
+      `<section id="h-new" class="whats-new"><details${n > 4 ? '' : ' open'}><summary><b>${esc(WN.title)}</b></summary>` +
+      rel
+        .map(
+          (r) =>
+            `<h4>${esc(r.title)}</h4><ul>${r.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` +
+            (r.doi ? `<p class="muted small">Data: ${esc(r.doi)}</p>` : '')
+        )
+        .join('') +
+      '</details></section>'
+    );
+  }
   function helpPage() {
     const sec = (id, body) =>
       `<section id="${id}"><h3>${esc(SECTIONS.find((s) => s[0] === id)[1])}</h3>${body}</section>`;
@@ -231,13 +249,7 @@
     const term = (t, d) => `<dt>${t}</dt><dd>${d}</dd>`;
     return (
       `<div class="page-head"><h2>Help</h2></div><div class="doc help-doc">` +
-      (D.whats_new?.items?.length
-        ? `<section id="h-new" class="whats-new"><h3>${esc(D.whats_new.title || 'What’s new')}</h3><ul>${D.whats_new.items
-            .map((x) => `<li>${esc(x)}</li>`)
-            .join(
-              ''
-            )}</ul>${D.whats_new.doi ? `<p class="muted small">Data: ${esc(D.whats_new.doi)}</p>` : ''}</section>`
-        : '') +
+      whatsNew() +
       sec(
         'h-search',
         `<p>The search box takes a protein (gene name, UniProt accession or entry name), a list of proteins separated by ` +

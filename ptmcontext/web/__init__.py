@@ -33,6 +33,7 @@ from ..site import card_questions, code_commit, load_site, manifest_of, presence
 from .cellpct import cell_percent, cell_proteome
 from .counts import counts_data
 from .glance import glance
+from .landing import whats_new
 from . import seldata as SEL
 from . import structure as S3D
 from . import nucleic as NUC
@@ -694,7 +695,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'legacy_params': web.get('legacy_params') or {},
         'dataset': web.get('dataset'),
         'downloads': web.get('downloads') or [],
-        'whats_new': web.get('whats_new') or None,
+        'whats_new': whats_new(web.get('whats_new')) if web.get('whats_new') else None,
         'download_terms': web.get('download_terms', ''),
         'license': web.get('license', ''),
         'methods_note': web.get('methods_note', ''),

@@ -59,6 +59,12 @@ CSS = """
 .land-intro p { margin: 0; }
 .land-refs { max-width: 46rem; list-style: none; margin: 0; padding: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.2rem 1.4rem; font-size: 0.9rem; color: var(--ink-2); }
 .land-refs .muted { color: var(--muted); }
+.land-new { max-width: 46rem; margin: 0; padding: 0.5rem 0 2rem; color: var(--ink-2); font-size: 0.95rem; }
+.land-new > summary { cursor: pointer; font-weight: 600; color: var(--ink); padding: 0.3rem 0; }
+.land-new section { padding-top: 0.6rem; }
+.land-new h3 { margin: 0; font-size: 0.98rem; color: var(--ink); }
+.land-new ul { margin: 0.3rem 0 0; padding-left: 1.2rem; display: grid; gap: 0.25rem; }
+.land-new p { margin: 0.3rem 0 0; }
 .land-license { max-width: 46rem; margin: 0; padding: 0.5rem 0 1rem; font-size: 0.9rem; color: var(--ink-2); }
 .land-intro p:first-child { color: var(--ink); font-size: 1.15rem; }
 .sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(26rem, 100%), 1fr)); gap: 1.25rem; padding: 1rem 0 1.5rem; list-style: none; margin: 0; }
@@ -236,6 +242,23 @@ def ordered(cards: list[dict], cfg: dict) -> list[dict]:
     return sorted(cards, key=lambda c: rank.get(c['id'], len(rank)))
 
 
+def whats_new(wn) -> dict:
+    """The data releases' notes, from `whats_new` of the landing config or a site file: `{title, releases: [{title,
+    items, doi}]}`, newest first as written. An older config (one `title` and `items`) is one release."""
+    wn = {'releases': wn} if isinstance(wn, list) else wn or {}
+    rels = wn.get('releases')
+    if rels is None and wn.get('items'):
+        rels = [wn]
+    return {
+        'title': str(wn.get('title') or 'What’s new in each data release') if 'releases' in wn else 'What’s new',
+        'releases': [
+            {'title': str(r.get('title') or ''), 'items': [str(x) for x in r['items']], 'doi': str(r.get('doi') or '')}
+            for r in rels or []
+            if r.get('items')
+        ],
+    }
+
+
 def _ref(x: dict) -> str:
     """One line of the landing page's references: a label, then a DOI (a link to doi.org, with `all_versions` as a second
     DOI) or plain text (a link when it has a url)."""
@@ -279,19 +302,24 @@ def page(
     note = (cfg.get('footer') or {}).get('note')
     refs = ''.join(_ref(x) for x in cfg.get('references') or [])
     licence = f'<p class="land-license">{html.escape(cfg["license"])}</p>' if cfg.get('license') else ''
-    wn = cfg.get('whats_new') or {}
+    wn = whats_new(cfg.get('whats_new'))
+    # one entry per data release, newest first, inside one closed disclosure at the foot of the page
     new = (
-        f'<section class="land-new"><h2>{html.escape(wn.get("title") or "What’s new")}</h2><ul>'
-        + ''.join(f'<li>{html.escape(x)}</li>' for x in wn['items'])
-        + '</ul>'
-        # the release's DOI, unless the references above already give it
-        + (
-            f'<p class="muted">Data: {html.escape(wn["doi"])}</p>'
-            if wn.get('doi') and not any(x.get('doi') == wn['doi'] for x in cfg.get('references') or [])
-            else ''
+        f'<details class="land-new"><summary>{html.escape(wn["title"])}</summary>'
+        + ''.join(
+            f'<section><h3>{html.escape(r["title"])}</h3><ul>'
+            + ''.join(f'<li>{html.escape(x)}</li>' for x in r['items'])
+            + '</ul>'
+            + (
+                f'<p class="muted">Data: <a href="https://doi.org/{html.escape(r["doi"])}">doi:{html.escape(r["doi"])}</a></p>'
+                if r['doi']
+                else ''
+            )
+            + '</section>'
+            for r in wn['releases']
         )
-        + '</section>'
-        if wn.get('items')
+        + '</details>'
+        if wn['releases']
         else ''
     )
     groups = [g for g in cfg.get('groups') or [] if g.get('id')] or [{'id': None}]
@@ -331,10 +359,10 @@ def page(
 {f'<section class="land-intro" aria-label="About">{intro}</section>' if intro else ''}
 {f'<ul class="land-refs" aria-label="Paper and data">{refs}</ul>' if refs else ''}
 {licence}
-{new}
 {SEARCH_HTML if search else ''}
 <h2 class="vh">The explorers</h2>
-{sections}</main>
+{sections}
+{new}</main>
 <footer class="wrap land-foot"><ul aria-label="Footer">{links}<li><a href="#privacy">Privacy</a></li></ul>
 <span class="theme-switch" role="group" aria-label="Color theme"><button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button></span>
 {f'<p>{html.escape(note)}</p>' if note else ''}
