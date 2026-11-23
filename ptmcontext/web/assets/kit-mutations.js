@@ -1460,7 +1460,7 @@
   function clinvarSvg(g, c, w) {
     const rows = g.rows.slice(0, M.rows),
       ml = 126,
-      top = 176,
+      top = 200,
       rh = 15,
       n = g.cols.length,
       cw = Math.max(14, Math.min(30, (w - ml - 10) / n)),
@@ -1468,7 +1468,7 @@
     let s = '';
     g.cols.forEach((f, k) => {
       const nm = famName(g.cv.fam[f]);
-      s += `<text transform="translate(${(ml + k * cw + cw / 2 + 3.5).toFixed(1)},${top - 6}) rotate(-90)" font-size="10" fill="${c.ink}">${esc(nm.length > 34 ? nm.slice(0, 33) + '…' : nm)}</text>`;
+      s += `<text transform="translate(${(ml + k * cw + cw / 2 + 3.5).toFixed(1)},${top - 6}) rotate(-90)" font-size="10" fill="${c.ink}">${esc(nm.length > 36 ? nm.slice(0, 35) + '…' : nm)}</text>`;
     });
     s += `<text x="${ml - 24}" y="${top - 6}" text-anchor="end" font-size="10" fill="${c.muted}">all</text>`;
     rows.forEach((r, j) => {
