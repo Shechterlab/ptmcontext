@@ -2957,11 +2957,7 @@
       (a.control_too_few != null
         ? `<section class="pcard"><p class="note too-few">${esc(tooFewText(a))}</p></section>`
         : (small ? fewHtml(a) : '') +
-          `<section class="pcard">${
-            small
-              ? `<h3 class="whole-h">All ${esc(W.marks)}, not your selection</h3><p class="small muted whole-note">The whole dataset, for comparison.</p>`
-              : ''
-          }${
+          `<section class="pcard">${small ? `<h3 class="whole-h">All ${esc(W.marks)}, for comparison</h3>` : ''}${
             (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
             (K.questionBody && K.questionBody(a, rows, card)) ??
             cardBody(a, rows)

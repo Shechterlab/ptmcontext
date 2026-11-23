@@ -1470,7 +1470,6 @@ website:                  # the look and words of the website (ptmc web); layout
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Phosphorylation Site Explorer
   tagline: "Human protein phosphorylation sites from public databases."
-  scope: "Holds sites, and the cancer and germline changes at them. It does not hold phosphorylation levels in tumors."
   # published at /ptmcontext/phospho/; listed on the landing page and in the sites' header menu
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with

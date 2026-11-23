@@ -1558,7 +1558,6 @@ website:                  # the look and words of the website (ptmc web); layout
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Lysine Modification Site Explorer
   tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases and studies."
-  scope: "Holds sites of each modification, and the cancer and germline changes at them. It does not hold modification levels in tumors."
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from public databases and studies."
