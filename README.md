@@ -35,6 +35,8 @@ site (the methylarginine data of v1.7.0 are byte for byte those of v1.4.3). The 
 To cite the data, use the archive of this release, v1.7.0 (doi:10.5281/zenodo.24429699), and
 the archive of all versions (doi:10.5281/zenodo.22696798). Each site's Methods page (Cite) lists these with the studies and databases behind its sites.
 
+Two versions are always named, each with a label: **App: PTMcontext 0.6.0** (the website's software, one number for every explorer) and **Data: PTM_Pipeline v1.7.0** (the data release it reads). [VERSIONING.md](VERSIONING.md) has the rules.
+
 ## Build a site
 
 Each site is defined only by YAML files: a site file `sites/<site>.yaml`, a mark file `sites/marks/<mark>.yaml`, an inputs
@@ -96,6 +98,7 @@ ptmc pages $(python tools/ci_plan.py | python -c "import json,sys; print(json.lo
 | [CONTRACTS.md](CONTRACTS.md) | the file formats |
 | [ADDING_DATA.md](ADDING_DATA.md) | adding a source, a mark or a site |
 | [docs/DATA_STANDARD.md](docs/DATA_STANDARD.md) | the standard a new source must meet, and what a contributor sends |
+| [VERSIONING.md](VERSIONING.md) | the two versions (App and Data), when each number changes, and how a release is made |
 | [AGENTS.md](AGENTS.md) | the rules for anyone changing this repository |
 
 ## License

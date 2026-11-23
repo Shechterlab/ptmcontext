@@ -3,8 +3,8 @@
 cff-version: 1.2.0
 message: "Please cite the data sources: there is no paper for this site yet."
 title: "Phosphorylation Site Explorer"
-version: "0.5.0"
-date-released: "2026-11-15"
+version: "0.6.0"
+date-released: "2026-11-23"
 url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"
 license: "CC-BY-NC-SA-4.0"
 authors:

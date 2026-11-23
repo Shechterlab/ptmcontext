@@ -4,11 +4,16 @@
 # must still equal release v1.7.0 (methylarginine data as in v1.4.3). The export audits (text overlap, legends) run in tests.yml, so a deploy does not wait for them.
 # The published sites (those with website.ci, in its order: tools/ci_plan.py) are built in parallel jobs (one matrix entry each,
 # the slowest about 45 minutes instead of all in a row, about two hours); a last job downloads their websites, assembles them with the landing page (ptmc pages) and uploads the Pages artifact.
+# Where the live site comes from is one repository variable, PAGES_MODE (Settings > Secrets and variables > Actions > Variables).
+# Unset or "develop" (today): every push to develop or main deploys. "tags" (from 1.0.0, see VERSIONING.md): only a tag vX.Y.Z
+# deploys; pushes to develop and main still build, so a broken build shows, but do not deploy. The github-pages environment
+# must allow the tags v* then. A tag push in "develop" mode does nothing: its commit was deployed from the branch.
 # (The yeast site is not published: sites/yeast_phospho.yaml stays as an example of a second organism.)
 name: pages
 on:
   push:
     branches: [develop, main]
+    tags: ["v*"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,6 +26,7 @@ jobs:
   # The sites CI builds, their per-site parameters and the files of the data repository they read all come from the site files
   # (website.ci; tools/ci_plan.py): adding a site is its site file, not an edit here.
   plan:
+    if: github.ref_type != 'tag' || vars.PAGES_MODE == 'tags'
     runs-on: ubuntu-latest
     outputs:
       pages_matrix: ${{ steps.plan.outputs.pages_matrix }}
@@ -108,6 +114,7 @@ jobs:
           path: _site
   deploy:
     needs: assemble
+    if: vars.PAGES_MODE != 'tags' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -121,8 +128,8 @@ jobs:
   # one open issue says the published site is stale: opened (or commented on) when a build or deploy fails, closed when a
   # deploy succeeds; watch the label "pages-failure" instead of Actions' e-mails
   report:
-    needs: [build, assemble, deploy]
-    if: always() && github.event_name != 'pull_request'
+    needs: [plan, build, assemble, deploy]
+    if: always() && github.event_name != 'pull_request' && needs.plan.result != 'skipped'
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -149,7 +156,7 @@ jobs:
             else gh issue create --repo "$REPO" --label pages-failure --title "Pages deployed without $skipped" --body "$body"; fi
           elif [ "$RESULT" = "success/success" ]; then
             [ -n "$open" ] && gh issue close "$open" --repo "$REPO" --comment "Deployed again from $REF at ${SHA:0:7}: $RUN" || true
-          elif [ "$RESULT" != "cancelled/skipped" ] && [ "$RESULT" != "cancelled/cancelled" ]; then
+          elif [ "$RESULT" != "cancelled/skipped" ] && [ "$RESULT" != "cancelled/cancelled" ] && [ "$RESULT" != "success/skipped" ]; then
             body="Build/deploy: $RESULT on $REF at ${SHA:0:7}. Log: $RUN"
             if [ -n "$open" ]; then gh issue comment "$open" --repo "$REPO" --body "$body"
             else gh issue create --repo "$REPO" --label pages-failure --title "Pages build failing on $REF" --body "$body"; fi
