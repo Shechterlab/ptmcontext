@@ -924,8 +924,8 @@
     return K.figureFrame({
       title: 'Selected sites aligned at the modified residue, with their logo',
       sub:
-        `${K.sel.describe()}: ${int(s.sel.length)} ${W.marks} with a sequence ` +
-        `window of ${int(2 * s.span + 1)}, against ${int(s.oth.length)} other ${W.marks}`,
+        `${K.sel.describe() ? K.sel.describe() + ': ' : ''}${int(s.sel.length)} ${W.marks} with a sequence ` +
+        `window of ${int(2 * s.span + 1)}${s.oth.length ? `, against ${int(s.oth.length)} other ${W.marks}` : ''}`,
       body: g,
       bodyH: y,
       W: Wd,

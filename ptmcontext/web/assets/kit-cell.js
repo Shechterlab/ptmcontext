@@ -2105,11 +2105,11 @@
     ) +
     `Each point is a compartment of the map; the line is the share among all the proteins the map places, and the solid and dashed curves its 99.8% and 95% limits${
       phiOf(UI.map, scopedNow()) > 1
-        ? '; the lighter curves are the same limits widened by √φ (φ ' +
+        ? '; the lighter curves are the same limits widened by √φ (overdispersion φ ' +
           f2(phiOf(UI.map, scopedNow())) +
           ', ' +
-          (DISP ? 'applied' : 'not applied') +
-          ' to the fill)'
+          (DISP ? 'used' : 'not used') +
+          ' in the fill)'
         : ''
     }. Filled points differ at q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the compartments), colored by h.`;
   function funnelTsv(aid, scoped) {
@@ -3258,7 +3258,7 @@
                 )
                 .join('')
             ).join('') +
-            `<button type="button" class="exp-btn" data-cell-exp="tsv" data-cell-fig="${esc(DRAWINGS[0].drawing)}" title="${esc(K.EXP_HELP.tsv)}">TSV</button>`
+            `<button type="button" class="exp-btn" data-cell-exp="tsv" data-cell-fig="${esc(DRAWINGS[0].drawing)}" title="${esc(K.EXP_HELP.tsv)}">${esc(K.exp.label('tsv'))}</button>`
         );
     return (
       `<article class="tile wide cell-tile" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header>` +
@@ -3738,7 +3738,11 @@
           .map((s) => `<i class="${s === 'ns' ? 'f0' : s}"></i>`)
           .join('')}<b class="pk-ref" style="left:50%"></b></span><span class="pk-hi">h +1</span>` +
         `<span class="cell-key"><i class="cg-k sm"></i>significant but small (|h| &lt; ${MIN_H}); <i class="cg-k hx"></i>not significant. Filled where q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}, Benjamini–Hochberg across the parts shown (${esc(evidenceWords())})${
-          phi > 1 ? `; φ = ${esc(f2(phi))}${DISP ? '' : ' (not applied)'}` : ''
+          phi > 1
+            ? DISP
+              ? `; overdispersion φ = ${esc(f2(phi))}, used to widen the standard errors`
+              : `; overdispersion φ = ${esc(f2(phi))} (the parts vary more than chance); not used in these tests, because the parts are not expected to be alike`
+            : ''
         }</span>` +
         (ref != null ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctRefWords(scoped, ref))}</span>` : '') +
         `<span class="cell-key"><i class="cg-k na"></i> not measured</span>${

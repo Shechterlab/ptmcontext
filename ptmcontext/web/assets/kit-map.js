@@ -778,17 +778,29 @@
   const shardKey = (acc) =>
     String([...acc].reduce((n, c) => n + c.charCodeAt(0), 0) % (D.map_shards || 64)).padStart(2, '0');
   // the items of a protein ([row index, start, end, class, label, value, ref, sources]), or null while they load
+  // a source's own names (an InterPro family, a class) are shown in American spelling: once for a shard's items
+  const americanLabels = (shard) => {
+    if (shard && !shard.__us) {
+      Object.defineProperty(shard, '__us', { value: true });
+      Object.values(shard).forEach((items) =>
+        items.forEach((x) => {
+          if (typeof x[4] === 'string' && x[4]) x[4] = K.us(x[4]);
+        })
+      );
+    }
+    return shard;
+  };
   function itemsOf(acc) {
     if (!D.map_shards) return [];
     const key = shardKey(acc);
-    if (mapInline[key]) return mapInline[key][acc] || [];
+    if (mapInline[key]) return americanLabels(mapInline[key])[acc] || [];
     if (!(key in mapFiles)) {
       mapFiles[key] = null;
       fetch(`data/map/${key}.json`)
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
         .then(
           (j) => {
-            mapFiles[key] = j;
+            mapFiles[key] = americanLabels(j);
           },
           () => {
             mapFiles[key] = { __failed: true };
@@ -1636,6 +1648,26 @@
       const CL = r.classes || {},
         order = Object.keys(CL),
         clsOf = (x) => CL[x[3]] || {};
+      // a row whose items name entities (website.protein.map.rows[].from.names: a cell line of a change, say): the ref holds
+      // 'id|name|group' entries separated by '||'; the names, their group on hover, and in the pinned card a link to each
+      const NAMES = [].concat(r.from || []).find((f) => f && f.names)?.names;
+      const namesHtml = (x, full) => {
+        if (!NAMES || !x[6]) return '';
+        const list = String(x[6])
+          .split('||')
+          .filter(Boolean)
+          .map((e) => e.split('|'));
+        const more = Math.max(0, (+x[5] || 0) - list.length);
+        const one = ([id, name, group]) => {
+          const t = esc(name || id) + (group && !full ? ` (${esc(group)})` : '');
+          return full && NAMES.link
+            ? `<a href="${esc(NAMES.link.replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener" title="${esc(
+                [group, id].filter(Boolean).join(' · ')
+              )}">${t}</a>`
+            : t;
+        };
+        return `${esc(NAMES.title || 'Listed')}: ${list.map(one).join(', ')}${more ? ` and ${int(more)} more` : ''}`;
+      };
       const valText = (v) =>
         v == null || v === ''
           ? ''
@@ -1682,13 +1714,16 @@
             ? '<br>' + esc(r.sequence.words.replace('{n}', x[8].n).replace('{strong}', x[8].strong))
             : '';
         const srcs = [...String(x[7] || '').split('; '), ...(cs.sources || [])].filter(Boolean);
-        const ref = x[6]
-          ? `<br>${
-              full && refLink(x[6])
-                ? `<a href="${esc(refLink(x[6]))}" target="_blank" ` + `rel="noopener">${esc(x[6])}</a>`
-                : esc(x[6])
-            }`
-          : '';
+        const nm = namesHtml(x, full);
+        const ref = nm
+          ? `<br>${nm}`
+          : x[6] && !NAMES
+            ? `<br>${
+                full && refLink(x[6])
+                  ? `<a href="${esc(refLink(x[6]))}" target="_blank" ` + `rel="noopener">${esc(x[6])}</a>`
+                  : esc(x[6])
+              }`
+            : '';
         return (
           head +
           (x[1] === x[2] && atMark.has(x[1]) ? ` · at a ${esc(W.mark)}` : '') +
@@ -1727,7 +1762,8 @@
           label: cap(W.marks),
           short: D.profile_short || cap(W.marks),
           col: P.accent,
-          help: `the ${W.marks} in this explorer`,
+          help: `the ${W.marks} of this explorer`,
+          total: new Set(marks.map((m) => m[0])).size,
           pts: marksIn.map((m) => ({ pos: m[0], own: true })),
         },
       };
@@ -1758,6 +1794,7 @@
             short: (SPL.short || {})[v] || label,
             col: attrColour(SPL.attribute, v),
             help: label,
+            total: new Set(marks.filter((m) => valsOf(m).includes(v)).map((m) => m[0])).size,
             pts: marksIn.filter((m) => valsOf(m).includes(v)).map((m) => ({ pos: m[0], own: true })),
           };
         });
@@ -1773,6 +1810,8 @@
           short: rows[rows.length - 1].short || rows[rows.length - 1].title,
           col: cfgColour(r, 'colour', P, P.variant),
           help: r.help || r.title,
+          loaded: its != null, // null while the protein's items load: the count is not 0 yet
+          total: new Set((its || []).map((x) => x[1])).size,
           pts: (its || [])
             .filter((x) => inView(x[1], x[1]))
             .map((x) => ({ pos: x[1], x, r, tip: () => tipOf(x, false), card: () => tipOf(x, true) })),
@@ -1846,7 +1885,9 @@
       order.forEach((d) => {
         const n = new Set(d.pts.map((q) => q.pos)).size, // marks, not records: two records at one residue are one mark
           off = M.combOff.has(d.id),
-          text = `${d.label} (${n})`,
+          text = `${d.label} (${d.loaded === false ? '–' : n})`,
+          what =
+            d.loaded === false ? 'still loading' : `${n} in view${d.total > n ? ` of ${d.total} in the protein` : ''}`,
           w = 14 + K.tw(text, 9.5) * SL;
         if (lx > X0 && lx + w > X1) {
           lx = X0;
@@ -1854,9 +1895,9 @@
         }
         const attr = ex
           ? ''
-          : ` data-comb="${esc(d.id)}" tabindex="0" role="button" aria-pressed="${!off}" aria-label="${esc(d.label)}, ${n} in view, ${off ? 'hidden' : 'shown'}. Press to ${off ? 'show' : 'hide'}" style="cursor:pointer"`;
+          : ` data-comb="${esc(d.id)}" tabindex="0" role="button" aria-pressed="${!off}" aria-label="${esc(d.label)}, ${esc(what)}, ${off ? 'hidden' : 'shown'}. Press to ${off ? 'show' : 'hide'}" style="cursor:pointer"`;
         parts.push(
-          `<g${attr}><rect x="${r1(lx - 2)}" y="${r1(ly - 1)}" width="${r1(w + 2)}" height="13" rx="3" fill="transparent"/>` +
+          `<g${attr}>${ex ? '' : `<title>${esc(`${d.label}: ${what} (positions, not records). ${d.help || ''}`.trim())}</title>`}<rect x="${r1(lx - 2)}" y="${r1(ly - 1)}" width="${r1(w + 2)}" height="13" rx="3" fill="transparent"/>` +
             MK.tick(lx + 3, ly + 5.5, 10, d.col, '', 2.4, off ? 0.35 : 1) +
             `<text x="${r1(lx + 10)}" y="${r1(ly + 9)}" font-size="9.5" fill="${off ? P.muted : P.ink}"${off ? ' text-decoration="line-through"' : ''}>${esc(text)}</text></g>`
         );

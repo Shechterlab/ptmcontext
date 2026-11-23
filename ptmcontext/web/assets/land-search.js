@@ -79,7 +79,7 @@
             )
             .join(' ');
         return (
-          `<li><span class="hit-name"><b>${esc(h.label)}</b>${h.desc ? ` · ${esc(h.desc)}` : ''} ` +
+          `<li><span class="hit-name" style="cursor:pointer" title="Open in ${esc(idx.sites[ids[0]]?.label || '')}"><b>${esc(h.label)}</b>${h.desc ? ` · ${esc(h.desc)}` : ''} ` +
           `<span class="muted">${esc(acc)}${h.via ? ` · also ${esc(h.via)}` : ''}</span></span>` +
           `<span class="hit-sites">Open in ${links}</span></li>`
         );
@@ -92,6 +92,12 @@
         : `${lead}No protein with that name or accession in these sites.`;
     }
   };
+  // a click on a hit's name (not on one of its site links) opens the protein in the first site that has it
+  out.addEventListener('click', (e) => {
+    if (e.target.closest('a') || !e.target.closest('.hit-name')) return;
+    const a = e.target.closest('li')?.querySelector('.hit-sites a');
+    if (a) location.href = a.href;
+  });
   box.addEventListener('focus', load, { once: true });
   box.addEventListener('input', () => {
     load().then(draw);

@@ -37,6 +37,7 @@ inputs:                # role the layers read: manifest input that fills it
   depmap_genes: depmap_gene_effect
   tcga_changes: tcga_arginine_changes
   depmap_changes: depmap_arginine_changes
+  depmap_models: depmap_change_models         # the cell lines' names and lineages, for the protein map's cell-line names
   clinvar_plp: clinvar_plp_changes_R
   gnomad_variants: gnomad_changes_R
   # the protein map's own rows (website.protein.map.rows): release tables read for the map only, no test reads them
@@ -79,7 +80,7 @@ inputs:                # role the layers read: manifest input that fills it
   dna_interactome: trendel_dna_interactome
   uniprot_dna_binding: uniprot_dna_binding_regions
   go_binding: quickgo_rna_dna_binding
-  # arginines of methylated proteins modeled in a PDB entry with RNA or DNA, each with its side-chain distance to it
+  # arginines of methylated proteins modelled in a PDB entry with RNA or DNA, each with its side-chain distance to it
   na_rna: release_arginine_rna_distances
   na_dna: release_arginine_dna_distances
   na_any: {all_of: [release_arginine_rna_distances, release_arginine_dna_distances]}
@@ -743,7 +744,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Regions of the cell (Human Cell Map)
     question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
-    sub: "Methylated proteins against the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
       input: hcm
@@ -774,7 +775,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Human Cell Map compartments
     question: "Where do methylated proteins localize in the cell, by the Human Cell Map's compartments?"
-    sub: "Methylated proteins against the other proteins the Human Cell Map localizes (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
     whole_universe: true
@@ -1171,7 +1172,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: nucleic_acid_distance
     title: Distance to RNA and DNA in structures
     question: "Are methylarginines closer to RNA or DNA in solved structures?"
-    sub: "Methylarginines against the other arginines of the same proteins modeled in a PDB entry with RNA, DNA or either, whose side chain comes within 4 or 8 Å of it"
+    sub: "Methylarginines against the other arginines of the same proteins modelled in a PDB entry with RNA, DNA or either, whose side chain comes within 4 or 8 Å of it"
     section: Interactions and binding
     counting: every_candidate
     candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
@@ -1665,7 +1666,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - name: Which proteins
         about: "Protein classes, pathways and condensates of the methylated proteins."
         cards:
-          - {analysis: panther_group, title: Protein classes}
+          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
@@ -2445,7 +2446,7 @@ website:                  # the look and words of the website (ptmc web); layout
                 window_end: best_window_end, window_sites: best_window_sites, window_log2: best_window_log2_obs_null, window_q: best_window_q,
                 architecture: architecture_class, clusters: architecture_clusters}
     # tables only the Interactions page reads (website.pages)
-    distances:             # every arginine of a methylated protein modeled with RNA or DNA, and its distance to each
+    distances:             # every arginine of a methylated protein modelled with RNA or DNA, and its distance to each
       input: release_arginine_rna_distances
       format: site_table
       columns: {accession: uniprot_accession, position: position}
@@ -2890,7 +2891,7 @@ website:                  # the look and words of the website (ptmc web); layout
         help:
           writes: IntAct methylation reactions that curate this residue, or where mutating it changes the reaction
           removes: IntAct demethylation reactions with the methylarginine curated at this residue
-          binds_methylated: "the residue is a methylarginine in the experiment, modeled as one in a structure (2MR, DA2, NMM) or curated as methylated in IntAct"
+          binds_methylated: "the residue is a methylarginine in the experiment, modelled as one in a structure (2MR, DA2, NMM) or curated as methylated in IntAct"
           mutation_changes_binding: "IntAct: mutating this residue (alone or with up to two neighbors) decreased, disrupted or increased binding"
           mutation_no_effect: "IntAct: a mutation of this residue had no effect on the binding"
           binds_unmodified: structures that model an unmodified arginine here (PDBe-KB interface)
@@ -3086,7 +3087,22 @@ website:                  # the look and words of the website (ptmc web); layout
           title: Cell lines (DepMap)
           help: "Missense and stop changes of the site's arginine in DepMap 24Q4 cancer cell lines; a taller tick means more lines (depmap_changes, depmap_change_lines)"
           after: tcga
-          from: {marks: true, columns: {label: depmap_changes, value: depmap_change_lines}, split: "; "}
+          from:
+            marks: true
+            columns: {label: depmap_changes, value: depmap_change_lines, ref: depmap_cell_lines}
+            split: "; "
+            # the names of the cell lines of each change, from the release's table of one row per cell line and change (at most
+            # 6 a change; the count says the rest); the hover lists them with their lineage, the pinned card links each to DepMap
+            names:
+              as: depmap_cell_lines
+              of: depmap_changes
+              role: depmap_changes
+              change: protein_change
+              id: model_id
+              lookup: {role: depmap_models, id: model_id, name: cell_line, group: lineage}
+              max: 6
+              title: Cell lines
+              link: "https://depmap.org/portal/cell_line/{id}"
           mark: tick
           labels: marks
           value: {one: "in {n} cell line", many: "in {n} cell lines", size: true}
@@ -3178,7 +3194,7 @@ website:                  # the look and words of the website (ptmc web); layout
             columns: {accession: uniprot_accession, position: position, label: "{studies}: {reasons}"}
             values:
               reasons: {below_threshold: "localization score below the study's threshold", several_residues: "the methyl group is on one of several residues",
-                        search_disagrees: "the study's confident spectra disagree on the residue", no_localising_evidence: "no spectrum or score localizes it",
+                        search_disagrees: "the study's confident spectra disagree on the residue", no_localising_evidence: "no spectrum or score localises it",
                         window_fits_several: "the study's window fits several arginines", several_sites: "the same sequence occurs at several sites",
                         other_protein: "the sequence names a site in another protein", not_in_reference: "the sequence is not in the reviewed protein"}
           mark: tick

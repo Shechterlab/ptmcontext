@@ -553,7 +553,7 @@ accession and position by default); `include`/`exclude` conditions as for marks;
 `class`, `label`, `value` and `ref` holding lists in step become one item per entry (lists of different lengths are an
 error); `values`, codes of a column in words (`{column: {code: words}}`); `sep` for a table that is not tab-separated.
 A table's `optional: true` gives no items where its table lacks a column the mapping names (a release that adds a score
-later). `at_least` and `at_most` keep rows by a number in a column (a cell that is not a number meets neither). A row's
+later). `keep_empty: true` keeps a row whose every mapped column is empty (a residue a context table lists without a state). `names` (with `marks: true`) names the entities of each change a marks list column holds, from another table: `as` (the column added to the marks table, mapped as the row's `ref`), `of` (the list column), `role`, `change`, `id` (the table of one row per entity and change), `lookup: {role, id, name, group}` (each id's name and group), `max` (default 6 kept for a change), and `title` and `link` (`{id}`) for the words and the page's link; the ref holds `id|name|group` entries separated by `||`, the hover lists the names with their group and the pinned card links each. `at_least` and `at_most` keep rows by a number in a column (a cell that is not a number meets neither). A row's
 `swap: <row id>` makes its label a link that turns it off and the named row on (a subset first, all one click away).
 A row's `link` is a page about its evidence for a pinned item with no link of its own: a URL with `{gene}`, `{label}` (the
 item's label) and `{position}`; a row the pipeline computes (a track, a motif found in the sequence) links to its Method

@@ -218,6 +218,7 @@ def map_row(entry: dict, after: str) -> dict:
         'after': after,
         'from': {
             'role': role(entry),
+            'keep_empty': True,  # a residue the table lists without a state is still a mark
             'columns': {
                 'accession': cols['accession'],
                 'position': cols['position'],

@@ -2917,8 +2917,10 @@
           (`<p class="src">${esc(tableWords('predicted'))}; models ` + `retrieved from AlphaFold DB.</p>`)
         : `<p class="muted">The tables of this explorer name no predicted complex with a ${esc(NOUN)} at the interface.</p>`;
     // AlphaFold DB answers 404 for a protein with no predicted complex, and the browser logs that as an error: it is asked
-    // at once only where the site's tables name a predicted partner (or it was asked before), else on the reader's request
-    const askNow = pv.length > 0 || !!cache.cx[base];
+    // at once only where the site's tables name a predicted partner and the section is open (or it was asked before), else
+    // when the section opens or on the reader's request
+    const shut = () => !box.isConnected || !!box.closest('details:not([open])');
+    const askNow = (pv.length > 0 && !shut()) || !!cache.cx[base];
     box.innerHTML =
       tableHtml +
       '<div id="s3d-afcx">' +
@@ -3000,6 +3002,20 @@
       });
     T.askAf = ask;
     if (askNow) ask();
+    else if (pv.length > 0 && box.isConnected) {
+      const d = box.closest('details');
+      d?.addEventListener(
+        'toggle',
+        () => {
+          const hold = document.getElementById('s3d-afcx');
+          if (d.open && hold && T.acc === acc && !cache.cx[base]) {
+            hold.innerHTML = '<p class="muted">Asking AlphaFold DB for predicted complexes…</p>';
+            ask();
+          }
+        },
+        { once: true }
+      );
+    }
   }
   // a predicted model: spec() resolves to {url, chain, names, label, method, scores, link, pae}; numbering is UniProt's
   function showModel(spec, focus) {

@@ -244,3 +244,43 @@ def test_a_colour_mode_from_an_analysis_names_an_analysis_the_site_has(tmp_path)
     assert not any("no analysis 'motif'" in x for x in S.website_problems(site))
     site['website']['protein']['map']['colour_by'][-1]['analysis'] = 'nothing'
     assert any("no analysis 'nothing'" in x for x in S.website_problems(site))
+
+
+def test_names_of_a_change_come_from_another_table(tmp_path):
+    """A row may name the entities each change lists (the cell lines of a change), read from a table with one row per
+    entity and change, with a lookup for their names; at most `max` are kept, sorted by name."""
+    marks = pd.DataFrame(
+        {'acc': ['P1', 'P1', 'P2'], 'pos': ['2', '5', '9'], 'changes': ['R2C; R2H', '', 'R9W'], 'n': ['3; 1', '', '1']}
+    )
+    (tmp_path / 'chg.tsv').write_text(
+        'acc\tchange\tmodel\nP1\tR2C\tM3\nP1\tR2C\tM1\nP1\tR2C\tM2\nP1\tR2H\tM2\nP2\tR9W\tM1\nP2\tR9X\tM9\n'
+    )
+    (tmp_path / 'models.tsv').write_text('model\tname\tgroup\nM1\tbeta\tLung\nM2\talpha\tOvary\nM3\tgamma\tSkin\n')
+    paths = {'chg': ('all_of', [tmp_path / 'chg.tsv']), 'models': ('all_of', [tmp_path / 'models.tsv'])}
+    cfg = {
+        'as': 'who',
+        'of': 'changes',
+        'role': 'chg',
+        'change': 'change',
+        'id': 'model',
+        'accession': 'acc',
+        'lookup': {'role': 'models', 'id': 'model', 'name': 'name', 'group': 'group'},
+        'max': 2,
+        'split': '; ',
+        'marks_accession': 'acc',
+    }
+    got = MR.with_names(marks, cfg, paths, lambda p: pd.read_csv(p, sep='\t', dtype=str, keep_default_na=False))
+    assert got['who'].tolist() == ['M2|alpha|Ovary||M1|beta|Lung; M2|alpha|Ovary', '', 'M1|beta|Lung']
+    f = {'marks': True, 'columns': {'label': 'changes', 'value': 'n', 'ref': 'who'}, 'split': '; '}
+    items = MR.read_items(f, got, {'id': 'cl'}, ('acc', 'pos'))
+    assert items['label'].tolist() == ['R2C', 'R2H', 'R9W']
+    assert items['ref'].tolist() == ['M2|alpha|Ovary||M1|beta|Lung', 'M2|alpha|Ovary', 'M1|beta|Lung']
+    assert items['value'].tolist() == [3, 1, 1]
+
+
+def test_a_row_with_every_mapped_column_empty_is_kept_on_request():
+    """A residue a context table lists without a state is still a mark: `keep_empty` keeps its item."""
+    t = pd.DataFrame({'acc': ['P1', 'P1'], 'pos': ['3', '7'], 'state': ['Rme1', '']})
+    f = {'columns': {'accession': 'acc', 'position': 'pos', 'label': 'state'}}
+    assert MR.read_items(f, t, {'id': 'x'})['start'].tolist() == [3]
+    assert MR.read_items({**f, 'keep_empty': True}, t, {'id': 'x'})['start'].tolist() == [3, 7]

@@ -650,7 +650,7 @@
     (siteRows[aid] ||= new Map(K.rowsFor(A[aid], 'enricher').map((r) => [r.category, r]))).get(s);
   const pick = (aid, s, name) =>
     `<button class="linkish" type="button" data-f="p:${esc(aid)}" data-v="${esc(s)}" title="Select ` +
-    `the ${esc(W.marks)} on proteins in it">${esc(name || labelOf(aid, s))}</button>`;
+    `the ${esc(W.marks)} on proteins in it">${esc(K.us(name || labelOf(aid, s)))}</button>`;
   const resText = (r) =>
     r ? `<span class="val ${r.dir}">${fxn(r.eff)}×</span> <span class="muted">q ${fq(r.q)}</span>` : '';
   // the protein's enriched terms grouped by the family that gathers them (website.protein.sets[].term_groups): the first family
@@ -686,7 +686,7 @@
               g
                 ? `<button class="linkish strong" type="button" ` +
                   `data-f="p:${esc(famAid[g])}" data-v="${esc(g)}" title="Select the ${esc(W.marks)} on the proteins of ` +
-                  `this family">${esc(g)}</button>`
+                  `this family">${esc(K.us(g))}</button>`
                 : '<span class="strong">Other / unassigned</span>'
             } ` +
             (`<span class="muted">${int(groups.get(g).length)} ${
