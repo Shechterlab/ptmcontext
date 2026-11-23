@@ -101,7 +101,7 @@ def test_list_page_rows_equal_the_python_reference(tmp_path):
     h = out['html']
     assert 'A new test, not in the release statistics' in h and 'chosen, not drawn at random' in h
     assert (
-        'Not found' in h
+        'Left out of the list' in h
         and 'FOOBAR' in h
         and 'p (one-sided hypergeometric)' in h
         and f'q (Benjamini–Hochberg, {len(ref)} sets)' in h
