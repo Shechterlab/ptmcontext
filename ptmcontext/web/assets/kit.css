@@ -429,6 +429,11 @@ select {
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.92);
 }
+.lede-scope {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.82);
+}
 .lede-cite,
 .lede-note {
   font-size: 0.8rem;

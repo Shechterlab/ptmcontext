@@ -59,6 +59,7 @@ CSS = """
 .land-intro p { margin: 0; }
 .land-refs { max-width: 46rem; list-style: none; margin: 0; padding: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.2rem 1.4rem; font-size: 0.9rem; color: var(--ink-2); }
 .land-refs .muted { color: var(--muted); }
+.land-license { max-width: 46rem; margin: 0; padding: 0.5rem 0 1rem; font-size: 0.9rem; color: var(--ink-2); }
 .land-intro p:first-child { color: var(--ink); font-size: 1.15rem; }
 .sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(26rem, 100%), 1fr)); gap: 1.25rem; padding: 1rem 0 1.5rem; list-style: none; margin: 0; }
 .sites > li { display: flex; }
@@ -277,6 +278,7 @@ def page(
     )
     note = (cfg.get('footer') or {}).get('note')
     refs = ''.join(_ref(x) for x in cfg.get('references') or [])
+    licence = f'<p class="land-license">{html.escape(cfg["license"])}</p>' if cfg.get('license') else ''
     wn = cfg.get('whats_new') or {}
     new = (
         f'<section class="land-new"><h2>{html.escape(wn.get("title") or "What’s new")}</h2><ul>'
@@ -328,6 +330,7 @@ def page(
 <main class="wrap" id="sites">
 {f'<section class="land-intro" aria-label="About">{intro}</section>' if intro else ''}
 {f'<ul class="land-refs" aria-label="Paper and data">{refs}</ul>' if refs else ''}
+{licence}
 {new}
 {SEARCH_HTML if search else ''}
 <h2 class="vh">The explorers</h2>

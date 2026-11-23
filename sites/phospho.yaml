@@ -1470,6 +1470,7 @@ website:                  # the look and words of the website (ptmc web); layout
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Phosphorylation Site Explorer
   tagline: "Human protein phosphorylation sites from public databases."
+  scope: "Holds sites, and the cancer and germline changes at them. It does not hold phosphorylation levels in tumors."
   # published at /ptmcontext/phospho/; listed on the landing page and in the sites' header menu
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
@@ -1740,6 +1741,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Databases, attributes: [sources, iptmnet_sources]}
   dataset: {label: Data release, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
   methods_note: "Sequences use UniProt 2026_03 and the other modifications UniProt 2026_04. The other modifications come from a later release, with their positions placed on the 2026_03 sequences that the tests use, so that the sites keep the positions they were analyzed at."
+  license: "Data: CC BY-NC-SA 4.0 (non-commercial, share-alike); UniProt data CC BY 4.0."
   download_terms: "The release's tables are under CC BY-NC-SA 4.0 (iPTMnet 6.2; UniProt data are CC BY 4.0). The phosphosites and functional scores of Ochoa et al., Nat Biotechnol 38:365 (2020), doi:10.1038/s41587-019-0344-3 (rows whose databases name Ochoa 2020) come from an article that is not open access, and its supplementary table has no license: they are included and cited, and the CC BY-NC-SA 4.0 gives no rights in them beyond what the authors allow. Cite the paper, the archive and the databases that report the sites you use (How to cite)."
   whats_new:               # what v1.7.0 added (the Help page)
     title: What’s new in v1.7.0

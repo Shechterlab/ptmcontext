@@ -1629,7 +1629,7 @@ The plan's outputs, written to `$GITHUB_OUTPUT` by `python tools/ci_plan.py --gi
 ## The landing page
 
 `ptmc pages` writes one card per built site (ptmcontext/web/landing.py), each a single link into its site. From the site file:
-`website.name`, `band`, `accent`, `accent_dark` (the card's colors), `art` (its header picture), `logo` (an SVG file: the mark beside the card's title, and the site's header mark and, unless `favicon` is set, its favicon; `icon` is its older name), `favicon` (an SVG file: a bolder drawing of the mark for the tab icon, which must read at 16 to 32 px), `landing.tagline` (the hook),
+`website.scope` (one line under the tagline: what the explorer holds and what it does not), `website.license` (one line: the data's license, shown at the top of the Download section; `download_terms` gives the detail), `website.name`, `band`, `accent`, `accent_dark` (the card's colors), `art` (its header picture), `logo` (an SVG file: the mark beside the card's title, and the site's header mark and, unless `favicon` is set, its favicon; `icon` is its older name), `favicon` (an SVG file: a bolder drawing of the mark for the tab icon, which must read at 16 to 32 px), `landing.tagline` (the hook),
 `landing.question` (what a reader can ask; shown on the card only when the landing config's `card.question` is true), `landing.cta` (the button; else the config's `cta`, `{marks}` being the profile's
 plural word), `website.stats` (a list attribute adds a third number: how many studies or databases). From the site's build
 (`run.json`, `web/glance.json`): the marks and proteins counted and the strongest finding (the card shows it only when the landing config's `card.result` is true); a build without them gives a
@@ -1640,7 +1640,7 @@ abundance deciles apply) unless `website.landing.findings` names one. A site who
 The page's own words are a landing config (`ptmc pages --landing FILE`, else `landing.yml` beside the first site file):
 `title` (also the small brand line, a link to this page, above each explorer's name in its header: written to `sites.json` as `brand`; the sticky bar keeps its "All sites" link), `description`, `lede`, `card: {result, question}` (the card's "Strongest result" block and italic question line; both default false), `logo` (an SVG file for the page's header and favicon, `favicon` a bolder one for the tab icon alone, with `logo_dots: cards`, the SVG's `<g id="dots">` is refilled with one dot per listed card in its band color, in the cards' order), `switcher: {label}` (the word of the sites' header and sticky-bar switcher, "PTM"; else a site file's `website.switcher.label`; written to `sites.json`), `intro` (paragraphs), `cta`, `order` (card ids), `groups` (`[{id, title, note, compact}]`:
 rows of cards, a card going in the group named by its site's `landing.group`, else the first; a `compact` row has smaller cards,
-e.g. other organisms), `footer: {links: [{label, url}], note}`, `references` (lines under the intro: `{label, doi, all_versions?}` links doi.org, `{label, text, url?}` is text),
+e.g. other organisms), `footer: {links: [{label, url}], note}`, `license` (one line under the references: the data's license), `references` (lines under the intro: `{label, doi, all_versions?}` links doi.org, `{label, text, url?}` is text),
 and `soon`: cards without a link for sites not built yet (`id`, `name`, `tagline`, `question`, `band`, `accent`,
 `accent_dark`, `art`, `badge`, `cta`). Replace a `soon` entry by the site's file in the command when it is built.
 

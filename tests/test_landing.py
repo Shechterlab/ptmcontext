@@ -32,6 +32,7 @@ CFG = {
         }
     ],
     'footer': {'links': [{'label': 'Cite it', 'url': 'https://example.org/cite'}], 'note': 'A footer note.'},
+    'license': 'Data: toy license (non-commercial).',
 }
 
 
@@ -53,6 +54,9 @@ def test_the_landing_page_is_made_of_the_site_file_and_the_landing_config(tmp_pa
     land = web.pages([a], tmp_path / 'site', out_root=root, log=lambda *_: None, landing_config=cfg).read_text()
     assert '<title>Toy hub</title>' in land and 'Many toys.' in land and 'Tested within each protein.' in land
     assert 'href="https://example.org/cite">Cite it' in land and 'A footer note.' in land
+    assert (
+        '<p class="land-license">Data: toy license (non-commercial).</p>' in land
+    )  # the license line, from the config
     # the live card: name, hook, numbers, the site's band, the button from the config's format; no question line and
     # no strongest result unless the config's `card` switches them on
     assert 'Toy toya' in land and 'Toy tagline.' in land
@@ -275,3 +279,18 @@ def test_the_whole_card_is_the_link_target():
     css = LP.CSS
     assert '.land-card .band { position: relative' not in css
     assert ".land-card h2 a::after { content: ''; position: absolute; inset: 0;" in css
+
+
+def test_the_scope_and_license_lines_come_from_the_site_file(tmp_path):
+    root, a = _toy(tmp_path, 'toyb')
+    spec = yaml.safe_load(a.read_text())
+    spec['website']['scope'] = 'Holds toy sites. It does not hold toy levels.'
+    spec['website']['license'] = 'Data: toy license.'
+    a.write_text(yaml.safe_dump(spec, sort_keys=False, allow_unicode=True))
+    S.run(a, root=root / 'data', log=lambda *_: None)
+    web.build(a, log=lambda *_: None)
+    page = next((root / 'out').rglob('index.html')).read_text()
+    assert '<p class="lede-scope">Holds toy sites. It does not hold toy levels.</p>' in page
+    assert '"license":"Data: toy license."' in page.replace('": "', '":"')
+    kit = (Path(web.__file__).parent / 'assets' / 'kit.js').read_text()
+    assert 'class="dl-license"' in kit and 'D.license' in kit

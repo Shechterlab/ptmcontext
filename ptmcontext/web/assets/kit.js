@@ -2998,6 +2998,7 @@
         ? `<p>This explorer analyzes ${int(D.run.marks.counted)} ${esc(W.marks)}; the release table holds ` +
           `${int(D.run.marks.rows)} rows. Sites known only by similarity, or not on the UniProt snapshot, are left out.</p>`
         : '') +
+      (D.license ? `<p class="dl-license"><b>License.</b> ${esc(D.license)}</p>` : '') +
       (D.download_terms ? `<p>${esc(D.download_terms)}</p>` : '') +
       (`<div class="tbl-card"><table class="tbl"><thead><tr><th>File</th><th>Format</th><th>What it holds</th></tr>` +
         `</thead><tbody>`) +

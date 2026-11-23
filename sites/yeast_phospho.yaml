@@ -61,6 +61,7 @@ citation: sites/yeast_phospho.citation.cff
 website:
   name: Yeast Phosphorylation Site Explorer
   tagline: "Budding yeast phosphosites from UniProt."
+  scope: "Holds sites from UniProt. It does not hold cancer or germline changes, or phosphorylation levels."
   landing:
     tagline: "Budding yeast phosphosites from UniProt."
     question: "Where are yeast phosphosites in their proteins, and which protein classes have them?"

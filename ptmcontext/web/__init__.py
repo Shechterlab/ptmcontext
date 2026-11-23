@@ -696,6 +696,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'downloads': web.get('downloads') or [],
         'whats_new': web.get('whats_new') or None,
         'download_terms': web.get('download_terms', ''),
+        'license': web.get('license', ''),
         'methods_note': web.get('methods_note', ''),
         # the maps of the cell as one question (kit-cell.js) and the parts of the kit's drawings; protein-set questions
         # drawn with their proteins' numbers (kit-values.js)
@@ -2015,6 +2016,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         for key, value in {
             '{{NAME}}': html.escape(web['name']),
             '{{TAGLINE}}': html.escape(web.get('tagline', '')),
+            '{{SCOPE}}': f'<p class="lede-scope">{html.escape(web["scope"])}</p>' if web.get('scope') else '',
             '{{LOGO_HREF}}': icon_href,
             '{{FAVICON_HREF}}': favicon_href,
             '{{THEME}}': theme,

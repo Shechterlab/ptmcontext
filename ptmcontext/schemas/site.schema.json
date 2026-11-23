@@ -5681,6 +5681,14 @@
           "type": "string",
           "description": "the terms the downloads come under (licenses, attribution), shown above the list"
         },
+        "license": {
+          "type": "string",
+          "description": "one short line naming the license of the data (shown at the top of the Download section), for example 'Data: CC BY-NC-SA 4.0 (non-commercial, share-alike)'; download_terms gives the detail"
+        },
+        "scope": {
+          "type": "string",
+          "description": "one short line near the top of the page saying what the explorer holds and what it does not"
+        },
         "methods_note": {
           "type": "string",
           "description": "one sentence for the Methods page's Data section (which releases of a source the sequences and the context marks use, and why)"
