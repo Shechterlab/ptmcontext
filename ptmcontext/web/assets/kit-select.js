@@ -979,6 +979,20 @@
   const isLoading = () => active() && !SD && !loadFailed;
   const nMarks = () => (active() ? (compute().marks || []).length : D.counts.marks);
   const nProteins = () => (active() ? (compute().proteins || new Set()).size : D.counts.proteins);
+  // a mark's classes in a question (the codes of SD.classes[aid]), by accession and UniProt position: null until the marks are in,
+  // or when the site has no such mark or question
+  let markAt = null;
+  const classAt = (aid, acc, pos) => {
+    if (!SD) return null;
+    const ai = AN().indexOf(aid);
+    if (ai < 0) return null;
+    if (!markAt) {
+      markAt = new Map();
+      SD.marks.forEach((m) => markAt.set(m[0] + ':' + m[1], m));
+    }
+    const m = markAt.get(byAcc[acc]?.i + ':' + pos);
+    return m ? m[2][ai].map((c) => SD.classes[aid][c]) : null;
+  };
   const protSelected = (acc) => !active() || (compute().proteins && compute().proteins.has(byAcc[acc]?.i));
   // per protein, the positions of its selected marks
   function selectedPositions(acc) {
@@ -1879,6 +1893,7 @@
       loadingText: () => `Loading ${D.counts.marks.toLocaleString('en-US')} ${W.marks}…`,
       proteinIds: () => (active() ? compute().proteins || new Set() : new Set()),
       protSelected,
+      classAt,
       selectedPositions,
       selectedCountByProtein,
       encode,

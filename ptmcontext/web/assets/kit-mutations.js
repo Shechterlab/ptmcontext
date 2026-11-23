@@ -146,6 +146,13 @@
   }
   const siteName = (acc, pos, res) =>
     `${byAcc[acc]?.[1] || acc} ${res || ''}${K.prot?.shownPos ? K.prot.shownPos(acc, pos) : pos}`.replace(/\s+/g, ' ');
+  // a protein the page numbers without its initiator methionine (or as papers do) keeps the page's numbering in a site's name and
+  // shows the UniProt position beside it, so the name can be matched to UniProt, ClinVar and the release tables
+  const uniNote = (acc, pos, res) => {
+    const sp = K.prot?.shownPos ? K.prot.shownPos(acc, pos) : pos;
+    return String(sp) !== String(pos) ? ` (UniProt ${res || ''}${pos})` : '';
+  };
+  const siteNameU = (acc, pos, res) => siteName(acc, pos, res) + uniNote(acc, pos, res);
   const gname = (g) => g || '(no lineage)';
 
   // ---- the waterfall's numbers ------------------------------------------------------------------------------------------------
@@ -532,7 +539,7 @@
   function rowTip(m, r, i) {
     const unit = m.germ ? ['variant', 'variants'] : [m.s.unit?.[0] || 'sample', m.s.unit?.[1] || 'samples'],
       what = m.germ ? 'variants' : 'with a change';
-    const L = [`${siteName(r.acc, r.pos, r.res)} · rank ${int(i + 1)} of ${int(m.n)}`];
+    const L = [`${siteNameU(r.acc, r.pos, r.res)} · rank ${int(i + 1)} of ${int(m.n)}`];
     L.push(
       r.k === 0
         ? `no ${m.germ ? 'variant' : 'change'}${r.e != null ? `, expected ${K.prop.fe(r.e)}` : ''}`
@@ -949,7 +956,7 @@
   const chosenName = (key) => {
     const [acc, pos] = key.split(':'),
       sq = seqOf(acc);
-    return siteName(acc, +pos, sq ? sq[pos - 1] : '');
+    return siteNameU(acc, +pos, sq ? sq[pos - 1] : '');
   };
   const fpv = (v) => (v == null ? '–' : K.prop.fq(v));
   // the rows of the table: per chosen site and source, k, expected, O/E, the raw p of each tail and the Holm p
@@ -1059,6 +1066,8 @@
       pool,
       nTested: rows.filter(tested).length,
       nNoRow: rows.filter((r) => !r.v).length,
+      nNoTest: rows.filter((r) => r.v && !tested(r)).length,
+      nNoSeq: rows.filter((r) => r.v && !tested(r) && r.v.u).length,
       hot: hot.size,
     };
   }
@@ -1127,6 +1136,49 @@
     return parts.join(' ');
   }
   const listSiteName = (r) => `${geneOf(r.acc)} ${r.res || ''}${shownPos(r.acc, r.pos)}`.replace(/\s+/g, ' ');
+  const listSiteNameU = (r) => listSiteName(r) + uniNote(r.acc, r.pos, r.res);
+  // one plain sentence per source with a test, above the tables: how many tested sites changed more than expected (q across the
+  // list below 0.05), of how many were tested, and why the others were not tested
+  function listVerdict(res) {
+    const total = LT.parsed?.sites.length || 0;
+    const says = res
+      .filter((x) => !x.s.descriptive)
+      .map((x) => {
+        const n = x.rows.filter((r) => r.v && r.v.p != null && r.qm != null && r.qm < RING_Q).length,
+          fewer = x.s.lower_tail
+            ? x.rows.filter((r) => r.v && r.v.pl != null && r.qf != null && r.qf < RING_Q).length
+            : null;
+        return (
+          `${int(n)} of ${int(x.nTested)} tested ${x.nTested === 1 ? 'site' : 'sites'} ${
+            x.s.kind === 'germline' ? 'had more variants than expected' : 'changed more than expected'
+          } in ${esc(x.s.label)}` +
+          (fewer != null ? `, and ${int(fewer)} had fewer than expected` : '') +
+          ` (q &lt; 0.05)`
+        );
+      });
+    if (!says.length) return '';
+    // why a listed site is not tested, from the release's own rules: no row (a residue is listed only when it is a known site or
+    // has a change), or a row with no p (n = 0: the protein has no change at its residues of the type in the source; or no coding
+    // sequence matches UniProt)
+    const why = res
+      .filter((x) => !x.s.descriptive && x.nNoRow + x.nNoTest)
+      .map((x) => {
+        const parts = [
+          x.nNoRow
+            ? `${int(x.nNoRow)} with no row in the release (it lists a residue only when it is a known site or has a change)`
+            : '',
+          x.nNoTest > x.nNoSeq
+            ? `${int(x.nNoTest - x.nNoSeq)} on a protein with no change at its residues of this type in ${esc(x.s.label)}, which the release leaves without a p`
+            : '',
+          x.nNoSeq ? `${int(x.nNoSeq)} on a protein with no coding sequence that matches UniProt` : '',
+        ].filter(Boolean);
+        return `${esc(x.s.label)}: ${int(x.nTested)} of ${int(total)} tested; ${parts.join('; ')}`;
+      });
+    return (
+      `<p class="mu-verdict"><b>${says.join('; ')}.</b></p>` +
+      (why.length ? `<p class="small muted">Sites not tested are left out of these counts. ${why.join('. ')}.</p>` : '')
+    );
+  }
   function listBody() {
     if (!M.listText) return '';
     ensureList();
@@ -1169,8 +1221,8 @@
     const body = shown
       .map((r) =>
         !r.v
-          ? `<tr class="mu-faint"><td>${esc(listSiteName(r))}</td><td colspan="${lower ? 7 : 5}" class="muted">no row in the release</td></tr>`
-          : `<tr class="mu-go" data-mu-go="${esc(r.acc)}:${r.pos}"><td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(listSiteName(r))}</a>${r.v.hot ? `<br><span class="small muted">${esc(K.prop.hotNote(r.acc, r.v.hot, cur.s.id))}</span>` : ''}</td>` +
+          ? `<tr class="mu-faint"><td>${esc(listSiteNameU(r))}</td><td colspan="${lower ? 7 : 5}" class="muted">no row in the release</td></tr>`
+          : `<tr class="mu-go" data-mu-go="${esc(r.acc)}:${r.pos}"><td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(listSiteNameU(r))}</a>${r.v.hot ? `<br><span class="small muted">${esc(K.prop.hotNote(r.acc, r.v.hot, cur.s.id))}</span>` : ''}</td>` +
             `<td class="num">${int(r.v.k ?? 0)}</td><td class="num">${K.prop.fe(r.v.e)}</td><td class="num">${K.prop.fo(r.v.o)}</td>` +
             (cur.s.descriptive
               ? `<td colspan="2" class="muted">descriptive: no test</td>`
@@ -1182,6 +1234,7 @@
     const qTip = 'Benjamini–Hochberg across the sites of your list, not across the release';
     return (
       `<section class="mu-listres"><div class="mu-top"><h4>Your list against expectation</h4>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mulist', 'sites of a pasted list', 'propensity')}</div>` +
+      listVerdict(res) +
       `<p class="small muted">${hyper() ? 'With' : 'Without'} hypermutated samples. Per source, the changes (k) at the listed sites against the expected count, summed over their proteins: the release's site-set test, with your sites in place of a site set (both tails). p is the ${esc(LIST_TEST)}. ClinVar is descriptive.</p>` +
       `<div class="tbl-wrap"><table class="tbl mu-lt"><thead><tr><th>Source</th><th class="num">Sites tested</th><th class="num" title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th class="num">Expected</th><th class="num">O/E</th><th class="num">p (more)</th><th class="num">p (fewer)</th></tr></thead><tbody>${pool}</tbody></table></div>` +
       (flagged
@@ -1224,7 +1277,7 @@
         'Sites of a pasted list',
         `k, expected and O/E from the release's propensity tables; p = the release's raw binomial p (more: upper tail; fewer: lower tail, gnomAD); q across your list = Benjamini-Hochberg across the listed sites of a source, not across the release; ${hyper() ? 'with' : 'without'} hypermutated samples; whole list per source (${LIST_TEST}): ${pools}`
       ) +
-      'site\tgene\taccession\tposition\tsource\tk\texpected\toe\tp_more\tq_across_list_more\tp_fewer\tq_across_list_fewer\tprotein_flag\n' +
+      'site\tgene\taccession\tuniprot_position\tsource\tchanges_k\texpected\tobserved_over_expected\tp_more\tq_across_list_more\tp_fewer\tq_across_list_fewer\thotspot_note\tdisordered\tdisorder_class\n' +
       res
         .flatMap((x) =>
           x.rows
@@ -1244,6 +1297,8 @@
                 x.s.descriptive || !x.s.lower_tail ? '' : fx(r.v.pl),
                 fx(r.qf),
                 r.v.hot ? K.prop.hotNote(r.acc, r.v.hot, x.s.id) : '',
+                disYes(r.acc, r.pos),
+                disCls(r.acc, r.pos),
               ].join('\t')
             )
         )
@@ -1486,7 +1541,7 @@
         .slice(0, ZERO_SHOWN)
         .map(
           (r) =>
-            `<tr><td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteName(r.acc, r.pos, r.res))}</a></td><td>${K.prop.fe(r.e)}</td>${hasP ? `<td>${fpv(r.p)}</td>` : ''}</tr>`
+            `<tr><td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteNameU(r.acc, r.pos, r.res))}</a></td><td>${K.prop.fe(r.e)}</td>${hasP ? `<td>${fpv(r.p)}</td>` : ''}</tr>`
         )
         .join('') +
       `</tbody></table></div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muzero', 'sites with no change', 'propensity')}</div>` +
@@ -1525,6 +1580,18 @@
   const RANK_N = 20,
     RANK_MORE = 100; // what Show all opens: every site with q < 0.05, or at least this many sites
   const geneOf = (acc) => byAcc[acc]?.[1] || acc;
+  // whether a site lies in a disordered region, from the site's disorder question (the first of layer disorder that is not a
+  // subset): the release's class of the site, and yes only for inside a disordered region; empty where the question or the marks
+  // are not there. Two export columns: disordered (yes/no), disorder_class.
+  const DISQ = Object.values(K.A).find((a) => a.layer === 'disorder' && a.kind === 'residue' && !a.control_of);
+  const disCls = (acc, pos) => {
+    const c = DISQ && K.sel.classAt?.(DISQ.id, acc, pos);
+    return c && c.length ? c[0] : '';
+  };
+  const disYes = (acc, pos) => {
+    const c = disCls(acc, pos);
+    return c ? (c === 'disordered' ? 'yes' : 'no') : '';
+  };
   const shownPos = (acc, pos) => (K.prot?.shownPos ? K.prot.shownPos(acc, pos) : pos);
   const siteOnly = (r) => `${r.res || ''}${shownPos(r.acc, r.pos)}`;
   const goTo = (acc, pos) => (location.hash = K.link('protein', `${acc}/${pos}`).replace(/^[^#]*#/, ''));
@@ -1578,7 +1645,9 @@
         const note = r.hot ? `<br><span class="small muted">${esc(K.prop.hotNote(r.acc, r.hot, s.id))}</span>` : '';
         return (
           `<tr class="mu-go${r.qq < RING_Q ? '' : ' mu-faint'}" data-mu-go="${esc(r.acc)}:${r.pos}"><td>${esc(geneOf(r.acc))}${note}</td>` +
-          `<td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteOnly(r))}</a></td>` +
+          `<td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteOnly(r))}</a>${
+            uniNote(r.acc, r.pos, r.res) ? `<span class="muted small">${esc(uniNote(r.acc, r.pos, r.res))}</span>` : ''
+          }</td>` +
           `<td class="num">${int(r.k)}</td><td class="num">${K.prop.fe(r.e)}</td><td class="num">${K.prop.fo(r.o)}</td><td class="num">${fpv(r.qq)}</td></tr>`
         );
       })
@@ -1603,7 +1672,7 @@
         rankTitle(l.s),
         `${l.s.long || l.s.label}; every site with a test, sorted by p (q < 0.05 for ${l.sig} of ${l.rows.length}; the page shows the top 20) (${g ? 'fewer' : 'more'}); ${K.sel.describe() || 'every ' + W.mark}${g ? '' : `; ${hyper() ? 'with' : 'without'} hypermutated samples`}`
       ) +
-      `rank\tgene\taccession\tsite\tk\texpected\toe\tp_${g ? 'fewer' : 'more'}\tq_${g ? 'fewer' : 'more'}\tq_below_0.05\tprotein_flag\n` +
+      `rank\tgene\taccession\tsite\tuniprot_position\t${l.s.kind === 'germline' ? 'variants_k' : 'changes_k'}\texpected\tobserved_over_expected\tp_${g ? 'fewer' : 'more'}\tq_${g ? 'fewer' : 'more'}\tq_below_0.05\thotspot_note\tdisordered\tdisorder_class\n` +
       l.rows
         .map((r, i) =>
           [
@@ -1611,6 +1680,7 @@
             geneOf(r.acc),
             r.acc,
             siteOnly(r),
+            r.pos,
             r.k,
             r.e ?? '',
             r.o ?? '',
@@ -1618,6 +1688,8 @@
             r.qq,
             r.qq < RING_Q ? 'yes' : 'no',
             r.hot ? K.prop.hotNote(r.acc, r.hot, l.s.id) : '',
+            disYes(r.acc, r.pos),
+            disCls(r.acc, r.pos),
           ].join('\t')
         )
         .join('\n') +
@@ -1707,7 +1779,8 @@
     };
   }
   const cvLink = (id) => `https://www.ncbi.nlm.nih.gov/clinvar/variation/${id}/`;
-  const varName = (r, v) => `${r.res || ''}${shownPos(r.acc, r.pos)}${v[2]}`;
+  // ClinVar's own protein change, as ClinVar writes it (the UniProt position of the release table, never the page's numbering)
+  const varName = (r, v) => `${r.res || ''}${r.pos}${v[2]}`;
   // a variant's conditions that put it in the family
   // all of a variant's condition names (ClinVar's own), the ones that put it in the family first
   const famConds = (g, f, v) => {
@@ -1720,7 +1793,7 @@
   const cellTip = (g, r, f) => {
     const a = r.cells.get(f);
     return (
-      `${siteName(r.acc, r.pos, r.res)} · ${famName(g.cv.fam[f])}: ${a.length} ${a.length === 1 ? 'variant' : 'variants'}\n` +
+      `${siteNameU(r.acc, r.pos, r.res)} · ${famName(g.cv.fam[f])}: ${a.length} ${a.length === 1 ? 'variant' : 'variants'}\n` +
       a
         .slice(0, 6)
         .map((v) => `${varName(r, v)} · ${starWord(v[1])} · ${famConds(g, f, v).join('; ')}`.slice(0, 160))
@@ -1735,7 +1808,7 @@
     const a = r?.cells.get(f);
     if (!a) return '';
     return (
-      `<div class="mu-cvd"><h4>${esc(siteName(r.acc, r.pos, r.res))} · ${esc(famName(g.cv.fam[f]))}</h4><ul>` +
+      `<div class="mu-cvd"><h4>${esc(siteNameU(r.acc, r.pos, r.res))} · ${esc(famName(g.cv.fam[f]))}</h4><ul>` +
       a
         .map(
           (v) =>
@@ -1774,7 +1847,9 @@
     const tr = shown
       .map(
         (r) =>
-          `<tr><th class="mu-site" scope="row"><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteName(r.acc, r.pos, r.res))}</a></th><td class="num mu-all">${int(r.vs.length)}</td>` +
+          `<tr><th class="mu-site" scope="row"><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteName(r.acc, r.pos, r.res))}</a>${
+            uniNote(r.acc, r.pos, r.res) ? `<span class="muted small">${esc(uniNote(r.acc, r.pos, r.res))}</span>` : ''
+          }</th><td class="num mu-all">${int(r.vs.length)}</td>` +
           g.cols
             .map((f) => {
               const a = r.cells.get(f);
@@ -1837,7 +1912,7 @@
   const cvNote = () =>
     `ClinVar pathogenic and likely pathogenic variants (clinsig_simple 1) at the ${W.marks} of the selection, by disease family; ${
       M.stars ? `${M.stars}+ review stars; ` : ''
-    }a variant counts once in each of its families. The families are the release's rules applied to each condition name. ClinVar reflects clinical testing, so these counts are not tested.`;
+    }a variant counts once in each of its families. The families are the release's rules applied to each condition name. A variant is named as ClinVar writes it (the protein change at the UniProt position, with the initiator methionine counted), so on a protein the page numbers without that methionine the site name carries the UniProt position too. ClinVar reflects clinical testing, so these counts are not tested.`;
   function clinvarFigure() {
     const g = clinvarModel(),
       f = clinvarSvg(g, LIGHT, 720);
@@ -1857,7 +1932,7 @@
         'Inherited disease: ClinVar pathogenic and likely pathogenic variants by disease family',
         `${K.sel.describe() || 'every ' + W.mark}; ${M.stars ? `${M.stars}+ review stars` : 'any review status'}; a variant is listed once for each family; conditions are ClinVar's, families the release's rules`
       ) +
-      'site\taccession\tposition\tdisease_family\tvariation_id\tvariant\treview_stars\tconditions\n' +
+      'site\taccession\tuniprot_position\tdisease_family\tvariation_id\tclinvar_protein_change\treview_stars\tconditions\tdisordered\tdisorder_class\n' +
       g.rows
         .flatMap((r) =>
           g.cols.flatMap((f) =>
@@ -1871,6 +1946,8 @@
                 varName(r, v),
                 v[1],
                 v[3].map((c) => g.cv.cond[c][0]).join('; '),
+                disYes(r.acc, r.pos),
+                disCls(r.acc, r.pos),
               ].join('\t')
             )
           )
