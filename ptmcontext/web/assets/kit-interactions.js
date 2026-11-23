@@ -1555,7 +1555,7 @@
             .map(
               ([g, rs]) =>
                 rollHead(g, groupsOf) +
-                `<details class="ix-fold"${groupsOf.length <= 4 ? ' open' : ''}><summary><b>${esc(
+                `<details class="ix-fold" id="ixf-${esc(bkey(pg, sec, bi))}-${esc(String(g).replace(/[^\w]+/g, '-'))}"${groupsOf.length <= 4 ? ' open' : ''}><summary><b>${esc(
                   (colMeta(t, b.group_by).values || {})[g] ?? (g || 'none')
                 )}</b> <span ` +
                 `class="muted">${int(rs.length)} row${rs.length === 1 ? '' : 's'}${

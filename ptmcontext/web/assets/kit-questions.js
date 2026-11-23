@@ -682,7 +682,7 @@
       order
         .map(
           (g) =>
-            `<details class="dis-group"><summary>${
+            `<details class="dis-group" id="dg-${esc(aid)}-${g ? esc(String(g).replace(/[^\w]+/g, '-')) : 'other'}"><summary>${
               g
                 ? `<button class="linkish strong" type="button" ` +
                   `data-f="p:${esc(famAid[g])}" data-v="${esc(g)}" title="Select the ${esc(W.marks)} on the proteins of ` +

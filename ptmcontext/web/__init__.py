@@ -83,6 +83,7 @@ MODULES = (
     'kit-tablefit.js',
     'kit-sitecard.js',
     'kit-few.js',
+    'kit-openlink.js',
     'kit-propensity.js',
     'kit-pagepdf.js',
     'kit-proteins.js',
