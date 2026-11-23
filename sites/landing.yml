@@ -2,6 +2,7 @@
 # the cards of sites not built yet. Each built site's card comes from its site file (website.name, band, accent, art,
 # landing.tagline / question / cta, stats) and its build (the numbers, the strongest result). CONTRACTS.md, "The landing page".
 title: PTMcontext
+url: https://shechterlab.github.io/ptmcontext/   # where the published folder lives: link previews need absolute image addresses
 lede: Analysis tools for protein post-translational modifications
 description: "PTMcontext: analysis tools for protein post-translational modifications."
 logo: sites/art/ptmcontext_logo.svg
@@ -28,7 +29,7 @@ references:                # lines under the intro: a label with a DOI (and all 
 whats_new:             # a short list of what a release added: the landing page and each site's Help show it
   title: What’s new in v1.7.0
   items:
-    - "Mutation propensity: O/E and q for every candidate residue in TCGA, DepMap, ClinVar and gnomAD, from the release."
+    - "Mutation propensity: O/E and q for every candidate residue in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar, from the release."
     - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the old flag for counts at least 3 times the protein's average."
     - "A Mutation frequency page: a waterfall of site frequencies (TCGA, DepMap, gnomAD) and an oncoprint of the top sites in TCGA tumors."
     - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default; one switch puts them back."

@@ -269,28 +269,24 @@
     }
     const gs = [...groups.values()].filter((g) => g.ids.length);
     if (!gs.length) return '';
-    return (
-      `<div class="contacts">${gs
-        .slice(0, max)
-        .map(
-          (g) =>
-            `<span><b class="t-${esc(g.tone)}">${esc(g.name)}</b> ${g.ids
-              .slice(0, 3)
+    // a partner and its first structures; the rest of its structures, and the partners past `max`, open in place
+    const one = (g) =>
+      `<span><b class="t-${esc(g.tone)}">${esc(g.name)}</b> ${g.ids
+        .slice(0, 3)
+        .map((id) => entryBtn(id, c))
+        .join(', ')}${
+        g.ids.length > 3
+          ? ` <details class="sp-more"><summary>+${g.ids.length - 3}</summary>${g.ids
+              .slice(3)
               .map((id) => entryBtn(id, c))
-              .join(', ')}${
-              g.ids.length > 3
-                ? ` <span class="muted" ` +
-                  `title="${esc(
-                    g.ids
-                      .slice(3)
-                      .map((x) => x.toUpperCase())
-                      .join(', ')
-                  )}">+${g.ids.length - 3}</span>`
-                : ''
-            }</span>`
-        )
-        .join('')}` +
-      (gs.length > max ? `<span class="muted">+${gs.length - max} more</span>` : '') +
+              .join(', ')}</details>`
+          : ''
+      }</span>`;
+    return (
+      `<div class="contacts">${gs.slice(0, max).map(one).join('')}` +
+      (gs.length > max
+        ? `<details class="sp-more"><summary>+${gs.length - max} more</summary><div class="contacts">${gs.slice(max).map(one).join('')}</div></details>`
+        : '') +
       '</div>'
     );
   }

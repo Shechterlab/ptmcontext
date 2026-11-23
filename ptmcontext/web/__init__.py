@@ -2399,5 +2399,40 @@ def pages(
         search=bool(found),
     )
     (out / 'index.html').write_text(text)
+    _link_previews(out, cards, cfg)
     log(f'  -> {out / "index.html"}')
     return out / 'index.html'
+
+
+def _link_previews(out: Path, cards: list, cfg: dict) -> None:
+    """The card a shared link gets (preview.py): an image per listed site and one for the landing page, from the landing
+    cards' own numbers, and the Open Graph tags in each page's head. The landing config's `url` (where the folder is
+    published) makes the image addresses absolute, as the services that draw the cards need."""
+    from . import preview as PV
+
+    base = (cfg.get('url') or '').rstrip('/')
+    brand = cfg.get('title') or 'PTMcontext'
+    for c in cards:
+        page = out / c['id'] / 'index.html'
+        if not c.get('href') or not page.exists():
+            continue
+        png = PV.site_image(c, brand)
+        if png:
+            (out / c['id'] / 'preview.png').write_bytes(png)
+        url = f'{base}/{c["id"]}/' if base else None
+        img = f'{url}preview.png' if url and png else None
+        PV.put_in_head(page, PV.tags(c.get('name', ''), c.get('hook', ''), url, img, brand))
+    png = PV.landing_image(cards, brand, cfg.get('lede') or '')
+    if png:
+        (out / 'preview.png').write_bytes(png)
+    url = f'{base}/' if base else None
+    PV.put_in_head(
+        out / 'index.html',
+        PV.tags(
+            brand,
+            cfg.get('description') or cfg.get('lede') or '',
+            url,
+            f'{url}preview.png' if url and png else None,
+            brand,
+        ),
+    )

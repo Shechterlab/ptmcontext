@@ -67,6 +67,8 @@ CSS = """
 .land-group > h2 { margin: 0.5rem 0 0; font-size: 1.15rem; }
 .land-group > p { margin: 0.2rem 0 0; color: var(--ink-2); }
 .sites.compact { grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr)); }
+/* four cards: two rows of two rather than three and one alone */
+.sites:has(> li:nth-child(4):last-child) { grid-template-columns: repeat(auto-fill, minmax(min(32rem, 100%), 1fr)); }
 .sites.compact .art { display: none; }
 .sites.compact .band { min-height: 5.5rem; }
 .sites.compact .land-card h2 { font-size: 1.1rem; }
@@ -280,7 +282,12 @@ def page(
         f'<section class="land-new"><h2>{html.escape(wn.get("title") or "What’s new")}</h2><ul>'
         + ''.join(f'<li>{html.escape(x)}</li>' for x in wn['items'])
         + '</ul>'
-        + (f'<p class="muted">Data: {html.escape(wn["doi"])}</p>' if wn.get('doi') else '')
+        # the release's DOI, unless the references above already give it
+        + (
+            f'<p class="muted">Data: {html.escape(wn["doi"])}</p>'
+            if wn.get('doi') and not any(x.get('doi') == wn['doi'] for x in cfg.get('references') or [])
+            else ''
+        )
         + '</section>'
         if wn.get('items')
         else ''
