@@ -79,12 +79,12 @@
   const refresh = (items) =>
     items.forEach((a) => {
       const site = a.dataset.site;
-      if (site === here) return;
+      if (!site || site === here) return; // a page link (Compare marks) has no site
       a.href = target(site, D.site.name, false);
       if (acc()) hasProtein(site, acc()).then((ok) => ok && (a.href = target(site, D.site.name, true)));
     });
   // one switcher in `parent`: the header's side (first) or the sticky bar's end (`bar`); each has its own ids
-  const mount = (list, parent, bar, word) => {
+  const mount = (list, parent, bar, word, pages) => {
     const me = list.find((s) => s.id === here),
       uid = bar ? 'site-switch-list-bar' : 'site-switch-list';
     // the bar is short of room: it drops the words every site's name ends with ("Site Explorer"); the full name stays in the label and the menu
@@ -104,6 +104,13 @@
           (s) =>
             `<li role="none"><a role="menuitemradio" aria-checked="${s.id === here}" ${s.id === here ? 'aria-current="true" ' : ''}` +
             `href="../${encodeURIComponent(s.id)}/" data-site="${esc(s.id)}" tabindex="-1">${esc(s.label)}</a></li>`
+        )
+        .join('') +
+      // the pages beside the explorers (sites.json `pages`), under a rule: each a plain link, not a site
+      (pages || [])
+        .map(
+          (p, k) =>
+            `<li role="none"${k ? '' : ' class="site-switch-page"'}><a role="menuitem" href="../${esc(p.href)}" data-page="${esc(p.id)}" tabindex="-1">${esc(p.label)}</a></li>`
         )
         .join('') +
       '</ul>';
@@ -183,7 +190,7 @@
           .join('')
       : ''
   );
-  const build = (list, word, brand) => {
+  const build = (list, word, brand, pages = []) => {
     const side = document.querySelector('.brand-side');
     // the way back to the landing page, which sits beside the sites' folders (where sites.json is): the brand line above the
     // site's name in the header (the landing config's title), and "All sites" in the sticky bar
@@ -209,8 +216,8 @@
       end.prepend(a);
     }
     if (list.length >= 2) {
-      if (side) mount(list, side, false, word);
-      if (end) mount(list, end, true, word);
+      if (side) mount(list, side, false, word, pages);
+      if (end) mount(list, end, true, word, pages);
     }
     // in the header, the switcher sits on its own row, so the lab block and the links stay put
     const sw = side?.querySelector('.site-switch');
@@ -218,6 +225,14 @@
       const row = document.createElement('div');
       row.className = 'brand-top';
       side.prepend(row);
+      // the pages beside the explorers (Compare marks): a link in the header, next to the switcher
+      pages.forEach((p) => {
+        const a = document.createElement('a');
+        a.className = 'landing-link page-link';
+        a.href = `../${p.href}`;
+        a.textContent = p.label;
+        row.append(a);
+      });
       row.append(sw);
     }
   };
@@ -232,7 +247,7 @@
         list = all.filter((s) => s.listed || s.in_switcher || s.id === here || (mine && !mine.listed));
       others = list.filter((s) => s.id !== here);
       if (others.length && S.q) K.render?.();
-      build(list, reg.switcher_label || 'Explorer', reg.brand || '');
+      build(list, reg.switcher_label || 'Explorer', reg.brand || '', reg.pages || []);
     } catch (e) {
       /* served alone: no list of sites, no menu */
     }
