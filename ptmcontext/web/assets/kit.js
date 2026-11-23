@@ -2480,7 +2480,11 @@
         ? `<b>${esc(noun(label))}</b> are ${esc(W.marked)} at ${f} the share of all proteins tested.`
         : `${esc(cap(W.marks))} are more common <b>${esc(where)}</b> (share ${f} that of other ${esc(W.residues)}).`;
     };
-    return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings</h3><ol>${pick
+    return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings${
+      D.variant
+        ? ` <span class="muted small">(${esc(D.variant.label.charAt(0).toLowerCase() + D.variant.label.slice(1))})</span>`
+        : ''
+    }</h3><ol>${pick
       .map(
         (e) =>
           `<li><span class="muted">${esc(e.card.title || FR.short?.[e.a.id] || e.a.title)}:</span> ` +

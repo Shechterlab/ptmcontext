@@ -148,6 +148,8 @@ def landing_image(cards: list[dict], title: str, lede: str) -> bytes | None:
 def tags(title: str, description: str, url: str | None, image: str | None, site_name: str) -> str:
     """The Open Graph and Twitter card tags for a page's head; with no base url, only those that need none."""
     e = html.escape
+    # a description that already starts with the title is not prefixed with it again
+    alt = description if re.match(re.escape(title) + r'(?!\w)', description, re.I) else f'{title}: {description}'
     out = [
         '<meta property="og:type" content="website">',
         f'<meta property="og:site_name" content="{e(site_name)}">',
@@ -161,7 +163,7 @@ def tags(title: str, description: str, url: str | None, image: str | None, site_
             f'<meta property="og:image" content="{e(image)}">',
             f'<meta property="og:image:width" content="{W}">',
             f'<meta property="og:image:height" content="{H}">',
-            f'<meta property="og:image:alt" content="{e(title)}: {e(description)}">',
+            f'<meta property="og:image:alt" content="{e(alt)}">',
             '<meta name="twitter:card" content="summary_large_image">',
             f'<meta name="twitter:image" content="{e(image)}">',
         ]

@@ -1,5 +1,7 @@
 """Link previews (ptmcontext/web/preview.py): the Open Graph tags and the images ptmc pages writes."""
 
+import re
+
 import pytest
 
 from ptmcontext.web import preview as PV
@@ -19,6 +21,16 @@ def test_tags_with_and_without_a_base_url():
     assert 'og:image" content="https://h/x/preview.png"' in full and 'summary_large_image' in full
     bare = PV.tags('T', 'D', None, None, 'B')
     assert 'og:title' in bare and 'og:image' not in bare and 'og:url' not in bare
+
+
+def test_the_image_alt_does_not_repeat_the_title():
+    def alt(t, d):
+        return re.search(r'og:image:alt" content="([^"]*)"', PV.tags(t, d, 'https://h/', 'https://h/p.png', 'B')).group(
+            1
+        )
+
+    assert alt('PTMcontext', 'PTMcontext: analysis tools.') == 'PTMcontext: analysis tools.'
+    assert alt('Site', 'Sites from databases.') == 'Site: Sites from databases.'
 
 
 def test_put_in_head_replaces_rather_than_repeats(tmp_path):

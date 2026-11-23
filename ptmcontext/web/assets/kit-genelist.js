@@ -136,7 +136,7 @@
     const nT = rows.length;
     const table =
       `<div class="tbl-card"><table class="tbl gl-tbl"><caption class="vh">Sets shared by your list: ` +
-      `one-sided hypergeometric test within each source’s ${esc(W.marked)} proteins</caption><thead><tr>` +
+      `one-sided hypergeometric test within each source’s ${esc(W.marked)} proteins (vs the ${int(D.counts.proteins)} ${esc(W.marked)} proteins)</caption><thead><tr>` +
       (`<th scope="col">Set</th><th scope="col">Kind</th><th scope="col" class="num">In list</th><th scope="col" ` +
         `class="num">In set / background (${esc(W.marked)})</th><th scope="col" class="num">Fold</th>`) +
       (`<th scope="col" class="num">p (one-sided hypergeometric)</th><th scope="col" class="num">q ` +
@@ -171,7 +171,10 @@
       (`Your list was chosen, not drawn at random: p and q say how unusual this overlap would be for the same ` +
         `number of ${esc(W.marked)} proteins taken at random; they say nothing about ${esc(W.marks)} themselves.</p>`) +
       (n
-        ? table +
+        ? `<p class="muted small gl-vs"><b>Compared with:</b> the ${int(D.counts.proteins)} ${esc(W.marked)} proteins ` +
+          `(each set’s source may annotate fewer: its background is in the table). Not the ${esc(W.residues)} ` +
+          `of those proteins, which the Overview tests.</p>` +
+          table +
           more +
           `<p class="actions"><button type="button" class="btn small" data-gl-tsv>${esc(K.exp.label('tsv'))}</button></p>`
         : `<p>None of ` + `the names is a ${esc(W.marked)} protein here, so there is nothing to test.</p>`)
