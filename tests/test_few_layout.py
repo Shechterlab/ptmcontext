@@ -30,5 +30,5 @@ console.log(JSON.stringify({{ html, small: K.few.active(3), big: (testable = tru
     assert 'HEAD' in h and h.count('<details') == 1 and ' open' not in h  # folded; an empty section is left out
     assert 'data-open-fold="few-a-1-p"' in h and 'id="few-a-1-p"' in h
     assert 'data-open-fold="few-a-1-none"' not in h and '<span class="few-chip">gone</span>' in h
-    assert 'Showing the first 1, 2 more not listed.' in h
+    assert 'Showing the first 1 of 3.' in h
     assert out['small'] and not out['big'] and out['bigUntestable'] and not out['none']

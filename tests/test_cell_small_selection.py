@@ -18,5 +18,5 @@ def test_small_selection_reuses_the_protein_card_renderer():
 
 def test_banner_no_longer_counts_the_cell_among_whole_dataset_tiles():
     kit = (ASSETS / 'kit.js').read_text()
-    assert 'except the cell, which shows where your selection is found' in kit
+    assert 'the cell shows where your selection is found' in kit
     assert 'proteinIds' in (ASSETS / 'kit-select.js').read_text()
