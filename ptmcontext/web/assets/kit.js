@@ -978,15 +978,11 @@
     return rows.filter((r) => !drop.has(r)).map((r) => out.get(r) || r);
   };
   K.collapseSimilar = collapseSimilar;
-  function chartRows(a, m, card = cardOf(a.id)) {
-    const rows = withRef(
-      a,
-      (vsOn() || selOn()
-        ? rowsOf(a, m) || []
-        : D.rows.filter((r) => r.analysis === a.id && r.method === (a.kind === 'protein_sets' ? 'enricher' : m))
-      ).slice(),
-      m
-    );
+  // whole: the site's own rows, whatever the selection (for a selection too small to test)
+  function chartRows(a, m, card = cardOf(a.id), whole = false) {
+    const site = () =>
+      D.rows.filter((r) => r.analysis === a.id && r.method === (a.kind === 'protein_sets' ? 'enricher' : m));
+    const rows = whole ? site().slice() : withRef(a, (vsOn() || selOn() ? rowsOf(a, m) || [] : site()).slice(), m);
     const ORDER = { more: 0, same: 1, ns: 2, less: 3 },
       sets = a.kind === 'protein_sets',
       groups = a.groups || [];
@@ -995,10 +991,10 @@
       (card.order === 'q' ? (x.q ?? 1) - (y.q ?? 1) : 0) ||
       (y.eff ?? 0) - (x.eff ?? 0) ||
       x.label.localeCompare(y.label);
-    const own = Object.keys(a.labels || {}),
+    const order = Object.keys(a.labels || {}),
       at = (r) => {
-        const i = own.indexOf(r.category);
-        return i < 0 ? own.length : i;
+        const i = order.indexOf(r.category);
+        return i < 0 ? order.length : i;
       };
     const gi = (r) => {
       const i = groups.findIndex((g) => g.classes.includes(r.category));
@@ -2813,6 +2809,60 @@
       `</tbody></table></div>${fewNotes}</section>`
     );
   }
+  // a selection too small to test: where each selected site (or, for a set question, its protein) falls in the question's
+  // classes or sets. Facts about the selection, not results; a long list is cut after a few.
+  const FEW_CLASSES = 8;
+  function fewHtml(a) {
+    const P = K.few?.picked(),
+      sd = K.sel.peek();
+    if (!P || !sd) return '';
+    const own = K.questions[a.id]?.few?.(); // a question's module may draw its own
+    if (own) return own;
+    const sets = a.kind === 'protein_sets',
+      ai = sets ? -1 : K.sel.AN().indexOf(a.id),
+      names = (list) => {
+        const ch = list.slice(0, FEW_CLASSES).map((n) => ({ text: esc(n) }));
+        if (list.length > FEW_CLASSES)
+          ch.push({ text: `<span class="muted">+${int(list.length - FEW_CLASSES)} more</span>` });
+        return ch.length ? ch : [{ text: `<span class="muted">none for this question</span>` }];
+      },
+      setIds = sets ? (sd.protein_sets?.[a.id]?.sets || []).map((x) => x[0]) : [],
+      seen = new Set(),
+      sites = [];
+    P.list.forEach((m) => {
+      if (sets) {
+        if (seen.has(m[0])) return;
+        seen.add(m[0]);
+        const own = P.list.filter((x) => x[0] === m[0]).length,
+          hit = setIds
+            .filter((id) => K.sel.setHas(a.id, id, m[0]))
+            .map((id) => label({ analysis: a.id, category: id }));
+        sites.push({
+          key: 'p' + m[0],
+          head: `${K.few.protLink(m[0])} <span class="muted">${esc(D.proteins[m[0]]?.[2] || '')} · ${K.few.count(own, W.mark)} selected</span>`,
+          facts: names(hit),
+        });
+        return;
+      }
+      const codes = sd.classes?.[a.id] || [],
+        hit = (m[2]?.[ai] || []).map((ci) => label({ analysis: a.id, category: codes[ci] }));
+      sites.push({
+        key: `${m[0]}-${m[1]}`,
+        head: `${K.few.siteLink(m[0], m[1])} <span class="muted">${esc(D.proteins[m[0]]?.[2] || '')}</span>`,
+        facts: names(hit),
+      });
+    });
+    return K.few.html({
+      title: sets
+        ? 'Where your selected proteins fall'
+        : `Where your selected ${P.all === 1 ? `${W.mark} falls` : `${W.marks} fall`}`,
+      note: sets
+        ? `Each selected protein's own sets for this question.`
+        : `Each selected ${W.mark}'s own classes for this question.`,
+      sites,
+      more: P.all - P.list.length,
+    });
+  }
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
   function focus(aid) {
     // a question that is one of a card's views (website.overview cards: views) opens that card
@@ -2843,7 +2893,9 @@
           : ''
       }</span></div>`;
     if (a.page) return bar + a.page(card); // a question a module draws (kit-counts.js)
-    const rows = mod ? [] : chartRows(a, S.m, card);
+    // a selection too small to test: its own sites first, then every site, labeled as such (nothing here is tested)
+    const small = smallSel() && !mod,
+      rows = mod ? [] : chartRows(a, S.m, card, small);
     return (
       bar +
       `<div class="page-head"><h2>${esc(card.title || a.title)}</h2>${pageFails(a)}<span class="tools">${
@@ -2868,19 +2920,25 @@
       (selOn() && !mod && K.sel.testable() ? `<div class="ctl-row">${againstHtml()}</div>` : '') +
       `<p class="page-sub">${
         vsOn()
-          ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}, tested in ` +
-            `your browser (exploratory).`
+          ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}${
+              K.sel.testable() ? ', tested in your browser (exploratory).' : ', shown, not tested: it is too small.'
+            }`
           : esc(a.question || a.describe || '')
       }${
         selOn() && !vsOn()
-          ? ` <b>Your ` +
-            `selection</b>${
-              rows.some((r) => r.descriptive)
-                ? ': ' + whyShown(a, rows).replace(/^Your selection /, '')
-                : vsOn()
-                  ? ''
-                  : ', tested in your browser (exploratory).'
-            }`
+          ? mod
+            ? ` <b>Your selection</b> is not tested here: the model is fitted once, on every ${esc(W.mark)}.`
+            : small
+              ? ` <b>Your selection</b> is too small to test (a test needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}). ` +
+                `Below, where it falls, then every ${esc(W.mark)} for comparison.`
+              : ` <b>Your ` +
+                `selection</b>${
+                  rows.some((r) => r.descriptive)
+                    ? ': ' + whyShown(a, rows).replace(/^Your selection /, '')
+                    : vsOn()
+                      ? ''
+                      : ', tested in your browser (exploratory).'
+                }`
           : ''
       }</p>` +
       // the site file's note on this question (analysis.note), and one-click filters (analysis.note_filters: label, query)
@@ -2895,12 +2953,18 @@
       familyLine(a) +
       (a.control_too_few != null
         ? `<section class="pcard"><p class="note too-few">${esc(tooFewText(a))}</p></section>`
-        : `<section class="pcard">${
+        : (small ? fewHtml(a) : '') +
+          `<section class="pcard">${
+            small
+              ? `<h3 class="whole-h">All ${esc(W.marks)}, not your selection</h3><p class="small muted whole-note">The whole dataset, ` +
+                `for comparison. Nothing here describes your selection.</p>`
+              : ''
+          }${
             (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
             (K.questionBody && K.questionBody(a, rows, card)) ??
             cardBody(a, rows)
           }${
-            selOn() && !vsOn() && !mod
+            selOn() && !vsOn() && !mod && !small
               ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
               : ''
           }</section>`) +

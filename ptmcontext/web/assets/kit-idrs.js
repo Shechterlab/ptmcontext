@@ -859,6 +859,37 @@
       return {};
     }
   };
+  // a small selection: the region each selected site lies in (its IDR, the class of its charge and the IDR's values)
+  function regionFew() {
+    const P = K.few?.picked();
+    if (!P || !K.few.active(P.all)) return '';
+    if (!V) {
+      load();
+      return '';
+    }
+    const f2 = (v) => (v == null || Number.isNaN(+v) ? '–' : (+v).toFixed(2));
+    const sites = P.list.map((m) => {
+      const hit = V.idrs.filter((x) => x.p === m[0] && m[1] >= x.s && m[1] <= x.e),
+        facts = hit.length
+          ? hit.flatMap((x) => [
+              { text: `IDR ${esc(rg(x))}` },
+              { text: `<b>R${regionNo(x.cls)}</b> ${esc(shortCls(x.cls))}` },
+              { text: `FCR ${f2(x.fcr)} · NCPR ${f2(x.ncpr)}${x.kappa != null ? ` · κ ${f2(x.kappa)}` : ''}` },
+            ])
+          : [{ text: `<span class="muted">not in an IDR</span>` }];
+      return {
+        key: `${m[0]}-${m[1]}`,
+        head: `${K.few.siteLink(m[0], m[1])} <span class="muted">${esc(D.proteins[m[0]]?.[2] || '')}</span>`,
+        facts,
+      };
+    });
+    return K.few.html({
+      title: `Where your selected ${P.all === 1 ? `${W.mark} lies` : `${W.marks} lie`}`,
+      note: `The region each ${W.mark} falls in, from the maps of disordered regions.`,
+      sites,
+      more: P.all - P.list.length,
+    });
+  }
   const DIRW = { more: 'more often', less: 'less often', ns: 'no clear difference', same: 'no clear difference' };
   // the pair under the odds ratio: the two shares the test compares (the marks on proteins with another candidate residue, and
   // the other candidate residues), so its counts are the test's and can differ from the 'of' column
@@ -879,7 +910,9 @@
             ? `<br><span ` + `class="muted small" title="${esc(shareTip)}">${esc(shareText(r))}</span>`
             : ''
         }<br><span class="idr-dir idr-${esc(r.dir)}">${esc(DIRW[r.dir] || r.dir)}</span>`
-      : '<span class="muted">–</span>';
+      : K.sel.active() && !K.sel.testable()
+        ? '<span class="muted small">not tested: the selection is too small</span>'
+        : '<span class="muted">–</span>';
   function regionsHtml() {
     const { rows, all } = regionRows(),
       rate = (r) => (r.cand ? r.marks / r.cand : 0),
@@ -1389,6 +1422,7 @@
       `<div class="${SECTION ? '' : 'page-head '}results-head"><div>${
         SECTION ? `<h3>${esc(K.tabName('idrs', 'IDRs'))}</h3>` : `<h2>${esc(K.tabName('idrs', 'IDRs'))}</h2>`
       }<p class="cx">${int(xs.length)} IDRs on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</p></div></div>` +
+      (SECTION ? '' : regionFew()) +
       (`<p class="page-sub">By charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. Candidate residues are the ` +
         `${esc(W.residues)} in these IDRs, ${esc(W.marks)} included. <button ` +
         `type="button" class="idr-goto" data-idr-goto="idr-refs">Methods</button></p>`) +
@@ -1513,6 +1547,7 @@
     // the question's own page (its classes, tested), then the charge diagram, κ, the regions and every IDR
     K.questions[SECTION] = {
       ...K.questions[SECTION],
+      few: regionFew, // a small selection: the IDR each selected site lies in, in place of the question's own classes
       page: (card, body) => {
         const first = (own && own(card, body)) ?? body();
         return `${first}<div class="idr-page">${view()}</div>`;

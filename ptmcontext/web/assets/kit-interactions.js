@@ -2532,6 +2532,7 @@
         next ? `<a href="${esc(K.link(pg.id, next.id))}">${esc(next.title)} · Next ›</a>` : ''
       }</span></div>` +
       selLine() +
+      ownHtml(pg) +
       sectionCard(pg, sec)
     );
   }
