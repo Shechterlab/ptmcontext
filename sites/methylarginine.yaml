@@ -80,7 +80,7 @@ inputs:                # role the layers read: manifest input that fills it
   dna_interactome: trendel_dna_interactome
   uniprot_dna_binding: uniprot_dna_binding_regions
   go_binding: quickgo_rna_dna_binding
-  # arginines of methylated proteins modeled in a PDB entry with RNA or DNA, each with its side-chain distance to it
+  # arginines of methylated proteins modelled in a PDB entry with RNA or DNA, each with its side-chain distance to it
   na_rna: release_arginine_rna_distances
   na_dna: release_arginine_dna_distances
   na_any: {all_of: [release_arginine_rna_distances, release_arginine_dna_distances]}
@@ -744,7 +744,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Regions of the cell (Human Cell Map)
     question: "Where do methylated proteins localize in the cell: the nucleus, the cytoplasm, or the organelles and membranes?"
-    sub: "Methylated proteins against the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Where in the cell
     sets:
       input: hcm
@@ -753,7 +753,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       families: {rules: sites/data/methylarginine_cell_regions.yaml}
     whole_universe: true
     min_size: 5
-    background: "the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
+    background: "the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_region_organelle_ip
     test: protein_sets
@@ -775,12 +775,12 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     test: protein_sets
     title: Human Cell Map compartments
     question: "Where do methylated proteins localize in the cell, by the Human Cell Map's compartments?"
-    sub: "Methylated proteins against the other proteins the Human Cell Map localizes (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
+    sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
     section: Where in the cell
     sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
     whole_universe: true
     min_size: 5
-    background: the other proteins the Human Cell Map localizes (HEK293 BioID, NMF compartments)
+    background: the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments)
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_hcm_domain
     test: protein_sets
@@ -1172,23 +1172,23 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: nucleic_acid_distance
     title: Distance to RNA and DNA in structures
     question: "Are methylarginines closer to RNA or DNA in solved structures?"
-    sub: "Methylarginines against the other arginines of the same proteins modeled in a PDB entry with RNA, DNA or either, whose side chain comes within 4 or 8 Å of it"
+    sub: "Methylarginines against the other arginines of the same proteins modelled in a PDB entry with RNA, DNA or either, whose side chain comes within 4 or 8 Å of it"
     section: Interactions and binding
     counting: every_candidate
     candidates_from: marks_and_left_out    # the proteins of left-out sites count too, as the release counts them
     tests:
       - {category: any_within_4a, inside: {role: na_any, where: [{column: class, at_most: 4}]}, covered_by: na_any, label: "RNA or DNA within 4 Å",
-         background: other arginines of the same proteins modeled in a PDB entry with RNA or DNA}
+         background: other arginines of the same proteins modelled in a PDB entry with RNA or DNA}
       - {category: any_within_8a, inside: {role: na_any, where: [{column: class, at_most: 8}]}, covered_by: na_any, label: "RNA or DNA within 8 Å",
-         background: other arginines of the same proteins modeled in a PDB entry with RNA or DNA}
+         background: other arginines of the same proteins modelled in a PDB entry with RNA or DNA}
       - {category: dna_within_4a, inside: {role: na_dna, where: [{column: class, at_most: 4}]}, covered_by: na_dna, label: "DNA within 4 Å",
-         background: other arginines of the same proteins modeled in a PDB entry with DNA}
+         background: other arginines of the same proteins modelled in a PDB entry with DNA}
       - {category: dna_within_8a, inside: {role: na_dna, where: [{column: class, at_most: 8}]}, covered_by: na_dna, label: "DNA within 8 Å",
-         background: other arginines of the same proteins modeled in a PDB entry with DNA}
+         background: other arginines of the same proteins modelled in a PDB entry with DNA}
       - {category: rna_within_4a, inside: {role: na_rna, where: [{column: class, at_most: 4}]}, covered_by: na_rna, label: "RNA within 4 Å",
-         background: other arginines of the same proteins modeled in a PDB entry with RNA}
+         background: other arginines of the same proteins modelled in a PDB entry with RNA}
       - {category: rna_within_8a, inside: {role: na_rna, where: [{column: class, at_most: 8}]}, covered_by: na_rna, label: "RNA within 8 Å",
-         background: other arginines of the same proteins modeled in a PDB entry with RNA}
+         background: other arginines of the same proteins modelled in a PDB entry with RNA}
   - id: intact
     title: IntAct mutations and binding regions
     question: "Are methylarginines where IntAct maps interactions?"
@@ -2446,7 +2446,7 @@ website:                  # the look and words of the website (ptmc web); layout
                 window_end: best_window_end, window_sites: best_window_sites, window_log2: best_window_log2_obs_null, window_q: best_window_q,
                 architecture: architecture_class, clusters: architecture_clusters}
     # tables only the Interactions page reads (website.pages)
-    distances:             # every arginine of a methylated protein modeled with RNA or DNA, and its distance to each
+    distances:             # every arginine of a methylated protein modelled with RNA or DNA, and its distance to each
       input: release_arginine_rna_distances
       format: site_table
       columns: {accession: uniprot_accession, position: position}
@@ -2889,7 +2889,7 @@ website:                  # the look and words of the website (ptmc web); layout
         help:
           writes: IntAct methylation reactions that curate this residue, or where mutating it changes the reaction
           removes: IntAct demethylation reactions with the methylarginine curated at this residue
-          binds_methylated: "the residue is a methylarginine in the experiment, modeled as one in a structure (2MR, DA2, NMM) or curated as methylated in IntAct"
+          binds_methylated: "the residue is a methylarginine in the experiment, modelled as one in a structure (2MR, DA2, NMM) or curated as methylated in IntAct"
           mutation_changes_binding: "IntAct: mutating this residue (alone or with up to two neighbors) decreased, disrupted or increased binding"
           mutation_no_effect: "IntAct: a mutation of this residue had no effect on the binding"
           binds_unmodified: structures that model an unmodified arginine here (PDBe-KB interface)
@@ -3192,7 +3192,7 @@ website:                  # the look and words of the website (ptmc web); layout
             columns: {accession: uniprot_accession, position: position, label: "{studies}: {reasons}"}
             values:
               reasons: {below_threshold: "localization score below the study's threshold", several_residues: "the methyl group is on one of several residues",
-                        search_disagrees: "the study's confident spectra disagree on the residue", no_localising_evidence: "no spectrum or score localizes it",
+                        search_disagrees: "the study's confident spectra disagree on the residue", no_localising_evidence: "no spectrum or score localises it",
                         window_fits_several: "the study's window fits several arginines", several_sites: "the same sequence occurs at several sites",
                         other_protein: "the sequence names a site in another protein", not_in_reference: "the sequence is not in the reviewed protein"}
           mark: tick
