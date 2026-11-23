@@ -778,17 +778,29 @@
   const shardKey = (acc) =>
     String([...acc].reduce((n, c) => n + c.charCodeAt(0), 0) % (D.map_shards || 64)).padStart(2, '0');
   // the items of a protein ([row index, start, end, class, label, value, ref, sources]), or null while they load
+  // a source's own names (an InterPro family, a class) are shown in American spelling: once for a shard's items
+  const americanLabels = (shard) => {
+    if (shard && !shard.__us) {
+      Object.defineProperty(shard, '__us', { value: true });
+      Object.values(shard).forEach((items) =>
+        items.forEach((x) => {
+          if (typeof x[4] === 'string' && x[4]) x[4] = K.us(x[4]);
+        })
+      );
+    }
+    return shard;
+  };
   function itemsOf(acc) {
     if (!D.map_shards) return [];
     const key = shardKey(acc);
-    if (mapInline[key]) return mapInline[key][acc] || [];
+    if (mapInline[key]) return americanLabels(mapInline[key])[acc] || [];
     if (!(key in mapFiles)) {
       mapFiles[key] = null;
       fetch(`data/map/${key}.json`)
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
         .then(
           (j) => {
-            mapFiles[key] = j;
+            mapFiles[key] = americanLabels(j);
           },
           () => {
             mapFiles[key] = { __failed: true };
