@@ -1299,7 +1299,7 @@ used: the selection data's `protein_sets[<id>]`, `in_background` (the marked pro
 annotates), and each set's members within it. With n of the list in the background, N the background, M of it in the set
 and k of the list in the set: fold = (k/n)/(M/N), p = P(X >= k) for X hypergeometric(N, M, n) (one-sided; p = 1 at k = 0),
 q = Benjamini-Hochberg over every set of every question tested, small sets and k = 0 included. The function is
-`ptmstats.gene_list_test` and its browser twin `PTMC_STATS.listTest` (kit-stats.js); `packages/ptmstats/tests/test_list_test.py`
+`ptmstats.gene_list_test` and its browser twin `PTMC_STATS.listTest` (kit-stats.js); `packages/ptmstats/tests/test_pasted_list.py`
 checks that both equal SciPy's `hypergeom.sf` and `benjamini_hochberg`. The page shows the sets with k >= 1 by p (20, then
 **Show all**; `all=1` in the address): Set, Kind (the question, "(genes)" for a gene source), In list (k of n), In set /
 background (M / N), Fold, p (one-sided hypergeometric), q (Benjamini-Hochberg, <sets> sets), under the labeled note "A new
@@ -1461,10 +1461,12 @@ list when nothing is selected. One segmented control picks the view, kept in the
 waterfall, and so does one with no `mv` that carries `wl`, `wg`, `mz` or `ms`. `mg`, `mt` and `hyper` keep their meaning. Each view has one short line of
 text; the rest is in Help and Methods.
 
-- Ranked sites: three compact tables, each following the selection and the hypermutated switch as the waterfall does: sites with q_upper < 0.05
-  in each somatic source (TCGA, DepMap), by raw upper-tail p; and sites with q_lower < 0.05 in the germline source with `lower_tail` (gnomAD, the
-  dashed-ring rows), by raw lower-tail p. Titles come from the source's `unit` and `label`. Top 20 with a Show all button and a download (PDF, SVG, PNG of the table; TSV with every row); a
-  header says `N sites with q < 0.05`; columns gene, site, k, expected, O/E, q; a flagged protein carries the dominant hotspot note; a row opens the site card.
+- Ranked sites: three compact tables, each following the selection and the hypermutated switch as the waterfall does: the sites tested in each somatic
+  source (TCGA, DepMap), by raw upper-tail p; and the sites tested for the lower tail in the germline source with `lower_tail` (gnomAD, the
+  dashed-ring rows), by raw lower-tail p. Titles come from the source's `unit` and `label`. The top 20 are shown whatever their q; a row with q >= 0.05 is
+  lighter and shows its q; the header says `N sites with q < 0.05` (the count over every tested site). Show opens every site with q < 0.05, or the top 100
+  if fewer. A download (PDF, SVG, PNG of the table; TSV with every tested site and a `q_below_0.05` column). The empty-state text appears only for a source
+  with no tested site. Columns gene, site, k, expected, O/E, q; a flagged protein carries the dominant hotspot note; a row opens the site card.
 - Inherited disease: the selection's known sites with at least one variant in `cv.json` (after the review filter) as rows, ranked by number of variants (top 50,
   Show more adds 50), against the disease families as columns, ordered by total (the catch-all last). A variant counts once in each of its families. A
   cell is the number of variants, shaded in one hue; a click lists its variants (conditions, review stars, a link to ClinVar's variation page). Downloads
@@ -1485,6 +1487,17 @@ The waterfall and the oncoprint keep the rules that follow.
   expectation, tabulates the release's test for the site set (`site_set_propensity`, matched by set, residue, source and cohort) when nothing is selected.
 - Under the waterfall, a table lists the selection's sites with no change, most expected first, with the raw lower-tail p.
 - "Test the sites you chose" (below every view except Inherited disease; any source with a test): the reader adds up to 20 sites (`H4 R3`, in the page's numbering, or a site card's button; kept in the address as `mt=`). For each, k, expected, O/E, the raw p of each tail and a Holm-adjusted p over the chosen sites, tails and sources shown. The raw p is the right number for a site chosen in advance; q corrects across every residue of the release. The table downloads as TSV.
+- "Paste a list" (the same section; `ml=` in the address, the text's lines joined by `;`, read again by the page, up to 5,000 sites): gene symbols (the search's
+  own reading: old symbols, aliases, isoform ids), UniProt accessions and sites (`P35637 R216`), one per line or separated by commas or spaces. A gene or
+  accession adds all its marks (each site once); a site adds that site. The page says `N genes, M sites; not found: X, Y`. Per source (TCGA, DepMap, gnomAD;
+  ClinVar descriptive, no p) it reports the release's site-set test over the listed sites: k = the changes at them, expected = the sum of their expected
+  counts, O/E, and p (more, fewer), the model of PTM_Pipeline `scripts/propensity.py set_test`: the total is a sum of Binomial(n, share) over the proteins
+  (and residue types) listed, n = the protein's changes at its tested residues of the type (the sum of k over its rows in `data/m`), share = the listed sites'
+  expected count over n. The release estimates p from 10,000 draws (never below 1e-4); the page gives the exact tail of that sum (a window of 12 standard
+  deviations and 30 around the mean; a tail beyond it reads `< 1e-30`). The release's `site_set_propensity` rows are reproduced for the sums k and expected
+  (tests/test_pasted_list.py). A per-site table follows (the top 50 by p, Show all) with a Benjamini-Hochberg q across the listed sites of the source,
+  `q across your list` (the lower tail of gnomAD likewise), and a TSV with every site, the citation header and the whole-list lines. The expected counts in
+  `data/m` keep two significant digits, so a pooled expected count matches the release's to that rounding.
 - An oncoprint (Cancer: tumors, `mv=oncoprint`) shows the sites with the most changed TCGA tumors against those tumors. A row's name, or a click on the row,
   opens that site's card.
 

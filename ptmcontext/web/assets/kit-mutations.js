@@ -38,6 +38,7 @@
     rows: 50,
     zoom: 0,
     chosen: [],
+    listText: '',
     labels: [],
     genes: [],
     res: {},
@@ -74,6 +75,7 @@
       if (x.res) M.res[x.key] = x.res;
       return x.key;
     });
+    M.listText = String(p.get('ml') || '').slice(0, 60000); // ml: a pasted list of genes, accessions and sites (lines joined by ;)
     M.labels = list(p.get('wl'), MAX_LABELS).map((x) => x.key);
     M.genes = K.prop.geneWords(p.get('wg')); // wg: the genes highlighted on the waterfall
   });
@@ -84,6 +86,7 @@
   };
   K.paramsOut.push((p) => {
     if (M.chosen.length) p.set('mt', M.chosen.map(keyOut).join(','));
+    if (M.listText) p.set('ml', M.listText);
     if (S.view !== 'mutations') return;
     if (M.src !== SRC[0].id) p.set('ms', M.src);
     if (M.group) p.set('mg', M.group);
@@ -974,6 +977,339 @@
     K.prop.holm(ps.map((x) => x[2])).forEach((a, i) => (ps[i][0][ps[i][1]] = a));
     return { rows, n: ps.length };
   }
+  // ---- a pasted list: genes, accessions and sites, tested together ------------------------------------------------------------
+  // The text is kept in the address (ml), lines joined by ';', and read again when the page opens: the proteins it names, every
+  // marked site of each (or the site typed). Each source then gets the release's site-set test over the list (the changes at the
+  // sites against the expected count, a sum of binomials, one per protein and residue type), and a per-site table whose q is
+  // Benjamini-Hochberg across the sites of the list.
+  const LT = { pk: null, parsed: null, key: null, res: null, phase: '', prog: '', src: '', all: false };
+  const LIST_SHOWN = 50;
+  const LIST_TEST =
+    "exact tail of a sum of binomials, one per protein and residue type, Binomial(n, share), where n is the protein's changes at residues of the type and share the listed sites' part of its expected count";
+  const listText = (t) =>
+    String(t || '')
+      .split(/\n+/)
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .join(';');
+  const fpool = (p) => (p == null ? '–' : p === 0 ? '< 1e−30' : K.prop.fq(p));
+  function setProg(t) {
+    LT.prog = t;
+    const el = document.querySelector('[data-mu-prog]');
+    if (el) el.textContent = t;
+  }
+  // the rows of one source: each listed site's numbers, q across the list, and the pooled test
+  async function listSource(s, sites) {
+    const peek = (acc) => K.prop.peek(acc)?.[s.id];
+    const unitN = new Map();
+    const nOf = (acc, res) => {
+      const key = acc + '|' + res;
+      if (!unitN.has(key)) {
+        let n = 0;
+        for (const r of peek(acc)?.rows || []) {
+          if ((r.res || '') !== res) continue;
+          const v = K.prop.at(acc, s.id, r.pos);
+          if (v && v.p != null) n += v.k;
+        }
+        unitN.set(key, n);
+      }
+      return unitN.get(key);
+    };
+    const rows = sites.map(([acc, pos, res]) => {
+      const b = peek(acc),
+        v = b ? K.prop.at(acc, s.id, pos) : null;
+      return { acc, pos, res, v, ures: b?.by.get(pos)?.res || '' };
+    });
+    const tested = (r) => r.v && (s.descriptive ? r.v.e != null : r.v.p != null);
+    const units = new Map();
+    for (const r of rows) {
+      if (!tested(r)) continue;
+      const key = r.acc + '|' + r.ures;
+      if (!units.has(key)) units.set(key, { acc: r.acc, res: r.ures, k: 0, e: 0 });
+      const u = units.get(key);
+      u.k += r.v.k ?? 0;
+      u.e += r.v.e ?? 0;
+    }
+    let pool;
+    if (s.descriptive) {
+      const k = [...units.values()].reduce((a, u) => a + u.k, 0),
+        e = [...units.values()].reduce((a, u) => a + u.e, 0);
+      pool = { units: units.size, observed: k, expected: e, oe: e > 0 ? k / e : null, pu: null, pl: null };
+    } else {
+      pool = await K.listTest.pooled(
+        [...units.values()].map((u) => {
+          const n = nOf(u.acc, u.res);
+          return [n, u.e / (n || 1), u.k];
+        })
+      );
+    }
+    const qm = s.descriptive ? rows.map(() => null) : K.listTest.bh(rows.map((r) => (tested(r) ? r.v.p : null)));
+    const qf =
+      s.descriptive || !s.lower_tail
+        ? null
+        : K.listTest.bh(rows.map((r) => (tested(r) && r.v.pl != null ? r.v.pl : null)));
+    rows.forEach((r, i) => {
+      r.qm = qm[i];
+      r.qf = qf ? qf[i] : null;
+    });
+    const hot = new Set(rows.filter((r) => r.v?.hot).map((r) => r.acc));
+    return {
+      s,
+      rows,
+      pool,
+      nTested: rows.filter(tested).length,
+      nNoRow: rows.filter((r) => !r.v).length,
+      hot: hot.size,
+    };
+  }
+  async function runList(key, text) {
+    const live = () => LT.key === key;
+    try {
+      if (LT.pk !== text) {
+        LT.parsed = await K.listTest.resolve(text);
+        LT.pk = text;
+        if (!live()) return;
+      }
+      const P = LT.parsed;
+      if (!P) {
+        LT.phase = 'error';
+        return K.render();
+      }
+      const accs = [...new Set(P.sites.map((x) => x[0]))];
+      LT.phase = 'loading';
+      for (let i = 0; i < accs.length; i += 40) {
+        setProg(`Reading ${int(Math.min(i + 40, accs.length))} of ${int(accs.length)} proteins`);
+        await Promise.all(accs.slice(i, i + 40).map((a) => K.prop.load(a)));
+        if (!live()) return;
+      }
+      LT.phase = 'computing';
+      const out = [];
+      for (const s of PR.sources) {
+        setProg(`Testing ${s.label}`);
+        out.push(await listSource(s, P.sites));
+        if (!live()) return;
+      }
+      LT.res = out;
+      LT.phase = 'done';
+      K.render();
+    } catch {
+      if (!live()) return;
+      LT.phase = 'error';
+      K.render();
+    }
+  }
+  function ensureList() {
+    if (!M.listText) return;
+    const key = M.listText + '|' + (K.prop.state.hyper ? 1 : 0);
+    if (LT.key === key) return;
+    LT.key = key;
+    LT.res = null;
+    LT.phase = 'reading';
+    LT.prog = '';
+    runList(key, M.listText);
+  }
+  // what the text was read as: "4 genes, 31 sites; not found: X, Y"
+  function listUnderstood() {
+    const P = LT.parsed;
+    if (!M.listText) return '';
+    if (LT.phase === 'error') return 'The list could not be read: the marks did not load. Try again.';
+    if (!P || LT.pk !== M.listText) return 'Reading the list…';
+    const nf = P.notFound.length ? `; not found: ${P.notFound.map(esc).join(', ')}` : '';
+    const parts = [
+      `${int(P.nGenes)} ${P.nGenes === 1 ? 'gene' : 'genes'}, ${int(P.sites.length)} ${P.sites.length === 1 ? 'site' : 'sites'}${nf}.`,
+    ];
+    if (P.noMarks) parts.push(`${int(P.noMarks)} of them ${P.noMarks === 1 ? 'has' : 'have'} no ${esc(W.mark)} here.`);
+    if (P.notMarked)
+      parts.push(`${int(P.notMarked)} typed ${P.notMarked === 1 ? 'site is' : 'sites are'} not a ${esc(W.mark)}.`);
+    if (P.rejected.length) parts.push(P.rejected.slice(0, 3).map(esc).join(' '));
+    if (P.capped)
+      parts.push(`Your list has ${int(P.capped)} sites; the test uses the first ${int(K.listTest.MAX_SITES)}.`);
+    return parts.join(' ');
+  }
+  const listSiteName = (r) => `${geneOf(r.acc)} ${r.res || ''}${shownPos(r.acc, r.pos)}`.replace(/\s+/g, ' ');
+  function listBody() {
+    if (!M.listText) return '';
+    ensureList();
+    if (LT.phase === 'error') return '';
+    if (LT.phase !== 'done')
+      return `<p class="small muted" data-mu-prog role="status">${esc(LT.prog || 'Reading the list…')}</p>`;
+    const res = LT.res,
+      cur = res.find((x) => x.s.id === LT.src) || res[0];
+    const pool = res
+      .map((x) => {
+        const p = x.pool;
+        return (
+          `<tr><td>${esc(x.s.label)}</td><td class="num">${int(x.nTested)}</td>` +
+          (p.expected == null
+            ? `<td colspan="5" class="muted">no ${esc(W.mark)} of the list has a row here</td>`
+            : `<td class="num">${int(p.observed)}</td><td class="num">${K.prop.fe(p.expected)}</td><td class="num">${K.prop.fo(p.oe)}</td>` +
+              (x.s.descriptive
+                ? `<td colspan="2" class="muted">descriptive: no test</td>`
+                : `<td class="num">${fpool(p.pu)}</td><td class="num">${fpool(p.pl)}</td>`)) +
+          `</tr>`
+        );
+      })
+      .join('');
+    const flagged = res.filter((x) => !x.s.descriptive).reduce((a, x) => Math.max(a, x.hot), 0);
+    const tabs =
+      `<div class="seg" role="group" aria-label="Source of the per-site table"><span class="seg-l">Per site</span>` +
+      res
+        .map(
+          (x) =>
+            `<button type="button" data-mu-lsrc="${esc(x.s.id)}" aria-pressed="${x === cur}">${esc(x.s.label)}</button>`
+        )
+        .join('') +
+      `</div>`;
+    const order = cur.rows
+      .map((r, i) => [r, i])
+      .sort((a, b) => (a[0].v?.p ?? 2) - (b[0].v?.p ?? 2) || a[1] - b[1])
+      .map((x) => x[0]);
+    const shown = LT.all ? order : order.slice(0, LIST_SHOWN);
+    const lower = cur.s.lower_tail && !cur.s.descriptive;
+    const body = shown
+      .map((r) =>
+        !r.v
+          ? `<tr class="mu-faint"><td>${esc(listSiteName(r))}</td><td colspan="${lower ? 7 : 5}" class="muted">no row in the release</td></tr>`
+          : `<tr class="mu-go" data-mu-go="${esc(r.acc)}:${r.pos}"><td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(listSiteName(r))}</a>${r.v.hot ? `<br><span class="small muted">${esc(K.prop.hotNote(r.acc, r.v.hot, cur.s.id))}</span>` : ''}</td>` +
+            `<td class="num">${int(r.v.k ?? 0)}</td><td class="num">${K.prop.fe(r.v.e)}</td><td class="num">${K.prop.fo(r.v.o)}</td>` +
+            (cur.s.descriptive
+              ? `<td colspan="2" class="muted">descriptive: no test</td>`
+              : `<td class="num">${fpv(r.v.p)}</td><td class="num">${fpv(r.qm)}</td>` +
+                (lower ? `<td class="num">${fpv(r.v.pl)}</td><td class="num">${fpv(r.qf)}</td>` : '')) +
+            `</tr>`
+      )
+      .join('');
+    const qTip = 'Benjamini–Hochberg across the sites of your list, not across the release';
+    return (
+      `<section class="mu-listres"><div class="mu-top"><h4>Your list against expectation</h4>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mulist', 'sites of a pasted list', 'propensity')}</div>` +
+      `<p class="small muted">${hyper() ? 'With' : 'Without'} hypermutated samples. Per source, the changes (k) at the listed sites against the expected count, summed over their proteins: the release's site-set test, with your sites in place of a site set (both tails). p is the ${esc(LIST_TEST)}. ClinVar is descriptive.</p>` +
+      `<div class="tbl-wrap"><table class="tbl mu-lt"><thead><tr><th>Source</th><th class="num">Sites tested</th><th class="num">k</th><th class="num">Expected</th><th class="num">O/E</th><th class="num">p (more)</th><th class="num">p (fewer)</th></tr></thead><tbody>${pool}</tbody></table></div>` +
+      (flagged
+        ? `<p class="small muted">${int(flagged)} of the proteins in your list ${flagged === 1 ? 'is' : 'are'} flagged as dominated by a few enriched residues. The expected count at their other residues is inflated, so a list of those sites can look depleted.</p>`
+        : '') +
+      `<div class="mu-top">${tabs}</div>` +
+      `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Site</th><th class="num">k</th><th class="num">Expected</th><th class="num">O/E</th>` +
+      (cur.s.descriptive
+        ? `<th colspan="2"></th>`
+        : `<th class="num">p (more)</th><th class="num" title="${qTip}">q across your list (more)</th>` +
+          (lower
+            ? `<th class="num">p (fewer)</th><th class="num" title="${qTip}">q across your list (fewer)</th>`
+            : '')) +
+      `</tr></thead><tbody>${body}</tbody></table></div>` +
+      (order.length > LIST_SHOWN
+        ? `<p class="small"><button type="button" class="btn small" data-mu-lall aria-expanded="${LT.all}">${LT.all ? `Show the top ${LIST_SHOWN}` : `Show all ${int(order.length)}`}</button> <span class="muted">Sorted by p. The download has every site.</span></p>`
+        : '') +
+      `</section>`
+    );
+  }
+  function listTsv() {
+    const res = LT.res || [];
+    const fx = (v) => (v == null ? '' : v);
+    const pools = res
+      .map(
+        (x) =>
+          `${x.s.label}: ${
+            x.pool.expected == null
+              ? 'no sites'
+              : `k ${x.pool.observed}, expected ${x.pool.expected.toFixed(2)}, O/E ${x.pool.oe == null ? '-' : x.pool.oe.toFixed(3)}${
+                  x.s.descriptive
+                    ? ' (descriptive)'
+                    : `, p more ${x.pool.pu == null ? '-' : x.pool.pu.toExponential(2)}, p fewer ${x.pool.pl == null ? '-' : x.pool.pl.toExponential(2)}`
+                }`
+          }`
+      )
+      .join('; ');
+    return (
+      K.preamble(
+        'Sites of a pasted list',
+        `k, expected and O/E from the release's propensity tables; p = the release's raw binomial p (more: upper tail; fewer: lower tail, gnomAD); q across your list = Benjamini-Hochberg across the listed sites of a source, not across the release; ${hyper() ? 'with' : 'without'} hypermutated samples; whole list per source (${LIST_TEST}): ${pools}`
+      ) +
+      'site\tgene\taccession\tposition\tsource\tk\texpected\toe\tp_more\tq_across_list_more\tp_fewer\tq_across_list_fewer\tprotein_flag\n' +
+      res
+        .flatMap((x) =>
+          x.rows
+            .filter((r) => r.v)
+            .map((r) =>
+              [
+                listSiteName(r),
+                geneOf(r.acc),
+                r.acc,
+                r.pos,
+                x.s.label,
+                fx(r.v.k),
+                fx(r.v.e),
+                fx(r.v.o),
+                x.s.descriptive ? '' : fx(r.v.p),
+                fx(r.qm),
+                x.s.descriptive || !x.s.lower_tail ? '' : fx(r.v.pl),
+                fx(r.qf),
+                r.v.hot ? K.prop.hotNote(r.acc, r.v.hot, x.s.id) : '',
+              ].join('\t')
+            )
+        )
+        .join('\n') +
+      '\n'
+    );
+  }
+  function listSection() {
+    return (
+      `<form class="mu-add mu-list" data-mu-plform><label class="small" for="mu-list">Paste a list</label>` +
+      `<textarea id="mu-list" rows="3" data-mu-ltext placeholder="Gene names, accessions or sites" aria-label="Paste genes, UniProt accessions or sites">${esc(M.listText.replace(/;/g, '\n'))}</textarea>` +
+      `<button type="submit" class="btn small">Test the list</button>` +
+      (M.listText ? ` <button type="button" class="btn small" data-mu-lclear>Clear the list</button>` : '') +
+      `<span class="small muted" data-mu-lmsg role="status">${listUnderstood()}</span></form>` +
+      `<p class="small muted">Genes, accessions or sites, one per line or separated by commas or spaces. A gene or accession adds all its ${esc(W.marks)}; a site adds that site. Up to ${int(K.listTest.MAX_SITES)} sites, kept in the address.</p>`
+    );
+  }
+  document.addEventListener('submit', (e) => {
+    if (!e.target.matches?.('[data-mu-plform]')) return;
+    e.preventDefault();
+    M.listText = listText(e.target.querySelector('[data-mu-ltext]').value);
+    LT.all = false;
+    K.writeHash?.();
+    K.render();
+  });
+  K.clicks.push(
+    [
+      '[data-mu-lclear]',
+      () => {
+        M.listText = '';
+        LT.key = null;
+        K.writeHash?.();
+        K.render();
+      },
+    ],
+    [
+      '[data-mu-lsrc]',
+      (b) => {
+        LT.src = b.dataset.muLsrc;
+        LT.all = false;
+        K.render();
+      },
+    ],
+    [
+      '[data-mu-lall]',
+      () => {
+        LT.all = !LT.all;
+        K.render();
+      },
+    ],
+    [
+      '[data-mulist]',
+      (b) =>
+        b.dataset.mulist === 'tsv'
+          ? K.exportFigure('tsv', null, `${D.site.id}_list_sites`, b, listTsv)
+          : K.tableExport(
+              b.dataset.mulist,
+              b,
+              b.closest('section'),
+              { title: 'Sites of a pasted list' },
+              `${D.site.id}_list_sites`,
+              listTsv
+            ),
+    ]
+  );
+
   function chosenSection() {
     const { rows } = chosenRows();
     // a site that no source has a row for (a residue this site's tables do not cover) is one line
@@ -1000,7 +1336,7 @@
       .join('');
     return (
       `<section class="mu-chosen" id="mu-chosen"><h3>Test the sites you chose</h3>` +
-      `<p class="small muted">Pick sites before you look at the results. Up to ${MAX_CHOSEN}, kept in the address.</p>` +
+      `<p class="small muted">Pick sites before you look at the results. Up to ${MAX_CHOSEN} one at a time, or paste a longer list below. Both are kept in the address.</p>` +
       `<form class="mu-add" data-mu-form>` +
       `<input id="mu-site" type="text" autocomplete="off" placeholder="H4 R3" data-mu-site aria-label="Add a site, as a gene and a position"> ` +
       `<button type="submit" class="btn small"${M.chosen.length >= MAX_CHOSEN ? ' disabled' : ''}>Add</button> <span class="small muted" data-mu-msg role="status">${esc(M.note)}</span></form>` +
@@ -1014,6 +1350,8 @@
           `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Source</th><th>k</th><th>Expected</th><th>O/E</th><th>Raw p (more)</th><th>Raw p (fewer)</th><th>Adjusted p (more)</th><th>Adjusted p (fewer)</th></tr></thead><tbody>${body}</tbody></table></div>` +
           `${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muchosen', 'tested sites', 'propensity')}</div>`
         : '') +
+      listSection() +
+      listBody() +
       `</section>`
     );
   }
@@ -1183,8 +1521,9 @@
           ),
   ]);
 
-  // ---- Ranked sites: the sites with q < 0.05 of each source, ranked by p ---------------------------------------------------------
-  const RANK_N = 20;
+  // ---- Ranked sites: the sites of each source with a test, ranked by p; the top 20 whatever their q, those with q < 0.05 counted ---------------------------------------------------------
+  const RANK_N = 20,
+    RANK_MORE = 100; // what Show all opens: every site with q < 0.05, or at least this many sites
   const geneOf = (acc) => byAcc[acc]?.[1] || acc;
   const shownPos = (acc, pos) => (K.prot?.shownPos ? K.prot.shownPos(acc, pos) : pos);
   const siteOnly = (r) => `${r.res || ''}${shownPos(r.acc, r.pos)}`;
@@ -1207,37 +1546,38 @@
       }
       const m = model(s);
       if (!m) return null;
-      const rows = m.rows
-        .map((r) => ({ ...r, qq: g ? r.ql : r.q, pp: g ? r.pl : r.pu }))
-        .filter((r) => r.qq != null && r.qq < RING_Q);
+      const rows = m.rows.map((r) => ({ ...r, qq: g ? r.ql : r.q, pp: g ? r.pl : r.pu })).filter((r) => r.qq != null);
       rows.sort(
         (a, b) =>
           (a.pp ?? 1) - (b.pp ?? 1) ||
           (g ? (a.o ?? 0) - (b.o ?? 0) : (b.o ?? 0) - (a.o ?? 0)) ||
           (a.acc < b.acc ? -1 : a.acc > b.acc ? 1 : a.pos - b.pos)
       );
-      lists.push({ s, g, rows, n: m.n });
+      lists.push({ s, g, rows, n: m.n, sig: rows.filter((r) => r.qq < RING_Q).length });
     }
     return lists;
   }
   function rankSection(l) {
-    const { s, rows } = l,
+    const { s, rows, sig } = l,
       title = rankTitle(s),
       all = !!M.all[s.id],
-      shown = all ? rows : rows.slice(0, RANK_N);
+      more = Math.min(rows.length, Math.max(sig, RANK_MORE)),
+      shown = all ? rows.slice(0, more) : rows.slice(0, RANK_N);
     const head =
-      `<div class="mu-top"><div><h3>${esc(title)}</h3><p class="small muted">${int(rows.length)} ${rows.length === 1 ? 'site' : 'sites'} with q &lt; 0.05</p></div>` +
+      `<div class="mu-top"><div><h3>${esc(title)}</h3><p class="small muted">${int(sig)} ${sig === 1 ? 'site' : 'sites'} with q &lt; 0.05` +
+      (rows.length ? `; the top ${int(Math.min(shown.length, rows.length))} by p of ${int(rows.length)} tested` : '') +
+      `</p></div>` +
       (rows.length ? K.expBar(['pdf', 'svg', 'png', 'tsv'], 'murank', title, 'propensity') : '') +
       `</div>`;
     if (!rows.length)
       return `<section class="mu-rank" data-mu-rank="${esc(s.id)}">${head}<p class="muted small">${
-        l.n ? `No ${esc(W.mark)} of the selection has q &lt; 0.05 here.` : `The selection has no ${esc(W.marks)}.`
+        l.n ? `No ${esc(W.mark)} of the selection has a test here.` : `The selection has no ${esc(W.marks)}.`
       }</p></section>`;
     const body = shown
       .map((r) => {
         const note = r.hot ? `<br><span class="small muted">${esc(K.prop.hotNote(r.acc, r.hot, s.id))}</span>` : '';
         return (
-          `<tr class="mu-go" data-mu-go="${esc(r.acc)}:${r.pos}"><td>${esc(geneOf(r.acc))}${note}</td>` +
+          `<tr class="mu-go${r.qq < RING_Q ? '' : ' mu-faint'}" data-mu-go="${esc(r.acc)}:${r.pos}"><td>${esc(geneOf(r.acc))}${note}</td>` +
           `<td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteOnly(r))}</a></td>` +
           `<td class="num">${int(r.k)}</td><td class="num">${K.prop.fe(r.e)}</td><td class="num">${K.prop.fo(r.o)}</td><td class="num">${fpv(r.qq)}</td></tr>`
         );
@@ -1247,7 +1587,9 @@
       `<section class="mu-rank" data-mu-rank="${esc(s.id)}">${head}` +
       `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Gene</th><th>Site</th><th class="num">k</th><th class="num">Expected</th><th class="num">O/E</th><th class="num" title="p and q pool all cancer types">q</th></tr></thead><tbody>${body}</tbody></table></div>` +
       (rows.length > RANK_N
-        ? `<p class="small"><button type="button" class="btn small" data-mu-all="${esc(s.id)}" aria-expanded="${all}">${all ? `Show the top ${RANK_N}` : `Show all ${int(rows.length)}`}</button></p>`
+        ? `<p class="small"><button type="button" class="btn small" data-mu-all="${esc(s.id)}" aria-expanded="${all}">${all ? `Show the top ${RANK_N}` : `Show ${int(more)}`}</button>${
+            all && more < rows.length ? ` <span class="muted">The download has all ${int(rows.length)}.</span>` : ''
+          }</p>`
         : '') +
       `</section>`
     );
@@ -1259,9 +1601,9 @@
     return (
       K.preamble(
         rankTitle(l.s),
-        `${l.s.long || l.s.label}; q < 0.05, sorted by p (${g ? 'fewer' : 'more'}); ${K.sel.describe() || 'every ' + W.mark}${g ? '' : `; ${hyper() ? 'with' : 'without'} hypermutated samples`}`
+        `${l.s.long || l.s.label}; every site with a test, sorted by p (q < 0.05 for ${l.sig} of ${l.rows.length}; the page shows the top 20) (${g ? 'fewer' : 'more'}); ${K.sel.describe() || 'every ' + W.mark}${g ? '' : `; ${hyper() ? 'with' : 'without'} hypermutated samples`}`
       ) +
-      `rank\tgene\taccession\tsite\tk\texpected\toe\tp_${g ? 'fewer' : 'more'}\tq_${g ? 'fewer' : 'more'}\tprotein_flag\n` +
+      `rank\tgene\taccession\tsite\tk\texpected\toe\tp_${g ? 'fewer' : 'more'}\tq_${g ? 'fewer' : 'more'}\tq_below_0.05\tprotein_flag\n` +
       l.rows
         .map((r, i) =>
           [
@@ -1274,6 +1616,7 @@
             r.o ?? '',
             r.pp ?? '',
             r.qq,
+            r.qq < RING_Q ? 'yes' : 'no',
             r.hot ? K.prop.hotNote(r.acc, r.hot, l.s.id) : '',
           ].join('\t')
         )
@@ -1877,7 +2220,7 @@
       `<p>On the cancer and germline cards, stick height is the count in the card's table, circle size grows with O/E, and a ring marks q &lt; 0.05.</p>` +
       `<p>Expected counts are within a protein. Where the residues of a type that are themselves enriched (q &lt; 0.05) carry ${Math.round((PR.hotspot?.min_share ?? 0.3) * 100)}% or more of a protein's changes or variants (and the protein has at least ${PR.hotspot?.min_changes ?? 20}), such as TP53 R273, R248 and R175, the expected count at its other residues is inflated and they look depleted. The explorer flags such a protein per source and cohort, names up to three of those residues on the waterfall tooltip, the site card and the tested-sites table, and leaves its ${esc(W.marks)} out of the default waterfall labels. You can still label them. The flag changes no count, expected value, O/E, p or q.</p>` +
       `<p><b>Disease variants page.</b> It has three views of the sites of your selection, or of every ${esc(W.mark)} when nothing is selected, and a chart of all sites. Hypermutated tumors are left out unless you choose With hypermutated. Cancer types are pooled, so p and q do not change with them.</p>` +
-      `<p><b>Ranked sites.</b> Each table lists the sites with q &lt; 0.05 in one source, ranked by p, with the top 20 shown and a Show all button. The first two (tumors, cell lines) hold sites with more changes than expected (q is the release's, for the upper tail). The third holds sites with fewer inherited gnomAD variants than expected (q for the lower tail, the dashed-ring sites of the chart). k is the count, expected the count the residue's codon predicts, and O/E their ratio. A protein flagged as dominated by a few enriched residues (see above) says so in its row. A row opens the site's card.</p>` +
+      `<p><b>Ranked sites.</b> Each table lists the sites of one source ranked by p. The top 20 are shown whether or not q is below 0.05; the header counts the sites with q &lt; 0.05, and a row above that line is lighter and shows its q. Show opens the sites with q &lt; 0.05, or the top 100 if there are fewer; the download has every tested site. The first two (tumors, cell lines) hold sites with more changes than expected (q is the release's, for the upper tail). The third holds sites with fewer inherited gnomAD variants than expected (q for the lower tail, the dashed-ring sites of the chart). k is the count, expected the count the residue's codon predicts, and O/E their ratio. A protein flagged as dominated by a few enriched residues (see above) says so in its row. A row opens the site's card.</p>` +
       `<p><b>Cancer: tumors.</b> This is an oncoprint. The ${esc(W.marks)} with the most changed TCGA tumors are the rows, the tumors that carry them are the columns, and the bar above each tumor is its coding calls per Mb from the release's sample_burden (capped at 40; the dashed line is the hypermutated threshold). A tumor with two changes at one site counts once, so a table that counts changes can show a higher number.</p>` +
       `<p><b>Inherited disease.</b> Each row is a ${esc(W.mark)} with at least one ClinVar variant classified pathogenic or likely pathogenic (clinsig_simple 1 in the release's ClinVar change tables). Columns are disease families. Each condition name of a variant (split at | and ;; "not specified", "not provided" and "see cases" dropped) gets the family of the first rule it matches in the release's name rules for its DisGeNET disease families (PTM_Pipeline scripts/disease_families.py), applied here to ClinVar condition names and read as text when the explorer is built, so a few conditions can land in a broader family than a specialist would choose; the detail of a cell always lists ClinVar's own condition names; a name no rule matches goes to Other / unassigned, which is listed last. A variant counts once in each of its families, so a row's cells can add up to more than its All count. A cell is the number of variants, shaded from light (one) to full (the most in any cell); click it to list the variants, their conditions and review stars, with links to ClinVar. The review filter keeps variants with at least that many ClinVar review stars. A variant that names no condition is not shown. These counts come from clinical testing and submission, not from a test against expectation, so they carry no p or q.</p>` +
       `<p><b>All sites as a chart.</b> The chart ranks the sites from the most enriched to the most depleted. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side; one with a small expected count has no stored test and is drawn at 0. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The top and bottom sites are labeled, except those of a flagged protein; click a point to label it too (up to 20, kept in the address). Highlight genes outlines every site of the genes you paste and labels each one's most extreme site; it changes no statistic. Under the chart, a table lists the ${esc(W.marks)} with no change, most expected first, with the raw lower-tail p. Whole list against expectation is the release's own test for the site set.</p>` +
@@ -1908,7 +2251,7 @@
   st.id = 'kit-mutations-css';
   st.textContent = [
     ':root{--onc-1:#2a78d6;--onc-2:#eb6834;--onc-3:#1baf7a;--wf-hot:#e34948;--wf-cold:#2a78d6;--wf-mid:#f0efec}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--onc-1:#3987e5;--onc-2:#d95926;--onc-3:#199e70;--wf-hot:#e66767;--wf-cold:#3987e5;--wf-mid:#383835}}:root[data-theme="dark"]{--onc-1:#3987e5;--onc-2:#d95926;--onc-3:#199e70;--wf-hot:#e66767;--wf-cold:#3987e5;--wf-mid:#383835}',
-    '.mu-skel{min-height:26rem}.mu-end{justify-content:flex-end}.mu-linkbtn{border:0;background:none;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;padding:0}.mu-rank{margin:1.2rem 0;max-width:720px}.mu-rank h3{margin:.2rem 0}.mu-rank p{margin:.1rem 0}.mu-rt .num,.mu-cvt .num{text-align:right;font-variant-numeric:tabular-nums}.mu-rt td:first-child{min-width:8rem}.mu-go{cursor:pointer}.mu-go:hover td{background:var(--surface-2)}',
+    '.mu-skel{min-height:26rem}.mu-end{justify-content:flex-end}.mu-linkbtn{border:0;background:none;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;padding:0}.mu-rank{margin:1.2rem 0;max-width:720px}.mu-rank h3{margin:.2rem 0}.mu-rank p{margin:.1rem 0}.mu-rt .num,.mu-cvt .num{text-align:right;font-variant-numeric:tabular-nums}.mu-rt td:first-child{min-width:8rem}.mu-go{cursor:pointer}.mu-go:hover td{background:var(--surface-2)}.mu-faint td{opacity:.62}.mu-list label{font-weight:600}.mu-lt .num,.mu-rt .num{text-align:right}',
     '.mu-cv{max-width:100%}.mu-cvw{max-width:100%;overflow-x:auto}.mu-cvt{border-collapse:separate;border-spacing:0}.mu-cvt .mu-site{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;white-space:nowrap;padding-right:.6rem}.mu-fam{height:11rem;vertical-align:bottom;padding:.2rem .1rem;width:2rem;min-width:2rem}.mu-fam span{writing-mode:vertical-rl;transform:rotate(180deg);display:block;max-height:10.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:.78rem}.mu-c{padding:1px;text-align:center}.mu-all{color:var(--muted);padding:0 .5rem}.mu-cell{display:block;width:100%;min-width:1.9rem;height:1.6rem;border:0;border-radius:3px;font:inherit;font-size:.8rem;color:var(--ink);cursor:pointer}.mu-cell:hover,.mu-cell:focus-visible{outline:2px solid var(--ink)}.mu-sw{display:inline-block;width:18px;height:12px;border:1px solid var(--line-strong);vertical-align:-1px;margin-right:4px}.mu-cvd{margin:.8rem 0}.mu-cvd h4{margin:.2rem 0}.mu-cvd ul{margin:.3rem 0;padding-left:1.1rem;font-size:.9rem}',
     '.mu-bar{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin:.8rem 0}.mu-ctl{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center}',
     '.mu-ct{display:inline-flex;align-items:center;gap:.4rem}.mu-ct select{font:inherit;padding:.25rem .4rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);max-width:14rem}',
