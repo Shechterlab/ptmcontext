@@ -531,6 +531,10 @@
     first: (acc) => 1 + dropped(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
     length: (acc, n) => n - dropped(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
     tables: (acc) => (PV.acc === acc ? PV.tb || null : null),
+    // the mean AlphaMissense score of a site's substitutions: undefined until AlphaFold DB's file for the open protein is in (or
+    // when it has none), else {sum, n} (read live for the open protein only)
+    am: (acc, pos) => (PV.acc === acc ? PV.af?.am?.get?.(pos) : undefined),
+    amReady: (acc) => PV.acc === acc && !!PV.af?.am,
     // a mark's state as its colored pill and as text (the site's first colored category attribute); '' without one
     statePill: (m) => statePill(m),
     stateLabel: () => {
@@ -2365,6 +2369,7 @@
                 out.set(+mm[2], o);
               }
               af.am = out;
+              if (PV.acc === acc) K.siteTable?.refresh();
               if (PV.acc === acc && PV.site) {
                 const card = document.getElementById('site-card');
                 if (card) card.outerHTML = siteCard(p, rec);

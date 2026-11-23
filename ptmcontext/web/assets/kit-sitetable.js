@@ -111,6 +111,7 @@
           names,
           hot: loaded ? SRC.filter((s) => src[s.id]?.hot).map((s) => ({ s, tip: src[s.id].hot })) : null,
           dis: inDisorder(rec, pos),
+          am: K.prot.am?.(acc, pos),
         };
       });
     return { p, rec, rows, loaded, NM, cvOk: !PR.cv || (CV && CV !== 'pending') };
@@ -126,16 +127,21 @@
       why = c.fewer ? 'fewer than expected' : 'more than expected';
     return (
       `<span class="st-src${ring ? ` st-ring${c.fewer ? ' dash' : ''}` : ''}" title="${esc(c.tip + (ring ? `\n${why}, q below ${RING}` : ''))}">` +
-      `<span>${int(c.k ?? 0)} · ${c.o != null ? K.prop.fo(c.o) : '–'}</span><small>q ${c.q != null ? fq(c.q) : '–'}</small></span>`
+      `<span>${K.prop.kOE(s.id, { k: c.k, o: c.o })}${c.q != null && c.k > 0 ? ` · <span class="st-q">q ${fq(c.q)}</span>` : ''}</span></span>`
     );
   }
   function columns(M) {
     const cols = [
       {
         id: 'site',
+        tsvName: 'site',
         label: 'Site',
         help: 'The residue and its position as the page numbers it; opens its card',
-        cell: (r) => `<a href="${esc(K.link('protein', `${M.p.acc}/${r.pos}`))}">${esc(r.label)}</a>`,
+        cell: (r) =>
+          `<a href="${esc(K.link('protein', `${M.p.acc}/${r.pos}`))}">${esc(r.label)}</a>` +
+          (K.prot.shownPos && String(r.pos) !== String(K.prot.shownPos(M.p.acc, r.pos))
+            ? ` <span class="muted small" title="The position in UniProt's numbering">(UniProt ${esc(`${r.label.replace(/\d+$/, '')}${r.pos}`)})</span>`
+            : ''),
         val: (r) => r.pos,
         tsv: (r) => r.label,
         cls: 'mono',
@@ -144,6 +150,7 @@
     if (M.rows.some((r) => r.state))
       cols.push({
         id: 'state',
+        tsvName: 'state',
         label: K.prot.stateLabel?.() || 'State',
         help: 'The state of the mark at the site',
         cell: (r) => esc(r.state || '–'),
@@ -156,6 +163,7 @@
       cols.push(
         {
           id: `${s.id}:k`,
+          tsvName: `${s.id}_${String(unit).replace(/\W+/g, '_')}_changed`,
           grp: s.id,
           label: `${s.label} k`,
           sub: 'k',
@@ -166,6 +174,7 @@
         },
         {
           id: `${s.id}:o`,
+          tsvName: `${s.id}_oe`,
           grp: s.id,
           label: `${s.label} O/E`,
           sub: 'O/E',
@@ -176,6 +185,7 @@
         },
         {
           id: `${s.id}:q`,
+          tsvName: `${s.id}_q`,
           grp: s.id,
           label: `${s.label} q`,
           sub: 'q',
@@ -193,6 +203,7 @@
       cols.push(
         {
           id: 'clin:n',
+          tsvName: `${CV_SRC.id}_pathogenic_n`,
           label: `${CV_SRC.label} pathogenic`,
           num: 1,
           help: `${CV_SRC.long || CV_SRC.label}: pathogenic and likely pathogenic variants at the site`,
@@ -202,6 +213,7 @@
         },
         {
           id: 'clin:c',
+          tsvName: `${CV_SRC.id}_conditions`,
           label: `${CV_SRC.label} conditions`,
           help: 'The conditions named by those variants, most variants first; all of them on hover',
           cell: (r) =>
@@ -222,6 +234,7 @@
     M.NM.forEach((n, i) =>
       cols.push({
         id: `names:${i}`,
+        tsvName: `${String(n.row).toLowerCase().replace(/\W+/g, '_').replace(/^_|_$/g, '') || 'names_' + i}`,
         label: n.row,
         help: `${n.title} with a change at the site, from ${n.row} (at most the few the release lists; the count is in the map)`,
         cell: (r) => {
@@ -246,6 +259,7 @@
     cols.push(
       {
         id: 'hot',
+        tsvName: 'hotspot_note',
         label: 'Hotspot',
         help: 'The site is one of the enriched residues that carry much of its protein’s changes (the tooltip names the source)',
         cell: (r) =>
@@ -259,6 +273,7 @@
       },
       {
         id: 'dis',
+        tsvName: 'disordered',
         label: 'Disordered region',
         help: 'Whether the site lies in a disordered region of the protein (the map’s disorder tracks)',
         cell: (r) => (r.dis ? 'yes' : '<span class="muted">no</span>'),
@@ -266,6 +281,22 @@
         tsv: (r) => (r.dis ? 'yes' : 'no'),
       }
     );
+    // AlphaMissense: the mean score of the site's substitutions, once AlphaFold DB's file for this protein is in (it is read live,
+    // for the open protein only); less reliable inside disordered regions, so the disordered column goes with it
+    if (K.prot.amReady?.(M.p.acc))
+      cols.push({
+        id: 'am',
+        tsvName: 'alphamissense_mean',
+        label: 'AlphaMissense',
+        num: 1,
+        help: 'The mean AlphaMissense pathogenicity score of the substitutions at the site (0 to 1; 0.564 and above is likely pathogenic). Less reliable in disordered regions',
+        cell: (r) =>
+          r.am
+            ? `<span${r.dis ? ' class="muted" title="In a disordered region: less reliable"' : ''}>${(r.am.sum / r.am.n).toFixed(2)}</span>`
+            : '–',
+        val: (r) => (r.am ? r.am.sum / r.am.n : null),
+        tsv: (r) => (r.am ? (r.am.sum / r.am.n).toFixed(3) : ''),
+      });
     return cols;
   }
   // rows in the chosen order: a missing value last in either direction, ties by the column's second value, then the position
@@ -392,6 +423,7 @@
     return fold('p-sitetab', esc(TITLE), summary(M), body(M), false);
   });
   (K.proteinFoldSections ||= []).push(['p-sitetab', TITLE, 1]);
+  K.siteTable = { refresh: () => refresh() };
   K.prop.onHyper(() => refresh());
   (K.mapReady ||= []).push(() => refresh());
 
@@ -423,7 +455,7 @@
             text:
               c.k == null
                 ? `${esc(x.label)}: none seen`
-                : `${esc(x.label)} k ${int(c.k)} · O/E ${c.o != null ? K.prop.fo(c.o) : '–'}${c.more || c.fewer ? ` <b>q ${fq(c.q)}</b>` : ''}`,
+                : `${esc(x.label)} ${K.prop.kOE(x.id, { k: c.k, o: c.o })}${c.q != null && c.k > 0 ? ` · ${c.more || c.fewer ? `<b>q ${fq(c.q)}</b>` : `q ${fq(c.q)}`}` : ''}`,
             to: 'changes',
           })
         );
@@ -510,11 +542,11 @@
         const tsv =
           K.preamble(
             `${TITLE}, ${gene}`,
-            `one row for each ${W.mark} of ${gene} (${ps.p.acc}): its state, the changes seen at it in each source (k: samples or variants with a change; O/E: changes seen over expected; q: corrected binomial p, for fewer than expected where a source's column says so), the ${CV_SRC ? CV_SRC.label + ' ' : ''}pathogenic and likely pathogenic variants with their conditions, the cell lines named for its changes, the hotspot flag and the disordered-region flag. ${
+            `one row for each ${W.mark} of ${gene} (${ps.p.acc}): its state, the changes seen at it in each source (k: samples or variants with a change; O/E: changes seen over expected; q: corrected binomial p, for fewer than expected where a source's column says so), the ${CV_SRC ? CV_SRC.label + ' ' : ''}pathogenic and likely pathogenic variants with their conditions, the cell lines named for its changes, the hotspot flag, the disordered-region flag${K.prot.amReady?.(ps.p.acc) ? ' and the mean AlphaMissense score of its substitutions (less reliable in disordered regions)' : ''}. ${
               K.prop.state.hyper ? 'With' : 'Without'
             } hypermutated samples; sorted as shown on the page`
           ) +
-          ['uniprot_position', ...cols.map((c) => c.id.replace(/[:\s]+/g, '_'))].join('\t') +
+          ['uniprot_position', ...cols.map((c) => c.tsvName || c.id.replace(/[:\s]+/g, '_'))].join('\t') +
           '\n' +
           rows
             .map((r) => [r.pos, ...cols.map((c) => String(c.tsv(r) ?? '').replace(/[\t\n]/g, ' '))].join('\t'))

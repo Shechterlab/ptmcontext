@@ -43,7 +43,7 @@ const D = {{ site: {{ id: 'toy' }}, run: {{}}, proteins: [], tracks: [{{ kind: '
 const K = {{ D, W: {{ mark: 'site', marks: 'sites' }}, S: {{}}, esc: s => String(s ?? ''), int: n => String(n), clicks: [], us: s => s, link: (v, a) => '#' + v + '/' + a,
   loading: () => '', expBar: () => '', preamble: (t, w) => '# ' + t + '\\n# What: ' + w + '\\n', exportFigure: (k, f, n, b, tsv) => (global.TSV = tsv()),
   prop: {{ ring: 0.05, desc: id => id === 'c', cfg: D.propensity, state: {{ hyper: false }}, peek: () => ({{}}), load: () => Promise.resolve(),
-    at: (acc, id, pos) => cells[id + ':' + pos] || null, fo: o => String(o), fq: q => String(q), tip: () => 'tip', hotNote: () => 'a hotspot', hyperSwitch: () => '', onHyper: noop }},
+    at: (acc, id, pos) => cells[id + ':' + pos] || null, fo: o => String(o), kOE: (id, v) => v.k + ' changes · O/E ' + v.o, fq: q => String(q), tip: () => 'tip', hotNote: () => 'a hotspot', hyperSwitch: () => '', onHyper: noop }},
   prot: {{ siteLabel: (a, p) => 'X' + p, stateText: m => m[2], stateLabel: () => 'State' }},
   map: {{ namedRows: () => [], namedChanges: () => false }}, protState: () => ({{ p: {{ acc: 'P1', gene: 'G1' }}, rec }}) }};
 const rec = {{ marks: [[3, 'w', 'on'], [1, 'w', 'off'], [2, 'w', 'on']], units: [['dis', 2, 2]] }};
@@ -66,16 +66,16 @@ console.log(JSON.stringify({{ id: args[0], title: args[1], sum: args[2], rows, t
         'uniprot_position',
         'site',
         'state',
-        'a_k',
-        'a_o',
+        'a_tumors_changed',
+        'a_oe',
         'a_q',
-        'g_k',
-        'g_o',
+        'g_variants_changed',
+        'g_oe',
         'g_q',
-        'clin_n',
-        'clin_c',
-        'hot',
-        'dis',
+        'c_pathogenic_n',
+        'c_conditions',
+        'hotspot_note',
+        'disordered',
     ]
     by = {ln.split('\t')[0]: ln.split('\t') for ln in lines[head + 1 :]}
     assert [by[p][2] for p in '123'] == ['off', 'on', 'on']

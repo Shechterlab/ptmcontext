@@ -383,6 +383,21 @@
     );
   }
 
+  // k and O/E in words, for a row of sites: "3 changes (k) · O/E 22". One change says little (O/E is the count over a small
+  // expectation), so a single change reads "1 change" with its O/E muted; none reads "none seen". Plain HTML, escaped.
+  const KTIP =
+    'k: the count of changes seen at this residue (samples with a change, or variants). O/E: that count over the count its codon predicts';
+  function kOE(id, v) {
+    if (!v || v.k == null) return '–';
+    if (v.k === 0) return `<span title="${esc(KTIP)}">none seen</span>`;
+    const o =
+      v.o == null
+        ? ''
+        : ` · <span${v.k <= 1 ? ' class="muted"' : ''} title="${esc(v.k <= 1 ? 'One change only: O/E is not informative' : KTIP)}">O/E ${fo(v.o)}</span>`;
+    const noun = SRC[id]?.kind === 'germline' ? 'variant' : 'change';
+    return `<span title="${esc(KTIP)}">${int(v.k)} ${noun}${v.k === 1 ? '' : 's'} (k)</span>${o}`;
+  }
+
   // ---- the site card's line ---------------------------------------------------------------------------------------------------
   function lineHtml(acc, pos) {
     return PR.sources
@@ -400,7 +415,7 @@
           v.pl != null && v.o < 1 ? `; fewer than expected: p ${fq(v.pl)}${v.ql != null ? `, q ${fq(v.ql)}` : ''}` : '';
         const text = tip(acc, s.id, pos, '', v.k).replace(/^ · /, '');
         return (
-          `<span class="pr-s" title="${esc(text)}"><b>${esc(s.label)}</b> O/E ${fo(v.o)}` +
+          `<span class="pr-s" title="${esc(text)}"><b>${esc(s.label)}</b> ${kOE(s.id, v)}` +
           `<span class="muted"> (${esc(q)}${low}${v.u && !desc(s.id) ? ', no matching coding sequence' : ''})</span>` +
           (v.hot ? `<span class="muted pr-hot"> · ${esc(hotNote(acc, v.hot, s.id))}</span>` : '') +
           `</span>`
@@ -581,6 +596,7 @@
     fe,
     fq,
     words,
+    kOE,
     tip,
     desc,
     hotPick,
