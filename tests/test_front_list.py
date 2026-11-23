@@ -55,6 +55,7 @@ def test_list_page_rows_equal_the_python_reference(tmp_path):
         "eval(fs.readFileSync(ASSETS + '/kit-genelist.js', 'utf8')); window.PTMC_MODULES.forEach",
     )
     body = """
+      K.exp = K.exp || { label: k => 'Data (' + k.toUpperCase() + ')' };
       K.fx = v => String(v); K.fq = v => String(v); K.g6 = v => String(v); K.preamble = (t, w) => '# ' + t + ': ' + w + NL;
       K.sel.data(); await K.sel.ready;
       const L = K.geneList.read('GP1 gp2 GP4 FOOBAR');

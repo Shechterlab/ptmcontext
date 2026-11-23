@@ -380,7 +380,7 @@ eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-papers.js'))}, 'ut
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-sitecard.js'))}, 'utf8'));
 const D = {json.dumps(data)}, esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}})[c]);
 const K = {{ D, W: D.words, esc, int: n => String(n), cap: t => String(t)[0].toUpperCase() + String(t).slice(1), clicks: [], link: (v, a) => '#' + v + '/' + a,
-  map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
+  exp: {{ label: k => 'Data (' + k.toUpperCase() + ')' }}, map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
 window.PTMC_MODULES[0](K);
 window.PTMC_MODULES[1](K);
 const attrs = {{ state: 'me1', ev: 'xl; pred', studies: 'LabA; LabB', rec_class: '' }};
@@ -434,7 +434,7 @@ eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-papers.js'))}, 'ut
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-sitecard.js'))}, 'utf8'));
 const D = {json.dumps(data)}, esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}})[c]);
 const K = {{ D, W: D.words, esc, int: n => String(n), cap: t => String(t)[0].toUpperCase() + String(t).slice(1), clicks: [], link: (v, a) => '#' + v + '/' + a,
-  map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
+  exp: {{ label: k => 'Data (' + k.toUpperCase() + ')' }}, map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
 window.PTMC_MODULES[0](K);
 window.PTMC_MODULES[1](K);
 const attrs = {{ state: 'me1', ev: 'xl; pred', studies: 'LabA; LabB', rec_class: '' }};
@@ -471,7 +471,7 @@ eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-papers.js'))}, 'ut
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-sitecard.js'))}, 'utf8'));
 const D = {json.dumps(data)}, esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}})[c]);
 const K = {{ D, W: D.words, esc, int: n => String(n), cap: t => String(t)[0].toUpperCase() + String(t).slice(1), clicks: [], link: (v, a) => '#' + v + '/' + a,
-  map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
+  exp: {{ label: k => 'Data (' + k.toUpperCase() + ')' }}, map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
 window.PTMC_MODULES[0](K); window.PTMC_MODULES[1](K);
 const c = {{ p: {{ acc: 'P1' }}, tb: {json.dumps(tb)}, acc: 'P1', pos: 2, gene: 'G', label: 'X2', seq: '', window: '', shown: q => q,
   attr: () => '', attrHtml: (n, v) => v, isListed: () => false }};

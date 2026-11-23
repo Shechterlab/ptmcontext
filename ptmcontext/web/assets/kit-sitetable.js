@@ -3,7 +3,7 @@
    pathogenic and likely pathogenic variants with their conditions, the cell lines a map row names for its changes
    (website.protein.map.rows[].from.names), a hotspot flag and whether the site lies in a disordered region. It reads what the
    page already loads (the propensity shard data/m/NNN.json, the map's items), plus data/cv.json (the Disease variants page's
-   ClinVar file: 44 KB on methylarginine, 104 KB on phospho), once, when a protein page opens. The fold is closed; its one-line
+   ClinVar file, 40 to 110 KB), once, when a protein page opens. The fold is closed; its one-line
    summary counts the sites with q < 0.05 in the first somatic source and the sites with ClinVar variants. Sortable by any
    column (default: the first somatic source's q, then its p); Data (TSV) with the standard citation header. A module of the
    site kit; without website.propensity it does nothing. */
@@ -301,7 +301,7 @@
             SRC.some((s) => s.lower_tail) ? ', a dashed ring fewer than expected' : ''
           }. Click a column to sort.</p>`;
     return (
-      `<div class="st-bar">${K.prop.hyperSwitch('Samples')}${K.expBar(['tsv'], 'stexp', 'the table of sites', null)}</div>` +
+      `<div class="st-bar">${K.prop.hyperSwitch('Samples')}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'stexp', 'the table of sites', null)}</div>` +
       note +
       wait +
       table(M)
@@ -371,13 +371,11 @@
             .map((r) => [r.pos, ...cols.map((c) => String(c.tsv(r) ?? '').replace(/[\t\n]/g, ' '))].join('\t'))
             .join('\n') +
           '\n';
-        return K.exportFigure(
-          b.dataset.stexp,
-          null,
-          `${D.site.id}_${String(gene).replace(/\W+/g, '_')}_sites`,
-          b,
-          () => tsv
-        );
+        const name = `${D.site.id}_${String(gene).replace(/\W+/g, '_')}_sites`;
+        // the table drawn as a figure (PDF, SVG, PNG), or its rows with the citation header
+        return b.dataset.stexp === 'tsv' || b.dataset.stexp === 'csv'
+          ? K.exportFigure(b.dataset.stexp, null, name, b, () => tsv)
+          : K.tableExport(b.dataset.stexp, b, b.closest('.pfold-body'), { title: TITLE }, name, () => tsv);
       },
     ]
   );
