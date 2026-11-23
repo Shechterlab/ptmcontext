@@ -36,8 +36,8 @@
     const sites = o.sites || [];
     return (
       `<section class="pcard few"><h3>${esc(o.title || `About your selected ${W.marks}`)}</h3>` +
-      (o.note
-        ? `<p class="small">${esc(o.note)}${o.more ? ` Showing the first ${int(sites.length)}, ${int(o.more)} more not listed.` : ''}</p>`
+      (o.more
+        ? `<p class="small muted"${o.note ? ` title="${esc(o.note)}"` : ''}>Showing the first ${int(sites.length)} of ${int(sites.length + o.more)}.</p>`
         : '') +
       sites.map(siteHtml).join('') +
       '</section>'

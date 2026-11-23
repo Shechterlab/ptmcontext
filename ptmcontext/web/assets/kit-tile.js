@@ -160,7 +160,7 @@
       return (
         `No row here differs by 1.1× or more from the other ${fold ? 'proteins' : esc(W.residues)}` +
         (near
-          ? `; ${near === 1 ? 'one has' : `${near} have`} q ≤ 0.05 but a fold under 1.1× (tap or hover a row for why).`
+          ? `; ${near === 1 ? 'one has' : `${near} have`} q ≤ 0.05 but a fold under 1.1×.`
           : '.')
       );
     }

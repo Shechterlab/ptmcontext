@@ -1081,9 +1081,7 @@
       : sets
         ? 'fold enrichment, log scale'
         : rows.some((r) => r.shown != null)
-          ? `fold, log scale; beneath each row, the odds ratio of the test (${
-              m === 'fisher' ? 'Fisher, across all proteins' : 'Mantel–Haenszel, within each protein'
-            })`
+          ? 'fold, log scale; the odds ratio of the test is under each row'
           : `odds ratio, log scale (${
               m === 'fisher' ? 'Fisher, across all proteins' : 'Mantel–Haenszel, within each protein'
             })`;
@@ -1753,13 +1751,11 @@
       (OV.statistic_label !== false && !vsOn() && shown.length && rows.some((r) => r.eff != null)
         ? ownSel && fr
           ? `<p class="tstat">${otherRows(a, made)}</p>`
-          : `<p class="tstat">${
+          : `<p class="tstat"${shown.some((r) => r.adj) ? ' title="Dots: the test within abundance deciles"' : ''}>${
               shown.every((r) => r.absent || r.shown != null)
                 ? gloss('fold', 'Fold')
                 : gloss('odds ratio', 'Odds ratio')
-            } ${esc(baseline(a, vsMethod(S.m)))}${
-              shown.some((r) => r.adj) ? '. Dots: the test within abundance deciles' : ''
-            }</p>`
+            } ${esc(baseline(a, vsMethod(S.m)))}</p>`
         : '') +
       (fr && ms.some((x) => x.wv != null) ? '<p class="tkey">Dashed ring: the whole dataset.</p>' : '') +
       (side.length ? '' : besideLine(card, shown)) +
@@ -2043,7 +2039,7 @@
     const keyP =
       `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less ` +
       `often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>` +
-      `<span>no difference (${gloss('q')} > ${PADJ}; q is the p value adjusted for multiple testing, Benjamini–Hochberg)</span></span>${
+      `<span>no difference (${gloss('q')} > ${PADJ})</span></span>${
         vsOn()
           ? `<span><i class="kd more"></i> your ` +
             `selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>`
@@ -2155,10 +2151,7 @@
         : K.sel.testable()
           ? row
           : against +
-            (`<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. Compare ` +
-              `it with the other ${esc(W.marks)} instead, or see its ${esc(W.marks)} on the Proteins${
-                K.views.sites ? ' and Sites pages' : ' page'
-              }.</p>`))
+            `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}.</p>`)
     );
   }
   // log2 of the odds ratio or fold: the displayed value stays "2.0×" with an arrow for its direction; the table beside it
@@ -2501,9 +2494,7 @@
     if (selOn() && !vsOn() && !selTestable() && K.sel.data() && !K.sel.nMarks()) return lead() + selBlocks(K.selSmall);
     const small = smallSel();
     const banner = small
-      ? `<p class="note small-sel" role="status"><b>Showing the whole dataset.</b> Your ` +
-        `selection is too small to test (it needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}), so each ` +
-        `tile shows all ${esc(W.marks)}${D.cell && K.sel.proteinIds().size ? ', except the cell, which shows where your selection is found' : ''}.</p>`
+      ? `<p class="note small-sel" role="status"><b>Showing the whole dataset</b>${D.cell && K.sel.proteinIds().size ? '; the cell shows where your selection is found' : ''}.</p>`
       : '';
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (
@@ -2792,10 +2783,10 @@
     return (
       `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls${
         whole ? ' <span class="muted">(whole dataset)</span>' : ''
-      }</h3><p class="page-note">${
+      }</h3><details class="page-note"><summary>How to read this</summary>${
         whole ? 'These describe the whole dataset; your selection is not tested again here. ' : ''
       }The same test again with one change each (${esc(METHOD[m] || 'proteins, hypergeometric')}), read on the fold the ` +
-      `tiles show; each cell's odds ratio, interval and q are in its tooltip. ${CTL_KEY}</p>` +
+      `tiles show; each cell's odds ratio, interval and q are in its tooltip. ${CTL_KEY}</details>` +
       `<div class="tbl-card"><table class="tbl">` +
       `<thead><tr><th>Class</th><th>This question</th>${ctl
         .map((x) => `<th><a href="${esc(link('overview', x.id))}">${esc(A[x.id].control_label)}</a></th>`)
@@ -2935,8 +2926,7 @@
           ? mod
             ? ` <b>Your selection</b> is not tested here: the model is fitted once, on every ${esc(W.mark)}.`
             : small
-              ? ` <b>Your selection</b> is too small to test (a test needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}). ` +
-                `The whole dataset follows, for comparison.`
+              ? ` <b>Your selection</b> is too small to test.`
               : ` <b>Your ` +
                 `selection</b>${
                   rows.some((r) => r.descriptive)
@@ -2949,12 +2939,18 @@
       }</p>` +
       // the site file's note on this question (analysis.note), and one-click filters (analysis.note_filters: label, query)
       (a.note && !vsOn()
-        ? `<p class="page-note note">${esc(a.note)}${(a.note_filters || [])
-            .map(
-              (f) =>
-                ` <button type="button" class="chip" data-try="${esc(f.query)}" title="Select the ${esc(W.marks)} that match ${esc(f.query)}">${esc(f.label)}</button>`
-            )
-            .join('')}</p>`
+        ? (() => {
+            const long = String(a.note).trim().split(/\s+/).length > 25,
+              tag = long ? 'details' : 'p';
+            return (
+              `<${tag} class="page-note note">${long ? '<summary>How to read this</summary>' : ''}${esc(a.note)}${(a.note_filters || [])
+                .map(
+                  (f) =>
+                    ` <button type="button" class="chip" data-try="${esc(f.query)}" title="Select the ${esc(W.marks)} that match ${esc(f.query)}">${esc(f.label)}</button>`
+                )
+                .join('')}</${tag}>`
+            );
+          })()
         : '') +
       familyLine(a) +
       (a.control_too_few != null
@@ -2962,8 +2958,7 @@
         : (small ? fewHtml(a) : '') +
           `<section class="pcard">${
             small
-              ? `<h3 class="whole-h">All ${esc(W.marks)}, not your selection</h3><p class="small muted whole-note">The whole dataset, ` +
-                `shown for comparison; your selection is too small to test.</p>`
+              ? `<h3 class="whole-h">All ${esc(W.marks)}, not your selection</h3><p class="small muted whole-note">The whole dataset, for comparison.</p>`
               : ''
           }${
             (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
@@ -3232,7 +3227,9 @@
           ? `Your selection (filled) against ${esc(vsName())} (hollow)${
               a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]
             }`
-          : `${esc(K.shortSub(a.sub))}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}`
+          : a.kind === 'protein_sets'
+            ? esc(K.shortSub(a.sub))
+            : esc(METHOD_PHRASE[S.m].charAt(0).toUpperCase() + METHOD_PHRASE[S.m].slice(1))
       }. <a href="#method">` +
         `How it was tested</a> · <a href="${esc(link('method', 'every', { a: a.id }))}">all tests</a></p>${
           own

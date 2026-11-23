@@ -534,8 +534,7 @@
     if (K.sel.loading?.()) return K.loading(K.sel.loadingText());
     if (!testable())
       return (
-        `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. The rows ` +
-        `are the whole dataset’s.</p>`
+        `<p class="note">Too few to test, so the rows are the whole dataset’s.</p>`
       );
     return (
       `<p class="muted small">Your selection, tested in this browser (exploratory; not adjusted for the ` +
@@ -2197,10 +2196,7 @@
     if (selOn() && !ready()) return ''; // the selection's data are still coming: no counts to state yet
     if (selOn() && !testable())
       return (
-        `<p class="ix-answer">Too few to compare with the other ${esc(W.residues)}: the tests ` +
-        `need at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}, and this selection ` +
-        `has ${int(K.sel.nProteins())} protein${K.sel.nProteins() === 1 ? '' : 's'} and ${int(K.sel.nMarks())} ${esc(marksWord(K.sel.nMarks()))}. The counts ` +
-        `below hold for any selection.</p>`
+        `<p class="ix-answer">Too few to compare: the tests need at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}.</p>`
       );
     const rs = rowsFor(pg.answer.rows, 'mantel_haenszel').filter((x) => dirOf(shown(x)) === 'more');
     const phrases = [...new Set(rs.map((x) => x.ref.phrase || x.label))];
@@ -2212,7 +2208,7 @@
       phrases.length
         ? fill(pg.answer.more) +
           (rs.length > 1
-            ? ` These are ${int(rs.length)} separate tests, each within proteins, with folds of ${range(rs.map(shown))}.`
+            ? ` Folds ${range(rs.map(shown))}.`
             : '')
         : fill(pg.answer.none || `{marks} are not ` + `enriched at these contacts.`).replace(/^./, (c) =>
             c.toUpperCase()
@@ -2230,8 +2226,7 @@
     const list =
       titles.length < 2 ? titles.join('') : titles.slice(0, -1).join(', ') + ' and ' + titles[titles.length - 1];
     return (
-      `<p class="ix-answer">This page lists the evidence: ${esc(list)}.` +
-      `${tested ? '' : ' No test is run on it for this explorer, so there is no summary figure.'}</p>`
+      `<p class="ix-answer" title="${tested ? '' : 'No test is run on this page for this explorer.'}">Evidence: ${esc(list)}.</p>`
     );
   }
   function highlightValue(h) {

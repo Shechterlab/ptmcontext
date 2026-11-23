@@ -1314,7 +1314,7 @@
       `<button type="submit" class="btn small">Test the list</button>` +
       (M.listText ? ` <button type="button" class="btn small" data-mu-lclear>Clear the list</button>` : '') +
       `<span class="small muted" data-mu-lmsg role="status">${listUnderstood()}</span></form>` +
-      `<p class="small muted">Genes, accessions or sites, one per line or separated by commas or spaces. A gene or accession adds all its ${esc(W.marks)}; a site adds that site. Up to ${int(K.listTest.MAX_SITES)} sites, saved in the link.</p>`
+      `<p class="small muted">Genes, accessions or sites, up to ${int(K.listTest.MAX_SITES)} sites.</p>`
     );
   }
   document.addEventListener('submit', (e) => {
@@ -1392,7 +1392,7 @@
       .join('');
     return (
       `<section class="mu-chosen" id="mu-chosen"><h3>Test the sites you chose</h3>` +
-      `<p class="small muted">Pick sites before you look at the results. Up to ${MAX_CHOSEN} one at a time, or paste a longer list below. Both are saved in the link.</p>` +
+      `<p class="small muted">Up to ${MAX_CHOSEN} one at a time, or paste a list below.</p>` +
       `<form class="mu-add" data-mu-form>` +
       `<input id="mu-site" type="text" autocomplete="off" placeholder="H4 R3" data-mu-site aria-label="Add a site, as a gene and a position"> ` +
       `<button type="submit" class="btn small"${M.chosen.length >= MAX_CHOSEN ? ' disabled' : ''}>Add</button> <span class="small muted" data-mu-msg role="status">${esc(M.note)}</span></form>` +
@@ -2022,10 +2022,7 @@
     const bar = `<div class="mu-bar">${tabs}${controls(wf)}${V === 'waterfall' ? '' : CHART_LINK}</div>`;
     // a small selection leads with each site's own variants, linking to the views below
     const few = K.siteFew?.('variants');
-    const lead = few
-      ? few +
-        `<p class="small few-links">The views below cover the same ${esc(W.marks)}: <button type="button" class="mu-linkbtn" data-mu-view="ranked">Ranked sites</button> · <button type="button" class="mu-linkbtn" data-mu-view="oncoprint">Cancer: tumors</button>${PR.cv ? ' · <button type="button" class="mu-linkbtn" data-mu-view="clinvar">Inherited disease</button>' : ''}.</p>`
-      : '';
+    const lead = few || '';
     let line = '',
       body = '';
     if (V === 'ranked') {

@@ -82,7 +82,7 @@
         .join('')}</div>` +
       (`<div class="fm-axis"><span></span><span class="fm-ax"><i>1/8×</i><i>1×</i><i>8×</i></span><span></span>` +
         `</div>`) +
-      `<p class="tfoot">${esc(info(id))}. Ordered by |z|, the log odds ratio over its standard error.</p>` +
+      `<p class="tfoot">${esc(info(id))}.</p>` +
       (K.selOn()
         ? `<p class="twhole"><span>Whole dataset</span> The model is fitted once on every ${esc(W.mark)} and is not ` +
           `refitted for your selection.</p>`

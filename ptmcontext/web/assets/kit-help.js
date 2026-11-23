@@ -316,7 +316,7 @@
           (SETQ
             ? term(
                 'Abundance deciles',
-                'Proteins sorted by measured abundance into ten equal groups. The test compares proteins only within a group, so abundant proteins do not drive the result.'
+                'Proteins sorted by measured abundance into ten equal groups. The test compares proteins only within a group, so abundant proteins do not drive the result. The dots on a row are the test within each group.'
               )
             : '') +
           term(

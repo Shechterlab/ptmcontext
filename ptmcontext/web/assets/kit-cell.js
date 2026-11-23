@@ -3053,7 +3053,7 @@
               (down.length ? `, ${and(down.map(ith))} most below` : '')
             : `${and(down.map(ith))} ${verb(down)} out most below that`
           : `no part stands out from that`) +
-        ` (among parts with q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}).`
+        '.'
       );
     }
     if (scoped) {
@@ -3725,21 +3725,15 @@
   // the same on the page: a ramp bar with the ends of its scale and a tick at the share among all the proteins the maps place
   function pctKey(scoped) {
     if (VIEW === 'z') {
-      const { ref, phi } = parts(scoped, 'z'),
+      const { ref } = parts(scoped, 'z'),
         steps = ['f3', 'f2', 'f1', 'f0', 'ns', 'm0', 'm1', 'm2', 'm3'];
       return (
-        `<div class="key cell-keys pct-key" role="group" aria-label="Color key"><span>h: how far a part’s share is from the share among all mapped proteins${
+        `<div class="key cell-keys pct-key" role="group" aria-label="Color key"><span>h: a part’s share against all mapped proteins${
           ref != null ? ` (${esc(pctText(ref))})` : ''
-        }, as Cohen’s effect size (0.2 small, 0.5 medium, 0.8 large)</span><span class="pk-lo">h −1</span><span class="pk-bar" role="img" aria-label="h from −1 to +1; red above, slate below">${steps
+        } (Cohen’s h)</span><span class="pk-lo">h −1</span><span class="pk-bar" role="img" aria-label="h from −1 to +1; red above, slate below">${steps
           .map((s) => `<i class="${s === 'ns' ? 'f0' : s}"></i>`)
           .join('')}<b class="pk-ref" style="left:50%"></b></span><span class="pk-hi">h +1</span>` +
-        `<span class="cell-key"><i class="cg-k sm"></i>q ≤ ${Q_MAX} but |h| &lt; ${MIN_H}; <i class="cg-k hx"></i>q &gt; ${Q_MAX}. Filled where q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}, Benjamini–Hochberg across the parts shown (${esc(evidenceWords())})${
-          phi > 1
-            ? DISP
-              ? `; overdispersion φ = ${esc(f2(phi))}, used to widen the standard errors`
-              : `; overdispersion φ = ${esc(f2(phi))} (the parts vary more than chance); not used in these tests, because the parts are not expected to be alike`
-            : ''
-        }</span>` +
+        `<span class="cell-key"><i class="cg-k sm"></i>q ≤ ${Q_MAX} but |h| &lt; ${MIN_H}; <i class="cg-k hx"></i>q &gt; ${Q_MAX}. Filled where q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}</span>` +
         (ref != null ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctRefWords(scoped, ref))}</span>` : '') +
         `<span class="cell-key"><i class="cg-k na"></i> not measured</span>${
           hasSel() ? '<span class="cell-key"><i class="cg-k sel"></i> outlined: your selection</span>' : ''
