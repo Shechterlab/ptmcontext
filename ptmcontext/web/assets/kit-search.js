@@ -256,6 +256,37 @@
       .slice(0, 2)
       .map(([v, name]) => ({ kind: 'page', view: v, text: name, label: name, sub: 'Open this page' }));
   }
+  // the site a gene and a residue-and-position name (two words, as typed: "TP53 S15", "H4 R3"), with the UniProt position where the
+  // protein is numbered as papers do; null when the words are not that
+  function siteRow(toks, tok) {
+    const m = /^([A-Z])(\d+)$/i.exec(tok),
+      prev = toks.length > 1 ? toks[toks.length - 2] : '';
+    if (
+      !m ||
+      !prev ||
+      /^[a-z_][\w]*:/i.test(prev) ||
+      !(D.residues || []).some((r) => r.toUpperCase() === m[1].toUpperCase())
+    )
+      return null;
+    const ps = K.sel.protOf(prev);
+    if (!ps || ps.length !== 1) return null;
+    const p = ps[0],
+      aa = m[1].toUpperCase(),
+      typed = +m[2],
+      rule = K.numbering?.(p),
+      uni = typed - (rule?.offset || 0),
+      gene = String(p.gene || p.acc).split(/[\s;]+/)[0];
+    return {
+      kind: 'site',
+      text: tok,
+      label: `${gene} ${aa}${typed}`,
+      sub:
+        uni !== typed
+          ? `${rule.note || rule.label || 'Numbered as papers do'}: UniProt ${aa}${uni}`
+          : 'The site of this protein',
+      drop: 2,
+    };
+  }
   function suggestions(text) {
     const toks = text.match(/[a-z_][\w]*:"[^"]*"?|\S+/gi) || [],
       tok = /\s$/.test(text) ? '' : toks[toks.length - 1] || '';
@@ -277,6 +308,9 @@
         .slice(0, 10)
         .map(([v, l, n]) => ({ kind: 'value', text: `${key}:${head}${quote(v)}`, label: `${key}:${v}`, sub: l, n }));
     }
+    // "GENE R3" (a gene, then a residue letter and a position): the site, before any fuzzy match of the position word (S15 is not RPS15)
+    const site = siteRow(toks, tok);
+    if (site) return [site];
     const out = [],
       flags = []; // yes/no attributes whose query word begins with the typed word: shown by their label
     if (tok.length >= 2 && !m)

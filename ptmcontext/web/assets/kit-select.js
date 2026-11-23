@@ -599,11 +599,15 @@
             // side, as the numbering may differ by one); otherwise the name (ERBB2 P53 is TP53)
             const want = /^[A-Z]/i.test(tok) ? tok[0].toUpperCase() : '';
             if (want && SD) l.ps.forEach(seqWant); // read again when the sequence arrives
-            const fits = l.ps.some(
-              (p) =>
-                isMark(p.i, uniPos(p, pos)) ||
-                (want && [-1, 0, 1].some((d) => residueAt(p, uniPos(p, pos) + d) === want))
-            );
+            // before the marks are in nothing can be checked: a gene followed by a residue and a position is read as its site
+            // (it is read again, and the name kept if it does not fit, when they arrive)
+            const fits =
+              (!SD && !!want) ||
+              l.ps.some(
+                (p) =>
+                  isMark(p.i, uniPos(p, pos)) ||
+                  (want && [-1, 0, 1].some((d) => residueAt(p, uniPos(p, pos) + d) === want))
+              );
             if (!fits) break;
             out.ambiguous.push([tok, nameOf(l.ps[0])]);
           }
