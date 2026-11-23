@@ -11516,7 +11516,8 @@ html.rail-lock,
 html.rail-lock body {
   overflow: hidden;
 }
-.rail {
+/* only the open drawer keeps the wheel to itself; a pinned sidebar passes it on to the page */
+body.rail-open .rail {
   overscroll-behavior: contain;
 }
 .rail-head [data-rail-close] {
