@@ -37,6 +37,7 @@ inputs:                # role the layers read: manifest input that fills it
   depmap_genes: depmap_gene_effect
   tcga_changes: tcga_arginine_changes
   depmap_changes: depmap_arginine_changes
+  depmap_models: depmap_change_models         # the cell lines' names and lineages, for the protein map's cell-line names
   clinvar_plp: clinvar_plp_changes_R
   gnomad_variants: gnomad_changes_R
   # the protein map's own rows (website.protein.map.rows): release tables read for the map only, no test reads them
@@ -1665,7 +1666,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - name: Which proteins
         about: "Protein classes, pathways and condensates of the methylated proteins."
         cards:
-          - {analysis: panther_group, title: Protein classes}
+          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
@@ -3084,7 +3085,22 @@ website:                  # the look and words of the website (ptmc web); layout
           title: Cell lines (DepMap)
           help: "Missense and stop changes of the site's arginine in DepMap 24Q4 cancer cell lines; a taller tick means more lines (depmap_changes, depmap_change_lines)"
           after: tcga
-          from: {marks: true, columns: {label: depmap_changes, value: depmap_change_lines}, split: "; "}
+          from:
+            marks: true
+            columns: {label: depmap_changes, value: depmap_change_lines, ref: depmap_cell_lines}
+            split: "; "
+            # the names of the cell lines of each change, from the release's table of one row per cell line and change (at most
+            # 6 a change; the count says the rest); the hover lists them with their lineage, the pinned card links each to DepMap
+            names:
+              as: depmap_cell_lines
+              of: depmap_changes
+              role: depmap_changes
+              change: protein_change
+              id: model_id
+              lookup: {role: depmap_models, id: model_id, name: cell_line, group: lineage}
+              max: 6
+              title: Cell lines
+              link: "https://depmap.org/portal/cell_line/{id}"
           mark: tick
           labels: marks
           value: {one: "in {n} cell line", many: "in {n} cell lines", size: true}

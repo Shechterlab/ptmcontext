@@ -9896,6 +9896,10 @@
                         "type": "boolean",
                         "description": "true: where the table lacks a column this mapping names, the row has no items from it (columns a later release may add, a score)"
                       },
+                      "keep_empty": {
+                        "type": "boolean",
+                        "description": "true: keep a row whose every mapped column is empty (a position listed without a state still marks the residue)"
+                      },
                       "sep": {
                         "type": "string",
                         "description": "the table's separator (default a tab)"
@@ -9978,6 +9982,35 @@
                           "type": "string"
                         },
                         "description": "keep only items of these classes from this table (a list column of codes, of which a few are this row's)"
+                      },
+                      "names": {
+                        "type": "object",
+                        "description": "marks: true only: name the entities a change lists, from another table. as: the column added to the marks table (map it as the row's ref); of: the marks column of entries (changes) separated by split; role: the role of the table with one row per entity and entry; change: its column naming the entry; id: its column of entity ids; accession: its protein column (default canonical_UniProtAC); lookup: {role, id, name, group} gives each id a name and group; max: entities kept for an entry (default 6); title and link ({id}) are how the page words and links them",
+                        "additionalProperties": false,
+                        "required": ["as", "of", "role", "change", "id", "lookup"],
+                        "properties": {
+                          "as": {"type": "string"},
+                          "of": {"type": "string"},
+                          "role": {"type": "string"},
+                          "change": {"type": "string"},
+                          "id": {"type": "string"},
+                          "accession": {"type": "string"},
+                          "sep": {"type": "string"},
+                          "max": {"type": "integer", "minimum": 1},
+                          "title": {"type": "string"},
+                          "link": {"type": "string"},
+                          "lookup": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["role", "id", "name"],
+                            "properties": {
+                              "role": {"type": "string"},
+                              "id": {"type": "string"},
+                              "name": {"type": "string"},
+                              "group": {"type": "string"}
+                            }
+                          }
+                        }
                       }
                     }
                   },
@@ -9999,6 +10032,10 @@
                         "optional": {
                           "type": "boolean",
                           "description": "true: where the table lacks a column this mapping names, the row has no items from it (columns a later release may add, a score)"
+                        },
+                        "keep_empty": {
+                          "type": "boolean",
+                          "description": "true: keep a row whose every mapped column is empty (a position listed without a state still marks the residue)"
                         },
                         "sep": {
                           "type": "string",
@@ -10082,6 +10119,35 @@
                             "type": "string"
                           },
                           "description": "keep only items of these classes from this table (a list column of codes, of which a few are this row's)"
+                        },
+                        "names": {
+                          "type": "object",
+                          "description": "marks: true only: name the entities a change lists, from another table. as: the column added to the marks table (map it as the row's ref); of: the marks column of entries (changes) separated by split; role: the role of the table with one row per entity and entry; change: its column naming the entry; id: its column of entity ids; accession: its protein column (default canonical_UniProtAC); lookup: {role, id, name, group} gives each id a name and group; max: entities kept for an entry (default 6); title and link ({id}) are how the page words and links them",
+                          "additionalProperties": false,
+                          "required": ["as", "of", "role", "change", "id", "lookup"],
+                          "properties": {
+                            "as": {"type": "string"},
+                            "of": {"type": "string"},
+                            "role": {"type": "string"},
+                            "change": {"type": "string"},
+                            "id": {"type": "string"},
+                            "accession": {"type": "string"},
+                            "sep": {"type": "string"},
+                            "max": {"type": "integer", "minimum": 1},
+                            "title": {"type": "string"},
+                            "link": {"type": "string"},
+                            "lookup": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": ["role", "id", "name"],
+                              "properties": {
+                                "role": {"type": "string"},
+                                "id": {"type": "string"},
+                                "name": {"type": "string"},
+                                "group": {"type": "string"}
+                              }
+                            }
+                          }
                         }
                       }
                     },

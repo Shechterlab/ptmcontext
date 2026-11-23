@@ -385,6 +385,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
         - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
       history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
     names: {input: cdcode_condensates, set: uid, name: name}
+    labels: {DEE660B4: "Stress granule proteome (CD-CODE list)"}   # told apart from the cell-map and organelle-IP stress granules
     universe: snapshot
     whole_universe: true
     min_size: 5
@@ -410,6 +411,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
         - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
       history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
     names: {input: cdcode_condensates, set: uid, name: name}
+    labels: {DEE660B4: "Stress granule proteome (CD-CODE list)"}   # told apart from the cell-map and organelle-IP stress granules
     universe: annotated            # the proteins in any of these condensates
     min_size: 5
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
@@ -1501,7 +1503,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: histone_me1}
           - {analysis: histone_me2}
           - {analysis: histone_me3}
-          - {analysis: panther_group, title: Protein classes}
+          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
           - {analysis: panther_group_me1}
           - {analysis: panther_group_me2}
           - {analysis: panther_group_me3}

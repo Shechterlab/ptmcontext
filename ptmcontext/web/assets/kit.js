@@ -256,7 +256,7 @@
     A[a.id] = a;
   });
   const label = (r) =>
-    ((A[r.analysis]?.labels || {})[r.category] || r.category.replace(/_/g, ' ')) +
+    us((A[r.analysis]?.labels || {})[r.category] || r.category.replace(/_/g, ' ')) + // the category is a source's own name: shown in American spelling
     (r.method === 'conditional_logit' && r.stratum === 'alone' ? ' (on its own)' : '');
   const SETS = (a) => A[a]?.kind === 'protein_sets';
   // what a protein-set question counts: proteins, or another identifier of theirs (genes), as the site file says
@@ -848,6 +848,9 @@
 
   // ---- Overview: tiles. Each tile is a question with its most telling classes, and opens the question's figure ------
   // a mark that is a glyph says its meaning in hidden text as well
+  // the line for a question none of whose rows differs: under 1.1× when some row passes the test, else not significant
+  const noneDiffers = (rows) =>
+    rows.some((r) => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)';
   const am = (d) =>
     `<span class="am ${d}"><span aria-hidden="true">${d === 'more' ? '▲' : d === 'less' ? '▼' : '○'}</span>` +
     `<span class="vh">${d === 'more' ? 'more often: ' : d === 'less' ? 'less often: ' : 'no difference: '}</span></span>`;
@@ -1224,10 +1227,7 @@
         .join(', ') + (rs.length > k ? ` <span class="muted">+${rs.length - k}</span>` : '');
     if (up.length) return am('more') + list(up, 2) + (down.length ? '; ' + am('less') + list(down, 1) : '');
     if (down.length) return am('less') + list(down, 2);
-    return (
-      am('ns') +
-      (rows.some((r) => r.q != null && r.q <= PADJ) ? 'none differs by 1.1× or more' : 'none differs at q ≤ 0.05')
-    );
+    return am('ns') + noneDiffers(rows);
   }
   // why a selection's rows are shown and not tested: the reason the retest gave its rows (r.why), the most specific first
   const WHY_ORDER = ['defined', 'between', 'named', 'made', 'own', 'small'];
@@ -1757,10 +1757,7 @@
           }</div>`
         : made
           ? ''
-          : `<p class="muted ` +
-            `tnone">${
-              rows.some((r) => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'
-            }</p>`) +
+          : `<p class="muted ` + `tnone">${noneDiffers(rows)}</p>`) +
       (OV.statistic_label !== false && !vsOn() && shown.length && rows.some((r) => r.eff != null)
         ? ownSel && fr
           ? `<p class="tstat">${otherRows(a, made)}</p>`

@@ -424,6 +424,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
         - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
       history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
     names: {input: cdcode_condensates, set: uid, name: name}
+    labels: {DEE660B4: "Stress granule proteome (CD-CODE list)"}   # told apart from the cell-map and organelle-IP stress granules
     universe: snapshot
     whole_universe: true
     min_size: 5
@@ -449,6 +450,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
         - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
       history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
     names: {input: cdcode_condensates, set: uid, name: name}
+    labels: {DEE660B4: "Stress granule proteome (CD-CODE list)"}   # told apart from the cell-map and organelle-IP stress granules
     universe: annotated            # the proteins in any of these condensates
     min_size: 5
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
@@ -1607,7 +1609,7 @@ website:                  # the look and words of the website (ptmc web); layout
         about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types together. Each question's page links to the same question for each type with at least 200 lysines."
         cards:
           - {analysis: histone, title: Histones and other proteins}
-          - {analysis: panther_group, title: Protein classes}
+          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
