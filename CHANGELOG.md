@@ -4,7 +4,7 @@
 
 > A Disease variants page: ranked sites, tumors, inherited disease, and a chart of all sites.
 > Paste a list of genes, accessions or sites to test it, with the result in one sentence.
-> A small selection gets an "about these sites" block on every tab, and a Compare marks page sets the explorers side by side.
+> A small selection gets an "about these sites" block on every tab; Compare marks sets the explorers side by side.
 > Link previews, plainer wording and UniProt numbering for proteins that papers number differently.
 > Two labeled versions everywhere: App: PTMcontext 0.6.0 and Data: PTM_Pipeline v1.7.0.
 
