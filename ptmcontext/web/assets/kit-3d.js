@@ -3261,7 +3261,7 @@
                 `${k} (${xs.map((x) => `${dateWords(x.version) || x.input}, MD5 ${x.md5.slice(0, 8)}…`).join('; ')})`
             )
             .join('; ')}. `
-        : 'This view uses no table of this explorer except the modified sites. ') +
+        : 'Uses only this explorer’s modified sites. ') +
       `Drawn with ${LIB_CITE}.`
     );
   }

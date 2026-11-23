@@ -393,7 +393,7 @@
     const o =
       v.o == null
         ? ''
-        : ` · <span${v.k <= 1 ? ' class="muted"' : ''} title="${esc(v.k <= 1 ? 'One change only: O/E is not informative' : KTIP)}">O/E ${fo(v.o)}</span>`;
+        : ` · <span${v.k <= 1 ? ' class="muted"' : ''} title="${esc(v.k <= 1 ? 'One change only, so O/E tells little' : KTIP)}">O/E ${fo(v.o)}</span>`;
     const noun = SRC[id]?.kind === 'germline' ? 'variant' : 'change';
     return `<span title="${esc(KTIP)}">${int(v.k)} ${noun}${v.k === 1 ? '' : 's'} (k)</span>${o}`;
   }

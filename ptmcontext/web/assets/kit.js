@@ -2925,7 +2925,7 @@
       }${
         selOn() && !vsOn()
           ? mod
-            ? ` <b>Your selection</b> is not tested here: the model is fitted once, on every ${esc(W.mark)}.`
+            ? ` <b>Your selection</b> is not tested here. The model is fitted once on every ${esc(W.mark)}.`
             : small
               ? ` <b>Your selection</b> is too small to test.`
               : ` <b>Your ` +
@@ -3539,7 +3539,7 @@
     pdf: 'PDF: vector, fonts embedded, with its citation and sources',
     svg: 'SVG: vector, editable, with its citation and sources in the file',
     png: 'PNG at 300 dpi, with its citation and sources in the image and its text fields',
-    tsv: 'TSV: the rows, with # lines that say what they are, how to cite them and where they come from',
+    tsv: 'TSV: the rows, with # header lines on their source and how to cite them',
   };
   const shortCommit = (c) =>
     c ? c.replace(/-dirty$/, '').slice(0, 7) + (c.endsWith('-dirty') ? '+changes' : '') : 'not recorded';

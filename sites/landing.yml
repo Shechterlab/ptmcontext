@@ -31,7 +31,7 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
     - "Each row is a class of a question that two or more explorers test. Each column is one explorer. A cell is that explorer's own result for the class, as its page shows it."
     - "The number is a fold: the share of the marks in the class over the share of the comparison group in it. For a protein set (PANTHER, condensates, cell locations, GO, disease) it is the fold enrichment of the marked proteins. The q is the explorer's own Benjamini–Hochberg q for its test."
     - "Each question row names the test and the comparison group, one line per explorer. They can differ between explorers, so read them before you compare numbers. The page flags a different test."
-    - "The dot shows the reading the explorers use. Filled with a ring: q is 0.05 or less and the fold is at least 1.1 or at most 1/1.1 (red ▲ more often, slate ▼ less often). Gray filled: q is 0.05 or less but the fold is within 1.1. Hollow: q is above 0.05. The circle grows with the fold. A hollow dot also marks a fold and a test that point different ways."
+    - "Dots follow the explorers' own reading. Filled with a ring: q is 0.05 or less and the fold is at least 1.1 or at most 1/1.1 (red ▲ more often, slate ▼ less often). Gray filled: q is 0.05 or less but the fold is within 1.1. Hollow: q is above 0.05. The circle grows with the fold. A hollow dot also marks a fold and a test that point different ways."
     - "Not tested: the explorer doesn't test that class or has too few marks. It isn't zero."
     - "Download gives the rows you see as a table (TSV) or as a figure (SVG, PNG, PDF). Each file names every explorer's data release and DOI."
   groups:
@@ -182,8 +182,8 @@ whats_new:             # the data releases' notes, newest first: the landing pag
   releases:                # one entry per PTM_Pipeline release: title (the data release, not the website), items, doi
     - title: PTM_Pipeline v1.7.0 data release (2026-11-21)
       items:
-        - "Mutation propensity: O/E and q for every residue the explorers test in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar, from the release."
-        - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the earlier flag for counts at least 3 times the protein's average."
+        - "Mutation propensity: O/E and q for every residue the explorers test in TCGA, DepMap and gnomAD from the release, and a descriptive O/E for ClinVar."
+        - "Protein cards now draw lollipops. Stick height is the count, circle size is O/E, and a ring marks q below 0.05. They replace the flag for counts at least 3 times the protein's average."
         - "A Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), Inherited disease (ClinVar variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
         - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
       doi: "10.5281/zenodo.24429699"
@@ -191,7 +191,7 @@ whats_new:             # the data releases' notes, newest first: the landing pag
       items:
         - "Cancer changes at every candidate residue (TCGA tumors, DepMap cell lines) and germline variants (ClinVar, gnomAD), with the gene named for proteins that several genes encode."
         - "A count of the changes the cards do not show, with a download of those rows."
-        - "Histones and proteins without their initiator methionine are numbered as papers number them; one short name (H4) for a protein several genes encode, and search finds old gene names too."
+        - "Histones and proteins without their initiator methionine are numbered as papers number them. A protein that several genes encode has one short name (H4), and search finds old gene names too."
         - "The four human sites show the same protein-page cards, wherever the data have the residue."
         - "Network clusters are named against the annotated human proteome, with a tooltip of each cluster's best terms and a Highlight a term box."
       doi: "10.5281/zenodo.24406688"

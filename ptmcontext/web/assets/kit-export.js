@@ -172,7 +172,7 @@
       `<span class="xm-wrap"><button type="button" class="exp-btn xm-toggle" data-xm-toggle aria-haspopup="menu" aria-expanded="false" title="Download or print this page">Download ▾</button>` +
       `<div class="xm-pop" hidden><div class="xm-items" role="menu">` +
       `<button type="button" class="exp-btn xm-item" role="menuitem" data-xm-page-act="pdf" title="An A4 PDF of this page, in print colors, with every section open">PDF of this page</button>` +
-      `<button type="button" class="exp-btn xm-item" role="menuitem" data-xm-page-act="print" title="Opens the browser's print dialog. Text stays text. Choose Save as PDF there for a smaller file">Print this page</button>` +
+      `<button type="button" class="exp-btn xm-item" role="menuitem" data-xm-page-act="print" title="Opens the browser's print dialog. Save as PDF there for a smaller file with selectable text">Print this page</button>` +
       `${o.extra || ''}</div></div></span></div>`
     );
   }

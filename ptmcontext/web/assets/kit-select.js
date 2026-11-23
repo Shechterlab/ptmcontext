@@ -683,7 +683,7 @@
   ];
   // one message for every list of names, with those left out (html, already escaped) and the site's noun for its marks
   const leftOut = (listHtml) =>
-    `Left out of the list: ${listHtml}. No ${esc(W.mark || 'mark')} is on a protein of that name in this dataset, or the name is not known.`;
+    `Left out of the list: ${listHtml}. No protein of that name carries a ${esc(W.mark || 'mark')} in this dataset, or the name is unknown.`;
   // a term key:value: an analysis (its class or set), or an attribute of the marks or of the proteins; a word of the
   // site's own (website.search.terms: go:rna), read first; a pattern of residues (website.search.patterns: motif:<pattern>
   // covering the mark, window:PRPR anywhere near it); or a module's (K.searchTerms). [filter key, values], or
