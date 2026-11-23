@@ -2,7 +2,7 @@
 # file: edit it (and rebuild with ptmc web) to change the citation, the version or the date.
 cff-version: 1.2.0
 message: "Please cite the paper and the original data sources."
-title: "PTMcontext: human methylarginine sites (rebuild, checked against release v1.7.0, whose methylarginine data equal v1.4.3)"
+title: "Methylarginine Site Explorer"
 version: "0.5.0"
 date-released: "2026-11-15"
 url: "https://shechterlab.github.io/PTM_Pipeline/"
@@ -31,6 +31,7 @@ references:   # the data sources: cited with every export
     title: "Human methylarginine sites, context marks, cancer and germline variants and their mutation propensity, v1.7.0 (PTM_Pipeline)"
     publisher: Zenodo
     year: 2026
+    version: "v1.7.0"
     doi: "10.5281/zenodo.24429699"
   - type: dataset
     authors:   # as the Zenodo record lists them
@@ -42,6 +43,7 @@ references:   # the data sources: cited with every export
     title: "Human methylarginine sites (PTM_Pipeline), all versions"
     publisher: Zenodo
     year: 2026
+    version: "all versions"
     doi: "10.5281/zenodo.22696798"
   - type: article
     authors: [{name: "UniProt Consortium"}]

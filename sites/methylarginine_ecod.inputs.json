@@ -23,7 +23,7 @@
       "file": "releases/v1.7.0/human_methylarginine_sites_v1.7.0.tsv",
       "md5": "50dd293d1a3dd94ce7a0fb3168eae3bd",
       "source": "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0",
-      "version": "Methylarginine Site Explorer release v1.7.0 (2026-11-19)",
+      "version": "Methylarginine Site Explorer release v1.7.0 (2026-11-21)",
       "licence": "CC BY-NC-SA 4.0",
       "role": "reference_output",
       "note": "The marks the parity test counts, until this repository builds the site union itself."

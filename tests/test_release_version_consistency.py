@@ -56,3 +56,22 @@ def test_the_citation_file_names_the_declared_release():
             found = set(re.findall(r'v\d+\.\d+\.\d+', yaml.safe_load(cff.read_text()).get('title', '')))
             # the methylarginine title also names v1.4.3, the release whose data its data equal
             assert not found or version in found, f'{cff.name}: title names {found}, the site declares {version}'
+
+
+DATED = re.compile(r'(?:release|Release) (v\d+\.\d+\.\d+)(?: of [\w]+)? \((?:commit \w+, )?(\d{4}-\d{2}-\d{2})\)')
+
+
+@pytest.mark.parametrize('path', SITES, ids=lambda p: p.stem)
+def test_a_dated_mention_of_the_declared_release_carries_its_date(path):
+    """The release's date is declared once (website.dataset.date); a manifest line that dates the same release says it."""
+    site = yaml.safe_load(path.read_text())
+    ds = (site.get('website') or {}).get('dataset') or {}
+    if not ds.get('version'):
+        pytest.skip('the site declares no data release')
+    manifest = json.loads((REPO / site.get('manifest', 'inputs.json')).read_text())['inputs']
+    wrong = []
+    for name, e in manifest.items():
+        for version, date in DATED.findall(e.get('version', '')):
+            if version == ds['version'] and date != ds['date']:
+                wrong.append((name, date))
+    assert not wrong, f'{path.name}: dataset.date is {ds["date"]}, the manifest says {wrong[:3]}'

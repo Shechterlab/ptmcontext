@@ -2,7 +2,7 @@
 # file: edit it (and rebuild with ptmc web) to change the citation, the version or the date.
 cff-version: 1.2.0
 message: "Please cite the data sources: there is no paper for this site yet."
-title: "PTMcontext: human phosphosites (release v1.7.0 of PTM_Pipeline)"
+title: "Phosphorylation Site Explorer"
 version: "0.5.0"
 date-released: "2026-11-15"
 url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"
@@ -19,6 +19,7 @@ references:   # the data sources: cited with every export
     title: "Human methylarginine sites, context marks, cancer and germline variants and their mutation propensity, v1.7.0 (PTM_Pipeline)"
     publisher: Zenodo
     year: 2026
+    version: "v1.7.0"
     doi: "10.5281/zenodo.24429699"
   - type: dataset   # all versions: the concept DOI
     authors:
@@ -28,6 +29,7 @@ references:   # the data sources: cited with every export
     title: "PTM_Pipeline data releases (all versions)"
     publisher: Zenodo
     year: 2026
+    version: "all versions"
     doi: "10.5281/zenodo.22696798"
   - type: article
     authors: [{name: "UniProt Consortium"}]
