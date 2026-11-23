@@ -33,7 +33,20 @@
         (j) => (CV = j),
         () => (CV = null)
       )
-      .then(() => refresh());
+      .then(() => refresh())
+      .then(() => asked && again());
+  };
+  // a selection's few-sites blocks (K.siteFew) read the same files; they ask the page to draw again when one arrives
+  let asked = false,
+    redraw = 0;
+  const again = () => {
+    if (!redraw)
+      redraw = requestAnimationFrame(() => {
+        redraw = 0;
+        const y = scrollY;
+        K.render();
+        scrollTo(0, y);
+      });
   };
   let CV_AT = null; // accession -> Map(position -> variants)
   const cvAt = (acc) => {
@@ -105,12 +118,17 @@
 
   // ---- the columns: each with its words, its cell and its value to sort and download -------------------------------------------
   const fq = (q) => K.prop.fq(q);
-  const ringed = (c, txt) =>
-    c.fewer || c.more
-      ? `<span class="st-ring${c.fewer ? ' dash' : ''}" title="${
-          c.fewer ? 'fewer than expected' : 'more than expected'
-        }, q below ${RING}">${txt}</span>`
-      : txt;
+  // a source's cell: k and O/E on one line, q under them; a ring on the cell when q is below the cutoff
+  function srcCell(s, r) {
+    const c = r.src[s.id];
+    if (!c) return '–';
+    const ring = c.fewer || c.more,
+      why = c.fewer ? 'fewer than expected' : 'more than expected';
+    return (
+      `<span class="st-src${ring ? ` st-ring${c.fewer ? ' dash' : ''}` : ''}" title="${esc(c.tip + (ring ? `\n${why}, q below ${RING}` : ''))}">` +
+      `<span>${int(c.k ?? 0)} · ${c.o != null ? K.prop.fo(c.o) : '–'}</span><small>q ${c.q != null ? fq(c.q) : '–'}</small></span>`
+    );
+  }
   function columns(M) {
     const cols = [
       {
@@ -138,30 +156,33 @@
       cols.push(
         {
           id: `${s.id}:k`,
+          grp: s.id,
           label: `${s.label} k`,
+          sub: 'k',
           num: 1,
           help: `${s.long || s.label}: ${unit} with a change at the site`,
-          cell: (r) => (src(r) ? int(src(r).k ?? 0) : '–'),
           val: (r) => src(r)?.k,
           tsv: (r) => src(r)?.k ?? '',
         },
         {
           id: `${s.id}:o`,
+          grp: s.id,
           label: `${s.label} O/E`,
+          sub: 'O/E',
           num: 1,
           help: `${s.long || s.label}: changes seen over the changes the residue's codon predicts`,
-          cell: (r) => (src(r)?.o != null ? `<span title="${esc(src(r).tip)}">${K.prop.fo(src(r).o)}</span>` : '–'),
           val: (r) => src(r)?.o,
           tsv: (r) => src(r)?.o ?? '',
         },
         {
           id: `${s.id}:q`,
+          grp: s.id,
           label: `${s.label} q`,
+          sub: 'q',
           num: 1,
           help:
             `${s.long || s.label}: q of the binomial test, Benjamini–Hochberg corrected. A ring means q below ${RING}, more than expected` +
             (s.lower_tail ? '; a dashed ring means fewer than expected (the q shown is for fewer)' : ''),
-          cell: (r) => (src(r)?.q != null ? ringed(src(r), fq(src(r).q)) : '–'),
           val: (r) => src(r)?.q,
           tie: (r) => src(r)?.p,
           tsv: (r) => src(r)?.q ?? '',
@@ -273,19 +294,57 @@
       parts.push(`${int(M.rows.filter((r) => r.clin).length)} with ${CV_SRC.label} pathogenic variants`);
     return esc(parts.join('; '));
   }
+  // the columns as drawn: each source is one column (k · O/E, with q under it) with a small menu to sort by any of its three values
+  function display(cols) {
+    const out = [];
+    cols.forEach((c) => {
+      if (!c.grp) return out.push(c);
+      let g = out.find((x) => x.id === c.grp);
+      if (!g) {
+        const s = SRC.find((x) => x.id === c.grp);
+        out.push(
+          (g = {
+            id: s.id,
+            parts: [],
+            num: 1,
+            label: s.label,
+            help: `${s.long || s.label}: k (${(s.unit || ['sample', 'samples'])[1]} with a change at the site), O/E (changes seen over the changes the residue's codon predicts) and q below them`,
+            cell: (r) => srcCell(s, r),
+          })
+        );
+      }
+      g.parts.push(c);
+    });
+    return out;
+  }
   function table(M) {
     const cols = columns(M),
       rows = sorted(M, cols);
-    const th = (c) =>
-      `<th class="${c.num ? 'num' : ''}" data-stsort="${esc(c.id)}" tabindex="0" title="${esc(c.help)}"${
-        c.id === ST.key ? ` aria-sort="${ST.dir > 0 ? 'ascending' : 'descending'}"` : ''
-      }>${esc(c.label)}</th>`;
+    const th = (c) => {
+      if (!c.parts)
+        return `<th class="${c.num ? 'num' : ''}" data-stsort="${esc(c.id)}" tabindex="0" title="${esc(c.help)}"${
+          c.id === ST.key ? ` aria-sort="${ST.dir > 0 ? 'ascending' : 'descending'}"` : ''
+        }>${esc(c.label)}</th>`;
+      const on = c.parts.find((x) => x.id === ST.key);
+      return (
+        `<th class="num st-grp" title="${esc(c.help)}"${on ? ` aria-sort="${ST.dir > 0 ? 'ascending' : 'descending'}"` : ''}>${esc(c.label)}` +
+        `<span class="st-sm" role="group" aria-label="Sort ${esc(c.label)} by">${c.parts
+          .map(
+            (x) =>
+              `<button type="button" data-stsort="${esc(x.id)}" aria-pressed="${x === on}" title="Sort by ${esc(x.sub)}: ${esc(x.help)}">${esc(x.sub)}${
+                x === on ? (ST.dir > 0 ? ' ▲' : ' ▼') : ''
+              }</button>`
+          )
+          .join('')}</span></th>`
+      );
+    };
+    const shown = display(cols);
     return (
-      `<div class="tbl-card st-card" tabindex="0" role="region" aria-label="${esc(TITLE)}"><table class="tbl compact st-tbl"><thead><tr>${cols.map(th).join('')}</tr></thead><tbody>` +
+      `<div class="tbl-card st-card" tabindex="0" role="region" aria-label="${esc(TITLE)}"><table class="tbl compact st-tbl"><thead><tr>${shown.map(th).join('')}</tr></thead><tbody>` +
       rows
         .map(
           (r) =>
-            `<tr>${cols.map((c) => `<td class="${(c.num ? 'num ' : '') + (c.cls || '')}">${c.cell(r)}</td>`).join('')}</tr>`
+            `<tr>${shown.map((c) => `<td class="${(c.num ? 'num ' : '') + (c.cls || '')}">${c.cell(r)}</td>`).join('')}</tr>`
         )
         .join('') +
       `</tbody></table></div>`
@@ -335,6 +394,96 @@
   (K.proteinFoldSections ||= []).push(['p-sitetab', TITLE, 1]);
   K.prop.onHyper(() => refresh());
   (K.mapReady ||= []).push(() => refresh());
+
+  // ---- a small selection: each selected site's changes and variants, as the table's row would show them ----------------
+  // mode 'sites' leads with the changes seen at the site, 'variants' with the ClinVar variants. Called by the Sites and
+  // Disease variants pages; '' when the selection is not small or there is no selection.
+  const MORE = (n) => `${int(n)} ${n === 1 ? 'variant' : 'variants'}`;
+  K.siteFew = (mode) => {
+    if (!K.few?.picked) return '';
+    const P = K.few.picked();
+    if (!P || !K.few.active(P.all)) return '';
+    asked = true;
+    cvLoad();
+    const letter = (D.residues || [''])[0];
+    const sites = P.list.map((m) => {
+      const pi = m[0],
+        pos = m[1],
+        acc = D.proteins[pi][0];
+      if (K.prop.peek(acc) === undefined) K.prop.load(acc).then(again);
+      const loaded = K.prop.peek(acc),
+        cv = cvAt(acc),
+        vs = cv ? cv.get(pos) || [] : null,
+        src = loaded ? SRC.map((x) => ({ x, c: sourceCells(acc, pos, x) })) : null,
+        hot = src ? src.filter((y) => y.c.hot) : [],
+        facts = [];
+      if (src)
+        src.forEach(({ x, c }) =>
+          facts.push({
+            text:
+              c.k == null
+                ? `${esc(x.label)}: none seen`
+                : `${esc(x.label)} k ${int(c.k)} · O/E ${c.o != null ? K.prop.fo(c.o) : '–'}${c.more || c.fewer ? ` <b>q ${fq(c.q)}</b>` : ''}`,
+            to: 'changes',
+          })
+        );
+      if (vs)
+        facts.push({
+          text: vs.length ? MORE(vs.length) + ' pathogenic' : 'no pathogenic variants',
+          to: vs.length ? 'clinvar' : undefined,
+        });
+      if (hot.length) facts.push({ text: 'hotspot', to: 'changes' });
+      const changes =
+        src &&
+        `<div class="st-mini">${src
+          .map(
+            ({ x, c }) => `<div><span class="muted">${esc(x.label)}</span> ${srcCell(x, { src: { [x.id]: c } })}</div>`
+          )
+          .join('')}</div><p class="muted small">k: ${esc(
+          SRC.map((x) => `${x.label} ${(x.unit || ['sample', 'samples'])[1]}`).join(', ')
+        )} with a change at the site. O/E: changes seen over changes expected from the residue’s codon. A ring means q below ${RING}.</p>`;
+      const clin =
+        vs && vs.length
+          ? `<ul class="st-vars">${vs
+              .map(
+                (v) =>
+                  `<li><a href="https://www.ncbi.nlm.nih.gov/clinvar/variation/${esc(v[0])}/" target="_blank" rel="noopener">${esc(letter)}${esc(String(K.prot?.shownPos ? K.prot.shownPos(acc, pos) : pos))}${esc(v[2])}</a> · ${v[1]} ${v[1] === 1 ? 'star' : 'stars'} · ${esc(v[3].map((c) => K.us(CV.cond[c][0])).join('; ') || 'no condition named')}</li>`
+              )
+              .join('')}</ul>`
+          : '';
+      const conds = vs && vs.length ? [...new Set(vs.flatMap((v) => v[3].map((c) => K.us(CV.cond[c][0]))))] : [];
+      const secs = [
+        {
+          id: 'changes',
+          title: 'Changes seen at the site',
+          sum: src ? src.map(({ x, c }) => `${x.label} ${c.k ?? 0}`).join(', ') : '',
+          body: changes || K.loading('Loading…'),
+        },
+        {
+          id: 'clinvar',
+          title: `${CV_SRC ? CV_SRC.label + ' ' : ''}pathogenic variants`,
+          sum: conds.slice(0, 2).join('; '),
+          body: clin,
+        },
+      ];
+      if (mode === 'variants') secs.reverse();
+      return {
+        key: `${pi}-${pos}`,
+        head: `${K.few.siteLink(pi, pos)} <span class="muted">${esc(D.proteins[pi][2] || '')}</span>`,
+        facts:
+          mode === 'variants'
+            ? [...facts.filter((f) => f.to === 'clinvar' || !f.to), ...facts.filter((f) => f.to === 'changes')]
+            : facts,
+        sections: secs,
+      };
+    });
+    return K.few.html({
+      title: `Your selected ${P.all === 1 ? W.mark : W.marks}: ${mode === 'variants' ? 'variants' : 'changes and variants'}`,
+      note: `Each ${W.mark}'s own counts, as the protein page's table of sites shows them.`,
+      sites,
+      more: P.all - P.list.length,
+    });
+  };
 
   // ---- sort and download ----------------------------------------------------------------------------------------------------------
   K.clicks.push(
@@ -391,12 +540,15 @@
   st.textContent = [
     '.st-bar{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;justify-content:space-between;margin:.2rem 0 .4rem}',
     '.st-card{max-height:30rem;overflow:auto;max-width:100%}',
-    '.st-tbl th,.st-tbl td{padding:.25rem .5rem;white-space:nowrap}.st-tbl th{top:0;z-index:2}',
+    '.st-tbl th,.st-tbl td{padding:.25rem .3rem;white-space:nowrap}.st-tbl th{top:0;z-index:2}',
     '.st-tbl th[aria-sort]::after{content:" \\25B2";font-size:.7em}.st-tbl th[aria-sort="descending"]::after{content:" \\25BC"}',
     '.st-tbl td:first-child,.st-tbl th:first-child{position:sticky;left:0;background:var(--surface)}.st-tbl th:first-child{background:var(--surface-2);z-index:3}',
     '.st-tbl td.mono{font-family:var(--mono,monospace)}',
-    '.st-ring{display:inline-block;padding:0 .35rem;border:1.5px solid var(--ink);border-radius:999px}.st-ring.dash{border-style:dashed}',
-    '.st-cond{cursor:help}',
+    '.st-src{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1.2;padding:.05rem .4rem;border:1.5px solid transparent;border-radius:.5rem}.st-src small{font-size:.75em;color:var(--ink-2)}',
+    '.st-ring{border-color:var(--ink)}.st-ring.dash{border-style:dashed}',
+    '.st-sm{display:flex;gap:.15rem;justify-content:flex-end;margin-top:.1rem}.st-sm button{font:inherit;font-size:.72rem;font-weight:500;padding:0 .3rem;border:1px solid var(--line-strong);border-radius:.3rem;background:var(--surface);color:var(--ink-2);cursor:pointer}.st-sm button[aria-pressed="true"]{background:var(--wash);color:var(--ink);font-weight:700}',
+    '.st-mini{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem}.st-vars{margin:.2rem 0;padding-left:1.1rem;font-size:.9rem}',
+    '.st-cond{cursor:help;display:inline-block;max-width:10rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}.st-tbl th.st-grp::after{content:none!important}.st-tbl th{white-space:normal;vertical-align:bottom}',
     '.sc-names{margin-top:.15rem}',
     '@media (max-width:640px){.st-card{max-height:24rem}}',
   ].join('');

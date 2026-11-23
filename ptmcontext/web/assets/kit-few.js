@@ -9,7 +9,7 @@
         more: how many selected sites are not listed */
 (window.PTMC_MODULES ||= []).push((K) => {
   'use strict';
-  const { esc, int, W } = K;
+  const { D, esc, int, W } = K;
   const MAX = 25;
   const slug = (s) => String(s).replace(/[^\w]+/g, '-');
   const fid = (site, sid) => `few-${slug(site.key)}-${slug(sid)}`;
@@ -43,7 +43,28 @@
       '</section>'
     );
   }
-  K.few = { MAX, active, html };
+  // ---- what the tabs share: the selected sites, and a site's or a protein's name as a link -----------------------------
+  const prot = (i) => D.proteins[i] || [];
+  const letter = () => (D.residues || [''])[0];
+  const shownAt = (pi, pos) => (K.prot?.shownPos ? K.prot.shownPos(prot(pi)[0], pos) : pos);
+  const siteLink = (pi, pos) =>
+    `<a href="${esc(K.link('protein', `${prot(pi)[0]}/${letter()}${shownAt(pi, pos)}`))}"><b>${esc(prot(pi)[1] || prot(pi)[0] || '')}</b> ` +
+    `${esc(letter())}${int(shownAt(pi, pos))}</a>`;
+  const protLink = (pi) =>
+    `<a href="${esc(K.link('protein', prot(pi)[0]))}"><b>${esc(prot(pi)[1] || prot(pi)[0] || '')}</b></a>`;
+  // the selected sites in protein and position order: { all: how many, list: the first MAX as mark rows [protein, position, ...] }
+  function picked() {
+    const sd = K.sel?.peek?.();
+    if (!sd || !K.sel.active()) return null;
+    const all = [...(K.sel.compute().marks || [])]
+      .map((i) => sd.marks[i])
+      .filter(Boolean)
+      .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    return { all: all.length, list: all.slice(0, MAX) };
+  }
+  // the same chip for a count: "3 variants", "1 variant"
+  const count = (n, w) => `${int(n)} ${w}${n === 1 ? '' : 's'}`;
+  K.few = { MAX, active, html, siteLink, protLink, picked, count };
   const style = document.createElement('style');
   style.id = 'kit-few-css';
   style.textContent = `

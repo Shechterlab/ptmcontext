@@ -700,6 +700,7 @@
       return head + K.tables.selectionCard() + (q ? `<div id="sites-quick">${q}</div>` : '') + K.tables.emptyState();
     return (
       head +
+      (K.siteFew?.('sites') || '') +
       (LC && K.shown.note ? K.shown.note() : '') +
       K.tables.selectionCard() +
       K.tables.enrichedCard() +
