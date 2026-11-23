@@ -459,7 +459,12 @@
           sum: src ? src.map(({ x, c }) => `${x.label} ${c.k ?? 0}`).join(', ') : '',
           body: changes || K.loading('Loading…'),
         },
-        { id: 'clinvar', title: 'ClinVar pathogenic variants', sum: conds.slice(0, 2).join('; '), body: clin },
+        {
+          id: 'clinvar',
+          title: `${CV_SRC ? CV_SRC.label + ' ' : ''}pathogenic variants`,
+          sum: conds.slice(0, 2).join('; '),
+          body: clin,
+        },
       ];
       if (mode === 'variants') secs.reverse();
       return {
