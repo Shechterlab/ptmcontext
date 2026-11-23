@@ -861,6 +861,29 @@ folds does; a fold no group lists follows the one before it; a fold in two group
 fold that shows live or optional data opens only when the protein has it: the orthologs (`p-cons`) when they arrive, the
 network (`p-ix`) when the site's partner table has partners. A reader's own opening or closing is kept.
 
+## Table of sites
+
+A protein page of a site with `website.propensity` has a folded section, `p-sitetab`, "Sites and their variants"
+(`website.protein.site_table.title` renames it; list `p-sitetab` in `website.protein.order` and `groups`). Its one-line
+summary counts the sites ("12 sites; 2 with q < 0.05 in TCGA; 3 with ClinVar pathogenic variants"); it opens to one row for
+each site of the protein (`kit-sitetable.js`). Nothing is added to a release or the site file's data: the table reads what the
+page already has.
+
+| Columns | From |
+|---|---|
+| Site (links to its card), state | the marks and the colored category attribute |
+| for each source of `website.propensity.sources` with a test: k, O/E, q | the propensity shard `data/m/NNN.json` (`K.prop.at`), in the cohort of the page's Samples switch (without hypermutated samples by default). A ring marks q < 0.05, more than expected; a source with `lower_tail` marks fewer than expected with a dashed ring and shows q for fewer |
+| the descriptive source (ClinVar): pathogenic and likely pathogenic variants, their conditions | `data/cv.json` (the Disease variants page's file; 44 KB on methylarginine, 104 KB on phospho; fetched once when a protein page opens). Conditions: two in the cell, all on hover |
+| the entities a map row names for the site's changes (DepMap cell lines) | the map items of a row with `from.names` (`K.map.namedChanges`); absent when no row names entities |
+| Hotspot | `K.prop.at(...).hot.self`: the site is one of the enriched residues that carry much of the protein's changes |
+| Disordered region | the protein's units of a track with `style: disorder` |
+
+It sorts by any column (default: the first somatic source's q, then its p) and downloads as Data (TSV) with the standard
+citation header (`K.preamble`, `K.exportFigure`). The header is sticky inside the table's own scroll frame, which scrolls
+sideways on a phone. No label is written in the code for one site: source labels and units come from `website.propensity`, the
+entity names and link from the map row's `from.names`, the state label from the site's attribute. The site card's list of
+changes in an attribute (for example "Changes in DepMap cell lines") shows the same entity names under it, each linked.
+
 ## Conservation across species
 
 A protein page can show each mark in the orthologs of other species, and a selection can show its marks' sequence windows

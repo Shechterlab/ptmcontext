@@ -5139,13 +5139,21 @@
               "type": "boolean",
               "description": "open the Interaction partners fold when the protein has partners in card.writer.partners' table"
             },
+            "site_table": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the folded table of a protein's sites and their variants (fold p-sitetab; CONTRACTS.md, Table of sites): drawn when website.propensity is set, from the propensity files, the ClinVar file and the map rows that name entities",
+              "properties": {
+                "title": {"type": "string", "description": "the fold's title (default: Sites and their variants)"}
+              }
+            },
             "order": {
               "type": "array",
               "items": {
                 "type": "string",
                 "pattern": "^p-[a-z0-9-]+$"
               },
-              "description": "the protein page's folds, first to last, by id (p-map, p-sites, p-score, p-kinds, p-regions, p-seq, p-struct, p-ix, p-cons, and the cards' p-cond, p-dis, p-depmap, p-pert, p-exp, p-cluster, p-ptm); a fold the list lacks follows the one before it, and without the list the page's own order stands"
+              "description": "the protein page's folds, first to last, by id (p-map, p-sites, p-score, p-kinds, p-regions, p-seq, p-struct, p-ix, p-sitetab, p-cons, and the cards' p-cond, p-dis, p-depmap, p-pert, p-exp, p-cluster, p-ptm); a fold the list lacks follows the one before it, and without the list the page's own order stands"
             },
             "groups": {
               "type": "array",

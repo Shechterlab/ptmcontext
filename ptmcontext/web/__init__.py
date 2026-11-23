@@ -111,6 +111,7 @@ MODULES = (
     'kit-tile.js',
     'kit-figures.js',
     'kit-mutations.js',
+    'kit-sitetable.js',
     'kit.js',
 )
 # scripts a module starts in a worker: copied beside the others, never put in the page
