@@ -396,7 +396,7 @@
       `<p>Under Compared with, the Overview compares the selection with the other ${esc(W.residues)} of the same proteins, with the other ` +
       `${esc(W.marks)}, or with a saved selection. Each class shows the selection’s share (filled) and the comparison’s (hollow).</p></section>` +
       `<section id="m-share"><h3>Sharing a link</h3><p>The address holds the page, search, filters and comparison, so a copied link ` +
-      `opens what is on screen. Back and Forward return to earlier pages and selections. Figures download as PDF, SVG, PNG or TSV, each with ` +
+      `opens what is on screen. It also keeps the sections that are open. Back and Forward return to earlier pages and selections. Figures download as PDF, SVG, PNG or TSV, each with ` +
       `its test, citation and sources.</p><h4>Keyboard shortcuts</h4><p>Single keys work when the cursor is not in a text box.</p>${keysTable()}</section>` +
       `<section id="m-access"><h3>Accessibility</h3><p>Every control works from the keyboard, and a skip link passes the header. Screen readers ` +
       `announce result counts. The light and dark themes (at the foot of every page) follow the system unless one is picked, and motion follows its ` +

@@ -460,6 +460,7 @@
   K.tabName = tabName;
   K.tabHint = tabHint;
   K.paramsIn = [];
+  K.hashOut = [];
   K.paramsOut = [];
   // a question's title in running text, as the site file writes it (lower-casing would break PRMT, DNA, Reactome)
   const inText = (t) => String(t || '');
@@ -587,7 +588,9 @@
         .map(([k, v]) =>
           k === 'f'
             ? 'f=' + v.replace(/[&#+\s]/g, (c) => encodeURIComponent(c))
-            : new URLSearchParams([[k, v]]).toString()
+            : k === 'open'
+              ? 'open=' + v.split(',').map(encodeURIComponent).join(',') // open sections: ids joined by plain commas
+              : new URLSearchParams([[k, v]]).toString()
         )
         .join('&');
     }
@@ -629,6 +632,7 @@
     }
 
     if (S.view === 'network' && S.nf) p.set('nf', S.nf);
+    (K.hashOut || []).forEach((f) => f(p)); // a module's own parameters for this page's address only (the open sections)
     const h = '#' + S.view + (S.arg ? '/' + pathOf(S.view, S.arg) : '') + (p.toString() ? '?' + p : '');
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
     shown = location.hash; // the page shows this address: Back to an earlier one draws that one again
