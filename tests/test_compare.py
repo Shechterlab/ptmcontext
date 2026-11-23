@@ -196,3 +196,10 @@ def test_no_site_or_mark_literal_in_the_compare_code():
     assert not re.search(r'#[0-9a-fA-F]{6}\b', src.split('const INK')[0])  # the page's colors are the kit's
     assert not re.search(r'methyl|arginine|lysine|phospho|yeast|Shechter', src, re.I)
     assert not re.search(r'dtIDR|domain-tethered|domain flanks', src)
+
+
+def test_the_pages_workflow_uploads_what_the_compare_page_reads():
+    """The assemble job has only what each build job uploads; the Compare marks page reads these files of every site."""
+    wf = (Path(__file__).resolve().parents[1] / '.github' / 'workflows' / 'pages.yml').read_text()
+    for name in ('run.json', 'statistics.tsv', 'set_names.tsv', 'protein_sets.json'):
+        assert f'out/${{{{ matrix.site }}}}/{name}' in wf, f'pages.yml does not upload {name}'
