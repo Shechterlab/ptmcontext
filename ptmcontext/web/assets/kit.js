@@ -2984,7 +2984,7 @@
     return (
       `<section id="m-download"><h3>Download the data</h3>` +
       (ds
-        ? `<p>${esc(cap(ds.label || 'dataset'))} ${
+        ? `<p>Data: ${esc(ds.label || 'dataset')} ${
             ds.url ? `<a href="${esc(ds.url)}">${esc(ds.version)}</a>` : esc(ds.version)
           }${ds.date ? ` (${esc(hdate(ds.date))})` : ''}${
             ds.doi ? `, archived ` + `as <a href="https://doi.org/${esc(ds.doi)}">doi:${esc(ds.doi)}</a>` : ''
@@ -3471,8 +3471,8 @@
       privacySection() +
       sourcesSection() +
       (`<section id="m-made"><h3>Software and build</h3><p>The site file <span class="mono">${esc(D.site.config)}</span> ` +
-        `sets the modification, sequences, regions, questions, colors and pictures. It was built with PTMcontext ${esc(D.kit.version)} (commit ` +
-        `<span class="mono">${esc(shortCommit(D.kit.commit))}</span>) on ${esc(hdate(RUN.written))}. Citation, ` +
+        `sets the modification, sequences, regions, questions, colors and pictures. The app is PTMcontext ${esc(D.kit.version)}, built from commit ` +
+        `<span class="mono">${esc(shortCommit(D.kit.commit))}</span> on ${esc(hdate(RUN.written))}. Citation, ` +
         `version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>`) +
       (`<p>Every download includes its citation, data sources, versions, inputs and export date, printed under each ` +
         `figure and kept in the file (SVG metadata, PNG text fields, PDF properties, TSV # lines).</p></section>` +
@@ -3590,7 +3590,7 @@
       licence: CIT.licence || '',
       cite: CIT.preferred ? CIT.preferred.text + doiTxt(CIT.preferred.doi) : '',
       data_sources: (CIT.references || []).map((r) => r.text + doiTxt(r.doi)),
-      software: `ptmcontext ${D.kit.version}`,
+      software: `PTMcontext ${D.kit.version}`,
       commit: D.kit.commit || '',
       run: RUN.written,
       sequences: RUN.snapshot,
@@ -3636,12 +3636,12 @@
     const lines = [];
     if (CIT.preferred) lines.push(`Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}`);
     if ((CIT.references || []).length)
-      lines.push('Data: ' + CIT.references.map((r) => r.short + doiTxt(r.doi)).join('; '));
-    if (releaseText()) lines.push(`Data release ${releaseText()}`);
+      lines.push('Data sources: ' + CIT.references.map((r) => r.short + doiTxt(r.doi)).join('; '));
+    if (releaseText()) lines.push(`Data: ${releaseText()}`);
     lines.push(
-      `${D.site.name}, ${CIT.version ? 'app version ' + CIT.version : 'version not recorded'}${
-        CIT.date ? ' (' + hdate(CIT.date) + ')' : ''
-      } · PTMcontext ${D.kit.version}${sn.release ? ' · ' + sn.release : ''}`
+      `${appText()}${CIT.version && CIT.date ? ' (' + hdate(CIT.date) + ')' : ''} · ${D.site.name}${
+        sn.release ? ' · ' + sn.release : ''
+      }`
     );
     if (selOn() && K.sel.data())
       lines.push(`Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${K.sel.nMarks() === 1 ? W.mark : W.marks})`);
@@ -3652,10 +3652,13 @@
     return lines;
   }
   // the data release the explorer reads (website.dataset): "v1.7.0 (2026-11-21), doi:10.5281/zenodo.24429699"
+  // the two versions every page and file names, each with a label: "App: PTMcontext 0.6.0" and
+  // "Data: PTM_Pipeline v1.7.0 (doi:10.5281/zenodo.24429699)"
+  const appText = () => `App: PTMcontext ${D.kit.version}`;
   const releaseText = () => {
     const ds = D.dataset;
     return ds && ds.version
-      ? `${ds.version}${ds.date ? ' (' + hdate(ds.date) + ')' : ''}${ds.doi ? ', doi:' + ds.doi : ''}`
+      ? `${ds.label ? ds.label + ' ' : ''}${ds.version}${ds.doi ? ' (doi:' + ds.doi + ')' : ''}`
       : '';
   };
   // the release's data dictionary, from the site's Download list: "data_dictionary.tsv in PTM_Pipeline release v1.7.0"
@@ -3683,12 +3686,10 @@
           : null,
         CIT.preferred ? `# Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}` : null,
         ...(CIT.references || []).map((r) => `# Data source: ${r.text}${doiTxt(r.doi)}`),
-        releaseText() ? `# Data release: ${releaseText()}` : null,
+        releaseText() ? `# Data: ${releaseText()}` : null,
         dictionaryText() ? `# Column definitions: the release's columns are defined in ${dictionaryText()}` : null,
-        `# App: ${D.site.name}, ${CIT.version ? 'version ' + CIT.version : 'version not recorded'}${CIT.date ? ' (' + hdate(CIT.date) + ')' : ''}${
-          CIT.licence ? '; license ' + hlicence(CIT.licence) : ''
-        }`,
-        `# Made with: PTMcontext ${D.kit.version} (commit ${D.kit.commit || 'not recorded'}); run ${RUN.written}`,
+        `# ${appText()} (commit ${D.kit.commit || 'not recorded'}${CIT.version && CIT.date ? '; released ' + hdate(CIT.date) : ''}); run ${RUN.written}`,
+        `# Site: ${D.site.name}${CIT.licence ? '; license ' + hlicence(CIT.licence) : ''}`,
         `# Sequences: ${sn.release} (${int(sn.entries)} entries, FASTA MD5 ${sn.fasta_md5})`,
         `# Inputs (MD5): ${inputs}`,
         `# Questions: how each was made is in Methods, under How each question was made${
@@ -4640,13 +4641,13 @@
       keywords: [
         D.mark,
         CIT.version ? `version ${CIT.version}` : 'version not recorded',
-        `ptmcontext ${D.kit.version}`,
+        `PTMcontext ${D.kit.version}`,
         `commit ${D.kit.commit || 'not recorded'}`,
         P.from,
       ]
         .filter(Boolean)
         .join('; '),
-      creator: `ptmcontext ${D.kit.version} (${D.kit.commit || 'commit not recorded'})`,
+      creator: `PTMcontext ${D.kit.version} (${D.kit.commit || 'commit not recorded'})`,
     });
     const holder = document.createElement('div');
     holder.style.cssText = `position:fixed;left:-100000px;top:0;` + `width:${f.W}px;height:${f.H}px;overflow:hidden`;
@@ -4854,7 +4855,7 @@
             )
             .join('')}</ul>`
         : '') +
-      `<p class="muted">This explorer: ${esc(CIT.title)}, app version ${esc(CIT.version)}${
+      `<p class="muted">This explorer: ${esc(CIT.title)}. App: PTMcontext ${esc(D.kit.version)}${
         CIT.date ? ' (' + esc(hdate(CIT.date)) + ')' : ''
       }${CIT.doi ? `, <a href="https://doi.org/${esc(CIT.doi)}">doi:${esc(CIT.doi)}</a>` : ''}${
         CIT.licence ? '; license ' + esc(hlicence(CIT.licence)) : ''
@@ -5950,19 +5951,21 @@
   // the footer: licenses and privacy, on every page (the Method page has the full text)
   const upd = D.built || D.run?.written; // when `ptmc web` built this site (else when the run was written)
   $('#credit').innerHTML =
-    `${esc(D.site.name)}${
-      CIT.version
-        ? ` · <a href="#method/cite">App version ${esc(CIT.version)}</a>${CIT.date ? ` (${esc(hdate(CIT.date))})` : ''}`
-        : upd
-          ? ` · updated ` + `<time datetime="${esc(upd)}">${esc(hdate(upd))}</time>`
-          : ''
-    } · built with <a href="${esc(D.kit.url || '#method/made')}">PTMcontext</a> ${esc(D.kit.version)}${
-      D.kit.commit ? ` (${esc(shortCommit(D.kit.commit))})` : ''
-    }` +
+    `${esc(D.site.name)} · <a href="${CIT.version ? '#method/cite' : esc(D.kit.url || '#method/made')}">App: PTMcontext ${esc(D.kit.version)}</a>` +
+    [CIT.version && CIT.date ? hdate(CIT.date) : '', D.kit.commit ? 'build ' + shortCommit(D.kit.commit) : '']
+      .filter(Boolean)
+      .map(esc)
+      .join(', ')
+      .replace(/^(.+)$/, ' ($1)') +
+    (!CIT.version && upd ? ` · updated <time datetime="${esc(upd)}">${esc(hdate(upd))}</time>` : '') +
     (D.dataset
-      ? ` · ${esc(D.dataset.label || 'dataset')} ${esc(D.dataset.version)}${
-          D.dataset.date ? ` (${esc(hdate(D.dataset.date))})` : ''
-        }${D.dataset.doi ? `, <a href="https://doi.org/${esc(D.dataset.doi)}">doi:${esc(D.dataset.doi)}</a>` : ''}`
+      ? ` · Data: ${esc(D.dataset.label || 'dataset')} ${esc(D.dataset.version)}${
+          D.dataset.doi
+            ? ` (<a href="https://doi.org/${esc(D.dataset.doi)}">doi:${esc(D.dataset.doi)}</a>)`
+            : D.dataset.date
+              ? ` (${esc(hdate(D.dataset.date))})`
+              : ''
+        }`
       : '') +
     ` · code: ${esc(hlicence(D.kit.licence || 'MIT'))}${CIT.licence ? ` · data: ${esc(hlicence(CIT.licence))}` : ''}` +
     ` · no cookies, no tracking; nothing you search leaves your browser`;

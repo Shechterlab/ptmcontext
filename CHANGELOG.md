@@ -1,4 +1,14 @@
 ## Unreleased
+
+## 0.6.0 (2026-11-23)
+
+> A Disease variants page: ranked sites, tumors, inherited disease, and a chart of all sites.
+> Paste a list of genes, accessions or sites to test it, with the result in one sentence.
+> A small selection gets an "about these sites" block on every tab.
+> Link previews, plainer wording and UniProt numbering for proteins that papers number differently.
+> Two labeled versions everywhere: App: PTMcontext 0.6.0 and Data: PTM_Pipeline v1.7.0.
+
+- Versioning: the app version is one number for the whole website (`pyproject.toml`, `ptmcontext/__init__.py`, `CITATION.cff` and every site's citation file). Pages and downloads read "App: PTMcontext 0.6.0" and "Data: PTM_Pipeline v1.7.0 (doi:...)". `VERSIONING.md` has the rules (MAJOR, MINOR, PATCH), the release checklist and the 1.0.0 deploy plan. Help has a "What changed in the site" section, made from the headings of this file when the explorer is built. `.zenodo.json` gives Zenodo the software's metadata. `tests/test_release_version_consistency.py` fails when the versions, this file and the documents disagree.
 - Usability fixes from four walkthroughs of the live explorers:
   - While a selection's data load, counts and the "too few to test" verdict give way to "Loading 138,022 phosphosites…" (the rail, the bar, the tab counts, the Overview and Proteins pages).
   - Site rows say "3 changes (k) · O/E 22 · q 0.03"; one change reads "1 change" with its O/E muted. The protein page's table of sites shows the UniProt position beside a site the page numbers differently, and has readable column names in its TSV (`tcga_tumors_changed`, `tcga_oe`, `clinvar_pathogenic_n`, `hotspot_note`, `disordered` ...) and an AlphaMissense column once AlphaFold DB answers.
@@ -159,6 +169,12 @@
 
 ## 0.5.0 (2026-11-15)
 
+> Key findings and tile answers read as plain sentences.
+> The same tabs in one order on every explorer, and one footer.
+> One Download menu for every figure: PDF, SVG, PNG and TSV.
+> A Network tab and an Overlap page.
+> Faster loading: selection data in parts, fonts shipped with the site.
+
 - Plain wording: Key findings read as sentences ("Methylarginines are more common in RGG (21× other arginines)"), tile answers read "More often in X (2.1×) and Y (1.8×)", "How to read", "What this explorer is" and "How this explorer is made" became Details, About and Software and build, and "read live" became "when the page opens". Help lists the site's terms and abundance deciles. Ids, keys and search syntax are unchanged.
 - Navigation: the same tabs on every explorer in one order (Overview, Proteins, Sites, Interactions, Compare sets, Network, Methods, Help); a tab whose data a site lacks is greyed out with its reason on hover (`website.tabs.<page>.empty`). Overlap is renamed Compare sets (`#overlap` stays, `#compare` is an alias). The All tests tab is gone: its table is the "Every test" section of Methods, which has five parts with addresses of their own (`#method/tests`, `/controls`, `/sources`, `/cite`, `/download`); `#statistics` redirects to `#method/every`. Badges and the tile popover link to `#method/controls`.
 - Navigation: the sticky bar is one line with a "More" menu and the switcher always in view (the counts variant is removed); one footer (Cite, Download, Methods, Keyboard shortcuts, Source code, Data DOI, Privacy, Theme) on every explorer and the landing page; a Key findings strip at the top of each Overview (`website.overview.key_findings`); sidebar entries are real addresses (`#overview/<question>`) named as their tiles are, and the Overview's sections follow one shared order (`config/overview_groups.json`, `website.overview.group_order`); Help is one short page, the rest is under Methods; the Test switch says what it changes and marks the tiles it changes.
@@ -297,6 +313,11 @@
 - CI: the lint job fails on a commit message with a "Co-Authored-By: Claude" or "Claude-Session:" line (`tools/check_commit_messages.sh`).
 
 ## 0.4.0 (2026-11-13)
+
+> Overview tiles are small forest plots that show the fold.
+> A row counts as more or less often at q of 0.05 or less and a fold of at least 1.1.
+> Cell maps show the fold in each map.
+> The site switcher keeps the open protein. American spelling throughout.
 
 What changed for readers:
 
@@ -496,6 +517,11 @@ chromatin (probability ≥ 0.8) 1.7× (as published) → none (no part of the ce
 
 ## 0.3.1 (2026-11-13)
 
+> All sites read PTM_Pipeline v1.5.0 with two more SUMO and ubiquitin studies.
+> The lysine site adds those studies to its Databases filter.
+> The Overview opens with its question, color key and test switch.
+> The Methods page lists the 200 sources with the most sites, so it no longer crashes the browser.
+
 What changed for readers:
 
 - All sites read PTM_Pipeline v1.5.0 at commit 5fadf74, whose SUMOylation and ubiquitination tables add two proteome-wide
@@ -524,6 +550,11 @@ budget per site (two workers for the lysine site); in the selection data a quest
 (`only_in`, `marks_where`) has one table for all its classes (`by_test[id].all`, `outside: unclassed`).
 
 ## 0.3.0 (2026-11-12)
+
+> A fourth explorer: lysine acetylation, other acylations, ubiquitination and SUMOylation.
+> Pairs of modifications on the same lysine come right after the cell maps.
+> The protein map opens with a lane for every modification.
+> The cell and nucleus maps name every compartment.
 
 What changed for readers:
 
@@ -554,6 +585,11 @@ kinds. The Pages workflow builds each site in its own job and then assembles the
 and the link audit of each site side by side.
 
 ## 0.2.0 (2026-11-11)
+
+> Methyllysine and phosphosite explorers read PTM_Pipeline v1.5.0.
+> Statistic rows say "each protein analyzed separately".
+> Protein map labels wrap instead of ending in "...".
+> Citation and license notes state only the source, the citation and the license.
 
 What changed for readers of the three sites (methylarginine, methyllysine, phosphosites):
 

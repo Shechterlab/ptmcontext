@@ -24,6 +24,7 @@ import ptmstats
 from .. import __version__
 from .. import layers as L
 from .. import statistics as ST
+from ..changelog import releases as app_releases
 from ..citation import kit_citation, site_citation
 from ..front import resolve as front_resolve
 from ..inputs import load as load_manifest
@@ -768,6 +769,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         ),
         'citation': site_citation(site),
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
+        'app_releases': app_releases(),
         'statistics_tsv': (folder / 'statistics.tsv').read_text(),
     }
 
@@ -1968,14 +1970,14 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         links = ''.join(
             f'<a href="{html.escape(x["url"])}">{html.escape(x["label"])}</a>' for x in web.get('links', [])
         )
-        # the header's citation line is one short line; "How to cite" and "App version" open the detail in Method
+        # the header's citation line is one short line; "How to cite" and "App: PTMcontext X" open the detail in Method
         cite_html = ''
         version = ''
         if cit:
             detail = '#method/download' if web.get('downloads') and web.get('dataset') else '#method/cite'
             version = (
                 '<a href="#method/cite">How to cite</a> · '
-                + f'<a href="{detail}">App version {html.escape(cit["version"])}</a>'
+                + f'<a href="{detail}">App: PTMcontext {html.escape(__version__)}</a>'
                 + (f' ({human_date(cit["date"])})' if cit.get('date') else '')
             )
         if inline:
@@ -2389,8 +2391,8 @@ def pages(
         else ''
     )
     built_with = (
-        f'Updated {html.escape(human_date(_now()))}. Built with <a href="{html.escape(kit["url"])}">PTMcontext</a> '
-        f'{html.escape(kit["version"])}, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
+        f'Updated {html.escape(human_date(_now()))}. App: <a href="{html.escape(kit["url"])}">PTMcontext '
+        f'{html.escape(kit["version"])}</a>, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
         "Each explorer's data are under the license its page states."
     )
     text = LP.page(

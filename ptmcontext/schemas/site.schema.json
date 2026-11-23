@@ -5625,7 +5625,7 @@
           "properties": {
             "label": {
               "type": "string",
-              "description": "its name (default: dataset)"
+              "description": "the data's name, shown as \"Data: <label> <version>\" (for example PTM_Pipeline; default: dataset)"
             },
             "version": {
               "type": "string"

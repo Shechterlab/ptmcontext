@@ -236,7 +236,23 @@
         .map(
           (r) =>
             `<h4>${esc(r.title)}</h4><ul>${r.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` +
-            (r.doi ? `<p class="muted small">Data: ${esc(r.doi)}</p>` : '')
+            (r.doi ? `<p class="muted small">Data: doi:${esc(r.doi)}</p>` : '')
+        )
+        .join('') +
+      '</details></section>'
+    );
+  }
+  // the app's releases, newest first, from the headings of CHANGELOG.md (read when the explorer is built); closed
+  function appChanges() {
+    const rel = D.app_releases || [];
+    if (!rel.length) return '';
+    return (
+      `<section id="h-changes" class="whats-new"><details><summary><b>What changed in the site</b></summary>` +
+      `<p class="muted small">Releases of the app (App: PTMcontext). The data releases are listed above.</p>` +
+      rel
+        .map(
+          (r) =>
+            `<h4>PTMcontext ${esc(r.version)} (${esc(K.hdate(r.date))})</h4><ul>${r.lines.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
         )
         .join('') +
       '</details></section>'
@@ -250,6 +266,7 @@
     return (
       `<div class="page-head"><h2>Help</h2></div><div class="doc help-doc">` +
       whatsNew() +
+      appChanges() +
       sec(
         'h-search',
         `<p>The search box takes a protein (gene name, UniProt accession or entry name), a list of proteins separated by ` +

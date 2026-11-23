@@ -100,13 +100,13 @@
         keywords: [
           D.mark,
           `version ${K.CIT?.version || '-'}`,
-          `ptmcontext ${D.kit.version}`,
+          `PTMcontext ${D.kit.version}`,
           `commit ${D.kit.commit || 'not recorded'}`,
           location.href,
         ]
           .filter(Boolean)
           .join('; '),
-        creator: `ptmcontext ${D.kit.version} (${D.kit.commit || 'commit not recorded'})`,
+        creator: `PTMcontext ${D.kit.version} (${D.kit.commit || 'commit not recorded'})`,
       });
       const head = latin(`${D.site.name} · ${title}`),
         credit = (K.creditLines?.() || []).map(latin),
@@ -115,13 +115,8 @@
         // version, the data release, the selection and the license
         foot = [
           pick(/^Page:/) || latin(location.href),
-          pick(/^Data:/),
-          [
-            pick(new RegExp('^' + D.site.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ', app version')),
-            D.dataset?.version ? `data ${D.dataset.version}` : '',
-            K.selText ? `Selection: ${latin(K.selText())}` : '',
-            pick(/^Exported/),
-          ]
+          pick(/^Data sources:/),
+          [pick(/^App:/), pick(/^Data: /), K.selText ? `Selection: ${latin(K.selText())}` : '', pick(/^Exported/)]
             .filter(Boolean)
             .join(' · '),
         ].filter(Boolean),
@@ -142,7 +137,7 @@
         pdf.text(`${n + 1} / ${pages.length}`, PAGE.w - PAGE.side, 9, { align: 'right' });
         const lines = foot.flatMap((t) => {
           const w = pdf.splitTextToSize(t, W);
-          if (t.startsWith('Data:') && w.length > 2) {
+          if (t.startsWith('Data sources:') && w.length > 2) {
             let cut = w[1];
             const tail = ' ... (all: Methods, Cite)';
             while (cut.includes(' ') && pdf.getTextWidth(cut + tail) > W) cut = cut.replace(/\s*\S*$/, '');

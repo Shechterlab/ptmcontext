@@ -270,9 +270,14 @@ def _ref(x: dict) -> str:
     if x.get('all_versions'):
         a = html.escape(str(x['all_versions']))
         parts.append(f'all versions <a href="https://doi.org/{a}">doi:{a}</a>')
+    text = ''
     if x.get('text'):
         t = html.escape(str(x['text']))
-        parts.append(f'<a href="{html.escape(str(x["url"]))}">{t}</a>' if x.get('url') else t)
+        text = f'<a href="{html.escape(str(x["url"]))}">{t}</a>' if x.get('url') else t
+    if text and parts:  # "PTM_Pipeline v1.7.0 (this version doi:... · all versions doi:...)"
+        return f'<li><span class="muted">{label}:</span> {text} ({" · ".join(parts)})</li>'
+    if text:
+        parts.append(text)
     if not parts:
         return ''
     body = ' · '.join(parts) if x.get('doi') and x.get('all_versions') else ', '.join(parts)
