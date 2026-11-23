@@ -2150,10 +2150,11 @@
         ? K.loading(K.sel.loadingText())
         : K.sel.testable()
           ? row
-          : against +
-            `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}.</p>`)
+          : against + (smallSel() && S.view === 'overview' && !S.arg ? '' : tooFew()))
     );
   }
+  const tooFew = () =>
+    `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}.</p>`;
   // log2 of the odds ratio or fold: the displayed value stays "2.0×" with an arrow for its direction; the table beside it
   // sorts by log2 (signed) or by strength (|log2|, either direction). Charts of ORs and folds use a log2 axis centered on 1×.
   K.l2 = (r) => {
@@ -2494,7 +2495,7 @@
     if (selOn() && !vsOn() && !selTestable() && K.sel.data() && !K.sel.nMarks()) return lead() + selBlocks(K.selSmall);
     const small = smallSel();
     const banner = small
-      ? `<p class="note small-sel" role="status"><b>Showing the whole dataset</b>${D.cell && K.sel.proteinIds().size ? '; the cell shows where your selection is found' : ''}.</p>`
+      ? `<p class="note small-sel" role="status"><b>Too few to test</b> (a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}): showing the whole dataset${D.cell && K.sel.proteinIds().size ? '; the cell shows where your selection is found' : ''}.</p>`
       : '';
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (
