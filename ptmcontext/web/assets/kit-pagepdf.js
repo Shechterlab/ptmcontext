@@ -117,7 +117,7 @@
           pick(/^Page:/) || latin(location.href),
           pick(/^Data:/),
           [
-            pick(new RegExp('^' + D.site.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ', version')),
+            pick(new RegExp('^' + D.site.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ', app version')),
             D.dataset?.version ? `data ${D.dataset.version}` : '',
             K.selText ? `Selection: ${latin(K.selText())}` : '',
             pick(/^Exported/),

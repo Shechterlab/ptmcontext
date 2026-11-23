@@ -396,8 +396,7 @@
     if (key.startsWith('r:')) return RSPEC(key.slice(2))?.label || key.slice(2);
     const [kind, id] = key.split(':');
     if (K.filterKinds?.[kind]?.label) return K.filterKinds[kind].label(id);
-    if (kind === 'm')
-      return id === 'near' ? `Motif within ±${SD?.wide?.span ?? SRCH.patterns?.span ?? 15}` : `Motif at the ${W.mark}`;
+    if (kind === 'm') return id === 'near' ? `Motif within ±${SD?.wide?.span ?? SRCH.patterns?.span ?? 15}` : 'Motif';
     if (kind === 'x') return (SRCH.terms || {})[id]?.label || cap(id);
     return kind === 't' || kind === 'n'
       ? SPECS[id]?.label || id
@@ -676,7 +675,7 @@
   ];
   // one message for every list of names, with those left out (html, already escaped) and the site's noun for its marks
   const leftOut = (listHtml) =>
-    `Not found, left out of the list (no ${esc(W.mark || 'mark')} on a protein of that name in this dataset, or a name it does not know): ${listHtml}.`;
+    `Left out of the list: ${listHtml}. No ${esc(W.mark || 'mark')} is on a protein of that name in this dataset, or the name is not known.`;
   // a term key:value: an analysis (its class or set), or an attribute of the marks or of the proteins; a word of the
   // site's own (website.search.terms: go:rna), read first; a pattern of residues (website.search.patterns: motif:<pattern>
   // covering the mark, window:PRPR anywhere near it); or a module's (K.searchTerms). [filter key, values], or

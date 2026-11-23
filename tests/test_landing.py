@@ -69,7 +69,7 @@ def test_the_landing_page_is_made_of_the_site_file_and_the_landing_config(tmp_pa
     reg = json.loads((tmp_path / 'site' / 'sites.json').read_text())
     assert reg['brand'] == 'Toy hub'
     kit = (Path(web.__file__).parent / 'assets' / 'kit-switch.js').read_text()
-    assert "className = 'brand-line'" in kit and 'reg.brand' in kit and "a.textContent = 'All sites'" in kit
+    assert "className = 'brand-line'" in kit and 'reg.brand' in kit and "a.textContent = 'All explorers'" in kit
 
 
 def test_the_card_switches_bring_back_the_question_and_the_strongest_result(tmp_path):

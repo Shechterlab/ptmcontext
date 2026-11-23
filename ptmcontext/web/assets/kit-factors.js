@@ -86,10 +86,10 @@
         .join('')}</div>` +
       (`<div class="fm-axis"><span></span><span class="fm-ax"><i>1/8×</i><i>1×</i><i>8×</i></span><span></span>` +
         `</div>`) +
-      `<p class="tfoot">${esc(info(id))}. The strongest evidence is listed first.</p>` +
+      `<p class="tfoot">${esc(info(id))}. Ordered by |z|, the log odds ratio over its standard error.</p>` +
       (K.selOn()
-        ? `<p class="twhole"><span>Whole dataset</span> the model is fitted once, on every ${esc(W.mark)}; it is not ` +
-          `refitted for your selection</p>`
+        ? `<p class="twhole"><span>Whole dataset</span> The model is fitted once on every ${esc(W.mark)} and is not ` +
+          `refitted for your selection.</p>`
         : '') +
       `<div class="tact">${K.tilekit.dlMenu(card.title || a.title, ['pdf', 'svg', 'png', 'tsv'], 'fexp', id)}</div>` +
       '</article>'
@@ -172,7 +172,7 @@
     return { body: parts.join(''), H: top + fs.length * RH + 24, fs };
   }
   const legend = [
-    ['#b42318', '#b42318', 'more often (q ≤ 0.05, ≥ 1.1×)'],
+    ['#b42318', '#b42318', 'more often (q ≤ 0.05 and at least 1.1×)'],
     ['#334155', '#334155', 'less often'],
     ['#ffffff', '#8a96a0', 'no difference'],
     ['#475569', '#475569', 'filled: all factors together'],

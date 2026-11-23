@@ -438,8 +438,8 @@
     });
     const xTitle =
       (w - ml < 340
-        ? `${esc(W.marks)}, most enriched first`
-        : `${esc(W.marks)} ranked from most enriched to most depleted`) +
+        ? `${esc(W.marks)}, most above expected first`
+        : `${esc(W.marks)} ranked from most above to most below expected`) +
       (shown < m.n ? `, top ${int(shown)} of ${int(m.n)}` : '');
     ax += `<text x="${(ml + pw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="${fs}" fill="${c.muted}">${xTitle}</text>`;
     ax += `<text transform="translate(11,${(mt + ph / 2).toFixed(1)}) rotate(-90)" text-anchor="middle" font-size="${fs}" fill="${c.muted}">signed −log10 p</text>`;
@@ -561,7 +561,7 @@
   }
   const waterfallNote = (m) =>
     `Height is the signed −log10 p of the release's binomial test: up for more ${m.germ ? 'variants' : 'changes'} than expected, down for fewer. ` +
-    `The x axis ranks the ${esc(W.marks)} from the most enriched to the most depleted in ${esc(m.s.long || m.s.label)}. ` +
+    `The x axis ranks the ${esc(W.marks)} from most above to most below expected in ${esc(m.s.long || m.s.label)}. ` +
     (m.germ
       ? `A ${esc(W.mark)} with no variant sits on the lower side. `
       : `p and q pool all cancer types. ` +
@@ -878,7 +878,7 @@
     return (
       `<details class="mu-set"><summary>Whole list against expectation (the release's site set test)</summary>` +
       `<p class="small muted">${esc(PR.summary.set_label || '')}: the changes (k) at the ${esc(W.marks)} against the expected count, summed over their proteins (each protein's changes at its residues of the type, times the ${esc(W.marks)}' share of its expected rate of change). p comes from ${int(PR.summary.iterations || 10000)} permutation draws; the smallest possible p is about 1e−4. This table does not change with your selection.</p>` +
-      `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Source</th><th>Residue</th><th>Samples</th><th>${esc(cap1(W.marks))}</th><th>k</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th></tr></thead><tbody>` +
+      `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Source</th><th>Residue</th><th>Samples</th><th>${esc(cap1(W.marks))}</th><th title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th></tr></thead><tbody>` +
       pick
         .map(
           (r) =>
@@ -1183,12 +1183,12 @@
     return (
       `<section class="mu-listres"><div class="mu-top"><h4>Your list against expectation</h4>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mulist', 'sites of a pasted list', 'propensity')}</div>` +
       `<p class="small muted">${hyper() ? 'With' : 'Without'} hypermutated samples. Per source, the changes (k) at the listed sites against the expected count, summed over their proteins: the release's site-set test, with your sites in place of a site set (both tails). p is the ${esc(LIST_TEST)}. ClinVar is descriptive.</p>` +
-      `<div class="tbl-wrap"><table class="tbl mu-lt"><thead><tr><th>Source</th><th class="num">Sites tested</th><th class="num">k</th><th class="num">Expected</th><th class="num">O/E</th><th class="num">p (more)</th><th class="num">p (fewer)</th></tr></thead><tbody>${pool}</tbody></table></div>` +
+      `<div class="tbl-wrap"><table class="tbl mu-lt"><thead><tr><th>Source</th><th class="num">Sites tested</th><th class="num" title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th class="num">Expected</th><th class="num">O/E</th><th class="num">p (more)</th><th class="num">p (fewer)</th></tr></thead><tbody>${pool}</tbody></table></div>` +
       (flagged
         ? `<p class="small muted">${int(flagged)} of the proteins in your list ${flagged === 1 ? 'is' : 'are'} flagged as dominated by a few enriched residues. The expected count at their other residues is inflated, so a list of those sites can look depleted.</p>`
         : '') +
       `<div class="mu-top">${tabs}</div>` +
-      `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Site</th><th class="num">k</th><th class="num">Expected</th><th class="num">O/E</th>` +
+      `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Site</th><th class="num" title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th class="num">Expected</th><th class="num">O/E</th>` +
       (cur.s.descriptive
         ? `<th colspan="2"></th>`
         : `<th class="num">p (more)</th><th class="num" title="${qTip}">q across your list (more)</th>` +
@@ -1258,7 +1258,7 @@
       `<button type="submit" class="btn small">Test the list</button>` +
       (M.listText ? ` <button type="button" class="btn small" data-mu-lclear>Clear the list</button>` : '') +
       `<span class="small muted" data-mu-lmsg role="status">${listUnderstood()}</span></form>` +
-      `<p class="small muted">Genes, accessions or sites, one per line or separated by commas or spaces. A gene or accession adds all its ${esc(W.marks)}; a site adds that site. Up to ${int(K.listTest.MAX_SITES)} sites, kept in the address.</p>`
+      `<p class="small muted">Genes, accessions or sites, one per line or separated by commas or spaces. A gene or accession adds all its ${esc(W.marks)}; a site adds that site. Up to ${int(K.listTest.MAX_SITES)} sites, saved in the link.</p>`
     );
   }
   document.addEventListener('submit', (e) => {
@@ -1336,7 +1336,7 @@
       .join('');
     return (
       `<section class="mu-chosen" id="mu-chosen"><h3>Test the sites you chose</h3>` +
-      `<p class="small muted">Pick sites before you look at the results. Up to ${MAX_CHOSEN} one at a time, or paste a longer list below. Both are kept in the address.</p>` +
+      `<p class="small muted">Pick sites before you look at the results. Up to ${MAX_CHOSEN} one at a time, or paste a longer list below. Both are saved in the link.</p>` +
       `<form class="mu-add" data-mu-form>` +
       `<input id="mu-site" type="text" autocomplete="off" placeholder="H4 R3" data-mu-site aria-label="Add a site, as a gene and a position"> ` +
       `<button type="submit" class="btn small"${M.chosen.length >= MAX_CHOSEN ? ' disabled' : ''}>Add</button> <span class="small muted" data-mu-msg role="status">${esc(M.note)}</span></form>` +
@@ -1347,7 +1347,7 @@
                 `<span class="mu-chip">${esc(chosenName(k))} <button type="button" data-mu-del="${esc(k)}" aria-label="Remove ${esc(chosenName(k))}">×</button></span>`
             )
             .join(' ')}</p>` +
-          `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Source</th><th>k</th><th>Expected</th><th>O/E</th><th>Raw p (more)</th><th>Raw p (fewer)</th><th>Adjusted p (more)</th><th>Adjusted p (fewer)</th></tr></thead><tbody>${body}</tbody></table></div>` +
+          `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Source</th><th title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th>Expected</th><th>O/E</th><th>Raw p (more)</th><th>Raw p (fewer)</th><th>Adjusted p (more)</th><th>Adjusted p (fewer)</th></tr></thead><tbody>${body}</tbody></table></div>` +
           `${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muchosen', 'tested sites', 'propensity')}</div>`
         : '') +
       listSection() +
@@ -1528,10 +1528,10 @@
   const shownPos = (acc, pos) => (K.prot?.shownPos ? K.prot.shownPos(acc, pos) : pos);
   const siteOnly = (r) => `${r.res || ''}${shownPos(r.acc, r.pos)}`;
   const goTo = (acc, pos) => (location.hash = K.link('protein', `${acc}/${pos}`).replace(/^[^#]*#/, ''));
-  const rankTitle = (s) =>
-    s.kind === 'germline'
-      ? `Fewer inherited ${s.unit?.[1] || 'variants'} than expected (${s.label})`
-      : `Changed more than expected in ${s.unit?.[1] || 'samples'} (${s.label})`;
+  const rankTitle = (s) => {
+    const u = s.unit?.[1] || (s.kind === 'germline' ? 'variants' : 'samples');
+    return `${s.kind === 'germline' ? 'Inherited ' + u : u.charAt(0).toUpperCase() + u.slice(1)} (${s.label}), ranked by p`;
+  };
   // the lists, one per source with a test: somatic sources by the upper tail, the germline source with a lower tail by its lower
   // tail (the dashed-ring rows of the waterfall); null while a file is being read
   function rankedLists() {
@@ -1585,7 +1585,7 @@
       .join('');
     return (
       `<section class="mu-rank" data-mu-rank="${esc(s.id)}">${head}` +
-      `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Gene</th><th>Site</th><th class="num">k</th><th class="num">Expected</th><th class="num">O/E</th><th class="num" title="p and q pool all cancer types">q</th></tr></thead><tbody>${body}</tbody></table></div>` +
+      `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Gene</th><th>Site</th><th class="num" title="k is the count of ${s.kind === 'germline' ? 'variants' : 'changes'} seen at the site">${s.kind === 'germline' ? 'Variants' : 'Changes'} (k)</th><th class="num">Expected</th><th class="num">O/E</th><th class="num" title="p and q pool all cancer types">q</th></tr></thead><tbody>${body}</tbody></table></div>` +
       (rows.length > RANK_N
         ? `<p class="small"><button type="button" class="btn small" data-mu-all="${esc(s.id)}" aria-expanded="${all}">${all ? `Show the top ${RANK_N}` : `Show ${int(more)}`}</button>${
             all && more < rows.length ? ` <span class="muted">The download has all ${int(rows.length)}.</span>` : ''
@@ -2234,7 +2234,7 @@
       `<p><b>Ranked sites.</b> Each table lists the sites of one source ranked by p. The top 20 are shown whether or not q is below 0.05; the header counts the sites with q &lt; 0.05, and a row above that line is lighter and shows its q. Show opens the sites with q &lt; 0.05, or the top 100 if there are fewer; the download has every tested site. The first two (tumors, cell lines) hold sites with more changes than expected (q is the release's, for the upper tail). The third holds sites with fewer inherited gnomAD variants than expected (q for the lower tail, the dashed-ring sites of the chart). k is the count, expected the count the residue's codon predicts, and O/E their ratio. A protein flagged as dominated by a few enriched residues (see above) says so in its row. A row opens the site's card.</p>` +
       `<p><b>Cancer: tumors.</b> This is an oncoprint. The ${esc(W.marks)} with the most changed TCGA tumors are the rows, the tumors that carry them are the columns, and the bar above each tumor is its coding calls per Mb from the release's sample_burden (capped at 40; the dashed line is the hypermutated threshold). A tumor with two changes at one site counts once, so a table that counts changes can show a higher number.</p>` +
       `<p><b>Inherited disease.</b> Each row is a ${esc(W.mark)} with at least one ClinVar variant classified pathogenic or likely pathogenic (clinsig_simple 1 in the release's ClinVar change tables). Columns are disease families. Each condition name of a variant (split at | and ;; "not specified", "not provided" and "see cases" dropped) gets the family of the first rule it matches in the release's name rules for its DisGeNET disease families (PTM_Pipeline scripts/disease_families.py), applied here to ClinVar condition names and read as text when the explorer is built, so a few conditions can land in a broader family than a specialist would choose; the detail of a cell always lists ClinVar's own condition names; a name no rule matches goes to Other / unassigned, which is listed first, right after All. A variant counts once in each of its families, so a row's cells can add up to more than its All count. A cell is the number of variants, shaded from light (one) to full (the most in any cell); click it to list the variants, their conditions and review stars, with links to ClinVar. The review filter keeps variants with at least that many ClinVar review stars. A variant that names no condition is not shown. These counts come from clinical testing and submission, not from a test against expectation, so they carry no p or q.</p>` +
-      `<p><b>All sites as a chart.</b> The chart ranks the sites from the most enriched to the most depleted. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side; one with a small expected count has no stored test and is drawn at 0. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The top and bottom sites are labeled, except those of a flagged protein; click a point to label it too (up to 20, kept in the address). Highlight genes outlines every site of the genes you paste and labels each one's most extreme site; it changes no statistic. Under the chart, a table lists the ${esc(W.marks)} with no change, most expected first, with the raw lower-tail p. Whole list against expectation is the release's own test for the site set.</p>` +
+      `<p><b>All sites as a chart.</b> The chart ranks the sites from most above to most below the expected count. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side; one with a small expected count has no stored test and is drawn at 0. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The top and bottom sites are labeled, except those of a flagged protein; click a point to label it too (up to 20, saved in the link). Highlight genes outlines every site of the genes you paste and labels each one's most extreme site; it changes no statistic. Under the chart, a table lists the ${esc(W.marks)} with no change, most expected first, with the raw lower-tail p. Whole list against expectation is the release's own test for the site set.</p>` +
       `<p>The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example).</p>` +
       (ctl.length
         ? `<p>Positive controls (H3 oncohistone residues and recurrent cancer hotspots; <a href="https://doi.org/10.1038/nbt.3391" target="_blank" rel="noopener">Chang et al., Nat Biotechnol 34:155 (2016)</a>). A control passes when q &lt; 0.05. A failed control is reported here and does not block the release.</p>` +

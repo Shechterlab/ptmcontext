@@ -584,7 +584,7 @@
       const phrase = q.words.join(' '),
         cs = conceptRows(phrase);
       out.push(
-        `No protein on this site matches all of “${esc(phrase)}”.` +
+        `No protein matches all of “${esc(phrase)}”.` +
           (cs.length
             ? ` Did you mean ${cs
                 .slice(0, 4)
@@ -608,7 +608,7 @@
       const phrase = q.unmatched.join(' '),
         cs = conceptRows([...q.words, ...q.unmatched].join(' '));
       out.push(
-        `No protein on this site matches “${esc(phrase)}”.` +
+        `No protein matches “${esc(phrase)}”.` +
           (q.unmatched.length === 1 ? typo(q, q.unmatched[0]) : '') +
           (cs.length
             ? ` Did you mean ${cs
@@ -628,11 +628,7 @@
       (t) => K.sel.isTermKey(t.split(':')[0]) && !errs.some((e) => e.startsWith(t.split(':')[0] + ':'))
     );
     if (errs.length) out.push(`<span class="warn-text">${errs.map(esc).join(' ')}</span>`);
-    if (empty.length)
-      out.push(
-        `<span class="warn-text">Nothing matches ${list_(empty)}: no ${esc(W.mark)} is selected ` +
-          `while it stays.</span>`
-      );
+    if (empty.length) out.push(`<span class="warn-text">No ${esc(W.mark)} matches ${list_(empty)}.</span>`);
     if (unknown.length)
       out.push(
         `<span class="warn-text">${list_(unknown)}: not a search key here (<a href="${esc(K.link('method', 'search'))}">the search ` +

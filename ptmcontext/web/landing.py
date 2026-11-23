@@ -242,7 +242,7 @@ def _ref(x: dict) -> str:
     parts = []
     if x.get('doi'):
         d = html.escape(str(x['doi']))
-        parts.append(f'<a href="https://doi.org/{d}">doi:{d}</a>')
+        parts.append(f'{"this version " if x.get("all_versions") else ""}<a href="https://doi.org/{d}">doi:{d}</a>')
     if x.get('all_versions'):
         a = html.escape(str(x['all_versions']))
         parts.append(f'all versions <a href="https://doi.org/{a}">doi:{a}</a>')
@@ -336,7 +336,7 @@ def page(
 <span class="theme-switch" role="group" aria-label="Color theme"><button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button></span>
 {f'<p>{html.escape(note)}</p>' if note else ''}
 <p>{built_with}</p>
-<p id="privacy">No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer><script>{THEME_JS}</script>{f'<script>{SEARCH_JS}</script>' if search else ''}</body></html>
+<p id="privacy">No cookies, no tracking. Statistics are precomputed in the data release, and tests on your selection run in your browser. A protein page asks UniProt, AlphaFold DB, PDBe and STRING for that protein’s public data, by accession only.</p></footer><script>{THEME_JS}</script>{f'<script>{SEARCH_JS}</script>' if search else ''}</body></html>
 """
 
 

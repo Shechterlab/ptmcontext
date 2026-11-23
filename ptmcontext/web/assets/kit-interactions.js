@@ -537,7 +537,7 @@
         `are the whole dataset’s.</p>`
       );
     return (
-      `<p class="muted small">Your selection, tested again in the browser (exploratory; not adjusted for the ` +
+      `<p class="muted small">Your selection, tested in this browser (exploratory; not adjusted for the ` +
       `other selections tried); the gray tick is the whole dataset’s odds ratio. ${
         rows.some((x) => x.mine?.descriptive) ? 'A question the selection was made with is shown, not tested.' : ''
       }</p>`
@@ -815,7 +815,7 @@
         .join('') +
       (`</tbody></table></div><p class="muted small">${
         selOn()
-          ? 'Your selection’s proteins, tested again in the browser (one-sided hypergeometric over the same sets). '
+          ? 'Your selection’s proteins, tested in this browser (one-sided hypergeometric over the same sets). '
           : ''
       }The meter: ` +
         `the share of ${esc(W.marked)} proteins in the set (bar) against that of all proteins of the background ` +
@@ -2024,7 +2024,7 @@
           }${
             rs.length > 1 && (more.length || less.length)
               ? ` <span class="muted">· ` +
-                `${int(more.length || less.length)} of ${int(rs.length)} tests significant` +
+                `${int(more.length || less.length)} of ${int(rs.length)} tests differ` +
                 `${b.rows.length > 6 ? `, ${int(b.rows.length)} in all` : ''}</span>`
               : ''
           }</p>`
@@ -2209,7 +2209,10 @@
       esc(t).replace('{list}', esc(list)).replace('{marks}', esc(theMarks())).replace('{residues}', esc(W.residues));
     return `<p class="ix-answer">${
       phrases.length
-        ? fill(pg.answer.more)
+        ? fill(pg.answer.more) +
+          (rs.length > 1
+            ? ` These are ${int(rs.length)} separate tests, each within proteins, with folds of ${range(rs.map(shown))}.`
+            : '')
         : fill(pg.answer.none || `{marks} are not ` + `enriched at these contacts.`).replace(/^./, (c) =>
             c.toUpperCase()
           )
@@ -2243,8 +2246,8 @@
         d.length ? range(d) : 'n.s.',
         d.length && d.every((r) => dirOf(r) === 'more') ? 'more' : d.length ? 'less' : 'ns',
         d.length
-          ? `${rs.length > 1 ? `${int(d.length)} of ${int(rs.length)} tests · ` : ''}q ${d.length > 1 ? '≤ ' : ''}${fq(qmax)}`
-          : `${rs.length > 1 ? `none of ${int(rs.length)} tests` : 'q'}${rs.length > 1 ? '' : ' ' + fq(rs[0]?.q)}`,
+          ? `${rs.length > 1 ? `${int(d.length)} of ${int(rs.length)} tests differ · ` : ''}q ${d.length > 1 ? '≤ ' : ''}${fq(qmax)}`
+          : `${rs.length > 1 ? `none of ${int(rs.length)} tests differ` : 'q'}${rs.length > 1 ? '' : ' ' + fq(rs[0]?.q)}`,
       ];
     }
     if (h.counts) {

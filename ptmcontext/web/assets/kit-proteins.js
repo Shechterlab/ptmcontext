@@ -1802,8 +1802,7 @@
       `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a>` +
       ` › <b>${esc(p.gene || p.acc)}</b> <span class="muted">no ${esc(W.mark)}</span></p>` +
       protHead(p, true) +
-      (`<p class="note">No ${esc(W.mark)} on ${esc(p.gene || p.acc)}. None of its studies or databases reports one, which means ` +
-        `not reported, not shown to be un${esc(W.marked)}. This page shows its map, the ${esc(W.marks)} of other ` +
+      (`<p class="note">No ${esc(W.mark)} is reported on ${esc(p.gene || p.acc)}. That does not show it is un${esc(W.marked)}. This page shows its map, the ${esc(W.marks)} of other ` +
         `proteins it is recorded binding, and its partners with ${esc(W.marks)}.</p>`) +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(nRes)}</b><span>${esc(cap(W.residues))}</span></div>` +
       (ptab ? `<div class="fact"><b>${int(partners.length)}</b><span>Partners with ${esc(W.marks)}</span></div>` : '') +

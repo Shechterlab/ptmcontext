@@ -116,8 +116,8 @@
     (c.unresolved || []).forEach((raw) => {
       if (/:/.test(raw))
         out.push(
-          `<span class="sel-chip bad" title="Matches ` +
-            `nothing: no ${esc(W.mark)} is selected while it stays">${esc(raw)}<button type="button" ` +
+          `<span class="sel-chip bad" title="No ` +
+            `${esc(W.mark)} matches this">${esc(raw)}<button type="button" ` +
             `data-sel-drop-term="${esc(raw)}" aria-label="Remove ${esc(raw)}">×</button></span>`
         );
     });
@@ -166,7 +166,7 @@
       (miss.length
         ? `<span class="sel-miss" title="Terms are key:value, where the key is a question (${esc(
             D.analyses.map((a) => a.id).join(', ')
-          )}) or an attribute (${esc(Object.keys(SPECS).join(', ') || 'none')})">Nothing matches ${miss
+          )}) or an attribute (${esc(Object.keys(SPECS).join(', ') || 'none')})">No ${esc(W.mark)} matches ${miss
             .map((x) => `<b>${esc(x)}</b>`)
             .join(', ')}</span>`
         : '') +

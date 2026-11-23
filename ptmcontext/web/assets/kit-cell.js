@@ -837,7 +837,7 @@
       `${nm}: ${esc(pctText(p.share))} of ${int(p.n)} proteins ${scoped ? 'are in your selection' : `have at least one ${esc(W.mark)}`}` +
       `${p.cells.length > 1 ? ', median of ' + esc(p.maps) : ''}<br>${esc(ptsText(p.share - ref))} from ${esc(pctText(ref))} among all mapped proteins; ` +
       `<b>${esc(hText(p.h))}</b> (${esc(hBand(p.h))}), OR ${f2(p.or)} (${f2(p.orLo)}–${f2(p.orHi)}), ${esc(zText(p.z))}, ` +
-      `${p.q == null ? '' : `q ${esc(fq(p.q))} (${p.clear ? 'significant' : p.small ? `significant but small, |h| under ${MIN_H}` : 'not significant'})`}<br>${per}` +
+      `${p.q == null ? '' : `q ${esc(fq(p.q))} (${p.clear ? `≤ ${Q_MAX}, |h| ≥ ${MIN_H}` : p.small ? `≤ ${Q_MAX} but |h| under ${MIN_H}` : `> ${Q_MAX}`})`}<br>${per}` +
       `<br><span class="muted">Click for its numbers and proteins</span>`
     );
   }
@@ -2593,9 +2593,9 @@
           ? `In each map, the fold: the share of ${who(scopedNow())} placed in the part over the share of all the ` +
             `proteins the map places; tested against ${alike} (Mantel–Haenszel across the abundance strata, ` +
             `continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} ` +
-            `and a fold of 1.1× or more.`
+            `and at least 1.1×.`
           : `In each map, the fold against the other proteins the map places (one-sided hypergeometric test, ` +
-            `Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} and 1.1× or more.`) +
+            `Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} and at least 1.1×.`) +
         ` A map with fewer than ${READ.min_group} ${W.marked} or other proteins in a part is not colored there. A part takes ` +
         `the median fold of the maps that have it, colored only when at least ${READ.min_maps} of them find a difference ` +
         `the same way and none the other way.`;
@@ -2874,8 +2874,8 @@
         ? `<button type="button" class="btn small cell-zoom-btn" ` +
           `data-cell-zoom="${esc(FIGS[k].zoom)}"${
             FIGS[k].one ? ` data-i="${FIGS[k].one.i}"${FIGS[k].one.ids ? ` data-ids="${FIGS[k].one.ids}"` : ''}` : ''
-          } title="Open the ${esc(FIGS[k].zoom)} large, to ` +
-          `read its labels, zoom and move">Enlarge</button>`
+          } title="Open the ${esc(FIGS[k].zoom)} in a larger view, to ` +
+          `read its labels, zoom and pan">Enlarge</button>`
         : ''
     }${withBar ? dualBar(K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID), k) : ''}</div>` +
     `<div class="cell-scroll">${svgOf(FIGS[k].make(), 'cell-svg cell-' + k)}</div></div>`;
@@ -3239,8 +3239,8 @@
       (d) =>
         `<figure class="cell-fig"><figcaption class="vh">${esc(d.title || cap(d.drawing))}</figcaption>` +
         `<div class="cell-draw" data-cell-draw="${esc(d.drawing)}" role="group" aria-label="${esc(d.title || d.drawing)}"></div><button ` +
-        `type="button" class="btn quiet small cell-zoom-btn" data-cell-zoom="${esc(d.drawing)}" title="Open the ${esc(d.drawing)} large, to ` +
-        `read its labels, zoom and move">Enlarge the ${esc(d.drawing)}</button></figure>`
+        `type="button" class="btn quiet small cell-zoom-btn" data-cell-zoom="${esc(d.drawing)}" title="Open the ${esc(d.drawing)} in a larger view, to ` +
+        `read its labels, zoom and pan">Enlarge the ${esc(d.drawing)}</button></figure>`
     ).join('');
     const kinds = ['pdf', 'svg', 'png'],
       bar = K.tilekit
@@ -3692,11 +3692,7 @@
       return [
         [t['up-2'], t['up-3'], `h above 0: share above the share among all mapped proteins (${pctText(ref)})`],
         [t['down-2'], t['down-3'], 'h below 0'],
-        [
-          '#ffffff',
-          '#8a96a0',
-          `outlined: significant but small (|h| < ${MIN_H}); hatched: not significant (q > ${Q_MAX})`,
-        ],
+        ['#ffffff', '#8a96a0', `outlined: q ≤ ${Q_MAX} but |h| < ${MIN_H}; hatched: q > ${Q_MAX}`],
         ...(ref != null ? [['', '#111827', pctRefWords(scoped, ref), 'tick']] : []),
         ...(hasSel() ? [['#ffffff', '#111827', 'outlined: your selection']] : []),
       ];
@@ -3737,7 +3733,7 @@
         }, as Cohen’s effect size (0.2 small, 0.5 medium, 0.8 large)</span><span class="pk-lo">h −1</span><span class="pk-bar" role="img" aria-label="h from −1 to +1; red above, slate below">${steps
           .map((s) => `<i class="${s === 'ns' ? 'f0' : s}"></i>`)
           .join('')}<b class="pk-ref" style="left:50%"></b></span><span class="pk-hi">h +1</span>` +
-        `<span class="cell-key"><i class="cg-k sm"></i>significant but small (|h| &lt; ${MIN_H}); <i class="cg-k hx"></i>not significant. Filled where q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}, Benjamini–Hochberg across the parts shown (${esc(evidenceWords())})${
+        `<span class="cell-key"><i class="cg-k sm"></i>q ≤ ${Q_MAX} but |h| &lt; ${MIN_H}; <i class="cg-k hx"></i>q &gt; ${Q_MAX}. Filled where q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}, Benjamini–Hochberg across the parts shown (${esc(evidenceWords())})${
           phi > 1
             ? DISP
               ? `; overdispersion φ = ${esc(f2(phi))}, used to widen the standard errors`

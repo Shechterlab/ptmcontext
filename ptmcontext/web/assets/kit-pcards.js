@@ -1339,7 +1339,7 @@
         ? `<dt>Most ${esc(W.marks)} within</dt><dd>${wins.map(([w, v]) => `${w} aa: ${int(v)}`).join(' · ')}</dd>`
         : '') +
       (win != null && sites != null
-        ? `<dt>Top cluster window <span class="muted small">(lowest q against a null ` +
+        ? `<dt>Most significant cluster window <span class="muted small">(lowest q against a null ` +
           `drawn from its other ${esc(W.residues)}, not necessarily the densest)</span></dt><dd>${int(sites)} sites in ${int(win)} aa (${esc(range)}), log2 obs/null ${l2 > 0 ? '+' : ''}${l2 == null ? '–' : l2.toFixed(2)}, q ${q == null ? '–' : qf(q)}</dd>`
         : '') +
       (r.architecture

@@ -114,20 +114,32 @@
     return `${p ? p[1] : acc} ${h.pos.slice(0, 3).map(sh).join(', ')}${h.pos.length > 3 ? ` and ${h.pos.length - 3} more` : ''}`;
   };
   const hotNoun = (id) => (SRC[id]?.kind === 'germline' ? 'variants' : 'changes');
+  // 'R273, R248, R175' ('R252 and R108' for two; 'and 2 more' after three)
+  const hotSites = (acc, h) => {
+    const sh = (n) => `${h.res}${K.prot?.shownPos ? K.prot.shownPos(acc, n) : n}`,
+      xs = h.pos.slice(0, 3).map(sh);
+    return h.pos.length > 3
+      ? `${xs.join(', ')} and ${h.pos.length - 3} more`
+      : xs.length > 1
+        ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
+        : xs.join('');
+  };
   // a short note for the site card and the chosen-sites table ('' when the protein has no dominant residues)
   const hotNote = (acc, h, id) =>
     h
       ? h.self
-        ? `${h.pos.length === 1 ? 'carries' : 'one of the enriched residues that carry'} ${h.pct}% of its protein's ${hotNoun(id)}`
-        : `protein dominated by ${hotName(acc, h)} (${h.pct}% of ${hotNoun(id)})`
+        ? h.pos.length === 1
+          ? `${h.pct}% of this protein's ${hotNoun(id)} are at this site`
+          : `this site is one of the enriched residues with ${h.pct}% of this protein's ${hotNoun(id)}`
+        : `${h.pct}% of this protein's ${hotNoun(id)} are at ${hotSites(acc, h)}`
       : '';
   // the waterfall's tooltip line for a site of such a protein; `fewer`: the site is drawn below zero
   const hotTip = (acc, h, noun, fewer) =>
     h.self
       ? h.pos.length === 1
-        ? `This residue carries ${h.pct}% of the ${noun} of its protein.`
-        : `This residue is one of the enriched residues (${hotName(acc, h)}) that carry ${h.pct}% of the ${noun} of its protein.`
-      : `On a protein where ${hotName(acc, h)} ${h.pos.length === 1 ? 'carries' : 'carry'} ${h.pct}% of the ${noun}: the expected count at its other residues is inflated` +
+        ? `${h.pct}% of this protein's ${noun} are at this residue.`
+        : `This residue is one of the enriched residues (${hotName(acc, h)}) with ${h.pct}% of this protein's ${noun}.`
+      : `${h.pct}% of this protein's ${noun} are at ${hotName(acc, h)}. The expected count at its other residues is inflated` +
         (fewer ? ", so 'fewer' here mostly reflects that hotspot." : '.');
   // the default labels of the waterfall: the top and bottom of the ranking (rows sorted by signed score y; t each end), skipping
   // the sites of a protein dominated by its enriched residues (r.hot, unless the site is one of them); the reader's own labels are separate

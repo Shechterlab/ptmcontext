@@ -2229,7 +2229,7 @@
       `<div class="tbl-card"><table class="tbl ov-tbl"><caption class="vh">Overlap of each pair of sets against chance</caption><thead><tr><th scope="col">Pair</th><th scope="col">Among</th>` +
       `<th scope="col" class="num">In first</th><th scope="col" class="num">In second</th><th scope="col" class="num">In both</th><th scope="col" class="num" title="first × second / all counted">Expected</th>` +
       `<th scope="col" class="num" title="in both / expected">Fold</th><th scope="col" class="num" title="one-sided hypergeometric: the chance of this many or more in both">p</th><th scope="col" class="num">q</th></tr></thead>` +
-      `<tbody>${body || '<tr><td colspan="9">Nothing to test.</td></tr>'}</tbody></table></div>`
+      `<tbody>${body || '<tr><td colspan="9">Add two or more sets to compare.</td></tr>'}</tbody></table></div>`
     );
   }
   // a region's list
@@ -2847,7 +2847,7 @@
       `<p><b>Are the proteins in each region ${esc(W.marked)} more often?</b> A region holds the proteins in exactly one combination of sets. ` +
       `A one-sided hypergeometric test compares the region’s ${esc(W.marked)} proteins with all reviewed proteins, as the protein-set questions do ` +
       `(fold = share ${esc(W.marked)} in the region / share among all reviewed proteins; q is Benjamini–Hochberg across the regions shown; ` +
-      `a region of fewer than 5 is counted, not tested). A bar is filled when q ≤ 0.05 and the effect is at least 1.1×. ` +
+      `a region of fewer than 5 is counted, not tested). A bar is filled when q ≤ 0.05 and at least 1.1×. ` +
       `For ${esc(W.marks)}, a pooled Fisher’s exact test of the residues of proteins with ${esc(W.marks)} compares the ${esc(W.marks)} in a region with the other residues, ` +
       `when every set describes proteins. Computed in your browser. Reader families: ${
         (C.families?.readers || []).map((f) => `${esc(f.name)} (${(f.ids || []).map(esc).join(', ')})`).join('; ') ||

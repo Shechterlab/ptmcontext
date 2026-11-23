@@ -143,7 +143,7 @@ DOMAIN_TRACK = Track(
         'no_disorder_annotation': 'The protein has no disordered region in the site’s disorder input',
     },
     question='Are {marks} in disordered regions, against the other {residues} of the same proteins?',
-    sub='{Marks} against the other {residues} of the same proteins, by disorder',
+    sub='{Marks} against the other {residues} of the same proteins, by disorder (IDR: intrinsically disordered region)',
     tracks=(DISORDER_TRACK,),
     ordered=True,
     params={'window': WINDOW},

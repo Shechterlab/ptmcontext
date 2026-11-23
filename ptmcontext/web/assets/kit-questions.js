@@ -269,7 +269,7 @@
     LAST[a.id + ':table'] = shown;
     return (
       `<div class="qv-members"><div class="card-head"><p class="note">${int(K.rowsFor(a, 'enricher').length - 1)} ${esc(nouns)} were tested; <b>${int(enr.length)}</b> are ` +
-      `enriched (q ≤ ${PADJ})${K.selOn() ? ' for your selection, tested again in your browser' : ''}.</p>${K.expBar(
+      `enriched (q ≤ ${PADJ})${K.selOn() ? ' for your selection, tested in this browser' : ''}.</p>${K.expBar(
         ['pdf', 'svg', 'png', 'tsv'],
         'qotexp',
         'the table',
@@ -433,7 +433,7 @@
         ? `Your selection was made with these data (or names its proteins), so its ${esc(nouns)} are shown,` +
           ` not tested. These ${int(pool.length)} hold its ${esc(unitOf(m.id))}, most first. `
         : `${int(pool.length)} of the ${int(nTested)} ${esc(nouns)} tested are enriched (q ≤ ${PADJ})${
-            sel ? ' for your selection, tested again in your browser' : ''
+            sel ? ' for your selection, tested in this browser' : ''
           }. `) +
       groups.map((g) => `${int(count('g' + g.k))} belong to the ${esc(g.label)}`).join('; ') +
       (mem.none ? `; ${int(count('none'))} to none` : '') +

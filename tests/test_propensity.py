@@ -1007,19 +1007,19 @@ def test_default_waterfall_labels_skip_flagged_sites_and_keep_the_readers_own():
     assert got['phone'] == [0, 2, 3, 8, 5]  # 3 each end: positives 0, 2, 3; negatives 8, 5
     assert got['zoom'] == [0, 2, 3]  # zoomed in: only the top end shows
     assert got['tip'] == (
-        'On a protein where TP53 R273, R248, R175 carry 54% of the changes: the expected count at its other residues '
+        "54% of this protein's changes are at TP53 R273, R248, R175. The expected count at its other residues "
         "is inflated, so 'fewer' here mostly reflects that hotspot."
     )
     assert (
         got['tipv']
-        == 'On a protein where TP53 R175 carries 31% of the variants: the expected count at its other residues is inflated.'
+        == "31% of this protein's variants are at TP53 R175. The expected count at its other residues is inflated."
     )
     assert got['tips'] == (
-        'This residue is one of the enriched residues (TP53 R273, R248, R175) that carry 54% of the changes of its protein.'
+        "This residue is one of the enriched residues (TP53 R273, R248, R175) with 54% of this protein's changes."
     )
-    assert got['tip1'] == 'This residue carries 31% of the changes of its protein.'
-    assert got['note'] == 'protein dominated by TP53 R273, R248, R175 (54% of changes)'
-    assert got['notes'] == "one of the enriched residues that carry 54% of its protein's changes"
+    assert got['tip1'] == "31% of this protein's changes are at this residue."
+    assert got['note'] == "54% of this protein's changes are at R273, R248 and R175"
+    assert got['notes'] == "this site is one of the enriched residues with 54% of this protein's changes"
     assert got['many'] == 'TP53 R1, R2, R3 and 2 more'
     assert got['pick'][0]['self'] and got['pick'][0]['pos'] == [273, 248, 175] and got['pick'][0]['pct'] == 54
     assert got['pick'][1]['self'] is False and got['pick'][2] is None and got['pick'][3] is None

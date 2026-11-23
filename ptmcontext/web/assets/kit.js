@@ -196,17 +196,17 @@
   const BTN = {
     mantel_haenszel: [
       'within each protein',
-      `Compares each ${W.mark} only with the other ${W.residues} of its own protein, so a protein with many sites does not ` +
-        `decide the result. Changes the tiles marked ⇄ (where ${W.marks} lie); questions about protein classes keep their test.`,
+      `Compares each ${W.mark} only with the other ${W.residues} of its own protein, so a protein with many sites cannot ` +
+        `decide the result. Applies to the tiles marked ⇄ (where ${W.marks} lie); questions about protein classes keep their own test.`,
     ],
     fisher: [
       'across all proteins',
       `Puts all the ${W.residues} of all the proteins in one group. Simpler, but a protein with many sites counts for more. ` +
-        `Changes the tiles marked ⇄ (where ${W.marks} lie); questions about protein classes keep their test.`,
+        `Applies to the tiles marked ⇄ (where ${W.marks} lie); questions about protein classes keep their own test.`,
     ],
     study: [
       'within studies',
-      `Compares ${W.marks} only with those reported by the same studies or databases. Changes the tiles marked ⇄.`,
+      `Compares ${W.marks} only with those reported by the same studies or databases. Applies to the tiles marked ⇄.`,
     ],
   };
   // plain words for the terms of the tests, shown on hover (an abbr) and in one line on the Help page
@@ -446,7 +446,7 @@
       proteins: `The proteins with ${W.marks}, and the ${W.marks} on each.`,
       sites: `One row per ${W.mark}, with its evidence.`,
       idrs: `Intrinsically disordered regions of the proteins, and the ${W.marks} in them.`,
-      method: 'How each question was asked and tested, every test, the controls, the sources and how to cite.',
+      method: 'How each question was asked and tested, all tests, the controls, the sources and how to cite.',
       overlap:
         'Compare two to four sets of proteins: what they share, and whether the shared proteins carry the modification more often.',
       help: 'Searching, filters, reading a figure, and what the badges and terms mean.',
@@ -784,7 +784,7 @@
     network: 'No network for this modification yet',
   };
   K.tabOrder = TAB_ORDER;
-  K.tabEmpty = (v) => TABS[v]?.empty || TAB_EMPTY[v] || 'No data for this modification yet';
+  K.tabEmpty = (v) => TABS[v]?.empty || TAB_EMPTY[v] || 'No data for this page yet';
   function tabs() {
     const sel = K.sel?.active();
     // the open protein is a tab of its own after the pages (classic), so the bar says where you are; the Proteins tab is then not the current one
@@ -850,7 +850,7 @@
   // a mark that is a glyph says its meaning in hidden text as well
   // the line for a question none of whose rows differs: under 1.1× when some row passes the test, else not significant
   const noneDiffers = (rows) =>
-    rows.some((r) => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)';
+    rows.some((r) => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'No row reaches q ≤ 0.05';
   const am = (d) =>
     `<span class="am ${d}"><span aria-hidden="true">${d === 'more' ? '▲' : d === 'less' ? '▼' : '○'}</span>` +
     `<span class="vh">${d === 'more' ? 'more often: ' : d === 'less' ? 'less often: ' : 'no difference: '}</span></span>`;
@@ -2047,7 +2047,7 @@
     const keyP =
       `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less ` +
       `often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>` +
-      `<span>no difference (${gloss('q')} > ${PADJ}; q: p adjusted for many tests)</span></span>${
+      `<span>no difference (${gloss('q')} > ${PADJ}; q is the p value adjusted for multiple testing, Benjamini–Hochberg)</span></span>${
         vsOn()
           ? `<span><i class="kd more"></i> your ` +
             `selection’s share, <i class="kd ns"></i> that of ${esc(vsName())}</span>`
@@ -2074,8 +2074,8 @@
               `fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). `
             : ''
         }Red: more ` +
-        `often (q ≤ 0.05 and at least 1.1×). Slate: less often. Gray: significant but within 1.1×. Hollow: no ` +
-        `significant difference. A tile shows the classes that differ most and opens to every class. Tap or hover a row ` +
+        `often (q ≤ 0.05 and at least 1.1×). Slate: less often. Gray: about the same (q ≤ 0.05 but within 1.1×). Hollow: no ` +
+        `difference (q above 0.05). A tile shows the classes that differ most and opens to every class. Tap or hover a row ` +
         `for its counts.</p>`
       : '';
     const key = keyP + howP;
@@ -2471,8 +2471,8 @@
         return cap(h) + rest.join('');
       };
       return SETS(a.id)
-        ? `<b>${esc(noun(label))}</b> are ${esc(W.marked)} ${f} as often as other proteins.`
-        : `${esc(cap(W.marks))} are more common <b>${esc(where)}</b> (${f} other ${esc(W.residues)}).`;
+        ? `<b>${esc(noun(label))}</b> are ${esc(W.marked)} at ${f} the share of all proteins tested.`
+        : `${esc(cap(W.marks))} are more common <b>${esc(where)}</b> (share ${f} that of other ${esc(W.residues)}).`;
     };
     return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings</h3><ol>${pick
       .map(
@@ -2679,13 +2679,13 @@
       or = r.method !== 'enricher' && t.eff != null ? `OR ${fxn(t.eff)}${ci}, ` : '';
     return `${or}q ${fq(t.q)}`;
   };
-  // "Doesn't hold with high-confidence sites (n = 83)", "Doesn't hold in detectable peptides": the control, and how many
+  // "Not robust with high-confidence sites (n = 83)", "Not robust in detectable peptides": the control, and how many
   // marks it counted
   const failText = (f) => {
     const n = D.run?.analyses?.[f.id]?.marks_where?.marks,
       lab = String(f.label || f.id);
     return (
-      `Doesn't hold ${/^(in|inside|with|within|among|at|near|without)\b/i.test(lab) ? '' : 'with '}${lab}` +
+      `Not robust ${/^(in|inside|with|within|among|at|near|without)\b/i.test(lab) ? '' : 'with '}${lab}` +
       (n != null ? ` (n = ${int(n)})` : '')
     );
   };
@@ -2921,7 +2921,7 @@
       `<p class="page-sub">${
         vsOn()
           ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}${
-              K.sel.testable() ? ', tested in your browser (exploratory).' : ', shown, not tested: it is too small.'
+              K.sel.testable() ? ', tested in this browser (exploratory).' : ', shown, not tested: it is too small.'
             }`
           : esc(a.question || a.describe || '')
       }${
@@ -2930,14 +2930,14 @@
             ? ` <b>Your selection</b> is not tested here: the model is fitted once, on every ${esc(W.mark)}.`
             : small
               ? ` <b>Your selection</b> is too small to test (a test needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}). ` +
-                `Below, where it falls, then every ${esc(W.mark)} for comparison.`
+                `The whole dataset follows, for comparison.`
               : ` <b>Your ` +
                 `selection</b>${
                   rows.some((r) => r.descriptive)
                     ? ': ' + whyShown(a, rows).replace(/^Your selection /, '')
                     : vsOn()
                       ? ''
-                      : ', tested in your browser (exploratory).'
+                      : ', tested in this browser (exploratory).'
                 }`
           : ''
       }</p>` +
@@ -2957,7 +2957,7 @@
           `<section class="pcard">${
             small
               ? `<h3 class="whole-h">All ${esc(W.marks)}, not your selection</h3><p class="small muted whole-note">The whole dataset, ` +
-                `for comparison. Nothing here describes your selection.</p>`
+                `shown for comparison; your selection is too small to test.</p>`
               : ''
           }${
             (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
@@ -3076,8 +3076,8 @@
       }. This site’s ` +
         `data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}, and each source ` +
         `keeps its own terms (see the Data table).</p>`) +
-      (`<p>Privacy: the site sets no cookies and uses no tracking. Searches, filters, selections and every test on ` +
-        `them stay in your browser and its address. The browser’s local storage keeps only your preferences ` +
+      (`<p>Privacy: the site sets no cookies and uses no tracking. Searches, filters and selections stay in your browser and the page address, and tests on a selection run there. ` +
+        `The browser’s local storage keeps only your preferences ` +
         `(theme, sidebar, protein map rows) and saved selections; clear them with the site data. A protein page ` +
         `asks these services for that protein’s public data, by accession only: ${esc(live.join(', '))}. Downloads ` +
         `are made in the browser.</p></section>`)
@@ -3136,8 +3136,8 @@
     [
       ['m-g1', 'The tests', 0],
       ['m-tests', 'How the tests work', 1],
-      ['m-every', 'Every test', 1],
-      ['m-questions', 'Questions, and what made each', 1],
+      ['m-every', 'All tests', 1],
+      ['m-questions', 'How each question was made', 1],
       ['m-parity', 'Checked against the release', 1],
       ['m-gq', 'Each question', 0],
       ...D.analyses.map((a) => [`m-q-${a.id}`, a.title, 1]),
@@ -3248,8 +3248,8 @@
     ['analysis', 'Question', (r) => r.title, false],
     ['label', 'Class or set', (r) => r.label, false],
     ['method', 'Test', (r) => methodName(r), false],
-    ['a', `${cap(W.marked)}: in class / all`, (r) => r.a, true],
-    ['c', 'Others: in class / all', (r) => r.c, true],
+    ['a', `${cap(W.marked)} in class / all`, (r) => r.a, true],
+    ['c', 'Others in class / all', (r) => r.c, true],
     ['or', 'Effect (95% CI)', (r) => r.eff ?? -1, true],
     ['log2', 'log2(OR)', (r) => K.l2(r) ?? -99, true],
     ['q', 'q', (r) => r.q ?? 2, true],
@@ -3283,7 +3283,7 @@
     const rows = shownStatistics();
     const opts = [['', 'All questions'], ...D.analyses.map((a) => [a.id, a.title])];
     return (
-      `<section id="m-every"><h3>Every test</h3>` +
+      `<section id="m-every"><h3>All tests</h3>` +
       `<p class="page-sub">One row per class and test. ${gloss('q')}: Benjamini–Hochberg within each question. ` +
       `<button class="btn small" type="button" id="dl">Download TSV</button></p>` +
       `<div class="filters"><label>Question <select id="f-a">${opts
@@ -3434,7 +3434,7 @@
                     : 'Those with an abundance input are'
                 } repeated ` +
                 `within protein-abundance deciles (Mantel–Haenszel odds ratio across them), because mass spectrometry ` +
-                `finds abundant proteins most often. An enrichment that holds there is not explained by abundance.`
+                `finds abundant proteins most often. If it still holds within abundance deciles, abundance alone does not explain it.`
               : ''
           }</p>`
         : '') +
@@ -3448,7 +3448,7 @@
         `was checked against its MD5 before it was read.</p>`) +
       (`<div class="tbl-card"><table class="tbl"><thead><tr><th>Source</th><th>Used for</th><th>License</th><th>` +
         `File</th><th>MD5</th></tr></thead><tbody>${inputs}</tbody></table></div></section>`) +
-      `<span id="m-gq"></span><section id="m-questions"><h3>Questions, and what made each</h3>` +
+      `<span id="m-gq"></span><section id="m-questions"><h3>How each question was made</h3>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th></tr></thead><tbody>` +
       D.analyses
         .map(
@@ -3470,7 +3470,7 @@
       privacySection() +
       sourcesSection() +
       (`<section id="m-made"><h3>Software and build</h3><p>The site file <span class="mono">${esc(D.site.config)}</span> ` +
-        `sets the modification, sequences, regions, questions, colors and pictures. It was built with ptmcontext ${esc(D.kit.version)} (commit ` +
+        `sets the modification, sequences, regions, questions, colors and pictures. It was built with PTMcontext ${esc(D.kit.version)} (commit ` +
         `<span class="mono">${esc(shortCommit(D.kit.commit))}</span>) on ${esc(hdate(RUN.written))}. Citation, ` +
         `version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>`) +
       (`<p>Every download includes its citation, data sources, versions, inputs and export date, printed under each ` +
@@ -3493,7 +3493,7 @@
       return (
         `<h4>${esc(cap(c.label))}</h4>${c.note ? `<p>${esc(c.note)}.</p>` : ''}` +
         (n
-          ? `<p>A ${esc(W.mark)} counts when at least ${int(n.distinct_at_least)} independent ${int(n.distinct_at_least) === 1 ? 'source reports' : 'sources report'} it.` +
+          ? `<p>A ${esc(W.mark)} counts when at least ${int(n.distinct_at_least)} independent ${n.distinct_at_least === 1 ? 'source reports' : 'sources report'} it.` +
             (groups.length
               ? ` Sources counted once together: ${groups
                   .map(([g, xs]) => `${esc(g)} (${xs.map(nm).join(', ')})`)
@@ -3545,7 +3545,7 @@
     pdf: 'PDF: vector, fonts embedded, with its citation and sources',
     svg: 'SVG: vector, editable, with its citation and sources in the file',
     png: 'PNG at 300 dpi, with its citation and sources in the image and its text fields',
-    tsv: 'TSV: the rows, under # lines saying what they are, how to cite them and where they come from',
+    tsv: 'TSV: the rows, with # lines that say what they are, how to cite them and where they come from',
   };
   const shortCommit = (c) =>
     c ? c.replace(/-dirty$/, '').slice(0, 7) + (c.endsWith('-dirty') ? '+changes' : '') : 'not recorded';
@@ -3563,11 +3563,10 @@
       (m === 'fisher'
         ? `Across all proteins: the ${W.marks} in each class against all the other ${W.residues} of the ${W.marked} proteins ` +
           `(two-sided Fisher’s exact test, Haldane–Anscombe odds ratio).`
-        : `Within each protein, each protein is analyzed separately: its ${W.marks} are compared only with its own ${W.residues} (Mantel–Haenszel ` +
+        : `Within each protein: its ${W.marks} are compared only with its own ${W.residues} (Mantel–Haenszel ` +
           `odds ratio with 95% confidence interval, continuity-corrected Cochran–Mantel–Haenszel test).`) +
       (` Only ${W.marks} on proteins with another ${W.residue} are counted. q is Benjamini–Hochberg across the ` +
-        `classes. Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Hollow: no significant ` +
-        `difference.`)
+        `classes. Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Gray: about the same (q ≤ 0.05 but within 1.1×). Hollow: no difference (q above 0.05).`)
     );
   }
   function setWords(a) {
@@ -3589,6 +3588,7 @@
       version: CIT.version || '',
       date: CIT.date || '',
       doi: CIT.doi || '',
+      data_release: releaseText(),
       licence: CIT.licence || '',
       cite: CIT.preferred ? CIT.preferred.text + doiTxt(CIT.preferred.doi) : '',
       data_sources: (CIT.references || []).map((r) => r.text + doiTxt(r.doi)),
@@ -3639,23 +3639,41 @@
     if (CIT.preferred) lines.push(`Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}`);
     if ((CIT.references || []).length)
       lines.push('Data: ' + CIT.references.map((r) => r.short + doiTxt(r.doi)).join('; '));
+    if (releaseText()) lines.push(`Data release ${releaseText()}`);
     lines.push(
-      `${D.site.name}, version ${CIT.version || '–'}${
+      `${D.site.name}, ${CIT.version ? 'app version ' + CIT.version : 'version not recorded'}${
         CIT.date ? ' (' + hdate(CIT.date) + ')' : ''
-      } · ptmcontext ${D.kit.version}${sn.release ? ' · ' + sn.release : ''}`
+      } · PTMcontext ${D.kit.version}${sn.release ? ' · ' + sn.release : ''}`
     );
-    if (selOn() && K.sel.data()) lines.push(`Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks})`);
+    if (selOn() && K.sel.data())
+      lines.push(`Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${K.sel.nMarks() === 1 ? W.mark : W.marks})`);
     // the commit and the FASTA MD5 are not in the strip: they are in the file's metadata (provenance()); the page's full
     // address (view, filters, protein, section) is, so the figure can be traced back to it
     if (typeof location !== 'undefined' && /^https?:/.test(location.href)) lines.push(`${PAGE_LABEL} ${location.href}`);
     lines.push(`Exported ${hdate(stamp())}${CIT.licence ? ' · license ' + hlicence(CIT.licence) : ''}`);
     return lines;
   }
+  // the data release the explorer reads (website.dataset): "v1.7.0 (2026-11-21), doi:10.5281/zenodo.24429699"
+  const releaseText = () => {
+    const ds = D.dataset;
+    return ds && ds.version
+      ? `${ds.version}${ds.date ? ' (' + hdate(ds.date) + ')' : ''}${ds.doi ? ', doi:' + ds.doi : ''}`
+      : '';
+  };
+  // the release's data dictionary, from the site's Download list: "data_dictionary.tsv in PTM_Pipeline release v1.7.0"
+  const dictionaryText = () => {
+    const ds = D.dataset,
+      d = (D.downloads || []).find((x) => /dictionary/i.test(x.label || '')),
+      repo = /github(?:usercontent)?\.com\/[^/]+\/([^/]+)/.exec((ds && ds.url) || (d && d.url) || '');
+    return ds && ds.version && d
+      ? `${String(d.url).split('/').pop()}, release ${ds.version}${repo ? ' of ' + repo[1] : ''}`
+      : '';
+  };
   function preamble(title, what) {
     const RUN = D.run,
       sn = RUN.snapshot || {};
     const inputs = Object.entries(RUN.inputs || {})
-      .map(([k, v]) => `${k} (MD5 ${v.md5})`)
+      .map(([k, v]) => `${k} ${v.md5}`)
       .join(', ');
     return (
       [
@@ -3666,22 +3684,22 @@
             `main release's set of sites; do not mix the two.`
           : null,
         CIT.preferred ? `# Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}` : null,
-        (CIT.references || []).length
-          ? '# Data sources: ' + CIT.references.map((r) => r.text + doiTxt(r.doi)).join(' | ')
-          : null,
-        `# Version: ${CIT.version || '–'}${CIT.date ? ' (' + CIT.date + ')' : ''}${CIT.doi ? ', doi:' + CIT.doi : ''}${
-          CIT.licence ? '; license ' + CIT.licence : ''
+        ...(CIT.references || []).map((r) => `# Data source: ${r.text}${doiTxt(r.doi)}`),
+        releaseText() ? `# Data release: ${releaseText()}` : null,
+        dictionaryText() ? `# Column definitions: the release's columns are defined in ${dictionaryText()}` : null,
+        `# App: ${D.site.name}, ${CIT.version ? 'version ' + CIT.version : 'version not recorded'}${CIT.date ? ' (' + hdate(CIT.date) + ')' : ''}${
+          CIT.licence ? '; license ' + hlicence(CIT.licence) : ''
         }`,
-        `# Made with: ptmcontext ${D.kit.version} (commit ${D.kit.commit || 'not recorded'}) from ${D.site.config}; run ${RUN.written}`,
-        `# Sequences: ${sn.release} (${int(sn.entries)} entries, FASTA MD5 ${sn.fasta_md5}); inputs: ${inputs}`,
-        `# Questions made by: ${Object.keys(D.run.analyses || {})
-          .map((aid) => `${aid}: ${madeByText(aid)}`)
-          .join('; ')}${
+        `# Made with: PTMcontext ${D.kit.version} (commit ${D.kit.commit || 'not recorded'}); run ${RUN.written}`,
+        `# Sequences: ${sn.release} (${int(sn.entries)} entries, FASTA MD5 ${sn.fasta_md5})`,
+        `# Inputs (MD5): ${inputs}`,
+        `# Questions: how each was made is in Methods, under How each question was made${
           (RUN.trusted_plugins || []).length ? `; trusted plugins: ${RUN.trusted_plugins.join(', ')}` : ''
         }`,
         selOn() && K.sel.data()
-          ? `# Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks} on ${K.sel.nProteins()} proteins),` +
-            ` tested again in the browser`
+          ? `# Selection: ${K.sel.describe()} (${int(K.sel.nMarks())} ${K.sel.nMarks() === 1 ? W.mark : W.marks} on ${int(K.sel.nProteins())} ${
+              K.sel.nProteins() === 1 ? 'protein' : 'proteins'
+            }); ${K.sel.testable() ? 'tested in this browser (exploratory)' : 'too small to test'}`
           : null,
         `# Exported: ${stamp()} from ${pageUrl()}`,
       ]
@@ -4617,11 +4635,13 @@
     const P = JSON.parse(f.meta);
     pdf.setProperties({
       title: f.title,
-      subject: `${citeText()} ${D.site.name}, version ${CIT.version || '–'}.`.replace(/\s+/g, ' ').trim(),
+      subject: `${citeText()} ${D.site.name}, ${CIT.version ? 'version ' + CIT.version : 'version not recorded'}.`
+        .replace(/\s+/g, ' ')
+        .trim(),
       author: D.site.lab || D.site.name,
       keywords: [
         D.mark,
-        `version ${CIT.version || '–'}`,
+        CIT.version ? `version ${CIT.version}` : 'version not recorded',
         `ptmcontext ${D.kit.version}`,
         `commit ${D.kit.commit || 'not recorded'}`,
         P.from,
@@ -4784,7 +4804,7 @@
           .sort((x, y) => y[1] - x[1]);
         return (
           `<section id="m-sources"><h3>${esc(s.label)}</h3><p>${int(rows.length)} ${esc(lcLabel(s.label))} report the ${esc(W.marks)}, with the ` +
-          `number each reports. ${esc(s.help || '')} Cite those whose ${esc(W.marks)} you use.</p>` +
+          `number each reports. ${esc(s.help ? String(s.help).replace(/[.!?]?\s*$/, '.') + ' ' : '')}Cite those whose ${esc(W.marks)} you use.</p>` +
           (`<div class="tbl-card"><table class="tbl"><thead><tr><th>${esc(s.label)}</th><th class="num">${esc(cap(W.marks))}</th><th>` +
             `Reference</th></tr></thead><tbody>`) +
           rows
@@ -4821,11 +4841,11 @@
           }</p>`
         : '') +
       ((CIT.references || []).length
-        ? `<p>${CIT.preferred ? 'and the' : 'Please cite the'} original data sources${
+        ? `<p>${CIT.preferred ? 'Please also cite' : 'Please cite'} the original data sources${
             Object.values(D.attribute_specs || {}).some((x) => x.kind === 'list' && x.link)
-              ? ` and the ${esc(
+              ? `, and the ${esc(
                   lcLabel(Object.values(D.attribute_specs).find((x) => x.kind === 'list' && x.link).label)
-                )} <a href="#method/sources">` + `under Sources</a> you use`
+                )} <a href="#method/sources">` + `listed under Sources</a> whose records you use`
               : ''
           }:</p><ul>${CIT.references
             .map(
@@ -4836,7 +4856,7 @@
             )
             .join('')}</ul>`
         : '') +
-      `<p class="muted">This site: ${esc(CIT.title)}, version ${esc(CIT.version)}${
+      `<p class="muted">This explorer: ${esc(CIT.title)}, app version ${esc(CIT.version)}${
         CIT.date ? ' (' + esc(hdate(CIT.date)) + ')' : ''
       }${CIT.doi ? `, <a href="https://doi.org/${esc(CIT.doi)}">doi:${esc(CIT.doi)}</a>` : ''}${
         CIT.licence ? '; license ' + esc(hlicence(CIT.licence)) : ''
@@ -4987,7 +5007,8 @@
   const methodLink = (aid, sec) =>
     `<a class="exp-btn" href="${esc(
       link('method', aid ? 'q-' + aid : sec || '')
-    )}" title="How ${aid ? 'this question was' : 'these were'} made and ` + `tested, and from what data">Methods</a>`;
+    )}" title="How ${aid ? 'this question was' : 'these questions were'} made and ` +
+    `tested, and the data ${aid ? 'it uses' : 'they use'}">Methods</a>`;
   // a figure's download menu (kit-export.js): the formats it makes, a button each with data-<attrs>="<format>"
   const expBar = (kinds, attrs, label, method, o) =>
     K.exp.menu(kinds, attrs, label, method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : '', o);
@@ -5293,8 +5314,8 @@
   function showTip(e, r) {
     const selNote =
       (r.selection
-        ? `<br><span class="muted">Your selection, tested again in the browser${
-            r.descriptive ? ': shown, not tested' : ' (exploratory)'
+        ? `<br><span class="muted">${
+            r.descriptive ? 'Your selection: shown, not tested' : 'Your selection, tested in this browser (exploratory)'
           }</span>`
         : '') +
       (r.ref && !r.vs
@@ -5353,7 +5374,7 @@
             }, q ${fq(r.q)} · ${METHOD[r.method] || esc(r.method)}${
               r.strata != null && r.method === 'mantel_haenszel' ? `, ${int(r.strata)} informative ` + `proteins` : ''
             }`) +
-        (r.dir === 'same' ? '<br>Significant, but within 1.1× either way: about the same' : '') +
+        (r.dir === 'same' ? '<br>q ≤ 0.05, but within 1.1× either way: about the same' : '') +
         selNote;
     tip.hidden = false;
     tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + 'px';
@@ -5820,9 +5841,10 @@
     if (sel && K.sel?.nMarks) {
       const on = K.sel.active?.();
       sel.innerHTML =
-        `<span aria-hidden="true">⏚</span> <b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(W.marks)}</span><span class="dock-sel-p"> · <b>${int(
+        `<span aria-hidden="true">⏚</span> <b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)}</span><span class="dock-sel-p"> · <b>${int(
           K.sel.nProteins()
-        )}</b> proteins</span>` + (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');
+        )}</b> ${K.sel.nProteins() === 1 ? 'protein' : 'proteins'}</span>` +
+        (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');
       sel.title = on ? 'A selection is on: open the filters' : 'Open the filters';
     }
   }
@@ -5934,7 +5956,7 @@
         : upd
           ? ` · updated ` + `<time datetime="${esc(upd)}">${esc(hdate(upd))}</time>`
           : ''
-    } · built with <a href="${esc(D.kit.url || '#method/made')}">ptmcontext</a> ${esc(D.kit.version)}${
+    } · built with <a href="${esc(D.kit.url || '#method/made')}">PTMcontext</a> ${esc(D.kit.version)}${
       D.kit.commit ? ` (${esc(shortCommit(D.kit.commit))})` : ''
     }` +
     (D.dataset

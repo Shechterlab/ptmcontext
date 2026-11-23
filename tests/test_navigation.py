@@ -40,7 +40,7 @@ def test_the_tabs_are_the_same_on_every_site_in_one_order():
     assert "overlap: 'Compare sets'" in KIT and "method: 'Methods'" in KIT
     # the All tests tab is gone: its table is a part of Methods
     assert "['statistics'," not in KIT and "view === 'statistics'" in KIT  # only the old address is read
-    assert 'id="m-every"><h3>Every test</h3>' in KIT
+    assert 'id="m-every"><h3>All tests</h3>' in KIT
 
 
 def test_old_addresses_and_the_words_they_replace():
@@ -210,10 +210,10 @@ def test_a_toy_site_in_a_browser(tmp_path):
     assert out['badgeTo']['open'] == 1
     # the old address of the table of tests: a section of Methods, filtered by the question
     assert out['stat']['hash'].startswith('#method/every') and 'a=motif' in out['stat']['hash']
-    assert 'Every test' in out['stat']['open'] and out['stat']['rows'] > 0 and out['stat']['dl'] == 1
+    assert 'All tests' in out['stat']['open'] and out['stat']['rows'] > 0 and out['stat']['dl'] == 1
     assert out['cite']['menu'] == ['Tests', 'Controls', 'Sources', 'Cite*', 'Download']
-    assert 'Licenses and privacy' in out['cite']['shown'] and 'Every test' not in out['cite']['shown']
-    assert 'How the tests work' in out['tests'] and 'Every test' in out['tests']
+    assert 'Licenses and privacy' in out['cite']['shown'] and 'All tests' not in out['cite']['shown']
+    assert 'How the tests work' in out['tests'] and 'All tests' in out['tests']
     assert out['privacy'] == 'Cite'
     assert out['compare'] == '#overview'  # the toy has no sets to compare: the address falls back to the Overview
     assert out['help'] == ['Searching', 'Filters', 'Reading a figure', 'Badges and terms']

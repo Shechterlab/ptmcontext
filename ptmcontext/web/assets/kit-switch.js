@@ -38,7 +38,7 @@
     box.className = 'switch-note';
     box.setAttribute('role', 'status');
     box.innerHTML =
-      `<span>${n} filter${n === 1 ? '' : 's'} from ${esc(from)} ${n === 1 ? 'is' : 'are'} not on this site and ` +
+      `<span>${n} filter${n === 1 ? '' : 's'} from ${esc(from)} ${n === 1 ? 'is' : 'are'} not on this explorer and ` +
       `${n === 1 ? 'was' : 'were'} dropped. Your search and highlight are kept.</span>` +
       '<button type="button" aria-label="Dismiss this notice">×</button>';
     box.querySelector('button').addEventListener('click', () => box.remove());
@@ -96,9 +96,9 @@
     const wrap = document.createElement('div');
     wrap.className = bar ? 'site-switch in-bar' : 'site-switch';
     wrap.innerHTML =
-      `<button type="button" class="site-switch-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="${uid}" aria-label="Switch ${esc(word)} site: ${esc(me?.label || '')}" ` +
-      `title="Open another site"><span>${esc(word)}<span class="sw-colon">:</span></span> <b>${esc(shown)}</b> <span aria-hidden="true">▾</span></button>` +
-      `<ul id="${uid}" class="site-switch-list" role="menu" aria-label="Sites" hidden>` +
+      `<button type="button" class="site-switch-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="${uid}" aria-label="Switch ${esc(word)} explorer: ${esc(me?.label || '')}" ` +
+      `title="Open another explorer"><span>${esc(word)}<span class="sw-colon">:</span></span> <b>${esc(shown)}</b> <span aria-hidden="true">▾</span></button>` +
+      `<ul id="${uid}" class="site-switch-list" role="menu" aria-label="Explorers" hidden>` +
       list
         .map(
           (s) =>
@@ -180,7 +180,7 @@
       a.className = 'brand-line';
       a.href = '../';
       a.textContent = brand;
-      a.title = `${brand}: all sites`;
+      a.title = `${brand}: all explorers`;
       box.className = 'brand-name';
       h1.before(box);
       box.append(a, h1);
@@ -190,8 +190,8 @@
       const a = document.createElement('a');
       a.className = 'landing-link in-bar';
       a.href = '../';
-      a.textContent = 'All sites';
-      a.title = 'Back to the page that lists every site';
+      a.textContent = 'All explorers';
+      a.title = 'Back to the page that lists every explorer';
       end.prepend(a);
     }
     if (list.length >= 2) {
