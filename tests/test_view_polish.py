@@ -25,4 +25,8 @@ def test_the_protein_page_and_the_network_link_to_each_other_from_the_site_file_
     pnet, net = _src('kit-pnet.js'), _src('kit-network.js')
     assert 'See this protein in the Network view' in pnet and 'K.netHref?.(p)' in pnet
     assert "K.link('network', '', { q: p.gene || p.acc })" in net and 'NC.protein_link === false' in net
-    assert 'live STRING partners are on its protein page' in net and '${one.acc}/interactions' in net and 'D.partners' in net
+    assert (
+        'live STRING partners are on its protein page' in net
+        and '${one.acc}/interactions' in net
+        and 'D.partners' in net
+    )

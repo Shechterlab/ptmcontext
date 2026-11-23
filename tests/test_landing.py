@@ -328,7 +328,12 @@ def test_an_older_whats_new_block_is_one_release_and_a_site_help_reads_the_same_
     for site in ('methylarginine', 'methyllysine', 'lysine', 'phospho'):
         spec = yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / f'{site}.yaml').read_text())
         mine = [r['title'] for r in LP.whats_new(spec['website']['whats_new'])['releases']]
-        land = [r['title'] for r in LP.whats_new(yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'landing.yml').read_text())['whats_new'])['releases']]
+        land = [
+            r['title']
+            for r in LP.whats_new(
+                yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'landing.yml').read_text())['whats_new']
+            )['releases']
+        ]
         assert mine == land and all('data release (' in t for t in land)
 
 

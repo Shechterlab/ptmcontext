@@ -159,9 +159,7 @@
       const near = ok.filter((r) => r.q != null && r.q <= K.PADJ && r.dir === 'same').length;
       return (
         `No row here differs by 1.1× or more from the other ${fold ? 'proteins' : esc(W.residues)}` +
-        (near
-          ? `; ${near === 1 ? 'one has' : `${near} have`} q ≤ 0.05 but a fold under 1.1×.`
-          : '.')
+        (near ? `; ${near === 1 ? 'one has' : `${near} have`} q ≤ 0.05 but a fold under 1.1×.` : '.')
       );
     }
     return [

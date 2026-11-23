@@ -2942,14 +2942,14 @@
         ? (() => {
             const long = String(a.note).trim().split(/\s+/).length > 25,
               tag = long ? 'details' : 'p';
-            return (
-              `<${tag} class="page-note note">${long ? '<summary>How to read this</summary>' : ''}${esc(a.note)}${(a.note_filters || [])
-                .map(
-                  (f) =>
-                    ` <button type="button" class="chip" data-try="${esc(f.query)}" title="Select the ${esc(W.marks)} that match ${esc(f.query)}">${esc(f.label)}</button>`
-                )
-                .join('')}</${tag}>`
-            );
+            return `<${tag} class="page-note note">${long ? '<summary>How to read this</summary>' : ''}${esc(a.note)}${(
+              a.note_filters || []
+            )
+              .map(
+                (f) =>
+                  ` <button type="button" class="chip" data-try="${esc(f.query)}" title="Select the ${esc(W.marks)} that match ${esc(f.query)}">${esc(f.label)}</button>`
+              )
+              .join('')}</${tag}>`;
           })()
         : '') +
       familyLine(a) +
@@ -3455,11 +3455,7 @@
       `<span id="m-gq"></span><section id="m-questions"><h3>How each question was made</h3>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th></tr></thead><tbody>` +
       D.analyses
-        .map(
-          (a) =>
-            `<tr><td>${esc(a.title)}</td><td ` +
-            `class="wrapok">${esc(madeByText(a.id))}</td></tr>`
-        )
+        .map((a) => `<tr><td>${esc(a.title)}</td><td ` + `class="wrapok">${esc(madeByText(a.id))}</td></tr>`)
         .join('') +
       `</tbody></table></div></section>` +
       controlsMethod() +
@@ -3518,8 +3514,7 @@
   }
   // a question's own Method section (#method/q-<id>): what it asks, what it is compared with and its classes
   function questionMethod(a) {
-    const RUN = D.run,
-      set = a.kind === 'protein_sets';
+    const set = a.kind === 'protein_sets';
     const labels = Object.entries(a.labels || {}).filter(([c]) => c);
     const classes =
       labels.length && labels.length <= 40

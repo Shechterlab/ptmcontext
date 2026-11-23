@@ -532,10 +532,7 @@
         }; q: Benjamini–Hochberg ` + `within the question.</p></details>`
       );
     if (K.sel.loading?.()) return K.loading(K.sel.loadingText());
-    if (!testable())
-      return (
-        `<p class="note">Too few to test, so the rows are the whole dataset’s.</p>`
-      );
+    if (!testable()) return `<p class="note">Too few to test, so the rows are the whole dataset’s.</p>`;
     return (
       `<p class="muted small">Your selection, tested in this browser (exploratory; not adjusted for the ` +
       `other selections tried); the gray tick is the whole dataset’s odds ratio. ${
@@ -2195,9 +2192,7 @@
     if (!pg.answer || !pg.answer.rows.length) return '';
     if (selOn() && !ready()) return ''; // the selection's data are still coming: no counts to state yet
     if (selOn() && !testable())
-      return (
-        `<p class="ix-answer">Too few to compare: the tests need at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}.</p>`
-      );
+      return `<p class="ix-answer">Too few to compare: the tests need at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}.</p>`;
     const rs = rowsFor(pg.answer.rows, 'mantel_haenszel').filter((x) => dirOf(shown(x)) === 'more');
     const phrases = [...new Set(rs.map((x) => x.ref.phrase || x.label))];
     const list =
@@ -2206,10 +2201,7 @@
       esc(t).replace('{list}', esc(list)).replace('{marks}', esc(theMarks())).replace('{residues}', esc(W.residues));
     return `<p class="ix-answer">${
       phrases.length
-        ? fill(pg.answer.more) +
-          (rs.length > 1
-            ? ` Folds ${range(rs.map(shown))}.`
-            : '')
+        ? fill(pg.answer.more) + (rs.length > 1 ? ` Folds ${range(rs.map(shown))}.` : '')
         : fill(pg.answer.none || `{marks} are not ` + `enriched at these contacts.`).replace(/^./, (c) =>
             c.toUpperCase()
           )
@@ -2225,9 +2217,7 @@
     );
     const list =
       titles.length < 2 ? titles.join('') : titles.slice(0, -1).join(', ') + ' and ' + titles[titles.length - 1];
-    return (
-      `<p class="ix-answer" title="${tested ? '' : 'No test is run on this page for this explorer.'}">Evidence: ${esc(list)}.</p>`
-    );
+    return `<p class="ix-answer" title="${tested ? '' : 'No test is run on this page for this explorer.'}">Evidence: ${esc(list)}.</p>`;
   }
   function highlightValue(h) {
     if (h.rows && h.rows.length) {
