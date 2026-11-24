@@ -1696,6 +1696,17 @@
     else cur.add(v);
     setFilter(key, [...cur]);
   }
+  // Classes of protein-set questions combine as AND across questions (one filter key each: p:<question>), and as OR within one.
+  // andOk: the class of this question would narrow a selection that is on (a class of this question is not in it yet).
+  const andOk = (aid, cat) =>
+    active() && A[aid]?.kind === 'protein_sets' && !(S.f['p:' + aid] || []).length && !!cat && validKey('p:' + aid);
+  // the one protein-set class the selection is exactly, as the Overlap page names it (s:<question>:<class>), else ''
+  function asSetTerm() {
+    const ks = Object.entries(S.f).filter(([, v]) => v && v.length);
+    if (String(S.q || '').trim() || ks.length !== 1) return '';
+    const [[k, v]] = ks;
+    return k.startsWith('p:') && v.length === 1 && v[0] !== '*' ? `s:${k.slice(2)}:${v[0]}` : '';
+  }
   function clearAll() {
     const undo = K.undoable?.('Selection cleared.');
     S.f = {};
@@ -1968,6 +1979,8 @@
       setFilter,
       termValues,
       toggle,
+      andOk,
+      asSetTerm,
       AT,
       anyMembers: () => anyMembers,
     },

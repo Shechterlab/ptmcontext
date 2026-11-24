@@ -5565,7 +5565,7 @@
         },
         "tabs": {
           "type": "object",
-          "description": "the top tabs' words, by page: overview, proteins, sites, interactions, overlap (Compare sets), network, method (Methods), help, or a website.pages id. Every explorer shows the same tabs in this order; one whose data the site lacks is greyed out, with `empty` on hover. The tab and the page's heading take the label; the hint is the line on hover and under the heading. The page's address (#idrs, #overlap, #method) is unchanged; #statistics opens Methods > Every test and #compare opens #overlap.",
+          "description": "the top tabs' words, by page: overview, proteins, sites, interactions, overlap (Overlap of protein sets; no tab, opened from a set's row), network, method (Methods), help, or a website.pages id. Every explorer shows the same tabs in this order; one whose data the site lacks is greyed out, with `empty` on hover. The tab and the page's heading take the label; the hint is the line on hover and under the heading. The page's address (#idrs, #overlap, #method) is unchanged; #statistics opens Methods > Every test and #compare opens #overlap.",
           "additionalProperties": {
             "type": "object",
             "additionalProperties": false,
