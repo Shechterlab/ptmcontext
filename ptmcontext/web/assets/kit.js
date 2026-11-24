@@ -144,8 +144,8 @@
   const valOf = (r) => r.shown ?? r.eff;
   const dir = (r) => {
     const v = valOf(r),
-      t = r.adj ? r.adj.eff : r.eff,
-      q = r.adj ? r.adj.q : r.q;
+      t = r.eff,
+      q = r.q;
     if (v == null || q == null || q > PADJ) return 'ns';
     // the fold and the test point different ways (the pooled counts against a test within proteins or within abundance
     // deciles): no reading either way
@@ -154,7 +154,7 @@
   };
   const split = (r) => {
     const v = valOf(r),
-      t = r.adj ? r.adj.eff : r.eff;
+      t = r.eff;
     return v != null && t != null && v >= 1 !== t >= 1;
   };
   const DIR_WORDS = {
@@ -169,7 +169,7 @@
       ? 'shown, not tested'
       : r.eff == null || r.p == null
         ? 'not tested (too few)'
-        : split(r) && (r.adj ? r.adj.q : r.q) <= PADJ
+        : split(r) && r.q <= PADJ
           ? 'the fold and the test point different ways'
           : DIR_WORDS[r.dir];
   // the color key of a figure in the page's own words (DIR_WORDS), as the legend entries K.figureFrame draws: one wording and one
@@ -192,6 +192,10 @@
     study: 'compared among sites reported by the same studies or databases (Mantel–Haenszel)',
   };
   const A = Object.fromEntries(D.analyses.map((a) => [a.id, a]));
+  // a protein set's result is not adjusted for protein abundance (abundant proteins have more detected sites): said once,
+  // by the axis or the line under a tile's rows; the test within abundance deciles is an estimate, for the hover
+  const SET_NOTE = 'Not adjusted for protein abundance; abundant proteins have more detected sites.';
+  const EST_TEST = 'within abundance deciles (estimate)';
   // the Overview's switch: its words, and what each compares
   const BTN = {
     mantel_haenszel: [
@@ -328,14 +332,12 @@
   D.rows.forEach((r) => {
     if (SETS(r.analysis) && r.method === 'mantel_haenszel') STRAT[r.analysis + '\u0000' + r.category] = r;
   });
-  // where a set was also tested within abundance deciles, that test is the row's reading (its q and direction); the
-  // number shown stays the fold
+  // a protein set is read by its own hypergeometric row (fold, q and direction from one test, not adjusted for protein
+  // abundance). Where it was also tested within abundance deciles, that test sits beside the row as an estimate
+  // (r.est): for the hover, never for the number, the q, the dot or the order
   D.rows.forEach((r) => {
     const st = SETS(r.analysis) && r.method === 'enricher' && STRAT[r.analysis + '\u0000' + r.category];
-    if (st && st.eff != null) {
-      r.adj = st;
-      r.dir = dir(r);
-    }
+    if (st && st.eff != null) r.est = st;
   });
   // does a protein set's enrichment (or depletion) hold within abundance deciles? 'holds' (the same reading there),
   // 'weaker' (the same direction by 1.1× or more, but not at q ≤ 0.05: underpowered, not contradicted), 'lost' (under
@@ -353,7 +355,7 @@
     return h == null ? null : h === 'holds';
   };
   const testName = (aid, m) =>
-    SETS(aid) ? (m === 'enricher' ? 'proteins, hypergeometric' : 'within abundance deciles') : METHOD[m] || m;
+    SETS(aid) ? (m === 'enricher' ? 'proteins, hypergeometric' : EST_TEST) : METHOD[m] || m;
   const methodName = (r) =>
     r.method === 'conditional_logit' && r.stratum === 'alone'
       ? 'one factor, within each protein'
@@ -939,19 +941,6 @@
       ticks: [0, 0.25, 0.5, 0.75, 1].map((f, i) => ({ x: f, lab: pcS(f * s), minor: i % 2 === 1 })),
     };
   }
-  // a protein set's test again within abundance deciles: shown after its value where either test differs (as the
-  // explorer marks it), never on a selection's rows (the deciles are the whole dataset's)
-  const DECILE = {
-    more: ['✓', 'more than expected'],
-    same: ['≈', 'about the same (within 1.1×)'],
-    ns: ['○', 'no difference'],
-    less: ['▼', 'fewer than expected'],
-  };
-  const decile = (r) => {
-    if (!SETS(r.analysis) || r.selection || r.vs) return null;
-    const st = STRAT[r.analysis + '\u0000' + r.category];
-    return st && ((r.q != null && r.q <= PADJ && r.eff > 1) || st.dir !== 'ns') ? st : null;
-  };
   // with a selection tested again, each row keeps the whole dataset's row of its class: a tick, and a line in the hover
   function withRef(a, rows, m) {
     if (!selOn() || vsOn() || !rows) return rows;
@@ -1087,13 +1076,12 @@
           ['ns', descr ? 'shown, not tested' : `no difference (q > ${PADJ})`],
           ...(rows.some((r) => ciOf(r)) ? [['ci', '95% confidence interval']] : []),
           ...(rows.some((r) => r.ref) ? [['ref', REF_WORDS]] : []),
-          ...(rows.some(decile) ? [['dec', 'within abundance deciles: ✓ more · ≈ same · ○ none · ▼ fewer']] : []),
           ...(rows.some((r) => r.eff == null) ? [['none', '— no test within proteins']] : []),
         ];
     const axisTitle = vs
       ? `share of ${sets ? 'the proteins' : `the ${W.marks}`} in each ${cls}`
       : sets
-        ? 'fold enrichment, log scale'
+        ? `fold enrichment, log scale. ${SET_NOTE}`
         : rows.some((r) => r.shown != null)
           ? 'fold, log scale; the odds ratio of the test is under each row'
           : `odds ratio, log scale (${
@@ -1121,8 +1109,7 @@
   function chartRow(r, M, fkey, mark, own) {
     if (own) return ownRow(r, fkey, mark);
     const X = M.axis.X,
-      pc = (v) => (100 * X(v)).toFixed(2) + '%',
-      d = decile(r);
+      pc = (v) => (100 * X(v)).toFixed(2) + '%';
     let marks = M.axis.ticks
       .map(
         (t) =>
@@ -1166,20 +1153,12 @@
       `<span class="cnt">${kfmt(r.a)} / ${kfmt(r.a + r.b)}</span><span class="cnt o">${kfmt(r.c)} / ${kfmt(r.c + r.d)}</span>` +
       `<svg aria-hidden="true">${marks}</svg><span class="val ${r.dir}"${
         !r.vs && sameWhy(r) ? ` title="${esc(sameWhy(r))}"` : ''
-      }>${r.vs ? `${pcS(share1(r))} <span class="muted">` + `· ${pcS(share2(r))}</span>` : valText(r) + shareSpan(r)}${
-        d
-          ? `<i class="dm ${d.dir}" title="Within ` +
-            `protein abundance deciles: ${DECILE[d.dir][1]} (OR ${fxn(d.eff)}, q ${fq(d.q)})"><span aria-hidden="true">${DECILE[d.dir][0]}</span>` +
-            `<span class="vh">Within abundance deciles: ${DECILE[d.dir][1]}</span></i>`
-          : r.vs || !M.legend.some((x) => x[0] === 'dec')
-            ? ''
-            : '<i class="dm"></i>'
-      }</span>` +
+      }>${r.vs ? `${pcS(share1(r))} <span class="muted">` + `· ${pcS(share2(r))}</span>` : valText(r) + shareSpan(r)}</span>` +
       `<span class="vh">${
         r.vs
           ? `${pcS(share1(r))} of your selection vs ${pcS(share2(r))} of ${esc(vsName())}`
           : `${valOf(r) !== r.eff && r.eff != null ? `fold ${esc(fx(valOf(r)))}; ` : ''}${esc(effText(r))}, q ${fq(r.q)}`
-      }${d ? `; within ` + `abundance deciles: ${DECILE[d.dir][1]}` : ''}${r.vs ? '' : sameWhy(r) ? `. ${esc(sameWhy(r))}` : ''}${
+      }${r.vs || !estLine(r) ? '' : `; ${esc(estLine(r))}`}${r.vs ? '' : sameWhy(r) ? `. ${esc(sameWhy(r))}` : ''}${
         r.ref ? `; whole dataset ${esc(effText(r.ref))}` : ''
       }</span></div>`
     );
@@ -1414,13 +1393,42 @@
   // beneath a row's fold: the test it rests on (the odds ratio, its interval and q; for a set tested within abundance
   // deciles, that test)
   const testLine = (r) => {
-    const t = r.adj || r;
+    const t = r;
     if (r.descriptive) return 'shown, not tested';
     if (t.eff == null || t.p === null) return 'not tested (too few)';
     const ci = t.lo != null && t.hi != null ? ` (${fxn(t.lo)}–${fxn(t.hi)})` : '';
-    const or = valOf(r) !== t.eff || r.adj ? `OR ${fxn(t.eff)}${ci} · ` : '';
-    return `${r.adj ? 'within abundance deciles: ' : ''}${or}q ${fq(t.q)}`;
+    const or = valOf(r) !== t.eff ? `OR ${fxn(t.eff)}${ci} · ` : '';
+    return `${or}q ${fq(t.q)}`;
   };
+  // the estimate within abundance deciles of a protein set's row, in words, for a hover; '' where there is none
+  const estLine = (r) => {
+    const e = r.est;
+    if (!e || r.selection) return '';
+    const ci = e.lo != null && e.hi != null ? ` (${fxn(e.lo)}–${fxn(e.hi)})` : '';
+    return `${cap(EST_TEST)}: odds ratio ${fxn(e.eff)}${ci}, q ${fq(e.q)}`;
+  };
+  // a protein set's reading, the one place every view takes it from (a row of the site, a selection's retest, a cell of
+  // the Compare page's file): the effect is the hypergeometric fold, with that row's q and direction. Not adjusted for
+  // protein abundance (adjusted: false); `est` is the test within abundance deciles where the site ran it, an estimate
+  // for the hover. Nothing is adjusted in the browser: a selection's retest has no est
+  const readingOf = (r) =>
+    r && {
+      effect: r.eff == null ? null : valOf(r),
+      measure: 'fold enrichment',
+      q: r.q,
+      dir: r.dir,
+      lo: null,
+      hi: null,
+      fold: r.fold ?? null,
+      adjusted: false,
+      test: testName(r.analysis, 'enricher'),
+      est: r.est && !r.selection ? { or: r.est.eff, lo: r.est.lo, hi: r.est.hi, q: r.est.q, test: EST_TEST } : null,
+    };
+  K.readingOf = readingOf;
+  K.setReading = (aid, category, rows) =>
+    readingOf((rows || D.rows).find((x) => x.analysis === aid && x.category === category && x.method === 'enricher'));
+  K.estLine = estLine;
+  K.SET_NOTE = SET_NOTE;
   // a vertical line of an export from y0 to y1 with the stretches under a text left out (gaps: [x0, x1, y0, y1] boxes), so
   // no text is crossed by a line whatever draws its halo
   const vLine = (x, y0, y1, gaps, attrs) => {
@@ -1485,7 +1493,7 @@
     c.analysis === aid || (c.rows_from || []).includes(aid) || (c.views || []).some((v) => v.analysis === aid);
   const cardOf = (aid) => allCards().find((c) => c.analysis === aid) || {};
   // a row's evidence: its reading's q (a set's test within abundance deciles where it has one)
-  const qOf = (r) => (r.adj ? r.adj.q : r.q) ?? 1;
+  const qOf = (r) => r.q ?? 1;
   const byOrder = (card) =>
     card.order === 'q'
       ? (x, y) => qOf(x) - qOf(y) || valOf(y) - valOf(x)
@@ -1772,11 +1780,11 @@
       (OV.statistic_label !== false && !vsOn() && shown.length && rows.some((r) => r.eff != null)
         ? ownSel && fr
           ? `<p class="tstat">${otherRows(a, made)}</p>`
-          : `<p class="tstat"${shown.some((r) => r.adj) ? ' title="Dots: the test within abundance deciles"' : ''}>${
+          : `<p class="tstat">${
               shown.every((r) => r.absent || r.shown != null)
                 ? gloss('fold', 'Fold')
                 : gloss('odds ratio', 'Odds ratio')
-            } ${esc(baseline(a, vsMethod(S.m)))}</p>`
+            } ${esc(baseline(a, vsMethod(S.m)))}${SETS(a.id) ? `. ${esc(SET_NOTE)}` : ''}</p>`
         : '') +
       (fr && ms.some((x) => x.wv != null) ? '<p class="tkey">Dashed ring: the whole dataset.</p>' : '') +
       (side.length ? '' : besideLine(card, shown)) +
@@ -1843,7 +1851,7 @@
   // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring
   // a row significant by its test but under 1.1x in the fold the page reads ('same'): why the two disagree, for its hover
   const sameWhy = (r) => {
-    const t = r.adj || r,
+    const t = r,
       q = t.q;
     if (r.dir !== 'same' || q == null || q > PADJ || t.eff == null) return '';
     const big = t.eff >= MIN_EFFECT || t.eff <= 1 / MIN_EFFECT;
@@ -1866,9 +1874,10 @@
   const popOf = (a, r) => ({
     name: r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
     fold: fx(valOf(r)),
-    tests: [...(r.adj ? [`Proteins, hypergeometric: q ${fq(r.q)}`, testLine(r)] : [testLine(r)]), sameWhy(r)].filter(
-      Boolean
-    ),
+    tests: [
+      ...(SETS(a.id) ? [`Test: ${testName(a.id, 'enricher')}`, testLine(r), estLine(r)] : [testLine(r)]),
+      sameWhy(r),
+    ].filter(Boolean),
     counts: countLine(r),
     n: r.a != null ? int(r.a) : '',
     aid: a.id,
@@ -1884,7 +1893,7 @@
     sub: r.absent ? '' : testLine(r),
     tip: r.absent ? '' : [countLine(r), testLine(r), sameWhy(r)].filter(Boolean).join('. '),
     pop: r.absent ? null : popOf(a, r),
-    q: r.adj ? r.adj.q : r.q,
+    q: r.q,
     dir: r.absent ? 'ns' : r.dir,
     n: r.absent ? null : r.a,
     wv: r.ref ? valOf(r.ref) : null,
@@ -2072,7 +2081,7 @@
         `Within each protein compares each ${esc(W.mark)} only with the other ${esc(W.residues)} of its own protein (Mantel–Haenszel odds ratio). ` +
         `Across all proteins pools the ${esc(W.residues)} of the ${esc(W.marked)} proteins (Fisher’s exact test). ${
           D.analyses.some((a) => a.kind === 'protein_sets')
-            ? `Protein-set questions show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). `
+            ? `Protein-set questions show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test, not adjusted for protein abundance). `
             : ''
         }Hover or tap a row for its counts. <a href="${esc(link('help', 'h-read'))}">More in Help</a>.</p>`
       : '';
@@ -2432,7 +2441,7 @@
           return;
         (rowsOf(a, S.m) || []).forEach((r) => {
           if (r.descriptive || r.absent || r.eff == null || r.dir !== 'more') return;
-          const e = { a, r, q: r.adj ? r.adj.q : r.q, v: valOf(r), sec: x.name, card },
+          const e = { a, r, q: r.q, v: valOf(r), sec: x.name, card },
             at = named(KF?.pin, a.id, r.category);
           if (at >= 0) return pins.push({ ...e, at });
           if (a.key_findings_off?.includes(r.category)) return;
@@ -2647,7 +2656,7 @@
   //   reversed  on the other side of 1x, at q <= 0.05 (the fold and the test pointing the same way)
   //   lost      otherwise: under 1.1x the same way, or the other side without q <= 0.05
   //   new       a reading the question itself does not have
-  const ctlTest = (r) => r.adj || r;
+  const ctlTest = (r) => r;
   function ctlVerdict(r, c) {
     const up = (x) => x.dir === 'more',
       reads = (x) => x.dir === 'more' || x.dir === 'less';
@@ -3464,7 +3473,8 @@
                     : 'Those with an abundance input are'
                 } repeated ` +
                 `within protein-abundance deciles (Mantel–Haenszel odds ratio across them), because mass spectrometry ` +
-                `finds abundant proteins most often. If it still holds within abundance deciles, abundance alone does not explain it.`
+                `finds abundant proteins most often. Their results are not adjusted for it; the estimate within abundance deciles ` +
+                `is in each row's hover.`
               : ''
           }</p>`
         : '') +
@@ -3598,9 +3608,9 @@
       `against the ${
         a.describe || 'other proteins of the universe'
       }. Fold enrichment is the share of ${markedUnits(a.id)} in the set ` +
-      `over the share of all ${setUnit(a.id)} in it. q is Benjamini–Hochberg across the sets. Within abundance ` +
-      `deciles (where shown): a Mantel–Haenszel odds ratio across deciles, asking whether an enrichment holds ` +
-      `among proteins of similar abundance.`
+      `over the share of all ${setUnit(a.id)} in it; fold and q are not adjusted for protein abundance. q is ` +
+      `Benjamini–Hochberg across the sets. Within abundance deciles (an estimate, where shown): a Mantel–Haenszel odds ` +
+      `ratio across deciles, asking whether an enrichment holds among proteins of similar abundance.`
     );
   }
   function provenance(extra = {}) {
@@ -4083,7 +4093,6 @@
       X0 = 462,
       X1 = 728,
       VX = 814,
-      DX = 832,
       ink2 = '#374151';
     const X = (v) => X0 + M.axis.X(v) * (X1 - X0),
       r1 = (v) => v.toFixed(1);
@@ -4142,8 +4151,7 @@
         } else y += 3;
         return;
       }
-      const r = it.r,
-        d = decile(r);
+      const r = it.r;
       // its name (two lines at most), then its meaning where there is room
       let name = wrap(r.label, LW, 11.5);
       if (name.length > 2) name = [name[0], fit(name.slice(1).join(' '), LW, 11.5)];
@@ -4204,14 +4212,6 @@
         T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted, halo: true }, rp);
         gaps.push([VX - tw(sharePair(r), 9.5) - 2, VX + 2, yc + 1, yc + 15]);
       }
-      if (d)
-        T(
-          DX,
-          yc + 4,
-          DECILE[d.dir][0],
-          { size: 11, anchor: 'middle', fill: d.dir === 'more' ? PAL.more : d.dir === 'less' ? PAL.less : PAL.muted },
-          rp
-        );
       y += h;
     });
     M.axis.ticks.forEach((t) =>
@@ -5383,11 +5383,11 @@
         `<b>${esc(r.label)}</b><br>${int(r.a)} of ${int(r.a + r.b)} ${
           r.selection ? esc(setUnit(r.analysis)) + ' of your selection' : esc(markedUnits(r.analysis))
         } (${pct(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other ${esc(setUnit(r.analysis))} (${pct(r.c, r.c + r.d)})` +
-        `<br>${fxn(r.eff)}×, q ${fq(r.q)} (one-sided hypergeometric)` +
+        `<br>${fxn(r.eff)}×, q ${fq(r.q)} (one-sided hypergeometric, not adjusted for abundance)` +
         (st && !r.selection
-          ? `<br>Within abundance deciles: OR ${fxn(st.eff)}${
+          ? `<br>${esc(cap(EST_TEST))}: odds ratio ${fxn(st.eff)}${
               st.lo != null ? ` (95% CI ${fxn(st.lo)}–${fxn(st.hi)})` : ''
-            }, q ${fq(st.q)}${decile(r) ? ` (${DECILE[st.dir][0]} ${DECILE[st.dir][1]})` : ''}`
+            }, q ${fq(st.q)}`
           : '') +
         selNote;
     } else

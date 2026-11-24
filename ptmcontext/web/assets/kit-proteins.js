@@ -2107,12 +2107,12 @@
           cov.me[0] == null ? 'no value' : `${esc(cov.value)} ${K.fxn(cov.me[0])}`
         }${cov.me[1] !== 'none' ? `, decile ${esc(cov.me[1])} of ${int(cov.strata)}` : ''} <span class="muted">(${esc(
           (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input
-        )}; the decile ` + `the protein-set tests stratify by)</span></p>`
+        )}; the decile ` + `of the estimate within abundance deciles)</span></p>`
       : '';
     // the sets' results are about every ${W.mark} in the set, not about this protein alone: their own heading says so
     const across =
       `<h3 class="kinds-head">Across all ${esc(W.marks)}</h3><p class="muted small kinds-note">Sets this protein is in. ` +
-      `Each fold is for all ${esc(W.marks)} in the set, not for ${esc(p.gene || p.acc)}.</p>`;
+      `Each fold is for all ${esc(W.marks)} in the set, not for ${esc(p.gene || p.acc)}. ${esc(K.SET_NOTE)}</p>`;
     const noneLine = none.length ? `<p class="muted small kinds-none">Not in: ${none.join('; ')}.</p>` : '';
     return covLine + across + `<div class="kinds">${blocks}</div>` + noneLine;
   }

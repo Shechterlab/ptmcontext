@@ -215,8 +215,9 @@ protein-set tables gets them with no code (`ptmc check` names what they get wron
 **`website.cell`** (kit-cell.js): several maps of the cell as one question, its address `#overview/<id>`.
 - `maps`: each `{analysis, regions?, name, short?, method?, cells?, how?, ref?, doi?, url?, licence?, min_members?, graded?}`; `analysis`
   is a protein-set question whose sets are the map's compartments, `regions` (optional) another whose sets are the same
-  map's regions. The grids' columns, in order. A map tested within abundance strata (`abundance:`) is compared within them
-  (its `mantel_haenszel` rows); one without, by its fold enrichment.
+  map's regions. The grids' columns, in order. A map is read by its own fold enrichment (its `enricher` row's q and
+  direction, not adjusted for protein abundance); one tested within abundance strata (`abundance:`) shows that test's
+  odds ratio (its `mantel_haenszel` row) in the hover as an estimate, never in the color.
 - `graded: true` on a map: it grades proteins (a probability band) instead of naming a place, so a protein page says its
   classes apart from the places, in lower case.
 - Cell zoom: a drawing of the cell (the Overview's map, the protein page's own) opens at full size in a dialog with
@@ -282,7 +283,8 @@ cell; `min_set`, the fewest proteins a protein set needs to be ranked on an Over
 whose every member is marked is not ranked either: its fold is at the ceiling, the background over the marked, and ties
 every other such set). Such a set stays on its question's page. A tile row's number is the fold (the share of the marks
 in the class over the share of the comparison residues, from the pooled counts; a set's fold enrichment), with its test
-beneath (the odds ratio, its interval and q; a set tested within abundance deciles is read by that test) and the counts
+beneath (the odds ratio, its interval and q; a set shows only its own hypergeometric q, not adjusted for protein
+abundance, and its test within abundance deciles, where there is one, is an estimate in the hover) and the counts
 on hover; a row differs when q ≤ 0.05, the fold is at least 1.1× (or at most 1/1.1) and the test points the same way.
 
 **`website.set_views`** (kit-values.js): a protein-set question drawn with its proteins' numbers. Each `{analysis,
@@ -1667,15 +1669,16 @@ The `compare` block of the landing config (`sites/landing.yml`):
 A cell is read from the explorer's own `statistics.tsv`, the way its page reads a row (kit.js `decorate`, `dir`, `testLine`):
 for a residue question the row of its default test (`mantel_haenszel`, within each protein) with the fold from that row's
 counts (the share of the marks in the class over the share of the comparison residues in it) beside the odds ratio, its
-interval and q; for a protein-set question the `enricher` row's fold enrichment, with q and the direction read from the row's
-test within abundance deciles where there is one. `compare.json` is
+interval and q; for a protein-set question the `enricher` row's fold enrichment with that row's own q and direction (not adjusted
+for protein abundance); the row's test within abundance deciles, where there is one, is the cell's `est` (an estimate for
+the hover, never the reading). `compare.json` is
 `{version, title, statement, explorers, groups, notes, skipped}`. Each explorer is `{id, label, short, href, band, release:
 {version, date, doi, url}, app: {version, date, doi}, cite: {text, doi}}` (the release and DOI are `website.dataset`, the
 citation is its citation file). A group's question is `{id, title, analysis, same_test, tests, rows}`: `tests` is
-`{site id: {test, kind, title, analysis, group}}`, the test's name and the comparison group (the rows' `background`) each
+`{site id: {test, note, kind, title, analysis, group}}`, the test's name, a one-line `note` for a protein-set question ("Not adjusted for protein abundance; ..."), and the comparison group (the rows' `background`) each
 explorer used, and an explorer with none of the question's classes has no entry. A row is `{id, class, label, cells,
 own_labels?}`; a cell is `null` when the explorer has no row for the class ("not tested", never 0) or
-`{state: ok|few, analysis, title, v, big, measure, or, lo, hi, q, dir, split, n, test, q_test, group, label}`:
+`{state: ok|few, analysis, title, v, big, measure, or, lo, hi, q, dir, split, n, test, est, group, label}`:
 `v` the fold shown (`big`: 1,000 or more, printed "> 1,000"), `or`, `lo`, `hi` and `q` the test's, `dir` the explorers' reading
 (`more`, `less`, `same`, `ns`: q at most 0.05 and a fold of at least 1.1 or at most 1/1.1), `split` true when q is 0.05 or less
 but the fold and the test point different ways (no reading), `n` the marks (proteins, for a set) in the class, `label` the

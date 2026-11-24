@@ -111,7 +111,10 @@
     const ci = c.lo != null && c.hi != null ? ` (${fxn(c.lo)}–${fxn(c.hi)})` : '';
     return (
       `${e.short}: ${c.measure} ${fxn(c.v, c.big)}×, ${readOf(c)}. ` +
-      (c.or != null ? `Odds ratio ${fxn(c.or)}${ci}${c.q_test ? ', ' + c.q_test : ''}. ` : '') +
+      (c.or != null ? `Odds ratio ${fxn(c.or)}${ci}. ` : '') +
+      (c.est && c.est.or != null
+        ? `${c.est.test}: odds ratio ${fxn(c.est.or)}${c.est.lo != null ? ` (${fxn(c.est.lo)}–${fxn(c.est.hi)})` : ''}, q ${fq(c.est.q)}. `
+        : '') +
       `q ${fq(c.q)}. n ${int(c.n)}. Test: ${c.test}. Compared with: ${c.group}.` +
       (c.label ? ` The explorer calls it: ${c.label}.` : '')
     );
@@ -133,7 +136,7 @@
         .map((e) => {
           const t = q.tests[e.id];
           return t
-            ? `<td><span class="q-test">Test: ${esc(t.test)}</span><span class="q-group">Compared with: ${esc(t.group)}</span></td>`
+            ? `<td><span class="q-test">Test: ${esc(t.test)}</span>${t.note ? `<span class="q-group">${esc(t.note)}</span>` : ''}<span class="q-group">Compared with: ${esc(t.group)}</span></td>`
             : '<td class="nt">not tested</td>';
         })
         .join('') +
@@ -367,9 +370,9 @@
   }
   function cellRecord(e, r, q, c) {
     const base = [q.title, r.label, e.label];
-    if (!c) return [...base, 'not tested', '', '', '', '', '', '', '', '', '', '', c ? c.label : ''];
+    if (!c) return [...base, 'not tested', '', '', '', '', '', '', '', '', '', '', '', '', '', '', c ? c.label : ''];
     if (c.state !== 'ok')
-      return [...base, 'not tested (too few)', '', '', '', '', '', '', '', '', '', '', c.label || ''];
+      return [...base, 'not tested (too few)', '', '', '', '', '', '', '', '', '', '', '', '', '', '', c.label || ''];
     return [
       ...base,
       'tested',
@@ -381,7 +384,11 @@
       c.q ?? '',
       c.dir,
       c.n ?? '',
-      c.test + (c.q_test ? '; q from the test ' + c.q_test : ''),
+      c.test,
+      c.est?.or ?? '',
+      c.est?.lo ?? '',
+      c.est?.hi ?? '',
+      c.est?.q ?? '',
       c.group,
       c.label || '',
     ];
@@ -404,6 +411,10 @@
         'reading',
         'n',
         'test',
+        'est_or',
+        'est_lo',
+        'est_hi',
+        'est_q',
         'comparison_group',
         'explorer_class_label',
       ].join('\t')

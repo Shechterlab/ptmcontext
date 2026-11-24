@@ -486,7 +486,7 @@
       const body = r
         ? `${int(r.a)} of the ${int(r.a + r.c)} ${esc(unit)} in this set (${K.pct(r.a, r.a + r.c)}) are ${esc(W.marked)}${
             a.background ? `; against ${esc(a.background)}` : ''
-          }: ${K.fx(r.eff)}, q ${K.fq(r.q)}.` + (cfg.note ? ` ${esc(cfg.note)}` : '')
+          }: ${K.fx(K.readingOf(r).effect)}, q ${K.fq(K.readingOf(r).q)}.` + (cfg.note ? ` ${esc(cfg.note)}` : '')
         : `Not tested: ${esc(cfg.note || 'the set is outside the question’s tested sizes')}.`;
       return card(
         cfg.eyebrow || a.title,

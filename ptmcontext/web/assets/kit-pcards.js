@@ -290,9 +290,10 @@
       const names = ps.sets.map((s) => s[0]).filter((s) => K.sel.setHas(aid, s, p.i));
       const lab = (s) => (a.labels || {})[s] || s.replace(/_/g, ' ');
       const fold = (s) => {
-        const rs = D.rows.filter((r) => r.analysis === aid && r.category === s && r.dir === 'more'),
-          r = rs.find((x) => x.method === 'enricher') || rs[0];
-        return r ? ` <span class="muted ` + `small">(${K.fxn(r.eff)}× across the dataset)</span>` : '';
+        const r = K.setReading(aid, s);
+        return r && r.dir === 'more'
+          ? ` <span class="muted ` + `small">(${K.fxn(r.effect)}× across the dataset)</span>`
+          : '';
       };
       if (names.length) any = true;
       out.push(

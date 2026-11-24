@@ -26,7 +26,11 @@ TEST_NAMES = {
     'study': 'within studies',
     'mann_whitney': 'by size (Mann-Whitney)',
 }
-SET_TEST_NAMES = {'enricher': 'proteins, hypergeometric', 'mantel_haenszel': 'within abundance deciles'}
+SET_TEST_NAMES = {
+    'enricher': 'proteins, hypergeometric',
+    'mantel_haenszel': 'proteins, within abundance deciles (estimate)',
+}
+SET_NOTE = 'Not adjusted for protein abundance; abundant proteins have more detected sites.'
 
 ASSET = Path(__file__).parent / 'assets' / 'land-compare.js'
 
@@ -172,10 +176,12 @@ def cell(rows: dict, analysis: dict, aid: str, cat: str) -> dict | None:
     elif None not in (r['a'], r['b'], r['c'], r['d']) and r['a'] + r['b'] > 0 and r['c'] + r['d'] > 0 and r['c'] > 0:
         shown = (r['a'] / (r['a'] + r['b'])) / (r['c'] / (r['c'] + r['d']))
     v = shown if shown is not None else eff
-    adj = by.get('mantel_haenszel') if sets else None
-    if adj is not None and adj['or'] is None and adj['fold'] is None:
-        adj = None
-    t = adj if adj is not None else r  # the row that carries the test's odds ratio and q
+    # a protein set is read by its own hypergeometric row (fold, q, direction), not adjusted for protein abundance; the test
+    # within abundance deciles is an estimate that goes beside it (`est`), never into the reading
+    est = by.get('mantel_haenszel') if sets else None
+    if est is not None and est['or'] is None:
+        est = None
+    t = r  # the row that carries the reading
     t_eff = t['or'] if t['or'] is not None else t['fold']
     few = t_eff is None or t['p'] is None
     out = {
@@ -185,16 +191,24 @@ def cell(rows: dict, analysis: dict, aid: str, cat: str) -> dict | None:
         'v': None if v >= BIG else v,  # the explorers print a fold of 1,000 or more as "> 1,000"
         'big': v >= BIG,
         'measure': 'fold enrichment' if sets else 'fold',
-        'or': None if t_eff is None or t_eff >= BIG else t_eff,
-        'lo': None if t['lo'] is None or t['lo'] >= BIG else t['lo'],
-        'hi': None if t['hi'] is None or t['hi'] >= BIG else t['hi'],
+        'or': None if sets or t_eff is None or t_eff >= BIG else t_eff,
+        'lo': None if sets or t['lo'] is None or t['lo'] >= BIG else t['lo'],
+        'hi': None if sets or t['hi'] is None or t['hi'] >= BIG else t['hi'],
         'q': t['q'],
         'dir': _direction(v, t_eff, t['q']),
         # q at most 0.05 but the fold and the test point different ways: the explorers give no reading (hollow)
         'split': bool(t['q'] is not None and t['q'] <= PADJ and t_eff is not None and (v >= 1) != (t_eff >= 1)),
         'n': r['a'],
         'test': SET_TEST_NAMES['enricher'] if sets else TEST_NAMES['mantel_haenszel'],
-        'q_test': SET_TEST_NAMES['mantel_haenszel'] if adj is not None else '',
+        'est': None
+        if est is None
+        else {
+            'or': None if est['or'] >= BIG else est['or'],
+            'lo': None if est['lo'] is None or est['lo'] >= BIG else est['lo'],
+            'hi': None if est['hi'] is None or est['hi'] >= BIG else est['hi'],
+            'q': est['q'],
+            'test': SET_TEST_NAMES['mantel_haenszel'],
+        },
         'group': r['background'],
         'label': (analysis.get('labels') or {}).get(cat) or cat.replace('_', ' '),
     }
@@ -250,6 +264,7 @@ def build_data(cfg: dict, built: list[dict], log=print) -> dict | None:
                 sets = a.get('kind') == 'protein_sets'
                 tests[e['id']] = {
                     'test': SET_TEST_NAMES['enricher'] if sets else TEST_NAMES['mantel_haenszel'],
+                    'note': SET_NOTE if sets else '',
                     'kind': 'sets' if sets else 'residues',
                     'title': a.get('title', aid),
                     'analysis': per_site[e['id']].get('analysis', aid),
