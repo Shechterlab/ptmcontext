@@ -656,6 +656,9 @@
   K.loading = (text, cls) =>
     `<p class="ld${cls ? ' ' + esc(cls) : ''}" role="status" aria-live="polite"><i class="ld-spin" aria-hidden="true"></i>` +
     `<span>${esc(text || 'Loading…')}</span></p>`;
+  // a section or card whose source has nothing for this protein: one muted line, never an empty table or chart. The
+  // text is a sentence ("No CD-CODE condensates for this protein."); every caller draws it through here
+  K.noData = (text) => `<p class="muted nodata">${esc(text)}</p>`;
   Object.assign(K, {
     GLOSS,
     BTN,
@@ -2515,12 +2518,20 @@
     // K.overviewTop: a module's block above the Overview's questions (kit-help.js: the start panel for a first visit)
     // a section's tiles: all of them, or (website.overview.sections[].show) the first few, the rest behind "More on ... (n)"
     // (a selection shows them all: its tests are what was asked for)
-    const secBody = (x) => {
+    const made = new Map(); // a card's tile, drawn once (the unchanged ones are told apart by their markup)
+    const tileH = (c) => {
+      if (!made.has(c)) made.set(c, tile(c));
+      return made.get(c);
+    };
+    // a tile of a selection too small to test that fell back to the whole dataset: the question's own tile (tileState), not
+    // a module's tile (the cell's drawing of the selection, the counts) which has something of the selection to show
+    const unchanged = (c) => small && tileH(c).startsWith('<article class="tile" id="tile-');
+    const secBody = (x, bare) => {
       const cs = x.cards,
         k = x.show > 0 && !selOn() && cs.length > x.show ? x.show : cs.length;
       return {
-        main: cs.slice(0, k).map(tile).join('') + more(x.name),
-        rest: cs.slice(k).map(tile).join(''),
+        main: cs.slice(0, k).map(tileH).join('') + (bare ? '' : more(x.name)),
+        rest: cs.slice(k).map(tileH).join(''),
         n: cs.length - k,
       };
     };
@@ -2540,9 +2551,9 @@
           `</p></header></section>`)
       );
     };
-    const sectionHtml = (x, i) => {
+    const sectionHtml = (x, i, bare) => {
       if (lazyOn && i >= FIRST && !K.ovOpen.has(x.name)) return lazyHtml(x);
-      const b = secBody(x);
+      const b = secBody(x, bare);
       if (!b.main && !b.rest) return '';
       const id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
       return (
@@ -2558,9 +2569,22 @@
     };
     // the question's heading, its color key and the test switch first, as the head of every section below; then the
     // sections in the order the site lists them (the sidebar's), the cell's among them, each under its own heading
-    const secs = secList()
-      .map((x, i) => sectionHtml(x, i))
-      .join('');
+    const list = secList(),
+      secs = list
+        .map((x, i) => sectionHtml(small ? { ...x, cards: x.cards.filter((c) => !unchanged(c)) } : x, i))
+        .join('');
+    // a selection too small to test: the tiles that show the whole dataset again are one line, "N questions unchanged
+    // by this selection · show", with their sections under it
+    const same = small
+        ? list.map((x) => ({ ...x, cards: x.cards.filter(unchanged) })).filter((x) => x.cards.length)
+        : [],
+      nSame = same.reduce((n, x) => n + x.cards.length, 0),
+      folded = nSame
+        ? `<details class="ov-unch"><summary>${int(nSame)} question${nSame === 1 ? '' : 's'} unchanged by this selection · ` +
+          `<span class="u-show">show</span><span class="u-hide">hide</span></summary>${same
+            .map((x, i) => sectionHtml(x, i, true))
+            .join('')}</details>`
+        : '';
     return (
       (S.arg ? '' : (K.overviewTop || []).map((f) => f()).join('')) +
       lead() +
@@ -2568,6 +2592,7 @@
       keyFindings() +
       (selOn() && !vsOn() && !small ? selBlocks(K.selLead) : '') +
       secs +
+      folded +
       (selOn() ? '' : (K.overviewBlocks || []).map((f) => f()).join(''))
     ); // the modules' own blocks (Starting points)
   }

@@ -905,7 +905,7 @@
   // the proteins ONE stands for: the one of a protein page, or the few of a selection too small to test
   const oneIds = () => ONE.ids || [ONE.i];
   const geneOf = (i) => D.proteins[i][1] || D.proteins[i][0];
-  const ONEUI = { map: 'all', ds: false };
+  const ONEUI = { map: 'all', ds: false, all: false };
   function oneParts() {
     const f = oneFound();
     if (!ONEUI.ds) return f;
@@ -1059,6 +1059,7 @@
         )
         .join('') +
       `</span><label class="cell-ds"><input type="checkbox" data-cellone-ds${ONEUI.ds ? ' checked' : ''}> Show the dataset</label>` +
+      `<label class="cell-ds"><input type="checkbox" data-cellone-all${ONEUI.all ? ' checked' : ''}> Show all compartments</label>` +
       `${menu}</div>`;
     return bar + html;
   }
@@ -1088,7 +1089,12 @@
   const tipAttr = (html) => ` data-cell-tip="${TIPS.push(html) - 1}"`;
   function draw(scoped, view) {
     const { P, within } = parts(scoped, view);
-    const own = (k) => (P[k] ? k : within[k] && P[within[k]] ? within[k] : null);
+    // one protein: only the compartments where a map places it are named and colored; "Show all compartments" lists the rest
+    const quiet = (k) => !!ONE && !ONEUI.ds && !ONEUI.all && !P[k].found;
+    const own = (k) => {
+      const o = P[k] ? k : within[k] && P[within[k]] ? within[k] : null;
+      return o && !quiet(o) ? o : null;
+    };
     const tn = (k) => (own(k) ? P[own(k)].tone : 'na');
     const mine = (k) => (own(k) && P[own(k)].mine ? ' mine' : '');
     const fill = (k) => 'cg-c ' + tn(k) + mine(k),
@@ -4060,6 +4066,13 @@
       '[data-cellone-ds]',
       (el) => {
         ONEUI.ds = el.checked;
+        K.render();
+      },
+    ],
+    [
+      '[data-cellone-all]',
+      (el) => {
+        ONEUI.all = el.checked;
         K.render();
       },
     ],

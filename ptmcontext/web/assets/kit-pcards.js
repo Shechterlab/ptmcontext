@@ -282,6 +282,7 @@
   function rnaMapsHtml(cfg, p) {
     const sd = K.sel.pdata(p.i),
       out = [];
+    let any = false;
     for (const aid of cfg.rna_maps) {
       const a = (D.analyses || []).find((x) => x.id === aid),
         ps = sd.protein_sets?.[aid];
@@ -293,6 +294,7 @@
           r = rs.find((x) => x.method === 'enricher') || rs[0];
         return r ? ` <span class="muted ` + `small">(${K.fxn(r.eff)}× across the dataset)</span>` : '';
       };
+      if (names.length) any = true;
       out.push(
         `<tr><th scope="row">${esc(a.title)}</th><td>${
           names.length
@@ -301,6 +303,7 @@
         }</td></tr>`
       );
     }
+    if (out.length && !any) return K.noData('No compartments of bound RNAs for this protein.');
     return out.length
       ? `<h4 class="sub-h">Where the RNAs ${esc(gene(p))} binds gather</h4><div class="tbl-wrap">` +
           `<table class="pc-maps"><tbody>${out.join('')}</tbody></table></div>`
@@ -376,12 +379,10 @@
     return {
       n: rs.length,
       best,
-      html:
-        `<h4 class="sub-h">${esc(c.title || 'Condensates')} <span class="muted ` +
-        `small">${esc(c.source || '')}</span></h4>` +
-        (rs.length
-          ? `<ul class="cond-list mine">${rs.map(li).join('')}</ul>`
-          : '<p class="muted">No condensate membership recorded.</p>'),
+      html: rs.length
+        ? `<h4 class="sub-h">${esc(c.title || 'Condensates')} <span class="muted ` +
+          `small">${esc(c.source || '')}</span></h4><ul class="cond-list mine">${rs.map(li).join('')}</ul>`
+        : K.noData(`No ${c.source ? c.source.split(' ')[0] + ' ' : ''}condensates for this protein.`),
     };
   }
   function locationBuild(p, rec, tb) {
@@ -1229,10 +1230,7 @@
     const head = ``;
     if (!sites.length)
       return {
-        html:
-          head +
-          (`<p class="muted">None of its ${esc(W.marks)} was quantified in these ` +
-            `experiments (${esc(cols.map((c) => c.label).join('; '))}).</p>`),
+        html: head + K.noData(`No quantified ${W.marks} for this protein.`),
         sum: 'not measured',
       };
     const mk = (c) => marks[c] || (c === 'no_significant_change' ? '○' : '?');

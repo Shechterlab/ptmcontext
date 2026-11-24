@@ -142,7 +142,7 @@
                   UI.all ? 'Fewer sites' : `All ${int(who.rows.length)} sites`
                 }</button></p>`
               : '')
-          : `<p class="muted small">No record names a binding or writing protein at a ${esc(W.mark)} of ${esc(gene)}.</p>`) +
+          : K.noData(`No record names a binding or writing protein at a ${W.mark} of ${gene}.`)) +
         '</section>';
     // 2. partners and complexes
     if (parts.length) {
