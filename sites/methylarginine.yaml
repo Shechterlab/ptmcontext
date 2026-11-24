@@ -715,7 +715,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Where in the cell
     question: "Where in the cell are methylated proteins found more often than other proteins?"
     sub: "Methylated proteins against the other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
     whole_universe: true
     background: other proteins with an HPA 25.1 location (Approved or better)
@@ -729,7 +729,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Regions of the cell (Human Protein Atlas)
     question: "Where do methylated proteins localize in the cell, by Human Protein Atlas locations: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets:
       input: hpa
       set: location
@@ -745,7 +745,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Regions of the cell (Human Cell Map)
     question: "Where do methylated proteins localize in the cell, by Human Cell Map compartments: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets:
       input: hcm
       set: nmf_compartment
@@ -760,7 +760,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Regions of the cell (organelle IP)
     question: "Where do methylated proteins localize in the cell, by organelle IP clusters: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets:
       input: organelle_ip
       set: compartment
@@ -776,7 +776,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Human Cell Map compartments
     question: "Where do methylated proteins localize in the cell, by the Human Cell Map's compartments?"
     sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID from 192 baits; Go et al. 2021), by NMF compartment (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets: {input: hcm, set: nmf_compartment, protein: canonical_UniProtAC}
     whole_universe: true
     min_size: 5
@@ -787,7 +787,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Human Cell Map domains
     question: "Where do methylated proteins localize in the cell, by the Human Cell Map's finer domains?"
     sub: "Methylated proteins against the other proteins the Human Cell Map places in a SAFE domain (HEK293 BioID; Go et al. 2021), domain by domain (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets: {input: hcm, set: safe_domain, protein: canonical_UniProtAC, exclude: [{column: safe_domain, equals: ""}]}
     whole_universe: true
     min_size: 5
@@ -798,7 +798,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Organelle IP
     question: "Which organelles are methylated proteins enriched in, by organelle immunoprecipitation?"
     sub: "Methylated proteins against the other proteins classified by organelle IP (HEK293T; Hein et al. 2025), cluster by cluster (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets: {input: organelle_ip, set: compartment, protein: canonical_UniProtAC, exclude: [{column: compartment, equals: unclassified}]}
     whole_universe: true
     min_size: 5
@@ -814,7 +814,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Chromatin probability
     question: "Are methylated proteins on chromatin more often than other proteins?"
     sub: "Methylated proteins against the other proteins with an interphase chromatin probability (chromatin enrichment for proteomics; Kustatscher et al. 2014), in four bins (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets:
       input: chromatin
       protein: canonical_UniProtAC
@@ -836,7 +836,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Bound RNAs by APEX-seq
     question: "Where do the RNAs that methylated proteins bind gather in the cell, by APEX-seq?"
     sub: "Proteins with eCLIP data whose bound RNAs localize to an APEX-seq compartment (HEK293T; Fazal et al. 2019), methylated against the others (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: apexseq}],
            member_when: [{column: gathers, equals: "true"}]}
     whole_universe: true
@@ -849,7 +849,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Genes of bound RNAs by TSA-seq
     question: "Are the RNAs that methylated proteins bind transcribed from genes near nuclear speckles?"
     sub: "Proteins with eCLIP data whose bound RNAs are transcribed from genes near nuclear speckles by TSA-seq (K562; Chen et al. 2018). TSA-seq measures the position of the genes in the nucleus, not of the RNAs, methylated against the others (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: tsaseq}],
            member_when: [{column: gathers, equals: "true"}]}
     whole_universe: true
@@ -862,7 +862,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Genes of bound RNAs by Hi-C subcompartment
     question: "Are the RNAs that methylated proteins bind transcribed from genes in one Hi-C subcompartment?"
     sub: "Proteins with eCLIP data whose bound RNAs are transcribed from genes of a Hi-C subcompartment (GM12878; Rao et al. 2014). Hi-C measures contacts between genomic regions, not the position of the RNAs, methylated against the others (one-sided hypergeometric test)"
-    section: Where in the cell
+    section: Localization
     sets: {input: eclip_maps, set: compartment, protein: uniprot_accession, include: [{column: map, equals: hic}],
            member_when: [{column: gathers, equals: "true"}]}
     whole_universe: true
@@ -1464,7 +1464,7 @@ website:                  # the look and words of the website (ptmc web); layout
   name: Methylarginine Site Explorer
   tagline: "Human arginine methylation sites from studies and databases."
   landing:
-    from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
+    from_section: Localization   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human arginine methylation sites from studies and databases."
     question: "Which proteins have methylarginine, where in the protein is it, and which other modifications are nearby?"
   band: ["#155e75", "#0f3b47"]      # the header gradient: teal
@@ -1658,12 +1658,12 @@ website:                  # the look and words of the website (ptmc web); layout
         - {label: proteins in condensates, query: "f=p:condensate_proteome~*", view: proteins}
         - {label: proteins with dense clusters, query: "f=r:dense_q~0.05", view: proteins}
     sections:
-      - name: Where in the cell
+      - name: Localization
         about: "Where in the cell the methylated proteins localize."
         #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
         cards:
           - {analysis: where_in_the_cell, title: Localization, drawing: true, wide: true}
-      - name: Which proteins
+      - name: Classes and pathways
         about: "Protein classes, pathways and condensates of the methylated proteins."
         cards:
           - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
@@ -1671,7 +1671,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
           - {analysis: condensate_role, title: Driver or client in condensates}
-      - name: Where in the protein
+      - name: Position in the protein
         about: "Where in the protein the methylated arginines are: motifs, folded or disordered parts, domains."
         cards:
           - {analysis: structure_context}
@@ -1890,7 +1890,7 @@ website:                  # the look and words of the website (ptmc web); layout
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant], attributes: [tcga_any, depmap_any]}
     - {name: Protein function, analyses: [panther_group, panther_class, condensate_proteome, reactome_top_level], proteins: [marks, arg_enrichment_q]}
-    - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
+    - {name: Localization, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
     - {name: Methylation state, attributes: [state, maron_s2, methyl_ip, neutral_loss]}
     - {name: "PRMT inhibitors, knockouts and knockdowns", attributes: [gsk591, ms023, perturbation]}
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}

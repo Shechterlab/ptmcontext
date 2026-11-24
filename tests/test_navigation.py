@@ -62,7 +62,7 @@ def test_the_schema_takes_the_empty_reason_key_findings_and_the_group_order():
     jsonschema.validate(
         {'key_findings': {'count': 3, 'min_fold': 1.2, 'pin': ['a/b'], 'exclude': [{'analysis': 'c'}]}}, ov
     )
-    jsonschema.validate({'key_findings': False, 'group_order': ['Where in the cell', 'Which proteins']}, ov)
+    jsonschema.validate({'key_findings': False, 'group_order': ['Localization', 'Classes and pathways']}, ov)
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate({'key_findings': {'count': 9}}, ov)
 

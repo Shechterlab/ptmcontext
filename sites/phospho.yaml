@@ -1472,7 +1472,7 @@ website:                  # the look and words of the website (ptmc web); layout
   tagline: "Human protein phosphorylation sites from databases."
   # published at /ptmcontext/phospho/; listed on the landing page and in the sites' header menu
   landing:
-    from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
+    from_section: Localization   # the card's strongest result is chosen from the section the Overview opens with
     tagline: "Human protein phosphorylation sites from databases."
     question: "Where are phosphosites in human proteins, which kinase motifs do they match, and which have a high predicted functional score?"
     in_switcher: true
@@ -1507,13 +1507,13 @@ website:                  # the look and words of the website (ptmc web); layout
     rows: 5
     random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
     sections:
-      - name: Where in the cell
+      - name: Localization
         about: "Where in the cell the phosphorylated proteins localize, and how much is on chromatin."
         #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
         cards:
           - {analysis: where_in_the_cell, title: Localization, drawing: true, wide: true}
           - {analysis: cell_chromatin, title: Chromatin probability}
-      - name: Which proteins
+      - name: Classes and pathways
         about: "Protein classes, pathways and condensates of the phosphorylated proteins."
         cards:
           - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
@@ -1521,7 +1521,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: panther_subclass, title: Protein subclasses}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
           - {analysis: condensate_role, title: Driver or client in condensates}
-      - name: Where in the protein
+      - name: Position in the protein
         about: "Where in the protein the phosphosites are: folded or disordered parts, domains, the charge of disordered regions."
         cards:
           - {analysis: disorder}
@@ -1733,7 +1733,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context, sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]}
     - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
     - {name: Protein class, analyses: [panther_group, panther_class, reactome_top_level], proteins: [marks]}
-    - {name: Where in the cell, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]}
+    - {name: Localization, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]}
     - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
     - {name: RNA and DNA, analyses: [go_binding, binding_protein, crosslink, sequence_proximity]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
