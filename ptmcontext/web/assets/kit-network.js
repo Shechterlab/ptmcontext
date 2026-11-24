@@ -1498,7 +1498,7 @@
       : '<div class="nw-slot" role="status"></div>';
     const sum = summaryText(M, CL, sel0);
     const body = !M.nodes.length
-      ? `<p class="muted">${sel0 ? 'No protein of the selection has a link in the chosen sources, so there is nothing to draw. Choose more sources or a lower score, or widen the selection.' : 'No protein has a link in the chosen sources.'}</p>`
+      ? `<p class="muted">${sel0 ? 'No protein of the selection has a link in the chosen sources. Choose more sources or a lower score, or widen the selection.' : 'No protein has a link in the chosen sources.'}</p>`
       : UI.mode === 'table'
         ? `<p class="nw-count" role="status">${sum} ${topSelect()}</p>${tableHtml(M, CL)}`
         : `<div class="nw-main">${keyHtml(M, CL, { variant: phoneNow() ? 'phone' : 'desktop' }, sum)}<div class="nw-row2">${figureBox(M, CL)}${pinHtml(M, CL)}</div>${phoneNow() ? listHtml(CL) : ''}</div>`;

@@ -569,17 +569,15 @@
   }
   const waterfallNote = (m) =>
     `Height is the signed −log10 p of the release's binomial test: up for more ${m.germ ? 'variants' : 'changes'} than expected, down for fewer. ` +
-    `The x axis ranks the ${esc(W.marks)} from most above to most below expected in ${esc(m.s.long || m.s.label)}. ` +
+    `Sites are ranked from most above to most below expected in ${esc(m.s.long || m.s.label)}. ` +
     (m.germ
-      ? `A ${esc(W.mark)} with no variant sits on the lower side. `
+      ? ''
       : `p and q pool all cancer types. ` +
         (m.lowerOk
-          ? `The release gives no lower tail for ${esc(m.s.label)}; this explorer computes it with the release's own binomial. A ${esc(W.mark)} with no change sits on the lower side. `
-          : `The release gives no lower tail for ${esc(m.s.label)}, so a ${esc(W.mark)} with fewer changes than expected is drawn at 0. `) +
-        `A ${esc(W.mark)} with no change and a small expected count has no stored test and is drawn at 0. `) +
-    `The thin gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}. ` +
-    `Where the enriched residues (q < 0.05) carry ${Math.round((PR.hotspot?.min_share ?? 0.3) * 100)}% or more of a protein's ${m.germ ? 'variants' : 'changes'} (at least ${PR.hotspot?.min_changes ?? 20}), the expected count at its other residues is inflated and they look depleted; the default labels skip those ${esc(W.marks)}, and you can still label one by a click or the Label box. ` +
-    `Highlight genes outlines every site of the proteins you list and labels each one's most extreme site; it changes no statistic. ` +
+          ? `The lower tail is computed here from the release's binomial. `
+          : `The release has no lower tail, so a ${esc(W.mark)} with fewer changes is drawn at 0. `)) +
+    `The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}. ` +
+    `Proteins dominated by a few enriched residues are flagged: their other residues look depleted, so they are not labeled by default. ` +
     (m.germ
       ? ''
       : hyper()
@@ -833,10 +831,10 @@
   const oncoNote = (o) =>
     `The ${int(o.top.length)} ${esc(W.marks)} with the most changed TCGA tumors, out of ${int(o.nSites)} with at least one${
       M.group ? ` in ${esc(M.group)}` : ''
-    }. Each column is a tumor. The bar above it is the tumor's coding calls per Mb (capped at 40); the dashed line is the hypermutated threshold. ${
+    }. Each column is a tumor; the bar above it is its coding calls per Mb (capped at 40), and the dashed line is the hypermutated threshold. ${
       hyper()
         ? 'Hypermutated tumors are included (teal bars).'
-        : 'Hypermutated tumors are left out. The counts at the right are without them, with the count in all tumors in parentheses. A tumor with two changes at one site counts once, so a table that counts changes can show a higher number.'
+        : 'Hypermutated tumors are left out; counts at the right are without them, with all tumors in parentheses. A tumor counts once per site, so a table of changes can show more.'
     }`;
 
   // ---- the page ------------------------------------------------------------------------------------------------------------------
@@ -885,7 +883,7 @@
     const fp = (v) => (v == null ? '–' : v < 0.001 ? v.toExponential(1).replace('e-', 'e−') : v.toFixed(3));
     return (
       `<details class="mu-set"><summary>Whole list against expectation (the release's site set test)</summary>` +
-      `<p class="small muted">${esc(PR.summary.set_label || '')}: the changes (k) at the ${esc(W.marks)} against the expected count, summed over their proteins (each protein's changes at its residues of the type, times the ${esc(W.marks)}' share of its expected rate of change). p comes from ${int(PR.summary.iterations || 10000)} permutation draws; the smallest possible p is about 1e−4. This table does not change with your selection.</p>` +
+      `<p class="small muted">${esc(PR.summary.set_label || '')}: changes (k) at the ${esc(W.marks)} against the expected count summed over their proteins. p comes from ${int(PR.summary.iterations || 10000)} permutation draws, so the smallest possible p is about 1e−4. The table does not change with your selection.</p>` +
       `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Source</th><th>Residue</th><th>Samples</th><th>${esc(cap1(W.marks))}</th><th title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th></tr></thead><tbody>` +
       pick
         .map(
@@ -2026,12 +2024,12 @@
     let line = '',
       body = '';
     if (V === 'ranked') {
-      line = `Sites of the selection with more changes than expected in tumors or cell lines, or fewer inherited variants than expected.`;
+      line = `Sites with more changes than expected in tumors and cell lines, or fewer inherited variants than expected.`;
       body = rankedBody();
       if (body === null)
         return page(line, note + bar + `<div class="mu-skel" role="status">${K.loading('Loading…')}</div>`);
     } else if (V === 'clinvar') {
-      line = `Pathogenic and likely pathogenic ClinVar variants by disease family; click a family to list them. ClinVar reflects clinical testing, so these counts are not tested.`;
+      line = `ClinVar pathogenic and likely pathogenic variants by disease family. Click a family to list them. Counts only: ClinVar reflects clinical testing.`;
       body = cvData() === undefined ? K.loading('Loading…') : clinvarBody();
       if (body === null)
         body = cvData() === null ? '<p class="muted">The variants could not be read.</p>' : K.loading('Loading…');

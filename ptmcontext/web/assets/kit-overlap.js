@@ -2525,7 +2525,7 @@
     const key = JSON.stringify([S.ot, S.ou, !!K.sel.peek()]);
     const head =
       trail +
-      `<div class="page-head"><h2>${esc(K.tabName('overlap', 'Compare sets'))}</h2></div><p class="page-sub">Compare 2 to ${MAXT} sets of proteins: how many they share, and whether the shared proteins are ${W.marked} more often. <a href="${esc(K.link('method', 'overlap'))}">Methods</a></p>`;
+      `<div class="page-head"><h2>${esc(K.tabName('overlap', 'Compare sets'))}</h2></div><p class="page-sub">Compare 2 to ${MAXT} protein sets: their overlap, and whether the shared proteins are ${W.marked} more often. <a href="${esc(K.link('method', 'overlap'))}">Methods</a></p>`;
     if (S.ot.length < 2) {
       RES = null;
       return head + pickerHtml();
@@ -2559,7 +2559,7 @@
       return (
         head +
         pickerHtml() +
-        `<p class="ov-warn" role="alert">Not available here: ${esc(res.missing.map((id) => termLabel(id)).join('; '))}. ${res.missing.some((id) => id.startsWith('sv:')) ? 'A saved selection stays in the browser that saved it, so a link cannot carry it. ' : 'It is not in this dataset. '}Remove it to compare the others; the letters of the other sets stay as they are.</p>`
+        `<p class="ov-warn" role="alert">Not available: ${esc(res.missing.map((id) => termLabel(id)).join('; '))}. ${res.missing.some((id) => id.startsWith('sv:')) ? 'A saved selection stays in the browser that saved it, so a link cannot carry it. ' : 'It is not in this dataset. '}Remove it to compare the others.</p>`
       );
     const q = question(res);
     return (
@@ -2831,7 +2831,7 @@
     offNote: () =>
       S.ot.includes('sel')
         ? ''
-        : 'Not filtered by your selection: this page compares the sets chosen on it. Add “The current selection” as a set to compare it.',
+        : 'The selection does not filter this page. Add “The current selection” as a set to compare it.',
   };
   K.tabs.push(() => ['overlap', 'Compare sets', null]);
   (K.methodParts ||= []).push(

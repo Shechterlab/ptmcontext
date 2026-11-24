@@ -1033,8 +1033,8 @@
       `<div class="tbl-card ix-upset"><table class="tbl"><thead>${head}</thead><tbody>${totals}${rows}</tbody></table>` +
       `</div>` +
       (`<p class="small">${int(c.none)} ${esc(marksWord(c.none))} (${pcS(c.none, c.total)}) have none of these. ` +
-        `Most are in proteins never crystallized, modeled with a partner or crosslinked, and absence of evidence ` +
-        `is not evidence of no contact.`) +
+        `Most are on proteins never crystallized, modeled with a partner or crosslinked. ` +
+        `No evidence is not evidence of no contact.`) +
       (c.list.length > (b.top || 15)
         ? ` <button type="button" class="linkish" data-ix-all="${esc(bkey(pg, sec, bi))}">${
             s.all ? 'Show the commonest' : `Show all ${int(c.list.length)} combinations`
@@ -1167,8 +1167,8 @@
           s.m === 'fisher'
             ? 'across all proteins, Haldane–Anscombe odds ratio, Fisher’s exact test'
             : 'within each protein, Mantel–Haenszel'
-        }), and below ` +
-        `it how many have both. Red: more often, slate: less often (q ≤ 0.05 over the matrix and at least 1.1×); ` +
+        }); below ` +
+        `it, how many have both. Red: more often, slate: less often (q ≤ 0.05 over the matrix and at least 1.1×); ` +
         `pale: not significant. Descriptive: evidence and features come from the same studies or databases for some ${esc(W.marks)}.</p>`)
     );
   }
@@ -2447,7 +2447,7 @@
       });
     return K.few.html({
       title: `Your selected ${marksWord(all.length)}: interaction evidence`,
-      note: `Each ${W.mark}'s own partners, solved structures and contacts, as on its site card. The line marked whole protein describes the protein, not the ${W.mark}.`,
+      note: `Partners, solved structures and contacts of each ${W.mark}, as on its site card. The whole-protein line does not describe the ${W.mark}.`,
       sites,
       more: all.length - ms.length,
     });
