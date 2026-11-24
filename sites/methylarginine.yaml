@@ -2911,9 +2911,9 @@ website:                  # the look and words of the website (ptmc web); layout
           predicted: complex models (ProtVar, AlphaFold DB), not observations
         open: [writes, removes, binds_methylated, mutation_changes_binding, binds_region, other_reaction, not_a_protein]
         summary:             # the one line that names partners (Interactions page, Sites table): its groups' names, the other partners counted
-          - {label: Writes, groups: [writes]}
+          - {label: Writes, groups: [writes], role: writer}
           - {label: erases, groups: [removes]}
-          - {label: binds methylated, groups: [binds_methylated]}
+          - {label: binds methylated, groups: [binds_methylated], role: reader}
         rollup:              # the groups under two headings: the residue in the site's state, against in any other
           - {label: Binds it methylated, groups: [binds_methylated]}
           - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
@@ -2929,7 +2929,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {label: Demethylates it, groups: [removes]}
           - {label: Binds it methylated, groups: [binds_methylated], none: no structure or IntAct record with this residue methylated}
         suggest:
-          label: Writer suggested
+          label: Writer from PRMT perturbation data
           rules:
             - {attribute: methyl_ip, has: [SDMA], suggests: PRMT5, because: "a peptide containing it was recovered by the SDMA antibody (symmetric dimethylation, made by PRMT5)"}
             - {attribute: methyl_ip, has: [ADMA], suggests: type I PRMTs, because: "a peptide containing it was recovered by the ADMA antibody (asymmetric dimethylation, made by type I PRMTs such as PRMT1 and CARM1)"}
@@ -2937,7 +2937,7 @@ website:                  # the look and words of the website (ptmc web); layout
             - {attribute: ms023, has: [decreased], suggests: type I PRMTs, because: "a peptide containing it decreased with the type I PRMT inhibitor MS023, and none increased"}
             - {attribute: perturbation, has: ["carm1_ko_mcf7:decreased", "carm1_ko_mdamb231:decreased"], suggests: CARM1, replaces: type I PRMTs,
                because: "a peptide containing it decreased in CARM1 knockout cells, and none increased"}
-          none: "No writer suggested: no peptide containing it was recovered by the ADMA or SDMA antibodies or fell with a PRMT inhibitor or knockout"
+          none: "No writer inferred from PRMT perturbation data."
           sources: [Maron2021]
         partners:                            # a protein_partners table: its partners of some classes
           table: string

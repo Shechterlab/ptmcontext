@@ -8378,6 +8378,20 @@ details.sc-vars[open] > summary {
   grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr);
   gap: 0.2rem 0.8rem;
 }
+.site-card .sc-sum {
+  margin: 0.5rem 0 0.7rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface-2);
+}
+@media (min-width: 700px) {
+  .site-card .sc-sum dd {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
 .site-card .sc-sp .sp-sum {
   margin: 0 0 0.3rem;
 }

@@ -542,6 +542,8 @@
     // a protein's gene where the release lists it, else ''; and whether it has a page
     gene: (acc) => byAcc[acc]?.gene || '',
     isListed: (acc) => !!byAcc[acc],
+    // the listed protein a gene or alias names, else ''
+    byName: (name) => nameOf(name) || '',
     shownPos: (acc, pos) => shownPos(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), pos),
     siteLabel: (acc, pos) => siteOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null) || { acc }, pos),
     numbering: (acc) => numOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
@@ -722,6 +724,12 @@
       () => document.getElementById('site-card'),
       () => PV.site
     );
+  // a module whose facts arrive after the card is drawn (conservation) draws the card again
+  K.redrawSiteCard = (acc) => {
+    const p = byAcc[acc],
+      card = document.getElementById('site-card');
+    if (card && p && PV.acc === acc && PV.site && PV.rec) card.outerHTML = siteCard(p, PV.rec);
+  };
   // the variant lists arrive after the card is drawn: draw its variants again with the conditions
   K.card.vc.onDetail((acc) => {
     const p = byAcc[acc],
@@ -789,7 +797,9 @@
     const ready = !!PV.tb,
       wait = '<span class="muted">loading…</span>';
     const tagged = new Set(K.shown?.on ? [...(K.shown.cfg.tests?.attributes || []), ...(K.shown.cfg.also || [])] : []);
-    const rest = shownAttrs(m).filter((n) => !USED.has(n) && !tagged.has(n));
+    // the marks nearby are a line of the summary at the top of the card, not a row of the rest
+    const NEAR = SPECS.ctx_near && shownAttrs(m).includes('ctx_near') ? 'ctx_near' : '';
+    const rest = shownAttrs(m).filter((n) => !USED.has(n) && !tagged.has(n) && n !== NEAR);
     // the question rows: one row for the questions a merge names (the same question at several windows), none for those hidden
     // (they repeat a block above), the ones with nothing to say as one line, and the less used ones behind "All site features"
     const MG = CC.merge || [],
@@ -866,7 +876,7 @@
     // the card's rows in groups, each a fold: the site itself, the questions it answers, and the rest (the less used closed)
     const group = (id, title, rows, open) =>
       rows
-        ? `<details class="sc-group" data-sc-group="${id}"${
+        ? `<details class="sc-group" data-sc-group="${id}"${id === 'records' ? ' id="sc-uniprot"' : ''}${
             (SC_OPEN.has(id) ? SC_OPEN.get(id) : open) ? ' open' : ''
           }><summary>${esc(title)}</summary><dl class="sc-kv">${rows}</dl></details>`
         : '';
@@ -931,6 +941,12 @@
           )
         : '') +
       '</dl></details>';
+    const sumHtml = ready
+      ? K.card.cardSummary(c, {
+          uni: uniAt.filter((f) => f.type === 'Modified residue'),
+          near: NEAR ? attrHtml(m, NEAR, true) : '',
+        })
+      : '';
     return (
       `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.mark)}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)}${
         K.shown?.on ? ' ' + K.shown.tag(m, false) : ''
@@ -954,6 +970,7 @@
           'sources'
         )}<button type="button" ` +
         `class="btn small" data-site-close aria-label="Close">×</button></span></div>`) +
+      sumHtml +
       varBlock +
       `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site"><h4>Site</h4>${siteHtml}</section>${recs}${wr}</div>` +
       (!ready && Object.keys(D.tables || {}).length ? K.loading('Loading tables…') : '') +
