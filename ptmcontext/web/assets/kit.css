@@ -9841,12 +9841,15 @@ html[data-density] .sites-tbl .cv {
 .nw-f {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
   gap: 3px;
   font-size: 12px;
   color: var(--muted);
 }
 .nw-f select,
 .nw-f input {
+  min-width: 0;
   font: inherit;
   font-size: 13px;
   color: var(--ink);
