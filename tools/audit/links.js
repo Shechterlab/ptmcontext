@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Broken-link tracking for a built site: links and controls inside the page's cards and boxes that lead nowhere or do nothing.
    node tools/audit/links.js <base-url> [--yeast <url>] [--external] [--max N] [--workers N] [--no-selection] [--only "#overview,#help"] [--verbose] [--out report.json]
-     [--budget MINUTES]
+     [--budget MINUTES] [--page-minutes MINUTES]
    Visits the Overview and every question page, Proteins, Sites, Disordered regions, Interactions and its question pages, All tests, Methods
    & data, Help, and protein pages (two of the site's own example proteins and, with --yeast, one yeast protein), each without and with a selection (the
    first example search the page offers). On each page:
@@ -15,6 +15,7 @@
    --budget: no new page is started after that many minutes; the pages not visited are listed in the report (skipped) and
    named in the summary, and what was checked still counts. --verbose prints each page and each break as it is found; a
    SIGTERM or SIGINT (a job's time limit) writes the report of what was checked so far.
+   --page-minutes: a page still being checked after that many minutes (default 10) is stopped and listed as not finished.
    Exit 1 when an internal link is broken, a control is dead, a page throws, or (with --external) an external link answers 4xx/5xx.
    JSON report on stdout (or --out); a one-line summary and the list of breaks on stderr. */
 'use strict';
@@ -51,6 +52,7 @@ const report = {
 const externals = new Map(); // url -> first page it was seen on
 const T0 = Date.now();
 const BUDGET = opt('budget') ? +opt('budget') * 60000 : Infinity;
+const PAGE_LIMIT = +(opt('page-minutes') || 10) * 60000; // one page's longest visit
 // a break, kept for the report and, with --verbose, printed as it is found
 const note = (list, item) => {
   report[list].push(item);
@@ -326,12 +328,14 @@ async function runSite(browser, name, root, isYeast) {
     await ctx.close();
   }
   let next = 0;
-  const worker = async () => {
-    const ctx = await browser.newContext({
+  const newCtx = () =>
+    browser.newContext({
       viewport: { width: 1440, height: 1000 },
       permissions: ['clipboard-read', 'clipboard-write'],
       acceptDownloads: true,
     });
+  const worker = async () => {
+    let ctx = await newCtx();
     for (;;) {
       const k = next++;
       if (k >= jobs.length) break;
@@ -341,10 +345,23 @@ async function runSite(browser, name, root, isYeast) {
         continue;
       }
       if (flag('verbose')) console.error(`[${k + 1}/${jobs.length}] ${name} ${h}${sel ? ' [selection]' : ''}`);
+      let timer;
+      const slow = new Promise((resolve) => (timer = setTimeout(() => resolve('slow'), PAGE_LIMIT)));
       try {
-        await visit(ctx, name, h, root + h, sel, state, report);
+        const r = await Promise.race([visit(ctx, name, h, root + h, sel, state, report), slow]);
+        if (r === 'slow') {
+          // one page over its limit (a very large protein page with thousands of links): listed as not finished, and the
+          // worker goes on with a fresh browser context instead of holding up the rest
+          report.skipped.push(
+            `${name} ${h}${sel ? ' [selection]' : ''} (stopped after ${opt('page-minutes') || 10} minutes)`
+          );
+          await ctx.close().catch(() => {});
+          ctx = await newCtx();
+        }
       } catch (e) {
         note('errors', { where: `${name} ${h}`, why: 'the visit failed: ' + String(e.message).slice(0, 120) });
+      } finally {
+        clearTimeout(timer);
       }
     }
     await ctx.close();
