@@ -980,11 +980,16 @@
     const rest = new Map();
     for (const g of by.values()) for (const [k, x] of g) if (!shown.has(k)) rest.set(k, x);
     const href = K.link('protein', `${acc}/${label}`, { open: [...by.keys()].map(recFold).join(',') });
-    const lnk = (t) => `<a href="${esc(href)}" title="Every record at ${esc(label)}">${t}</a>`;
+    const lnk = (t) => `<a href="${esc(href)}" title="Open the site card of ${esc(label)} at its records">${t}</a>`;
     // a site none of the named groups has a partner at: the other partners are named instead, so the line is never bare
     const bare = !parts.length && rest.size > 0;
     if (bare) parts.push(`Partners: ${namesHtml([...rest.values()], SUMMARY_MAX, isListed)}`);
-    const more = !bare && rest.size ? lnk(`+${int(rest.size)} more`) : parts.length ? lnk('records') : '';
+    const more =
+      !bare && rest.size
+        ? lnk(`+${int(rest.size)} more partner${rest.size === 1 ? '' : 's'}`)
+        : parts.length
+          ? lnk('records')
+          : '';
     return [...parts, more].filter(Boolean).join(' · ');
   }
   function recordsBlock(c) {
