@@ -1476,7 +1476,6 @@ website:                  # the look and words of the website (ptmc web); layout
   art: sites/art/methylarginine-hero.svg
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:
-    - {label: Methods, url: "#method"}
     - {label: Download data, url: "#method/download"}
     - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Research, url: "https://www.shechterlab.org/research/"}

@@ -624,6 +624,7 @@
     '.pr-key{display:flex;flex-wrap:wrap;gap:.3rem 1rem;align-items:center;margin:.2rem 0}.pr-k{display:inline-flex;align-items:center;gap:.3rem}',
     '.pr-tip{position:fixed;z-index:60;max-width:22rem;padding:.4rem .6rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);font-size:.82rem;line-height:1.35;white-space:pre-line;pointer-events:none;box-shadow:0 2px 10px rgba(0,0,0,.18)}',
     '.pr-s{white-space:nowrap}.pr-hot{white-space:normal}.pr-sw{margin:.4rem 0}',
+    '@media (max-width:40rem){.pr-s{white-space:normal}.seg[aria-label="Hypermutated samples"]{display:flex;flex-wrap:wrap;max-width:100%;border-radius:.9rem}}',
   ].join('');
   document.head.appendChild(st);
 });

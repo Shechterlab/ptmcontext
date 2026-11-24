@@ -88,9 +88,9 @@ def test_the_sidebar_tabs_keep_the_filter_count_on_one_line():
     assert '.rail-head { display: flex; flex-wrap: wrap;' in css
 
 
-def test_the_sidebar_lists_every_page_with_the_current_ones_sections():
+def test_the_sidebar_lists_sections_only_and_not_the_tabs_again():
     js = _js('kit-rail.js')
-    assert "document.querySelectorAll('#tabs a.tab')" in js and 'toc-secs' in js
+    assert "document.querySelectorAll('#tabs a.tab')" not in js and 'toc-secs' in js
     # a jump from the drawer closes it, and focus goes back to the opener without scrolling the page back up
     assert 'if (R.open && !pinned()) { R.open = false; rail(); }' in js
     assert 'focus({ preventScroll: true })' in js

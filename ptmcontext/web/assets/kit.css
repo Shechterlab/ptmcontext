@@ -1821,11 +1821,11 @@ body.rail-open .rail-scrim {
 /* a jump lands below the sticky toolbar */
 #view [id],
 #view details {
-  scroll-margin-top: calc(var(--toolbar-h, 0px) + 0.75rem);
+  scroll-margin-top: calc(var(--sticky-h, var(--toolbar-h, 0px)) + 0.75rem);
 }
 /* the margin above is the one offset: a scroll-padding on the page as well would add to it and land the target twice as low */
 #view :is(button, a, summary, input, select, [tabindex], [data-href], .trow, tr) {
-  scroll-margin-top: calc(var(--toolbar-h, 0px) + 0.75rem);
+  scroll-margin-top: calc(var(--sticky-h, var(--toolbar-h, 0px)) + 0.75rem);
 }
 /* narrow screens: the toolbar scrolls away with the page, and a button keeps the sidebar in reach */
 .rail-fab {
@@ -3004,7 +3004,7 @@ pre.seq {
 }
 /* the IDRs page (kit-idrs.js): the diagram of states, the regions compared, κ, and every IDR */
 .idr-card {
-  scroll-margin-top: calc(var(--toolbar-h, 0px) + 0.75rem);
+  scroll-margin-top: calc(var(--sticky-h, var(--toolbar-h, 0px)) + 0.75rem);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
@@ -4500,9 +4500,12 @@ html.pdf-export .map-ctl {
     font-size: 1.35rem;
   }
   .col-pop {
-    right: auto;
-    left: 0;
-    width: min(19rem, 86vw);
+    /* open on a phone: the width of the window, wherever the button is */
+    position: fixed;
+    top: auto;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
   }
 }
 /* print: every text in the Arial-like face of the exports (monospace stays monospace) */
@@ -4819,7 +4822,8 @@ html.pdf-export .map-ctl {
     min-width: 0;
     width: 100%;
   }
-  .tbl-wrap {
+  /* only the stacked Sites table wraps its cells; any other table scrolls in its own box (Mutations ranks were 513 px wide) */
+  .tbl-wrap:has(> .sites-tbl) {
     overflow-x: visible;
   }
 }
@@ -5272,7 +5276,7 @@ kbd {
   white-space: nowrap;
 }
 .help-doc section {
-  scroll-margin-top: calc(var(--toolbar-h, 0px) + 1rem);
+  scroll-margin-top: calc(var(--sticky-h, var(--toolbar-h, 0px)) + 1rem);
 }
 .help-doc .help-starts {
   margin: 0.5rem 0;
@@ -9854,12 +9858,15 @@ html[data-density] .sites-tbl .cv {
 .nw-f {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
   gap: 3px;
   font-size: 12px;
   color: var(--muted);
 }
 .nw-f select,
 .nw-f input {
+  min-width: 0;
   font: inherit;
   font-size: 13px;
   color: var(--ink);
@@ -11834,4 +11841,70 @@ summary {
 }
 .contacts > .sp-more[open] {
   display: block;
+}
+
+/* A phone (under 700 px), on every page but the explorer's home: the header is one compact row (the logo, the site's name and the
+   switcher). The search, the selection and the pages stay in the toolbar below it; the lab, the links, the counts and the lede are on
+   the home page and in the footer, and "Compare marks" is in the switcher. */
+@media (max-width: 700px) {
+  body.compact-phone .hero {
+    padding-block: 0.4rem;
+    min-height: 0;
+  }
+  body.compact-phone .hero-art,
+  body.compact-phone .hero .lede,
+  body.compact-phone .hero-stats,
+  body.compact-phone .hero-intro,
+  body.compact-phone .hero .brand-line,
+  body.compact-phone .hero .brand-top .landing-link,
+  body.compact-phone .hero .brand-mark,
+  body.compact-phone .hero .brand-links {
+    display: none;
+  }
+  body.compact-phone .hero .brand {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0;
+  }
+  body.compact-phone .hero .brand-name {
+    display: block;
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
+  }
+  body.compact-phone .hero .brand-name h1 {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+  body.compact-phone .hero .brand-name h1 a {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  body.compact-phone .hero .brand-name h1 span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  body.compact-phone .hero .site-mark {
+    width: 28px;
+    height: 28px;
+  }
+  body.compact-phone .hero .brand-side {
+    display: block;
+    flex: none;
+    width: auto;
+    margin: 0;
+  }
+  body.compact-phone .hero .site-switch-btn b,
+  body.compact-phone .hero .site-switch-btn .sw-colon {
+    display: none;
+  }
+  body.compact-phone:not(.has-selection) .toolbar .scope {
+    display: none;
+  }
 }
