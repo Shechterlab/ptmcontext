@@ -3210,8 +3210,8 @@
     const nPl = ms.filter((m) => m.sets.length).length,
       title =
         ids.length === 1
-          ? `Where ${p.gene} is found (${nPl} of ${ms.length} maps)`
-          : `Where these ${ids.length} proteins are found`,
+          ? `${p.gene} localization (${nPl} of ${ms.length} maps)`
+          : `Localization of these ${ids.length} proteins`,
       more = ids.length === 1 ? '' : ` (${nPl} of ${ms.length} maps place at least one)`;
     const sets = [...new Set(ms.flatMap((m) => m.sets))];
     return (
