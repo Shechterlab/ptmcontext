@@ -2555,7 +2555,8 @@ website:                  # the look and words of the website (ptmc web); layout
     burden: sample_burden
     changes: [tcga_changes_R]
     germline_changes: [gnomad_changes_R]   # gnomAD change tables: the germline waterfall's tooltip sums each residue's allele frequencies
-    clinvar_changes: [clinvar_changes_R]   # ClinVar change tables: the Disease variants page's inherited view counts the pathogenic and likely pathogenic variants
+    clinvar_changes: [clinvar_changes_R]   # ClinVar change tables: the Disease variants page\'s inherited view counts the pathogenic and likely pathogenic variants
+    clinvar_pathogenic: {column: germline_classification, matches: &plp "(Pathogenic|Likely pathogenic)([;,/].*)?"}   # which of them count: the same rule as the cards\' P/LP highlight (aliased there)
     disease_families: disease_families   # the release's disease family rules, read as text and never run: a family for each ClinVar condition
     site_sets: site_set_propensity
     controls: propensity_controls
@@ -2848,7 +2849,7 @@ website:                  # the look and words of the website (ptmc web); layout
           background: clinvar_background
           count: clinvar_variants
           gene: gene       # the column naming the gene; the card shows it for a protein several genes encode
-          highlight: {column: germline_classification, matches: "(Pathogenic|Likely pathogenic)([;,/].*)?", label: P/LP, title: "Classified pathogenic or likely pathogenic by ClinVar"}
+          highlight: {column: germline_classification, matches: *plp, label: P/LP, title: "Classified pathogenic or likely pathogenic by ClinVar"}
           sort: [{column: review_stars, order: desc}]
           fields:
             - {column: germline_classification, label: Classification}

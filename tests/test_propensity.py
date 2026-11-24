@@ -104,12 +104,21 @@ def _toy_propensity(tmp_path):
     # ClinVar changes: P1 2 has two named pathogenic variants and one with no condition; P1 5 is benign; P1 11 is not a site
     pd.DataFrame(
         {
-            'canonical_UniProtAC': ['P1', 'P1', 'P1', 'P1', 'P1', 'P2'],
-            'position': [2, 2, 2, 5, 11, 25],
-            'alt': ['H', 'C', '*', 'K', 'Q', 'L'],
-            'variation_id': [101, 102, 103, 104, 105, 106],
-            'clinsig_simple': [1, 1, 1, 0, 1, 1],
-            'review_stars': [2, 1, 0, 1, 3, 1],
+            'canonical_UniProtAC': ['P1', 'P1', 'P1', 'P1', 'P1', 'P2', 'P1'],
+            'position': [2, 2, 2, 5, 11, 25, 2],
+            'alt': ['H', 'C', '*', 'K', 'Q', 'L', 'D'],
+            'variation_id': [101, 102, 103, 104, 105, 106, 107],
+            'clinsig_simple': [1, 1, 1, 0, 1, 1, 1],
+            'germline_classification': [
+                'Pathogenic',
+                'Likely pathogenic',
+                'Pathogenic',
+                'Benign',
+                'Pathogenic',
+                'Pathogenic/Likely pathogenic',
+                'Conflicting classifications of pathogenicity',
+            ],
+            'review_stars': [2, 1, 0, 1, 3, 1, 1],
             'conditions': [
                 'Toy cancer syndrome|not specified',
                 'Toy cancer syndrome; Rare thing',
@@ -117,6 +126,7 @@ def _toy_propensity(tmp_path):
                 'Toy cancer syndrome',
                 'Toy cancer syndrome',
                 'Rare thing',
+                'Toy cancer syndrome',
             ],
         }
     ).to_csv(data / 'cv_chg.tsv', sep='\t', index=False)
@@ -277,6 +287,10 @@ def _toy_propensity(tmp_path):
         'changes': ['toy_chg'],
         'germline_changes': ['toy_gchg'],
         'clinvar_changes': ['toy_cv'],
+        'clinvar_pathogenic': {
+            'column': 'germline_classification',
+            'matches': '(Pathogenic|Likely pathogenic)([;,/].*)?',
+        },
         'disease_families': 'toy_fam',
         'site_sets': 'toy_sets',
         'controls': 'toy_ctl',
@@ -338,7 +352,7 @@ def test_the_inherited_disease_file_counts_variants_by_the_release_families(buil
     sites = {a: dict((p, v) for p, v in rows) for a, rows in cv['sites'].items()}
     assert set(sites) == {'P1', 'P2'} and set(sites['P1']) == {
         2
-    }  # a benign variant and a residue that is no site are left out
+    }  # a benign variant, a conflicting one (107, clinsig_simple 1) and a residue that is no site are left out
     assert sites['P1'][2] == [[101, 2, 'H', [0]], [102, 1, 'C', [0, 1]]]
     assert sites['P2'][25] == [[106, 1, 'L', [1]]]
 

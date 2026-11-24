@@ -8015,6 +8015,16 @@ a.pchip:hover {
   margin: 0 0 0.3rem;
   font-size: 1rem;
 }
+details.sc-vars > summary {
+  cursor: pointer;
+}
+details.sc-vars > summary h4 {
+  display: inline;
+  margin: 0;
+}
+details.sc-vars[open] > summary {
+  margin-bottom: 0.3rem;
+}
 .pn-ih {
   margin: 0.5rem 0 0.2rem;
   font-size: 0.92rem;

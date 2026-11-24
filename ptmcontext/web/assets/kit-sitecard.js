@@ -69,13 +69,16 @@
   };
   // a protein's tables ({} when it has no rows, null when they cannot be read)
   // a shard writes its repeated strings once ('_s'); a number in a row (but a position) is an index there
+  const LOADED = {}; // accession -> the tables as last loaded (peek), for a count drawn without waiting
+  const peek = (acc) => LOADED[acc];
   const load = (acc) =>
-    Object.keys(TH).length
+    (Object.keys(TH).length
       ? getShard('e', shardOf(acc, D.e_shards)).then(
           (sh) => ({ ...(sh[acc] || {}), _s: sh._s || [] }),
           () => null
         )
-      : Promise.resolve({});
+      : Promise.resolve({})
+    ).then((tb) => (LOADED[acc] = tb));
   // the Sites page's default columns read one small file (data/sites_default.json) for every protein, not a shard each;
   // the one-file copy, which holds the shards, reads those
   const SDF = Object.keys(inline).length ? null : D.sites_default || null;
@@ -628,18 +631,111 @@
     return v === String(h.equals);
   };
   const hotCount = (x, vs) => vs.filter((r) => isHot(x, r)).length;
+  // ---- a site's variants: the one home of their counts. Every page that states one calls these. "variants" is every variant
+  // the table lists at the site's residue, whatever its classification; the highlighted subset (ClinVar: classified Pathogenic or
+  // Likely pathogenic, label P/LP; conflicting classifications are not in it) is counted from the same table.
+  const siteVariants = (tb, pos) => VCN.map((x) => ({ x, ...variantSum(tb, x, pos) }));
+  const variantWords = (x, n, hot) => {
+    const unit = x.unit || ['variant', 'variants'];
+    return `${n ? int(n) : 'no'} ${n === 1 ? unit[0] : unit[1]}${n && x.highlight?.label ? `, ${int(hot)} ${x.highlight.label}` : ''}`;
+  };
+  // how many of the sites (positions) have a variant, and how many a highlighted one
+  const variantSites = (tb, x, positions) => {
+    let any = 0,
+      hot = 0;
+    for (const q of positions) {
+      const v = variantSum(tb, x, q);
+      if (v.n) any++;
+      if (v.hot) hot++;
+    }
+    return { any, hot, of: positions.length };
+  };
+  const variantText = (tb, pos) =>
+    siteVariants(tb, pos)
+      .map(({ x, n, hot }) => `${x.label}: ${variantWords(x, n, hot)}`)
+      .join('; ');
+  // the one line other pages show for a site: its counts as a link that opens the site card at its variants
+  const variantLine = (tb, acc, pos) =>
+    `<a class="sc-vline" href="${esc(K.link('protein', `${acc}/${pos}`, { open: 'sc-variants' }))}" title="Open the site card at its variants">${siteVariants(
+      tb,
+      pos
+    )
+      .map(({ x, n, hot }) => `<b>${esc(x.label)}</b> ${esc(variantWords(x, n, hot))}`)
+      .join(' · ')}</a>`;
+  // the condition names the table carries for a site's highlighted (P/LP) variants, each once, in table order. The rows are the
+  // protein's variant lists (a file of their own for a lazy source), read on the first ask: null until they arrive, then
+  // onDetail's functions run. [] where the source has no highlight or no field with a separator.
+  const DET = {}; // accession -> variant lists (undefined: not asked, null: on its way)
+  const detailSubs = [];
+  const detailFor = (tb, acc) => {
+    if (tb._vd) return tb._vd;
+    if (DET[acc]) return (tb._vd = DET[acc]);
+    if (DET[acc] === undefined) {
+      DET[acc] = null;
+      loadDetail(acc).then((d) => {
+        DET[acc] = d || {};
+        detailSubs.slice().forEach((fn) => fn(acc));
+      });
+    }
+    return null;
+  };
+  const variantConditions = (tb, acc, x, pos) => {
+    const f = (x.fields || []).find((y) => y.separator);
+    if (!x.highlight || !f) return [];
+    if (x.lazy && !detailFor(tb, acc)) return null;
+    const names = [];
+    variantsAt(tb, x, pos)
+      .filter((r) => isHot(x, r))
+      .forEach((r) =>
+        String(r[f.column] ?? '')
+          .split(f.separator)
+          .map((t) => t.trim())
+          .filter((t) => t && !names.includes(t))
+          .forEach((t) => names.push(t))
+      );
+    return names;
+  };
+  // the same for download: every highlighted source's names, '; ' between them
+  const conditionsText = (tb, acc, pos) => {
+    const xs = VCN.filter((x) => x.highlight);
+    return xs
+      .map((x) => {
+        const n = variantConditions(tb, acc, x, pos) || [];
+        return n.length && xs.length > 1 ? `${x.label}: ${n.join('; ')}` : n.join('; ');
+      })
+      .filter(Boolean)
+      .join(' | ');
+  };
+  // a promise for the moment the variant lists of a protein are in (at once for a page without a lazy source)
+  const detailReady = (tb, acc) =>
+    !VCN.some((x) => x.lazy) || detailFor(tb, acc)
+      ? Promise.resolve()
+      : new Promise((res) => {
+          const fn = (a) => {
+            if (a !== acc) return;
+            detailSubs.splice(detailSubs.indexOf(fn), 1);
+            res();
+          };
+          detailSubs.push(fn);
+        });
   function variantCounts(c) {
     const letter = (c.seq || '')[c.pos - 1] || '',
       nm = residueName(letter);
-    return VCN.map((x) => {
-      const { n, hot } = variantSum(c.tb, x, c.pos),
-        unit = x.unit || ['variant', 'variants'],
-        b = changeAvg(c.tb, x, letter);
-      const head = `<b>${esc(x.label)}</b>: ${n ? int(n) : 'no'} ${esc(n === 1 ? unit[0] : unit[1])}${
-        hot && x.highlight.label ? ` <span class="muted">(${int(hot)} ${esc(x.highlight.label)})</span>` : ''
-      }`;
-      return `<div>${head} <span class="muted small">· protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`;
-    }).join('');
+    return siteVariants(c.tb, c.pos)
+      .map(({ x, n, hot }) => {
+        const b = changeAvg(c.tb, x, letter),
+          cond = hot ? variantConditions(c.tb, c.acc, x, c.pos) : [];
+        return (
+          `<div><b>${esc(x.label)}</b>: ${esc(variantWords(x, n, hot))} <span class="muted small">· protein average per ${esc(nm)}: ${avgText(b?.per)}</span>` +
+          (cond === null
+            ? '<br><span class="muted small">Loading conditions…</span>'
+            : cond.length
+              ? `<br><span class="small">${esc(x.highlight.label)} conditions: ${cond.map(esc).join('; ')}</span>`
+              : '') +
+          '</div>'
+        );
+      })
+      .join('');
   }
   function changes(c) {
     const cs = C.changes || [];
@@ -1600,6 +1696,7 @@
     proteinRecords,
     summary,
     load,
+    peek,
     loadDetail,
     loadDefault,
     defaultTb,
@@ -1624,6 +1721,15 @@
       hot: isHot,
       showGene,
       hotCount,
+      siteVariants,
+      sites: variantSites,
+      words: variantWords,
+      text: variantText,
+      line: variantLine,
+      conditions: variantConditions,
+      conditionsText,
+      ready: detailReady,
+      onDetail: (fn) => detailSubs.push(fn),
       avg: changeAvg,
       avgText,
       residueName,

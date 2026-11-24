@@ -59,7 +59,7 @@ def test_a_protein_numbered_without_its_initiator_methionine_shows_the_uniprot_p
 
 def test_exports_have_readable_column_names():
     table = _js('kit-sitetable.js')
-    for name in ('hotspot_note', 'disordered', '_pathogenic_n', '_conditions', 'alphamissense_mean', '_oe'):
+    for name in ('hotspot_note', 'disordered', 'variants', 'alphamissense_mean', '_oe'):
         assert name in table, name
     assert 'c.tsvName || c.id' in table
     mu = _js('kit-mutations.js')
