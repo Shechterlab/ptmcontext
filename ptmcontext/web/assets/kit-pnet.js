@@ -715,11 +715,11 @@
       return fold(
         'p-ix',
         'Protein interactions',
-        'who binds its ' + esc(W.marks) + ', partners, complexes and the network',
+        'proteins at the sites, protein partners (STRING), complexes and the protein network',
         K.pix.html(p, rec, K.prot.tables(p.acc)) +
           ifaceFold(p, rec) +
           netLine(p) +
-          (`<details class="pn-fold"><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING; ` +
+          (`<details class="pn-fold" id="pn-net"><summary>Protein network <span class="muted">· ${esc(g)}’s STRING partners; ` +
             `drag the nodes${
               hasIface ? '; open to draw it' : `; folded, as no ${esc(W.mark)} is at an interface`
             }</span></summary>${net}</details>`),
@@ -729,7 +729,7 @@
     return fold(
       'p-ix',
       'Protein interactions',
-      'STRING; drag the nodes',
+      'protein network (STRING); drag the nodes',
       netLine(p) +
         `<div class="card-head">` +
         (`${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${optionsHtml()}<div class="pn-box" ` +

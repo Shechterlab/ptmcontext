@@ -940,12 +940,28 @@
     }
     return by;
   }
-  // names as a line: the first `max`, each linked when the release has its page, then how many more
+  // a protein in a partner list: its name linked to its page here when the release has it, else to UniProt; the accession
+  // is shown (`show`) or in the tooltip; the organism follows when it is not the site's own. The one drawing of a partner.
+  function protRef(acc, name, { listed = false, species = '', show = false, title = '' } = {}) {
+    const label = name || acc || '',
+      tip = [title, acc].filter(Boolean).join(' · ');
+    let out;
+    if (acc && listed && !species)
+      out = `<a href="${esc(K.link('protein', acc))}" title="${esc(tip)}"><b>${esc(label)}</b></a>`;
+    else if (acc)
+      out =
+        `<a href="https://www.uniprot.org/uniprotkb/${encodeURIComponent(acc)}/entry" target="_blank" rel="noopener" ` +
+        `title="${esc(tip + ' · UniProt')}"><b>${esc(label)}</b></a>`;
+    else out = `<b title="${esc(tip)}">${esc(label)}</b>`;
+    if (show && acc && acc !== label) out += ` <span class="muted small mono">${esc(acc)}</span>`;
+    return out + speciesTag(species);
+  }
+  // names as a line: the first `max`, each linked (here or to UniProt), then how many more
   function namesHtml(xs, max, isListed) {
     const one = (x) =>
-      (!x.species && x.acc && isListed?.(x.acc)
-        ? `<a href="${esc(K.link('protein', x.acc))}"><b>${esc(x.name)}</b></a>`
-        : `<b>${esc(x.name)}</b>`) + speciesTag(x.species);
+      x.self
+        ? `<b>${esc(x.name)}</b>`
+        : protRef(x.acc, x.name, { listed: !!(x.acc && isListed?.(x.acc)), species: x.species });
     return (
       xs.slice(0, max).map(one).join(', ') +
       (xs.length > max ? ` <span class="muted">+${int(xs.length - max)} more</span>` : '')
@@ -957,17 +973,14 @@
     let name;
     if (r.partner_kind === 'self' || (r.partner_accession && r.partner_accession === c.acc))
       name = `<b>${esc(c.gene)}</b> <span ` + `class="muted">${esc(kinds.self || 'another copy')}</span>`;
-    else if (isProteinRec(r)) {
-      const here = r.partner_accession && c.isListed?.(r.partner_accession) && !other;
-      const label = esc(partnerLabel(r));
-      name = here
-        ? `<a href="${esc(
-            K.link('protein', r.partner_accession)
-          )}" title="${esc(r.partner_name || '')}"><b>${label}</b></a>`
-        : `<b title="${esc(
-            (r.partner_name || '') + (r.partner_accession ? ' (' + r.partner_accession + ')' : '')
-          )}">${label}</b>`;
-    } else
+    else if (isProteinRec(r))
+      return protRef(r.partner_accession, partnerLabel(r), {
+        listed: !!(r.partner_accession && c.isListed?.(r.partner_accession)),
+        species: other,
+        show: true,
+        title: r.partner_name || '',
+      });
+    else
       name = `<b>${esc(kinds[r.partner_kind] || r.partner_kind || '')}</b>${
         r.partner_name ? ` <span class="muted">${esc(String(r.partner_name).slice(0, 60))}</span>` : ''
       }`;
@@ -1079,10 +1092,10 @@
     const lnk = (t) => `<a href="${esc(href)}" title="Open the site card of ${esc(label)} at its records">${t}</a>`;
     // a site none of the named groups has a partner at: the other partners are named instead, so the line is never bare
     const bare = !parts.length && rest.size > 0;
-    if (bare) parts.push(`Partners: ${namesHtml([...rest.values()], SUMMARY_MAX, isListed)}`);
+    if (bare) parts.push(`Binding proteins: ${namesHtml([...rest.values()], SUMMARY_MAX, isListed)}`);
     const more =
       !bare && rest.size
-        ? lnk(`+${int(rest.size)} more partner${rest.size === 1 ? '' : 's'}`)
+        ? lnk(`+${int(rest.size)} more protein${rest.size === 1 ? '' : 's'}`)
         : parts.length
           ? lnk('records')
           : '';
@@ -1235,12 +1248,10 @@
               ? hit
                   .slice(0, 8)
                   .map((r) => {
-                    const a = c.isListed?.(r.partner_accession);
-                    return a
-                      ? `<a href="${esc(
-                          K.link('protein', r.partner_accession)
-                        )}" title="score ${esc(r.score)}">${esc(r.partner || r.partner_accession)}</a>`
-                      : `<span title="score ${esc(r.score)}">${esc(r.partner || r.partner_accession)}</span>`;
+                    return protRef(r.partner_accession, r.partner || r.partner_accession, {
+                      listed: !!c.isListed?.(r.partner_accession),
+                      title: `score ${r.score}`,
+                    });
                   })
                   .join(', ') + (hit.length > 8 ? ` +${hit.length - 8}` : '')
               : `<span class="muted">${esc(WR.partners.none || 'none')}</span>`) +
@@ -1694,6 +1705,7 @@
   );
   K.card = {
     proteinRecords,
+    protRef,
     summary,
     load,
     peek,

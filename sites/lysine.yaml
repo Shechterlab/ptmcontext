@@ -2455,11 +2455,11 @@ website:                  # the look and words of the website (ptmc web); layout
               blocks:
                 - {kind: table, table: interactions, title: The PDB interfaces at each site, chips: kind, columns: [accession, kind, partner_accession, ids, detail], limit: 25,
                    where: [{column: kind, in: [pdb_protein, pdb_rna, pdb_dna, pdb_self]}], partner: partner_accession, label: partner}
-        - name: Partners
+        - name: Binding proteins
           sections:
             - id: ix-who
-              title: Who binds the modified lysine
-              question: Which partners bind these sites, in which state of the lysine, and how was each found?
+              title: Proteins that bind the modified lysine
+              question: Which proteins bind these sites, in which state of the lysine, and how was each found?
               sub: modified lysines with a record
               blocks:
                 - {kind: table, table: records, group_by: group, rollup: [{label: Binds it modified, values: [binds_modified]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}

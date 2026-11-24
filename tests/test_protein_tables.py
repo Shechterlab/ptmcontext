@@ -574,10 +574,10 @@ def test_one_summary_line_names_the_partners_of_the_records_with_their_organism_
     }
     out = _card(card, {}, [], rows)
     text = re.sub(r'<[^>]+>', '', out['sum'])
-    assert text == 'Writes: PRMT1, prmt-5 (C. elegans) · erases: JMJD4 · +2 more partners', text
+    assert text == 'Writes: PRMT1, prmt-5 (C. elegans) · erases: JMJD4 · +2 more proteins', text
     assert 'open=sc-rec-writes' in out['sum'] and 'href="#protein/P1/X2?' in out['sum']
     # the Writer block and the records table name the same partners the same way
-    assert 'prmt-5</b> <span class="sp-species" title="Caenorhabditis elegans">(C. elegans)' in out['wr']
-    assert 'prmt-5</b> <span class="sp-species" title="Caenorhabditis elegans">(C. elegans)' in out['rec']
+    assert 'prmt-5</b></a> <span class="sp-species" title="Caenorhabditis elegans">(C. elegans)' in out['wr']
+    assert 'prmt-5</b></a>' in out['rec'] and 'title="Caenorhabditis elegans">(C. elegans)' in out['rec']
     # no record at the site: no line
     assert _card(card, {}, [], [[9, 'writes', 'X', 'protein', 'P2', 's', 'IntAct', '']])['sum'] == ''

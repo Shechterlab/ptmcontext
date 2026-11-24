@@ -33,7 +33,7 @@ def test_every_link_to_a_protein_in_the_network_is_built_by_one_function():
 def test_the_partners_line_of_a_network_card_says_what_it_counts_and_points_to_the_home_count():
     net, pix, folds = _src('kit-network.js'), _src('kit-pix.js'), _src('kit-pfolds.js')
     assert 'with ${W.marks} in this network' in net and 'K.pix?.countNote' in net
-    assert 'partners in all, in <a href=' in pix and "acc + '/interactions'" in pix
+    assert 'protein partners (STRING) in <a href=' in pix and "acc + '/interactions'" in pix
     assert 'K.pix.partnersOf(tb).length' in folds and 'partnersOf(tb).sort' in pix  # one list for the fold and the page
 
 
@@ -51,3 +51,12 @@ def test_a_tile_about_one_proteins_own_facts_opens_its_section_for_a_one_protein
     assert 'tileHref(t.dataset.tile)' in kit
     assert 'K.proteinHome = (aid)' in prot and 'D.protein_view?.context' in prot
     assert "'p-cell'" in cell and 'K.cellHome' in cell
+
+
+def test_partner_lists_say_protein_and_name_the_protein_by_gene_and_accession():
+    pix, card, pnet = _src('kit-pix.js'), _src('kit-sitecard.js'), _src('kit-pnet.js')
+    assert 'Protein partners (STRING)' in pix and 'Proteins at the sites' in pix and 'Protein network' in pnet
+    assert 'K.card.protRef' in pix and 'protRef,' in card  # one drawing of a partner, here and in the site card
+    assert 'https://www.uniprot.org/uniprotkb/${encodeURIComponent(acc)}' in card  # not in the dataset: UniProt
+    assert 'data-jump="${id}"' in pix and "go('pn-net'" in pix and 'id="pn-net"' in pnet and 'id="pix-string"' in pix
+    assert '(K.protActions ||= []).push' in pix  # a header button on the protein page
