@@ -2800,7 +2800,6 @@ website:                  # the look and words of the website (ptmc web); layout
                  predicted_interface: pred, predicted_contact: pred}
           predicted: [predicted_interface, predicted_contact]     # values that alone make a status "predicted only" (the badge says "+ pred.")
           partners: interactions             # a site_evidence table: the partner named in a predicted tag, the rest in its hover
-          named: [pdb_protein]               # a tag of these kinds names the partner and the PDB entries that show it ("TNPO1 4FDD, 4FQ3 +4")
         entries:                             # the site's entries in structures, by kind (a site_evidence table)
           table: interactions
           kinds: {pdb_rna: RNA, pdb_dna: DNA, pdb_protein: "", pdb_self: another copy}   # "": the partner's name
@@ -2911,6 +2910,10 @@ website:                  # the look and words of the website (ptmc web); layout
           self: homo-oligomer contacts in structures
           predicted: complex models (ProtVar, AlphaFold DB), not observations
         open: [writes, removes, binds_methylated, mutation_changes_binding, binds_region, other_reaction, not_a_protein]
+        summary:             # the one line that names partners (Interactions page, Sites table): its groups' names, the other partners counted
+          - {label: Writes, groups: [writes]}
+          - {label: erases, groups: [removes]}
+          - {label: binds methylated, groups: [binds_methylated]}
         rollup:              # the groups under two headings: the residue in the site's state, against in any other
           - {label: Binds it methylated, groups: [binds_methylated]}
           - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}

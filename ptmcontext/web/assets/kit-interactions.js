@@ -2391,15 +2391,9 @@
       hidden = [...entries.matchAll(/class="muted" title="[^"]*">\+(\d+)</g)].reduce((a, x) => a + +x[1], 0),
       nStruct = ids.size + hidden,
       nTags = (tags.match(/class="tag t-/g) || []).length,
+      who = K2.summary(c.acc, c.pos, 'records', { tb, label: c.label }),
       nWin = K2.windowsOf(c).length,
       nNear = K2.aroundRows(c).length,
-      names = [
-        ...new Set(
-          [...tags.matchAll(/class="tag t-[^"]*"[^>]*title="[^"]*?: ([^"]*)"/g)].flatMap((x) =>
-            x[1].split(', ').map((y) => y.replace(/&amp;/g, '&').replace(/ [\d.]+$/, ''))
-          )
-        ),
-      ],
       n = (k, w) => `${int(k)} ${w}${k === 1 ? '' : 's'}`;
     const badge = K2.badge(c);
     return {
@@ -2407,12 +2401,7 @@
       head: `${siteLink(m[0], m[1])} <span class="muted">${esc(prot(m[0])[2] || '')}</span>`,
       facts: [
         badge ? { text: badge } : null,
-        names.length
-          ? {
-              text: esc(names.slice(0, 3).join(', ') + (names.length > 3 ? ` +${names.length - 3}` : '')),
-              to: 'partners',
-            }
-          : null,
+        who ? { text: who } : null, // the site card's own line: who writes, erases and reads it, from its records
         nTags ? { text: n(nTags, 'evidence type'), to: 'partners' } : null,
         nStruct ? { text: n(nStruct, 'solved structure'), to: 'partners' } : null,
         nWin ? { text: n(nWin, 'bound window'), to: 'contacts' } : null,

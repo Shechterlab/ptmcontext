@@ -389,7 +389,8 @@ const c = {{ p: {{ acc: 'P1' }}, tb: {json.dumps(tb)}, acc: 'P1', pos: 2, gene: 
 console.log(JSON.stringify({{ ev: K.card.evidenceBlock(c), rec: K.card.recordsBlock(c), wr: K.card.writerBlock(c), calls: K.card.calls(c),
   row: K.card.evidenceRow(c), cite: K.card.citeBox('the toy sites', [1], (m, n) => attrs[n], true), five: K.card.calls({{ ...c, pos: 5 }}) }}));"""
     out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
-    assert 'XL' in out['ev'] and 'pred. TWO' in out['ev']  # tags: short words, the predicted partner
+    assert 'XL' in out['ev'] and 'pred. 1<' in out['ev']  # tags: short words and a count
+    assert 'pred. TWO' not in out['ev']  # a tag never names a partner: the records do
     assert 'Structure</b>' in out['ev'] and '1ABC' in out['ev'] and '2DEF' in out['ev']  # the entries at the site
     assert (
         '<b class="nt hit">G</b>' in out['ev']
@@ -459,7 +460,16 @@ def _card_script(card, specs, evidence_rows, record_rows):
         'tables': {
             'ev': {'columns': ['position', 'kind', 'partner', 'partner_accession', 'ids']},
             'rec': {
-                'columns': ['position', 'group', 'partner', 'partner_kind', 'partner_accession', 'state', 'source']
+                'columns': [
+                    'position',
+                    'group',
+                    'partner',
+                    'partner_kind',
+                    'partner_accession',
+                    'state',
+                    'source',
+                    'species',
+                ]
             },
         },
         'protein_view': {'card': card},
@@ -470,12 +480,13 @@ global.window = {{}}; global.document = {{ getElementById: () => null, addEventL
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-papers.js'))}, 'utf8'));
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-sitecard.js'))}, 'utf8'));
 const D = {json.dumps(data)}, esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}})[c]);
-const K = {{ D, W: D.words, esc, int: n => String(n), cap: t => String(t)[0].toUpperCase() + String(t).slice(1), clicks: [], link: (v, a) => '#' + v + '/' + a,
+const K = {{ D, W: D.words, esc, int: n => String(n), cap: t => String(t)[0].toUpperCase() + String(t).slice(1), clicks: [], link: (v, a, x) => '#' + v + '/' + a + (x ? '?' + new URLSearchParams(x) : ''),
   exp: {{ label: k => 'Data (' + k.toUpperCase() + ')' }}, map: {{ attrColour: () => '#000' }}, preamble: () => '', CIT: {{}}, download: () => {{}} }};
 window.PTMC_MODULES[0](K); window.PTMC_MODULES[1](K);
 const c = {{ p: {{ acc: 'P1' }}, tb: {json.dumps(tb)}, acc: 'P1', pos: 2, gene: 'G', label: 'X2', seq: '', window: '', shown: q => q,
   attr: () => '', attrHtml: (n, v) => v, isListed: () => false }};
-console.log(JSON.stringify({{ entries: K.card.entries(c), rec: K.card.recordsBlock(c) }}));"""
+console.log(JSON.stringify({{ entries: K.card.entries(c), rec: K.card.recordsBlock(c), wr: K.card.writerBlock(c),
+  sum: K.card.summary('P1', 2, 'records', {{ tb: c.tb, label: 'X2', isListed: () => false }}) }}));"""
 
 
 def _card(card, specs, ev, rec):
@@ -541,3 +552,32 @@ def test_record_groups_can_roll_up_under_two_headings_with_one_summary_phrase_ea
     rec = _card(card, {}, [], _REC_ROWS)['rec']
     assert '<h5 class="sp-roll">Binds it modified' in rec and '<h5 class="sp-roll">Binds the residue' in rec
     assert 'binds it modified 2 · binds the residue 1' in rec  # the summary line reads the headings
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_one_summary_line_names_the_partners_of_the_records_with_their_organism_and_counts_the_rest():
+    rows = [
+        [2, 'writes', 'PRMT1', 'protein', 'P2', 's', 'IntAct', 'Homo sapiens'],
+        [2, 'writes', 'prmt-5', 'protein', 'Q9', 's', 'IntAct', 'Caenorhabditis elegans'],
+        [2, 'removes', 'JMJD4', 'protein', 'P3', 's', 'IntAct', 'Homo sapiens'],
+        [2, 'binds_other', 'AAA', 'protein', 'P4', 's', 'PDB', 'Homo sapiens'],
+        [2, 'binds_other', '', 'protein', 'P5', 's', 'PDB', ''],
+    ]
+    card = {
+        'evidence': _CARD_EV,
+        'records': {
+            **_CARD_REC,
+            'species': 'Homo sapiens',
+            'summary': [{'label': 'Writes', 'groups': ['writes']}, {'label': 'erases', 'groups': ['removes']}],
+        },
+        'writer': {'who': [{'label': 'Methylates it', 'groups': ['writes']}]},
+    }
+    out = _card(card, {}, [], rows)
+    text = re.sub(r'<[^>]+>', '', out['sum'])
+    assert text == 'Writes: PRMT1, prmt-5 (C. elegans) · erases: JMJD4 · +2 more', text
+    assert 'open=sc-rec-writes' in out['sum'] and 'href="#protein/P1/X2?' in out['sum']
+    # the Writer block and the records table name the same partners the same way
+    assert 'prmt-5</b> <span class="sp-species" title="Caenorhabditis elegans">(C. elegans)' in out['wr']
+    assert 'prmt-5</b> <span class="sp-species" title="Caenorhabditis elegans">(C. elegans)' in out['rec']
+    # no record at the site: no line
+    assert _card(card, {}, [], [[9, 'writes', 'X', 'protein', 'P2', 's', 'IntAct', '']])['sum'] == ''

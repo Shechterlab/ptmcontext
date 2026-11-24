@@ -539,6 +539,9 @@
   const siteOf = (p, pos) => `${resAt(p, pos) || ''}${shownPos(p, pos)}`;
   // for other modules (the map, the 3D viewer): a position as this site shows it, and a site's name
   K.prot = {
+    // a protein's gene where the release lists it, else ''; and whether it has a page
+    gene: (acc) => byAcc[acc]?.gene || '',
+    isListed: (acc) => !!byAcc[acc],
     shownPos: (acc, pos) => shownPos(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), pos),
     siteLabel: (acc, pos) => siteOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null) || { acc }, pos),
     numbering: (acc) => numOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
@@ -1304,9 +1307,14 @@
       })),
     ];
   }
+  const sumLine = (c) => {
+    const t = K.card.summary(c.acc, c.pos, 'records', { tb: c.tb, label: c.label, isListed: c.isListed });
+    return t ? `<div class="sc-sum">${t}</div>` : '';
+  };
   const SHOW = {
     status: (c) => K.card.badge(c),
-    tags: (c) => (K.density.compact() ? K.card.tags(c, -1) : K.card.tags(c, 4)),
+    // the evidence kinds, then (where the site has records) the one line of who they name, from the site card's own function
+    tags: (c) => (K.density.compact() ? K.card.tags(c, -1) : K.card.tags(c, 4)) + sumLine(c),
     sequences: (c) => {
       if (!K.density.compact()) return K.card.sequences(c, true);
       const ws = K.card.windowsOf(c) || [];

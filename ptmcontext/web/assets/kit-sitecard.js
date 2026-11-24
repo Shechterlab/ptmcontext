@@ -153,7 +153,8 @@
   // ---- interaction evidence ----------------------------------------------------------------------------------------
   const EV = C.evidence || {};
   // a partner's name in an evidence row: its gene, else its accession (a protein with no gene), never the kind's code
-  const partnerName = (r) => r.partner || r.partner_accession || '';
+  const partnerName = (r) =>
+    r.partner || (r.partner_accession && K.prot?.gene?.(r.partner_accession)) || r.partner_accession || '';
   function evidenceParts(c) {
     const tg = EV.tags || {},
       vals = tg.attribute ? attrVals(c, tg.attribute) : [],
@@ -178,18 +179,19 @@
       s = EV.sentences || {};
     return esc((hasPred && hasExp && s[v + '_pred']) || s[v] || '');
   }
+  // The evidence kinds at a site as tags: each names its kind and how many partners show it. Who the partners are is
+  // the records block's to say (summary, recordsBlock), so no tag names one.
   function tags(c, max) {
     const tg = EV.tags;
     if (!tg?.attribute || !SPECS[tg.attribute]) return '';
     const { vals, pred } = evidenceParts(c),
       ptab = tg.partners,
-      named = new Set(tg.named || []),
       out = [],
       seen = new Set(),
       labs = [];
-    const partnersOf = (kinds) => {
+    const countOf = (kinds) => {
       const rs = has(ptab) ? at(c.tb, ptab, c.pos).filter((r) => kinds.includes(r.kind)) : [];
-      return rs.sort((a, b) => (+b.score || 0) - (+a.score || 0));
+      return new Set(rs.map(partnerName).filter(Boolean)).size;
     };
     const predVals = vals.filter((v) => pred.has(v));
     for (const v of vals) {
@@ -198,43 +200,28 @@
         key = short + '|' + ((tg.tone || {})[v] || '');
       if (seen.has(key)) continue;
       seen.add(key);
-      const ps = partnersOf([v]),
-        names = [...new Set(ps.map(partnerName).filter(Boolean))];
-      const ids = [...new Set(ps.flatMap((r) => list(r.ids)))].map((x) => x.toUpperCase()); // a named kind also gives the entries that show it: "TNPO1 4FDD, 4FQ3 +4"
-      const label =
-        named.has(v) && names.length
-          ? names.slice(0, 2).join(', ') +
-            (names.length > 2 ? ` +${names.length - 2}` : '') +
-            (ids.length ? ' ' + ids.slice(0, 3).join(', ') + (ids.length > 3 ? ` +${ids.length - 3}` : '') : '')
-          : short;
       const kinds = vals.filter(
         (x) =>
           !pred.has(x) && ((tg.short || {})[x] ?? vLabel(tg.attribute, x)) + '|' + ((tg.tone || {})[x] || '') === key
       ); // the kinds this tag stands for (data-ev-kind: a page may open them)
+      const n = countOf(kinds),
+        label = short + (n ? ' ' + int(n) : '');
       labs.push(label);
       out.push(
         `<span class="tag t-${esc((tg.tone || {})[v] || 'x')}" data-ev-kind="${esc(kinds.join(','))}" title="${esc(
-          vLabel(tg.attribute, v) + (names.length ? ': ' + names.join(', ') : '')
+          vLabel(tg.attribute, v) + (n ? `: ${int(n)} partner${n === 1 ? '' : 's'}` : '')
         )}">${esc(label)}</span>`
       );
     }
     if (predVals.length) {
-      const ps = partnersOf(predVals),
-        names = [...new Set(ps.map(partnerName).filter(Boolean))];
-      const tip =
-        predVals.map((v) => vLabel(tg.attribute, v)).join(', ') +
-        (ps.length
-          ? ': ' +
-            [...new Map(ps.map((r) => [partnerName(r), r])).values()]
-              .slice(0, 20)
-              .map((r) => `${partnerName(r)}${r.score ? ' ' + Number(r.score).toFixed(2) : ''}`)
-              .join(', ')
-          : '');
-      labs.push((tg.short || {})[predVals[0]] || 'pred.');
+      const n = countOf(predVals),
+        word = (tg.short || {})[predVals[0]] || 'pred.';
+      labs.push(word + (n ? ' ' + int(n) : ''));
       out.push(
-        `<span class="tag t-pred" data-ev-kind="${esc(predVals.join(','))}" title="${esc(tip)}">${esc(
-          (tg.short || {})[predVals[0]] || 'pred.'
-        )}${names.length ? ' ' + esc(names[0]) + (names.length > 1 ? ` +${names.length - 1}` : '') : ''}</span>`
+        `<span class="tag t-pred" data-ev-kind="${esc(predVals.join(','))}" title="${esc(
+          predVals.map((v) => vLabel(tg.attribute, v)).join(', ') +
+            (n ? `: ${int(n)} partner${n === 1 ? '' : 's'}` : '')
+        )}">${esc(word)}${n ? ' ' + int(n) : ''}</span>`
       );
     }
     if (max < 0)
@@ -824,20 +811,59 @@
     }
     return [...by.entries()].sort((a, b) => grpOrder(a[0]) - grpOrder(b[0]));
   }
+  // ---- the partners a site's records name: one list, drawn here and by nothing else -----------------------------------
+  const isProteinRec = (r) => r.partner_kind === 'protein' || (!r.partner_kind && !!r.partner_accession);
+  // a partner's name: its gene, else the page's gene for its accession, else the record's protein name, else the accession
+  const partnerLabel = (r) =>
+    r.partner ||
+    (r.partner_accession && K.prot?.gene?.(r.partner_accession)) ||
+    r.partner_name ||
+    r.partner_accession ||
+    '';
+  // the organism of a record's partner when it is not the site's own (RC.species), else ''
+  const otherSpecies = (r) => {
+    const sp = String(r.species || '');
+    return RC.species && sp && !sp.split(/[;,]\s*/).includes(RC.species) ? sp : '';
+  };
+  const speciesShort = (sp) => sp.split(/[;,]/)[0].replace(/^([A-Z])[a-z]+ /, '$1. ');
+  const speciesTag = (sp) =>
+    sp ? ` <span class="sp-species" title="${esc(sp)}">(${esc(speciesShort(sp))})</span>` : '';
+  // the protein partners of a site's records by group: group -> name+species -> {name, acc, species}
+  function partnerGroups(rs, { self = false } = {}) {
+    const by = new Map();
+    for (const r of rs) {
+      const isSelf = r.partner_kind === 'self';
+      if (!isProteinRec(r) && !(self && isSelf)) continue;
+      const name = isSelf ? 'another copy' : partnerLabel(r);
+      if (!name) continue;
+      if (!by.has(r.group)) by.set(r.group, new Map());
+      const sp = isSelf ? '' : otherSpecies(r),
+        k = name + '|' + sp,
+        g = by.get(r.group);
+      if (!g.has(k)) g.set(k, { name, acc: isSelf ? '' : r.partner_accession || '', species: sp, self: isSelf });
+    }
+    return by;
+  }
+  // names as a line: the first `max`, each linked when the release has its page, then how many more
+  function namesHtml(xs, max, isListed) {
+    const one = (x) =>
+      (!x.species && x.acc && isListed?.(x.acc)
+        ? `<a href="${esc(K.link('protein', x.acc))}"><b>${esc(x.name)}</b></a>`
+        : `<b>${esc(x.name)}</b>`) + speciesTag(x.species);
+    return (
+      xs.slice(0, max).map(one).join(', ') +
+      (xs.length > max ? ` <span class="muted">+${int(xs.length - max)} more</span>` : '')
+    );
+  }
   function partnerHtml(r, c) {
     const kinds = RC.kinds || {},
-      other =
-        RC.species &&
-        r.species &&
-        !String(r.species)
-          .split(/[;,]\s*/)
-          .includes(RC.species);
+      other = otherSpecies(r);
     let name;
     if (r.partner_kind === 'self' || (r.partner_accession && r.partner_accession === c.acc))
       name = `<b>${esc(c.gene)}</b> <span ` + `class="muted">${esc(kinds.self || 'another copy')}</span>`;
-    else if (r.partner_kind === 'protein' || (!r.partner_kind && r.partner_accession)) {
+    else if (isProteinRec(r)) {
       const here = r.partner_accession && c.isListed?.(r.partner_accession) && !other;
-      const label = esc(r.partner || r.partner_name || r.partner_accession || '');
+      const label = esc(partnerLabel(r));
       name = here
         ? `<a href="${esc(
             K.link('protein', r.partner_accession)
@@ -849,16 +875,7 @@
       name = `<b>${esc(kinds[r.partner_kind] || r.partner_kind || '')}</b>${
         r.partner_name ? ` <span class="muted">${esc(String(r.partner_name).slice(0, 60))}</span>` : ''
       }`;
-    return (
-      name +
-      (other
-        ? ` <span class="sp-species" title="${esc(r.species)}">${esc(
-            String(r.species)
-              .split(/[;,]/)[0]
-              .replace(/^([A-Z])[a-z]+ /, '$1. ')
-          )}</span>`
-        : '')
-    );
+    return name + speciesTag(other);
   }
   function sourceCell(x, c) {
     const url = (RC.urls || {})[x.source],
@@ -935,6 +952,41 @@
         .join(' · ')
     );
   }
+  // the fold id of a group's table in the card's records block (an `open=` in an address opens it)
+  const recFold = (g) => 'sc-rec-' + g;
+  const SUMMARY_MAX = 6; // names a group shows in the one-line summary and the Writer block before "+N more"
+  // One line of what the records at a site say, with who: "Writes: PRMT1, PRMT7 · erases: JMJD4 · binds methylated:
+  // KDM4A · +12 more", and a link to the site card with its records open. The groups it names come from
+  // card.records.summary: [{label, groups: [codes]}]; every other protein partner is counted in "+N more".
+  // K.card.summary(acc, pos, 'records', { tb, label, isListed }); '' where the site has no such records.
+  function summary(acc, pos, kind, o = {}) {
+    if (kind !== 'records' || !has(RC.table)) return '';
+    const tb = o.tb || K.prot?.tables?.(acc);
+    if (!tb) return '';
+    const label = o.label || K.prot?.siteLabel?.(acc, pos) || '',
+      by = partnerGroups(at(tb, RC.table, pos)),
+      isListed = o.isListed || K.prot?.isListed,
+      shown = new Set(),
+      parts = [];
+    for (const s of RC.summary || []) {
+      const xs = new Map();
+      for (const g of s.groups || []) for (const [k, x] of by.get(g) || []) xs.set(k, x);
+      xs.forEach((_x, k) => shown.add(k));
+      if (xs.size)
+        parts.push(
+          `${esc(parts.length ? s.label : cap(s.label))}: ${namesHtml([...xs.values()], SUMMARY_MAX, isListed)}`
+        );
+    }
+    const rest = new Map();
+    for (const g of by.values()) for (const [k, x] of g) if (!shown.has(k)) rest.set(k, x);
+    const href = K.link('protein', `${acc}/${label}`, { open: [...by.keys()].map(recFold).join(',') });
+    const lnk = (t) => `<a href="${esc(href)}" title="Every record at ${esc(label)}">${t}</a>`;
+    // a site none of the named groups has a partner at: the other partners are named instead, so the line is never bare
+    const bare = !parts.length && rest.size > 0;
+    if (bare) parts.push(`Partners: ${namesHtml([...rest.values()], SUMMARY_MAX, isListed)}`);
+    const more = !bare && rest.size ? lnk(`+${int(rest.size)} more`) : parts.length ? lnk('records') : '';
+    return [...parts, more].filter(Boolean).join(' · ');
+  }
   function recordsBlock(c) {
     if (!has(RC.table)) return '';
     const rs = at(c.tb, RC.table, c.pos);
@@ -962,7 +1014,7 @@
               (first
                 ? `<h5 class="sp-roll">${esc(cap(roll.label))} <span class="muted small">${int(rollRecs)} record${rollRecs === 1 ? '' : 's'}</span></h5>`
                 : '') +
-              `<details class="sp-group"${
+              `<details class="sp-group" id="${esc(recFold(g))}"${
                 (RC.open || []).includes(g) || all.length === 1 ? ' open' : ''
               }><summary><b>${esc(cap(grpLabel(g)))}</b> <span ` +
               `class="muted small">${int(who.size)} partner${who.size === 1 ? '' : 's'} · ${int(n)} record${n === 1 ? '' : 's'}${
@@ -998,47 +1050,34 @@
   // a protein's records at all its marks, site first: what the records at each site say and with whom (the protein page's Interactions view)
   function proteinRecords(p, tb, siteLabel, isListed) {
     if (!has(RC.table)) return null;
-    const rs = rows(tb, RC.table).filter(
-      (r) => r.partner_kind === 'protein' || r.partner_kind === 'self' || (!r.partner_kind && r.partner_accession)
-    );
-    const by = new Map();
+    const rs = rows(tb, RC.table).filter((r) => isProteinRec(r) || r.partner_kind === 'self');
+    const bySite = new Map(),
+      papers = new Map();
     for (const r of rs) {
-      if (!by.has(r.position)) by.set(r.position, new Map());
-      const g = by.get(r.position);
-      if (!g.has(r.group)) g.set(r.group, { names: new Map(), papers: new Set() });
-      const x = g.get(r.group),
-        nm = r.partner_kind === 'self' ? 'another copy' : r.partner || r.partner_name || r.partner_accession;
-      if (nm)
-        x.names.set(
-          nm,
-          r.partner_kind === 'self' || !r.partner_accession || !isListed?.(r.partner_accession)
-            ? null
-            : r.partner_accession
-        );
-      if (paperKey(r)) x.papers.add(paperKey(r));
+      if (!bySite.has(r.position)) bySite.set(r.position, []);
+      bySite.get(r.position).push(r);
+      if (paperKey(r)) {
+        if (!papers.has(r.position)) papers.set(r.position, new Map());
+        const g = papers.get(r.position);
+        if (!g.has(r.group)) g.set(r.group, new Set());
+        g.get(r.group).add(paperKey(r));
+      }
     }
-    const sites = [...by.keys()].sort((a, b) => a - b);
-    const nameHtml = ([nm, acc]) =>
-      acc ? `<a href="${esc(K.link('protein', acc))}"><b>${esc(nm)}</b></a>` : `<b>${esc(nm)}</b>`;
+    const sites = [...bySite.keys()].sort((a, b) => a - b);
     const row = (pos) => {
-      const g = by.get(pos),
-        papers = new Set([...g.values()].flatMap((x) => [...x.papers]));
+      const g = partnerGroups(bySite.get(pos), { self: true }),
+        pp = new Set([...(papers.get(pos) || new Map()).values()].flatMap((x) => [...x]));
       return (
         `<tr><td data-label="Site"><button type="button" class="linkish mono" data-site-open="${pos}">${esc(siteLabel(pos))}</button>` +
         `</td><td data-label="What the records show">` +
         [...g.entries()]
           .sort((a, b) => grpOrder(a[0]) - grpOrder(b[0]))
           .map(
-            ([k, x]) =>
-              `<span class="pw-g"><span ` +
-              `class="muted">${esc(cap(grpLabel(k)))}</span> ${[...x.names].slice(0, 5).map(nameHtml).join(', ')}${
-                x.names.size > 5 ? ` <span class="muted">+${x.names.size - 5}</span>` : ''
-              }</span>`
+            ([k, xs]) =>
+              `<span class="pw-g"><span class="muted">${esc(cap(grpLabel(k)))}</span> ${namesHtml([...xs.values()], SUMMARY_MAX, isListed)}</span>`
           )
           .join('') +
-        `</td><td data-label="Papers" class="num">${
-          papers.size ? int(papers.size) : '<span class="muted">–</span>'
-        }</td></tr>`
+        `</td><td data-label="Papers" class="num">${pp.size ? int(pp.size) : '<span class="muted">–</span>'}</td></tr>`
       );
     };
     return { n: sites.length, rows: sites.map(row) };
@@ -1050,29 +1089,22 @@
     if (!WR.who && !WR.suggest && !WR.partners) return '';
     const dl = (dt, dd) => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`;
     const lines = [];
-    if (has(RC.table))
+    if (has(RC.table)) {
+      const by = partnerGroups(at(c.tb, RC.table, c.pos));
       for (const w of WR.who || []) {
-        const names = [
-          ...new Set(
-            at(c.tb, RC.table, c.pos)
-              .filter((r) => (w.groups || []).includes(r.group))
-              .map((r) => r.partner || r.partner_name)
-              .filter(Boolean)
-          ),
-        ];
-        if (names.length || w.none)
+        const xs = new Map();
+        for (const g of w.groups || []) for (const [k, x] of by.get(g) || []) xs.set(k, x);
+        if (xs.size || w.none)
           lines.push(
             dl(
               esc(w.label),
-              names.length
-                ? esc(names.slice(0, 8).join(', ')) +
-                    (names.length > 8
-                      ? ` <span class="muted">+${names.length - 8} more, in the table below</span>`
-                      : '')
+              xs.size
+                ? namesHtml([...xs.values()], SUMMARY_MAX, c.isListed)
                 : `<span class="muted">${esc(w.none)}</span>`
             )
           );
       }
+    }
     if (WR.suggest) {
       const sg = WR.suggest,
         hits = (sg.rules || []).filter(
@@ -1561,6 +1593,7 @@
   );
   K.card = {
     proteinRecords,
+    summary,
     load,
     loadDetail,
     loadDefault,

@@ -2375,6 +2375,8 @@ website:                  # the look and words of the website (ptmc web); layout
           nucleic_acid: RNA or DNA
           self: Another copy of the protein
         open: [binds_modified]
+        summary:             # the one line that names partners (Interactions page, Sites table): its groups' names, the other partners counted
+          - {label: binds methylated or acetylated, groups: [binds_modified]}
         rollup:              # the groups under two headings: the residue in the site's state, against in any other
           - {label: Binds it modified, groups: [binds_modified]}
           - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
