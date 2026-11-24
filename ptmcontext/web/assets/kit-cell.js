@@ -352,19 +352,19 @@
   const READ = K.READ || { min_maps: 2, min_group: 20 };
   const smallOf = (k, M) => k < READ.min_group || M - k < READ.min_group;
   // the comparison a map's row makes: the fold (the share of the marked proteins placed here over the share of all the
-  // proteins the map places), read by the map's test: within the strata (Mantel–Haenszel; its odds ratio beside) or of
-  // the whole map (hypergeometric)
-  const adj = (aid, t) =>
-    stratified(aid) && t.or !== undefined
-      ? {
-          l2: L2(t.fold),
-          lo: null,
-          hi: null,
-          q: t.q,
-          test: { l2: L2(t.or), lo: t.lo ? Math.log2(t.lo) : null, hi: t.hi ? Math.log2(t.hi) : null },
-          small: smallOf(t.k, t.M),
-        }
-      : { l2: L2(t.fold), lo: null, hi: null, q: t.fq, small: smallOf(t.k, t.M) };
+  // proteins the map places) read by the map's own hypergeometric test, not adjusted for protein abundance. Where the map
+  // was also tested within the strata (Mantel–Haenszel), its odds ratio is `est`, an estimate for the hover that never
+  // sets the color
+  const adj = (aid, t) => ({
+    l2: L2(t.fold),
+    lo: null,
+    hi: null,
+    q: t.fq,
+    ...(stratified(aid) && t.or !== undefined
+      ? { est: { l2: L2(t.or), lo: t.lo ? Math.log2(t.lo) : null, hi: t.hi ? Math.log2(t.hi) : null, q: t.q } }
+      : {}),
+    small: smallOf(t.k, t.M),
+  });
   // each map, as the grids and the footnote name it: its words, and how many proteins it places and how many are marked
   const DS = (aid) => {
     const m = MAP[aid] || {},
@@ -382,7 +382,7 @@
   // ---- words --------------------------------------------------------------------------------------------------------
   const who = (scoped) => (scoped ? 'proteins of your selection' : `${W.marked} proteins`);
   const inWord = (scoped) => (scoped ? 'are in your selection' : `are ${W.marked}`);
-  const alike = allStrat ? 'other proteins of similar abundance' : 'the other proteins each map places';
+  const alike = 'the other proteins each map places'; // not adjusted for protein abundance
   const others = `proteins without a ${W.mark}`;
   const here = 'proteins the map places here';
   const fxv = (v) => (v == null ? '–' : K.fxn(v));
@@ -409,8 +409,8 @@
   function tone(a) {
     if (!a || a.l2 == null) return 'na';
     if (a.q == null || a.q > PADJ || (Number.isFinite(a.l2) && Math.abs(a.l2) < MINL2)) return 'ns';
-    // too few proteins on a side, or a test that points the other way from the fold: not colored
-    if (a.small || (a.test && a.test.l2 != null && Math.sign(a.test.l2) !== Math.sign(a.l2))) return 'ns';
+    // too few proteins on a side: not colored
+    if (a.small) return 'ns';
     const m = Math.abs(a.l2),
       s = m >= 2 ? 3 : m >= 1.2 ? 2 : m >= 0.5 ? 1 : 0;
     return (a.l2 > 0 ? 'u' : 'd') + s;
@@ -514,11 +514,14 @@
           `places); ${abundText(x.a)}`;
   function abundText(a) {
     if (!a || a.l2 == null) return 'not compared';
-    const t = a.test,
+    const t = a.est,
       ci = t && t.lo != null && t.hi != null ? ` (95% CI ${fxv(2 ** t.lo)}–${fxv(2 ** t.hi)})` : '',
-      within = t && t.l2 != null ? `; within abundance deciles, odds ratio ${fxv(2 ** t.l2)}${ci}` : '';
+      within =
+        t && t.l2 != null
+          ? `; within abundance deciles (estimate), odds ratio ${fxv(2 ** t.l2)}${ci}, q ${fq(t.q)}`
+          : '';
     return (
-      `${orWords(a)}${within}, q ${fq(a.q)}` +
+      `${orWords(a)}, q ${fq(a.q)}${within}` +
       (a.small
         ? ` (fewer than ${READ.min_group} proteins on a side: not colored)`
         : tone(a) === 'ns'
@@ -2291,7 +2294,7 @@
               name = DS(aid).name;
             if (!scoped) {
               const at = stratified(aid) ? adj(aid, t) : null,
-                a = at && at.test ? { ...at.test, q: at.q } : { l2: null, lo: null, hi: null, q: null };
+                a = at && at.est ? at.est : { l2: null, lo: null, hi: null, q: null };
               return [
                 group,
                 row.label,
@@ -2354,7 +2357,7 @@
       K.preamble(
         `${C.title || 'Where in the cell'}: ${L.key === 'region' ? 'regions' : 'compartments'} against maps`,
         `${who(scoped)} in each map, against ${alike}${
-          allStrat ? ' (Mantel–Haenszel odds ratio over the abundance strata, BH within each map)' : ''
+          allStrat && scoped ? ' (Mantel–Haenszel odds ratio over the abundance strata, BH within each map)' : ''
         }; members: ${here}`
       ) +
       head +
@@ -2591,13 +2594,13 @@
   const testWords = (view = pctOn() ? 'percent' : 'fold') =>
     view === 'percent'
       ? `A protein counts as having a ${W.mark} when it has at least one. Each map's proteins are the reviewed proteins it places; a part takes the median of the maps that have it. This view makes no test.`
-      : (allStrat
+      : (allStrat && scopedNow()
           ? `In each map, the fold: the share of ${who(scopedNow())} placed in the part over the share of all the ` +
             `proteins the map places; tested against ${alike} (Mantel–Haenszel across the abundance strata, ` +
             `continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} ` +
             `and at least 1.1×.`
           : `In each map, the fold against the other proteins the map places (one-sided hypergeometric test, ` +
-            `Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} and at least 1.1×.`) +
+            `Benjamini–Hochberg within the map; not adjusted for protein abundance), colored at q ≤ ${PADJ} and at least 1.1×.`) +
         ` A map with fewer than ${READ.min_group} ${W.marked} or other proteins in a part is not colored there. A part takes ` +
         `the median fold of the maps that have it, colored only when at least ${READ.min_maps} of them find a difference ` +
         `the same way and none the other way.`;

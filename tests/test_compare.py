@@ -172,21 +172,22 @@ def test_a_cell_is_read_the_way_the_explorers_read_a_row():
     assert CP.cell({('t', 'x'): {'mantel_haenszel': row(q=0.2)}}, an, 't', 'x')['dir'] == 'ns'
     assert CP.cell(rows, an, 't', 'y') is None
     assert CP.cell({('t', 'x'): {'mantel_haenszel': row(**{'or': None})}}, an, 't', 'x')['state'] == 'few'
-    # a protein set shows its fold enrichment; its q and direction are read from the test within abundance deciles
+    # a protein set is read by its own hypergeometric row: fold, q and direction from one test; the test within
+    # abundance deciles is only an estimate beside it
     sets = {'kind': 'protein_sets', 'title': 'S'}
     srows = {
         ('s', 'x'): {
-            'enricher': row(**{'or': None, 'fold': 2.0, 'q': 1e-9}),
-            'mantel_haenszel': row(**{'or': 0.5, 'q': 0.3}),
+            'enricher': row(**{'or': None, 'fold': 1.3, 'q': 1e-11}),
+            'mantel_haenszel': row(**{'or': 1.03, 'q': 0.855}),
         }
     }
     s = CP.cell(srows, sets, 's', 'x')
-    assert s['v'] == 2.0 and s['measure'] == 'fold enrichment' and s['q'] == 0.3 and s['dir'] == 'ns' and s['q_test']
-    # the fold and the test point different ways at q <= 0.05: no reading, and it says so
-    split = {
-        ('s', 'x'): {'enricher': row(**{'or': None, 'fold': 1.5}), 'mantel_haenszel': row(**{'or': 0.8, 'q': 0.01})}
-    }
-    assert CP.cell(split, sets, 's', 'x')['split'] is True
+    assert s['v'] == 1.3 and s['measure'] == 'fold enrichment' and s['q'] == 1e-11 and s['dir'] == 'more'
+    assert s['or'] is None and s['split'] is False and s['test'] == 'proteins, hypergeometric'
+    assert s['est']['or'] == 1.03 and s['est']['q'] == 0.855
+    # no test within abundance deciles: no estimate
+    alone = {('s', 'x'): {'enricher': row(**{'or': None, 'fold': 1.5, 'q': 0.01})}}
+    assert CP.cell(alone, sets, 's', 'x')['est'] is None
 
 
 def test_no_site_or_mark_literal_in_the_compare_code():

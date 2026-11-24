@@ -285,12 +285,11 @@
       const lab = (s) => (D.analyses.find((a) => a.id === aid)?.labels || {})[s] || s;
       const rows = names
         .map((s) => {
-          const rs = D.rows.filter((r) => r.analysis === aid && r.category === s && r.dir === 'more');
-          const r = rs.find((x) => x.method === 'enricher') || rs.find((x) => x.method === 'mantel_haenszel') || rs[0];
-          return { s, r };
+          const r = K.setReading(aid, s);
+          return { s, r: r && r.dir === 'more' ? r : null };
         })
         .filter((x) => x.r)
-        .sort((a, b) => b.r.eff - a.r.eff)
+        .sort((a, b) => b.r.effect - a.r.effect)
         .slice(0, 8);
       const title = (D.analyses.find((a) => a.id === aid) || {}).title || aid;
       out.push(
@@ -300,7 +299,7 @@
                 .map(
                   ({ s, r }) =>
                     `<li><b>${esc(lab(s))}</b> <span ` +
-                    `class="muted">${esc(K.fxn(r.eff))}× over-represented among the ${esc(W.marked || 'marked')} proteins, q ${esc(K.fq(r.q))}</span></li>`
+                    `class="muted">${esc(K.fxn(r.effect))}× over-represented among the ${esc(W.marked || 'marked')} proteins, q ${esc(K.fq(r.q))}</span></li>`
                 )
                 .join('')}</ul>`
             : `<p class="muted ` +

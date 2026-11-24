@@ -101,11 +101,8 @@ def findings(
     rd = {**READING, **(reading or {})}
     by_id = {a['id']: a for a in analyses}
     methods: dict[str, set] = {}
-    strat = {}
     for r in rows:
         methods.setdefault(r['analysis'], set()).add(r['method'])
-        if r['method'] == 'mantel_haenszel' and (by_id.get(r['analysis']) or {}).get('kind') == 'protein_sets':
-            strat[(r['analysis'], r['category'])] = r
     pool = []
     for r in rows:
         a = by_id.get(r['analysis'])
@@ -119,9 +116,6 @@ def findings(
         e, t, q = fold_of(r), _eff(r), r['q']
         sets = a.get('kind') == 'protein_sets'
         if sets and r['method'] == 'enricher':
-            st = strat.get((a['id'], r['category']))
-            if st is not None:  # the test within abundance deciles reads the set
-                t, q = _eff(st), st['q']
             small = (r.get('a', 0) + r.get('c', 0)) < rd['min_set'] or not r.get('c')
         else:
             small = False
@@ -174,7 +168,7 @@ def findings(
 
 def cell_findings(rows: list, cell: dict, reading: dict | None = None) -> list:
     """The parts of the cell as the Overview's cell card reads them (kit-cell.js): each compartment row's maps, each map
-    its fold read by its test (within abundance strata where it has them), a map speaking for the part only with at
+    its fold read by its own hypergeometric test (not adjusted for protein abundance), a map speaking for the part only with at
     least min_group marked proteins and as many others there; a part differs when at least min_maps of those maps
     differ the same way (q <= 0.05, a fold of 1.1x or more, the test pointing the same way) and none the other way, by
     their median fold. The parts more often first, largest first; then those less often."""
@@ -190,8 +184,7 @@ def cell_findings(rows: list, cell: dict, reading: dict | None = None) -> list:
                 e = by.get((aid, cat, 'enricher'))
                 if not e or e.get('fold') is None or e['a'] < rd['min_group'] or (e.get('c') or 0) < rd['min_group']:
                     continue
-                st = by.get((aid, cat, 'mantel_haenszel'))
-                f, t, q = e['fold'], _eff(st) if st else None, (st or e)['q']
+                f, t, q = e['fold'], None, e['q']  # the map's own hypergeometric row, not adjusted for abundance
                 if not 0 < f < BIG:
                     continue
                 folds.append(math.log2(f))
