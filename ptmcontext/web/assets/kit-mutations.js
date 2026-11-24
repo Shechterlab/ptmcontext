@@ -2006,7 +2006,7 @@
       return head('<p class="muted">The frequencies could not be read.</p>');
     const note = K.sel.active()
       ? ''
-      : `<div class="filter-note">Nothing is selected, so this shows every ${esc(W.mark)}.</div>`;
+      : `<div class="filter-note">Showing every ${esc(W.mark)}.</div>`;
     const tabs = seg(
       'data-mu-view',
       'View',

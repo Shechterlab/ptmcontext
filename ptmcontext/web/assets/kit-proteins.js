@@ -2324,7 +2324,7 @@
               ...(g.synonyms || []).map((x) => x.value),
               ...(g.orfNames || []).map((x) => x.value),
             ])
-            .filter((x) => x && x !== p.gene)
+            .filter((x) => x && x !== p.gene && !genesOf(p).some((g) => g.toUpperCase() === x.toUpperCase()))
         ),
       ];
       fill('aliases', names.length ? `Also reported as ${names.map(esc).join(', ')}` : '');
@@ -2340,8 +2340,8 @@
         'fn',
         texts.length
           ? `<p class="fn-text${PV.fn ? ' open' : ''}">${texts.map(linkPm).join(' ')}</p><p class="src">` +
-              `Function, from <a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry#function">UniProt ${esc(acc)}</a> when the ` +
-              `page opens · <button type="button" class="linkish" data-fn-more>${PV.fn ? K.ACT.showLess : K.ACT.showMore}</button></p>`
+              `Function from <a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry#function">UniProt ${esc(acc)}</a> · ` +
+              `<button type="button" class="linkish" data-fn-more>${PV.fn ? K.ACT.showLess : K.ACT.showMore}</button></p>`
           : '<p class="muted">UniProt gives no function text for this entry.</p>'
       );
       if (first) {
