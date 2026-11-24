@@ -67,3 +67,21 @@ console.log(JSON.stringify(res));"""
     assert out['after'] == '-ix-b,nope'
     assert out['late'] == '-ix-b,nope,late'
     assert out['other'] is None
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_an_old_fold_id_in_the_address_opens_the_renamed_group():
+    script = f"""
+global.window = {{}}; global.HTMLDetailsElement = class {{}};
+global.document = {{ addEventListener: () => {{}}, querySelectorAll: () => dom, getElementById: () => null }};
+const mk = (id, open) => Object.assign(new HTMLDetailsElement(), {{ id, open }});
+let dom = [];
+const K = {{ S: {{ view: 'interactions', arg: '' }}, folds: {{}}, paramsIn: [], hashOut: [], afterRender: [], writeHash: () => {{}} }};
+eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-openlink.js'))}, 'utf8')); window.PTMC_MODULES.forEach(m => m(K));
+K.paramsIn.forEach(f => f(new URLSearchParams('open=ixg-partners-and-complexes,-ixg-partners')));
+dom = [mk('ixg-protein-partners-and-complexes', false), mk('ixg-binding-proteins', true)];
+K.afterRender.forEach(f => f());
+console.log(JSON.stringify({{ applied: dom.map(d => d.open), id: K.foldId('ixg-partners'), same: K.foldId('p-ix') }}));"""
+    out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
+    assert out == {'applied': [True, False], 'id': 'ixg-binding-proteins', 'same': 'p-ix'}
+    assert 'K.foldId?.(id)' in _src('kit.js')  # a saved selection's folds are read through the same table

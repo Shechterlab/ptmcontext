@@ -19,13 +19,20 @@
     want = {};
     dflt = {};
   };
+  // fold ids that were renamed with their titles: old id -> current id, read wherever open sections come in (the address,
+  // a saved selection's folds), so an old link opens the same section
+  const ALIAS = {
+    'ixg-partners-and-complexes': 'ixg-protein-partners-and-complexes',
+    'ixg-partners': 'ixg-binding-proteins',
+  };
+  K.foldId = (id) => ALIAS[id] || id;
   const parse = (v) => {
     const o = {};
     String(v || '')
       .split(',')
       .filter(Boolean)
       .forEach((t) => {
-        o[t.replace(/^-/, '')] = t[0] !== '-';
+        o[K.foldId(t.replace(/^-/, ''))] = t[0] !== '-';
       });
     return o;
   };
