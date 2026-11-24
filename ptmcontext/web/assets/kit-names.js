@@ -1,7 +1,8 @@
 /* How a protein is named and found in a search box: one function for a site's search and the landing page's, so both
    give the same hits in the same order. A row is { acc, gene (the short name shown), genes (every gene), aliases (previous
    and alternative symbols), name, entry, w (weight: marks, or sites, most first) }. Plain script (the landing page inlines
-   it); it puts window.PTMNames = { rank, text } and reads nothing else. */
+   it); it puts window.PTMNames = { rank, text, exact, pos, siteOf } and reads nothing else. The notations of a site typed in a
+   search are read here too (pos, siteOf), for the explorers' search (kit-select.js) and the landing page's. */
 (() => {
   'use strict';
   const low = (x) => String(x ?? '').toLowerCase();
@@ -36,9 +37,28 @@
     }
     const by = (a, b) => (b.row.w || 0) - (a.row.w || 0);
     return tiers
-      .flatMap((l) => l.sort(by))
+      .flatMap((l, tier) => l.sort(by).map((h) => ({ ...h, tier })))
       .slice(0, max)
       .map((h) => ({ ...h, ...text(h.row, h.via) }));
+  };
+  // the hits that are exactly the name (gene, accession, entry name or other symbol, hyphens and spaces aside)
+  const exact = (rows, name) => rank(rows, name, 1e9).filter((h) => h.tier === 0);
+  const AA = 'ACDEFGHIKLMNPQRSTVWY';
+  // a position as typed: R216, or 216 alone -> { letter ('' when none), pos }, or null when it is not one
+  const pos = (t) => {
+    const m = /^([A-Z]?)(\d+)$/i.exec(String(t ?? ''));
+    return m && (!m[1] || AA.includes(m[1].toUpperCase())) ? { letter: m[1].toUpperCase(), pos: +m[2] } : null;
+  };
+  // a name with its site in one word: GENE_R216, GENE-R216, GENE/216, GENE:R216 or H4R3. known(name) gives what the name
+  // names (or nothing); -> { name, hit: what known gave, letter, pos } or null
+  const siteOf = (t, known) => {
+    for (const re of [/^(.+?)[:_/-]([A-Z]?\d+)$/i, /^(.+?)([A-Z]\d+)$/i]) {
+      const m = re.exec(String(t ?? '')),
+        p = m && pos(m[2]),
+        hit = p && known(m[1]);
+      if (hit) return { name: m[1], hit, ...p };
+    }
+    return null;
   };
   // the readable name: the short name, then the protein's name and, for a protein several genes encode, how many
   const text = (r, via) => {
@@ -49,5 +69,5 @@
       sub: [via, [r.name, n].filter(Boolean).join(', ')].filter(Boolean).join(' · '),
     };
   };
-  window.PTMNames = { rank, text };
+  window.PTMNames = { rank, text, exact, pos, siteOf };
 })();

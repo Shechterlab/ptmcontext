@@ -631,18 +631,10 @@
         i = j - 1;
         continue;
       }
-      const sep = /^(.+?)[_/-]([A-Z]?)(\d+)$/i.exec(t),
-        ls = sep && (!sep[2] || AA.includes(sep[2].toUpperCase())) && lookup(sep[1]); // GENE_216, GENE-R216, GENE/216
-      if (ls) {
-        named(sep[1], ls);
-        addSite(ls.ps, +sep[3], sep[2].toUpperCase());
-        continue;
-      }
-      const one = /^(.+?)([A-Z])(\d+)$/i.exec(t),
-        lo = one && AA.includes(one[2].toUpperCase()) && lookup(one[1]); // H4R3
-      if (lo) {
-        named(one[1], lo);
-        addSite(lo.ps, +one[3], one[2].toUpperCase());
+      const so = window.PTMNames.siteOf(t, lookup); // GENE_216, GENE-R216, GENE/216, H4R3
+      if (so) {
+        named(so.name, so.hit);
+        addSite(so.hit.ps, so.pos, so.letter);
         continue;
       }
       const vb = VAR_RE.exec(t); // R216C with no protein: that position in any protein; the change is not searched

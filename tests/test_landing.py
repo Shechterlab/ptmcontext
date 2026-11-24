@@ -219,6 +219,9 @@ def test_the_landing_search_index_lists_each_protein_with_its_sites(tmp_path):
     assert [s['id'] for s in idx['sites']] == ['toya'] and idx['p']
     acc, gene, name, sites, *names = idx['p'][0]  # names: the genes and symbols, only where there are any
     assert acc and sites == [0]
+    assert idx['sites'][0][
+        'residues'
+    ]  # the residues of the site's mark: the search offers the explorers that fit a typed one
     # the box, its results and the script are on the page
     assert 'id="land-q"' in land and 'id="land-hits"' in land and "fetch('proteins.json')" in land
 
@@ -345,3 +348,37 @@ def test_the_license_lines_name_the_commercial_contact_and_no_new_badge_is_drawn
     assert all('For commercial use, contact info@shechterlab.org' in x for x in lines)
     assets = root / 'ptmcontext' / 'web' / 'assets'
     assert not [f.name for f in assets.glob('kit*') if 'newtag' in f.read_text()]
+
+
+def test_the_landing_search_reads_a_site_as_the_explorers_do_and_offers_the_fitting_explorers():
+    import json
+    import subprocess
+
+    assets = Path(__file__).parent.parent / 'ptmcontext' / 'web' / 'assets'
+    names = (assets / 'kit-names.js').read_text()
+    search = (assets / 'land-search.js').read_text()
+    # the notations come from the one shared module, which the explorers' search also calls
+    assert 'PTMNames.siteOf' in (assets / 'kit-select.js').read_text()
+    assert 'N.siteOf(' in search and 'N.pos(' in search and 'N.exact(' in search
+    assert 'Searched the first name only' not in search and 'choose a site' not in search
+    script = (
+        "const window = {}; const known = (n) => (['H4', 'TP53'].includes(n.toUpperCase()) ? { n } : null);"
+        + names
+        + 'const N = window.PTMNames; const f = (t) => { const s = N.siteOf(t, known); return s && [s.name, s.letter, s.pos]; };'
+        "console.log(JSON.stringify(['H4R3', 'TP53-R213', 'TP53_R213', 'TP53/213', 'TP53:R213', 'XYZR3', 'TP53'].map(f)"
+        '.concat([N.pos("R213"), N.pos("213"), N.pos("B3"), N.pos("TP53")])));'
+    )
+    out = subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout
+    assert json.loads(out) == [
+        ['H4', 'R', 3],
+        ['TP53', 'R', 213],
+        ['TP53', 'R', 213],
+        ['TP53', '', 213],
+        ['TP53', 'R', 213],
+        None,
+        None,
+        {'letter': 'R', 'pos': 213},
+        {'letter': '', 'pos': 213},
+        None,
+        None,
+    ]
