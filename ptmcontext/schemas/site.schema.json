@@ -6459,7 +6459,17 @@
               "items": {
                 "type": "string"
               },
-              "description": "manifest inputs: the ClinVar change tables of the site's residues (a row per variation, with clinsig_simple, review_stars and conditions); the Disease variants page's inherited view counts the pathogenic and likely pathogenic ones (clinsig_simple 1) by disease family"
+              "description": "manifest inputs: the ClinVar change tables of the site's residues (a row per variation, with clinsig_simple, review_stars and conditions); the Disease variants page's inherited view counts the pathogenic and likely pathogenic ones (see clinvar_pathogenic) by disease family"
+            },
+            "clinvar_pathogenic": {
+              "type": "object",
+              "properties": {
+                "column": {"type": "string"},
+                "matches": {"type": "string"}
+              },
+              "required": ["column", "matches"],
+              "additionalProperties": false,
+              "description": "which ClinVar variants the inherited view counts: those whose `column` fully matches the regular expression `matches` (the cards' P/LP highlight rule; conflicting classifications are not counted). Without it, clinsig_simple 1"
             },
             "disease_families": {
               "type": "string",

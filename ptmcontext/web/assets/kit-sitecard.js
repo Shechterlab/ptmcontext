@@ -675,13 +675,78 @@
     )
       .map(({ x, n, hot }) => `<b>${esc(x.label)}</b> ${esc(variantWords(x, n, hot))}`)
       .join(' · ')}</a>`;
+  // the condition names the table carries for a site's highlighted (P/LP) variants, each once, in table order. The rows are the
+  // protein's variant lists (a file of their own for a lazy source), read on the first ask: null until they arrive, then
+  // onDetail's functions run. [] where the source has no highlight or no field with a separator.
+  const DET = {}; // accession -> variant lists (undefined: not asked, null: on its way)
+  const detailSubs = [];
+  const detailFor = (tb, acc) => {
+    if (tb._vd) return tb._vd;
+    if (DET[acc]) return (tb._vd = DET[acc]);
+    if (DET[acc] === undefined) {
+      DET[acc] = null;
+      loadDetail(acc).then((d) => {
+        DET[acc] = d || {};
+        detailSubs.slice().forEach((fn) => fn(acc));
+      });
+    }
+    return null;
+  };
+  const variantConditions = (tb, acc, x, pos) => {
+    const f = (x.fields || []).find((y) => y.separator);
+    if (!x.highlight || !f) return [];
+    if (x.lazy && !detailFor(tb, acc)) return null;
+    const names = [];
+    variantsAt(tb, x, pos)
+      .filter((r) => isHot(x, r))
+      .forEach((r) =>
+        String(r[f.column] ?? '')
+          .split(f.separator)
+          .map((t) => t.trim())
+          .filter((t) => t && !names.includes(t))
+          .forEach((t) => names.push(t))
+      );
+    return names;
+  };
+  // the same for download: every highlighted source's names, '; ' between them
+  const conditionsText = (tb, acc, pos) => {
+    const xs = VCN.filter((x) => x.highlight);
+    return xs
+      .map((x) => {
+        const n = variantConditions(tb, acc, x, pos) || [];
+        return n.length && xs.length > 1 ? `${x.label}: ${n.join('; ')}` : n.join('; ');
+      })
+      .filter(Boolean)
+      .join(' | ');
+  };
+  // a promise for the moment the variant lists of a protein are in (at once for a page without a lazy source)
+  const detailReady = (tb, acc) =>
+    !VCN.some((x) => x.lazy) || detailFor(tb, acc)
+      ? Promise.resolve()
+      : new Promise((res) => {
+          const fn = (a) => {
+            if (a !== acc) return;
+            detailSubs.splice(detailSubs.indexOf(fn), 1);
+            res();
+          };
+          detailSubs.push(fn);
+        });
   function variantCounts(c) {
     const letter = (c.seq || '')[c.pos - 1] || '',
       nm = residueName(letter);
     return siteVariants(c.tb, c.pos)
       .map(({ x, n, hot }) => {
-        const b = changeAvg(c.tb, x, letter);
-        return `<div><b>${esc(x.label)}</b>: ${esc(variantWords(x, n, hot))} <span class="muted small">· protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`;
+        const b = changeAvg(c.tb, x, letter),
+          cond = hot ? variantConditions(c.tb, c.acc, x, c.pos) : [];
+        return (
+          `<div><b>${esc(x.label)}</b>: ${esc(variantWords(x, n, hot))} <span class="muted small">· protein average per ${esc(nm)}: ${avgText(b?.per)}</span>` +
+          (cond === null
+            ? '<br><span class="muted small">Loading conditions…</span>'
+            : cond.length
+              ? `<br><span class="small">${esc(x.highlight.label)} conditions: ${cond.map(esc).join('; ')}</span>`
+              : '') +
+          '</div>'
+        );
       })
       .join('');
   }
@@ -1623,6 +1688,10 @@
       words: variantWords,
       text: variantText,
       line: variantLine,
+      conditions: variantConditions,
+      conditionsText,
+      ready: detailReady,
+      onDetail: (fn) => detailSubs.push(fn),
       avg: changeAvg,
       avgText,
       residueName,

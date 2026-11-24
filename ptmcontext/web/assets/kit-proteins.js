@@ -690,6 +690,12 @@
       }, ms)
     );
   }
+  // the variant lists arrive after the card is drawn: draw its variants again with the conditions
+  K.card.vc.onDetail((acc) => {
+    const p = byAcc[acc],
+      card = document.getElementById('site-card');
+    if (card && p && PV.acc === acc && PV.site && PV.rec) card.outerHTML = siteCard(p, PV.rec);
+  });
   const SC_OPEN = new Map(); // a group of the site card the reader opened or closed, kept as the card is redrawn
   document.addEventListener(
     'toggle',

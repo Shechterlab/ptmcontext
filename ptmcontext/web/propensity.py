@@ -528,14 +528,21 @@ def onco_payload(burden: pd.DataFrame, changes: list[pd.DataFrame], marks: dict[
 # ---- the build -----------------------------------------------------------------------------------------------------------
 
 
-def clinvar_payload(changes: list[pd.DataFrame], marks: dict[str, set[int]], rules: dict) -> dict:
-    """The ClinVar pathogenic and likely pathogenic variants (clinsig_simple 1) at the known sites, by disease family.
+def clinvar_payload(
+    changes: list[pd.DataFrame], marks: dict[str, set[int]], rules: dict, rule: dict | None = None
+) -> dict:
+    """The ClinVar pathogenic and likely pathogenic variants at the known sites, by disease family: those whose `rule['column']` fully
+    matches `rule['matches']` (website.propensity.clinvar_pathogenic, the cards' P/LP rule, which leaves out conflicting
+    classifications), else clinsig_simple 1.
     `fam` lists the families by their total number of variants (`other`: the place of the catch-all family, -1 if none); `cond` is each condition name in use with its family
     (a place in `fam`); `sites` is `{accession: [[position, [[variation_id, review stars, alt, [conditions]], ...]], ...]}`.
     A variant is kept when it names a condition; `unnamed` counts those that name none ('not specified' and the like).
     The page counts a variant once per family."""
     df = pd.concat(changes, ignore_index=True)
-    df = df[df['clinsig_simple'].astype(str) == '1']
+    if rule:
+        df = df[df[rule['column']].astype(str).str.fullmatch(rule['matches'])]
+    else:
+        df = df[df['clinsig_simple'].astype(str) == '1']
     df = df[[a in marks and p in marks[a] for a, p in zip(df['canonical_UniProtAC'], df['position'])]]
     fam_of: dict[str, str] = {}
     unnamed = 0
@@ -776,9 +783,13 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
             'clinsig_simple',
             'review_stars',
             'conditions',
+            *([cfg['clinvar_pathogenic']['column']] if cfg.get('clinvar_pathogenic') else []),
         ]
         cv = clinvar_payload(
-            [pd.read_csv(p, sep='\t', usecols=cols, dtype={'conditions': str}) for p in cc], marks, DF.read_rules(fam)
+            [pd.read_csv(p, sep='\t', usecols=cols, dtype={'conditions': str}) for p in cc],
+            marks,
+            DF.read_rules(fam),
+            cfg.get('clinvar_pathogenic'),
         )
         text = json.dumps(cv, separators=(',', ':'))
         (out / 'data' / 'cv.json').write_text(text)

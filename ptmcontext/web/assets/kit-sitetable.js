@@ -187,6 +187,17 @@
         val: (r) => (r.vars ? r.vars.reduce((a, v) => a + v.hot, 0) * 1e6 + r.vars.reduce((a, v) => a + v.n, 0) : null),
         tsv: (r) => (r.vars ? K.card.vc.text(M.vtb, r.pos) : ''),
       });
+    if (K.card?.vc.entries.length)
+      cols.push({
+        id: 'variants_conditions',
+        tsvName: 'variant_conditions',
+        tsvOnly: true,
+        label: 'Variant conditions',
+        help: "The condition names the release tables carry for the site's P/LP variants",
+        cell: () => '',
+        val: () => null,
+        tsv: (r) => (M.vtb ? K.card.vc.conditionsText(M.vtb, M.p.acc, r.pos) : ''),
+      });
     M.NM.forEach((n, i) =>
       cols.push({
         id: `names:${i}`,
@@ -334,7 +345,7 @@
           .join('')}</span></th>`
       );
     };
-    const shown = display(cols);
+    const shown = display(cols.filter((c) => !c.tsvOnly));
     return (
       `<div class="tbl-card st-card" tabindex="0" role="region" aria-label="${esc(TITLE)}"><table class="tbl compact st-tbl"><thead><tr>${shown.map(th).join('')}</tr></thead><tbody>` +
       rows
@@ -475,31 +486,35 @@
       (b) => {
         const ps = K.protState();
         if (!ps?.rec) return;
-        const M = model(ps.p, ps.rec),
-          cols = columns(M),
-          rows = sorted(M, cols),
-          gene = ps.p.gene || ps.p.acc;
-        const tsv =
-          K.preamble(
-            `${TITLE}, ${gene}`,
-            `one row for each ${W.mark} of ${gene} (${ps.p.acc}): its state, the changes seen at it in each source (k: samples or variants with a change; O/E: changes seen over expected; q: corrected binomial p, for fewer than expected where a source's column says so), its variants as the site card counts them (variants at the residue, and those classified pathogenic or likely pathogenic), the cell lines named for its changes, the hotspot flag, the disordered-region flag${K.prot.amReady?.(ps.p.acc) ? ' and the mean AlphaMissense score of its substitutions (less reliable in disordered regions)' : ''}. ${
-              K.prop.state.hyper ? 'With' : 'Without'
-            } hypermutated samples; sorted as shown on the page`
-          ) +
-          ['uniprot_position', ...cols.map((c) => c.tsvName || c.id.replace(/[:\s]+/g, '_'))].join('\t') +
-          '\n' +
-          rows
-            .map((r) => [r.pos, ...cols.map((c) => String(c.tsv(r) ?? '').replace(/[\t\n]/g, ' '))].join('\t'))
-            .join('\n') +
-          '\n';
-        const name = `${D.site.id}_${String(gene).replace(/\W+/g, '_')}_sites`;
-        // the table drawn as a figure (PDF, SVG, PNG), or its rows with the citation header
-        return b.dataset.stexp === 'tsv' || b.dataset.stexp === 'csv'
-          ? K.exportFigure(b.dataset.stexp, null, name, b, () => tsv)
-          : K.tableExport(b.dataset.stexp, b, b.closest('.pfold-body'), { title: TITLE }, name, () => tsv);
+        const M = model(ps.p, ps.rec);
+        // the conditions column reads the protein's variant lists: wait for them
+        return (M.vtb ? K.card.vc.ready(M.vtb, ps.p.acc) : Promise.resolve()).then(() => exportRows(b, ps, M));
       },
     ]
   );
+  function exportRows(b, ps, M) {
+    const cols = columns(M),
+      rows = sorted(M, cols),
+      gene = ps.p.gene || ps.p.acc;
+    const tsv =
+      K.preamble(
+        `${TITLE}, ${gene}`,
+        `one row for each ${W.mark} of ${gene} (${ps.p.acc}): its state, the changes seen at it in each source (k: samples or variants with a change; O/E: changes seen over expected; q: corrected binomial p, for fewer than expected where a source's column says so), its variants as the site card counts them (variants at the residue, and those classified pathogenic or likely pathogenic), the cell lines named for its changes, the hotspot flag, the disordered-region flag${K.prot.amReady?.(ps.p.acc) ? ' and the mean AlphaMissense score of its substitutions (less reliable in disordered regions)' : ''}. ${
+          K.prop.state.hyper ? 'With' : 'Without'
+        } hypermutated samples; sorted as shown on the page`
+      ) +
+      ['uniprot_position', ...cols.map((c) => c.tsvName || c.id.replace(/[:\s]+/g, '_'))].join('\t') +
+      '\n' +
+      rows
+        .map((r) => [r.pos, ...cols.map((c) => String(c.tsv(r) ?? '').replace(/[\t\n]/g, ' '))].join('\t'))
+        .join('\n') +
+      '\n';
+    const name = `${D.site.id}_${String(gene).replace(/\W+/g, '_')}_sites`;
+    // the table drawn as a figure (PDF, SVG, PNG), or its rows with the citation header
+    return b.dataset.stexp === 'tsv' || b.dataset.stexp === 'csv'
+      ? K.exportFigure(b.dataset.stexp, null, name, b, () => tsv)
+      : K.tableExport(b.dataset.stexp, b, b.closest('.pfold-body'), { title: TITLE }, name, () => tsv);
+  }
   document.addEventListener('keydown', (e) => {
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('th[data-stsort]')) {
       e.preventDefault();
