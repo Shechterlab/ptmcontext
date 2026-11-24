@@ -1636,8 +1636,8 @@ website:                  # the look and words of the website (ptmc web); layout
     text: "Human arginine methylation sites from studies and databases. Each tile compares the methylarginines with the other arginines of the same proteins. Search a protein, gene list or disease to test your own selection."
     examples:
       - {label: A list of genes, query: TAF15 EWSR1 FUS, help: "Every question is tested again on their methylarginines."}
-      - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins linked to a disease family, and how they differ from the other arginines of their proteins."}
-      - {label: One methylarginine in its structure, query: FUS R216, help: "Its protein's domain and disorder map, the evidence for the residue, and its structures."}
+      - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins of a disease family, against the other arginines of the same proteins."}
+      - {label: One methylarginine in its structure, query: FUS R216, help: "The protein's domain and disorder map, the evidence for the residue, and its structures."}
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
@@ -1649,7 +1649,7 @@ website:                  # the look and words of the website (ptmc web); layout
       lists:
         - {title: Most sites, by: marks, n: 6, help: Proteins with the most methylarginine sites}
         - {title: Most methylated for their arginine count, by: arg_enrichment, where: {attribute: arg_enrichment_q, max: 0.05}, show: "log2 {arg_enrichment}", n: 6,
-           help: "Highest arginine-methylation enrichment, as log2 of the methylated share of the protein's arginines over the proteome-wide rate (3 is 8 times): more of the protein's arginines methylated than its length and arginine count predict"}
+           help: "Highest enrichment: log2 of the methylated share of the protein's arginines over the proteome-wide rate (3 is 8 times), more than its length and arginine count predict"}
         - {title: Densest clusters, by: dense_q, order: asc, where: {attribute: dense_q, max: 0.05}, show: "{dense_sites}/{dense_window} aa", n: 6,
            help: "Most significant clustering of methylarginines (permutation test): sites in the window"}
       quick:
@@ -2767,7 +2767,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
       - {attribute: evidence, values: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, rbrid_residue_published_rule, rbrid_region],
          label: in RNA-bound fragments or peptides, kind: "Seen in cells, not a direct contact", glyph: squiggle, opens: p-sites,
-         tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RBR-ID+ peptide. This is where RNA binds in cells, not a structural contact: the RNA and DNA interactions section counts the sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
+         tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RBR-ID+ peptide. This shows where RNA binds in cells, not a structural contact. The RNA and DNA interactions section counts sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
       - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
     card:                  # the site card: its blocks, each reading an attribute or a table above (a block without its data is absent)
