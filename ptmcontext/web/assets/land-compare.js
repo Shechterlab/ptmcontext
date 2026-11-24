@@ -11,7 +11,7 @@
   if (!node || !root) return;
   const D = JSON.parse(node.textContent),
     EX = D.explorers;
-  const state = { show: new Set(EX.map((e) => e.id)), group: '', sort: '', desc: true };
+  const state = { show: new Set(EX.map((e) => e.id)), group: '', q: '', sort: '', desc: true };
 
   // ---- numbers as the explorers print them (kit.js fxn, fq, int) ---------------------------------------------------------
   const fxn = (v, big) =>
@@ -60,31 +60,49 @@
   }
 
   // ---- what is shown: the chosen group, its rows in the chosen order -----------------------------------------------------
+  // the search: every word typed must start a word of the row's class name or its question's name ("stress gran" finds
+  // "Stress granules"; "idr" finds "(IDR)"); a matching question name keeps all the question's classes
+  const words = (t) =>
+    String(t)
+      .toLowerCase()
+      .match(/[a-z0-9]+/g) || [];
+  const matcher = () => {
+    const need = words(state.q);
+    return (label, title) => {
+      const have = words(label + ' ' + title);
+      return need.every((w) => have.some((h) => h.startsWith(w)));
+    };
+  };
   const key = (row) => {
     const c = row.cells[state.sort];
     return ok(c) ? (c.big ? 1e300 : c.v) : null;
   };
   function view() {
+    const hit = matcher(),
+      searching = words(state.q).length > 0;
     return D.groups
       .filter((g) => !state.group || g.id === state.group)
       .map((g) => ({
         ...g,
-        questions: g.questions.map((q) => {
-          let rows = q.rows.map((r, i) => ({ r, i }));
-          if (state.sort === '_label')
-            rows.sort((a, b) => a.r.label.localeCompare(b.r.label) * (state.desc ? -1 : 1) || a.i - b.i);
-          else if (state.sort) {
-            // folds in the chosen order; a class the explorer does not test goes last, whichever way the order runs
-            rows.sort((a, b) => {
-              const x = key(a.r),
-                y = key(b.r);
-              if (x == null || y == null) return x == null && y == null ? a.i - b.i : x == null ? 1 : -1;
-              return (state.desc ? y - x : x - y) || a.i - b.i;
-            });
-          }
-          return { ...q, rows: rows.map((x) => x.r) };
-        }),
-      }));
+        questions: g.questions
+          .map((q) => {
+            let rows = q.rows.map((r, i) => ({ r, i })).filter((x) => !searching || hit(x.r.label, q.title));
+            if (state.sort === '_label')
+              rows.sort((a, b) => a.r.label.localeCompare(b.r.label) * (state.desc ? -1 : 1) || a.i - b.i);
+            else if (state.sort) {
+              // folds in the chosen order; a class the explorer does not test goes last, whichever way the order runs
+              rows.sort((a, b) => {
+                const x = key(a.r),
+                  y = key(b.r);
+                if (x == null || y == null) return x == null && y == null ? a.i - b.i : x == null ? 1 : -1;
+                return (state.desc ? y - x : x - y) || a.i - b.i;
+              });
+            }
+            return { ...q, rows: rows.map((x) => x.r) };
+          })
+          .filter((q) => !searching || q.rows.length),
+      }))
+      .filter((g) => !searching || g.questions.length);
   }
 
   // ---- the table ---------------------------------------------------------------------------------------------------------
@@ -133,6 +151,7 @@
     const cols = shown(),
       v = view();
     if (!cols.length) return '<p class="cmp-empty">Pick at least one explorer.</p>';
+    if (!v.length) return '<p class="cmp-empty">No class or question matches. Clear the search to see all.</p>';
     const head =
       `<tr><th scope="col" aria-sort="${state.sort === '_label' ? (state.desc ? 'descending' : 'ascending') : 'none'}">Class${sortBtn('_label', 'Sort by name')}</th>` +
       cols
@@ -198,6 +217,9 @@
           `<label><input type="checkbox" data-ex="${esc(e.id)}"${state.show.has(e.id) ? ' checked' : ''}><i style="background:${esc(e.band || 'var(--muted)')}"></i>${esc(e.short)}</label>`
       ).join('') +
       '</div></fieldset>' +
+      '<div class="cmp-find"><label class="cmp-lab" for="cmp-q">Search classes and questions</label>' +
+      `<input id="cmp-q" type="search" value="${esc(state.q)}" placeholder="stress granule, IDR, nucleolus, RGG" autocomplete="off" spellcheck="false">` +
+      '<span id="cmp-n" class="cmp-n" role="status"></span></div>' +
       '<div><label class="cmp-lab" for="cmp-group">Questions</label><select id="cmp-group"><option value="">All questions</option>' +
       D.groups
         .map((g) => `<option value="${esc(g.id)}"${state.group === g.id ? ' selected' : ''}>${esc(g.title)}</option>`)
@@ -214,6 +236,16 @@
   }
   function draw() {
     document.getElementById('cmp-table').innerHTML = table();
+    const n = document.getElementById('cmp-n');
+    if (n) {
+      const rows = words(state.q).length
+        ? view().reduce((s, g) => s + g.questions.reduce((t, q) => t + q.rows.length, 0), 0)
+        : -1;
+      n.innerHTML =
+        rows < 0
+          ? ''
+          : `${int(rows)} ${rows === 1 ? 'class matches' : 'classes match'} · <button type="button" class="linkish" data-clear-q>clear</button>`;
+    }
     write();
   }
   function write() {
@@ -221,6 +253,7 @@
       const p = new URLSearchParams();
       if (state.show.size !== EX.length) p.set('x', [...state.show].join(','));
       if (state.group) p.set('g', state.group);
+      if (state.q.trim()) p.set('q', state.q.trim());
       if (state.sort) p.set('s', state.sort + (state.desc ? '' : ':asc'));
       history.replaceState(null, '', p.toString() ? '#' + p : location.pathname + location.search);
     } catch (e) {
@@ -238,6 +271,7 @@
         state.show = new Set(ids);
       }
       if (p.has('g') && D.groups.some((g) => g.id === p.get('g'))) state.group = p.get('g');
+      if (p.has('q')) state.q = p.get('q').slice(0, 200);
       if (p.has('s')) {
         const [k, d] = p.get('s').split(':');
         if (k === '_label' || EX.some((e) => e.id === k)) {
@@ -259,7 +293,20 @@
       draw();
     }
   });
+  root.addEventListener('input', (e) => {
+    if (e.target.id !== 'cmp-q') return;
+    state.q = e.target.value;
+    draw();
+  });
   root.addEventListener('click', (e) => {
+    if (e.target.closest('[data-clear-q]')) {
+      state.q = '';
+      const i = document.getElementById('cmp-q');
+      if (i) i.value = '';
+      draw();
+      i?.focus();
+      return;
+    }
     const s = e.target.closest('[data-sort]');
     if (s) {
       const k = s.dataset.sort;
