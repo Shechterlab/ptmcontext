@@ -955,7 +955,7 @@
   // the fold id of a group's table in the card's records block (an `open=` in an address opens it)
   const recFold = (g) => 'sc-rec-' + g;
   const SUMMARY_MAX = 6; // names a group shows in the one-line summary and the Writer block before "+N more"
-  // One line of what the records at a site say, with who: "Writes: PRMT1, PRMT7 · erases: JMJD4 · binds methylated:
+  // One line of what the records at a site say, with who: "Writes: ENZ1, ENZ2 · erases: JMJD4 · binds methylated:
   // KDM4A · +12 more", and a link to the site card with its records open. The groups it names come from
   // card.records.summary: [{label, groups: [codes]}]; every other protein partner is counted in "+N more".
   // K.card.summary(acc, pos, 'records', { tb, label, isListed }); '' where the site has no such records.
