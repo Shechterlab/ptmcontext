@@ -138,3 +138,10 @@ console.log(JSON.stringify({{ url: C.orthoUrl('ENSG1'), at: model.rows.map(r => 
     )  # the small-sample correction
     assert out['ic0'] == pytest.approx(out['ic'])
     assert out['gene'] == 'YBR160W'  # the database the site file names, not any other
+
+
+def test_a_gene_family_tries_each_ensembl_gene_until_one_has_orthologs():
+    # H4 has 14 Ensembl genes; Compara gives the first no ortholog in the listed species, the next ones do
+    s = (Path(__file__).resolve().parent.parent / 'ptmcontext' / 'web' / 'assets' / 'kit-conserve.js').read_text()
+    assert 'const ensgsOf = (j) =>' in s and 'const firstOrthologs = (genes, k = 0) =>' in s
+    assert 'return firstOrthologs(genes).then(({ ensg, orthos }) => {' in s

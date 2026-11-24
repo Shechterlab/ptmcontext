@@ -123,6 +123,24 @@
       .map((s) => 'target_species=' + s.id)
       .join('&') +
     '&content-type=application/json';
+  // every Ensembl gene UniProt names for the entry (a histone has one per copy: H4 has 14), in UniProt's order
+  const ensgsOf = (j) => [
+    ...new Set(
+      (j.uniProtKBCrossReferences || [])
+        .filter((x) => x.database === ENS.xref)
+        .map((x) => ((x.properties || []).find((pp) => pp.key === 'GeneId') || {}).value || '')
+        .filter(Boolean)
+        .map((g) => g.split('.')[0])
+    ),
+  ];
+  // the first gene, in turn, whose orthologs include the species listed (Compara can place one copy of a gene family
+  // apart from its siblings, so the first copy may have none in these species while the next has them all)
+  const firstOrthologs = (genes, k = 0) =>
+    k >= genes.length || k >= 16
+      ? Promise.resolve({ ensg: genes[0], orthos: [] })
+      : orthologs(genes[k]).then((orthos) =>
+          orthos.length ? { ensg: genes[k], orthos } : firstOrthologs(genes, k + 1)
+        );
   const ensgOf = (j) =>
     [
       ...new Set(
@@ -268,14 +286,16 @@
     paint(acc);
     live('uni:' + acc, () => timed(getJson(UNI(acc)), 25000))
       .then((j) => {
-        st.ensg = ensgOf(j);
+        const genes = ensgsOf(j);
+        st.ensg = genes[0] || '';
         if (!st.ensg) {
           st.phase = 'no_gene';
           return paint(acc);
         }
         st.phase = 'ortho';
         paint(acc);
-        return orthologs(st.ensg).then((orthos) => {
+        return firstOrthologs(genes).then(({ ensg, orthos }) => {
+          st.ensg = ensg;
           if (!orthos.length) {
             st.phase = 'none';
             return paint(acc);
@@ -1203,7 +1223,7 @@
     return s;
   };
 
-  K.conserve = { modelOf, keepOf, columns, ensgOf, orthoUrl }; // for the tests
+  K.conserve = { modelOf, keepOf, columns, ensgOf, ensgsOf, orthoUrl }; // for the tests
 
   // ---- style -----------------------------------------------------------------------------------------------------------------
   const css = document.createElement('style');
