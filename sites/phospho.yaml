@@ -1511,7 +1511,7 @@ website:                  # the look and words of the website (ptmc web); layout
         about: "Where in the cell the phosphorylated proteins localize, and how much is on chromatin."
         #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
         cards:
-          - {analysis: where_in_the_cell, title: Where in the cell, drawing: true, wide: true}
+          - {analysis: where_in_the_cell, title: Localization, drawing: true, wide: true}
           - {analysis: cell_chromatin, title: Chromatin probability}
       - name: Which proteins
         about: "Protein classes, pathways and condensates of the phosphorylated proteins."
@@ -2196,7 +2196,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: g-overview, title: Overview and map, folds: [p-map, p-cell, p-kinds]}
       - {id: g-sites, title: Sites, folds: [p-sites, p-sitetab, p-cons, p-score, p-pert, p-exp, p-cluster, p-ptm]}
       - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
-      - {id: g-context, title: "Context: location, condensates, disease, cancer", switch: true, folds: [p-cond, p-dis, p-depmap, p-germline]}
+      - {id: g-context, title: Context, switch: true, folds: [p-cond, p-dis, p-depmap, p-germline]}
       - {id: g-structure, title: Structure and sequence, folds: [p-struct, p-regions, p-seq]}
     headings:              # the cards front end's folds under labeled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
       - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
