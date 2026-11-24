@@ -19,8 +19,8 @@ groups:                    # a card goes in the group its site file names (websi
   - {id: other, title: Other organisms, compact: true}
 compare:                   # the Compare marks page (compare/index.html): CONTRACTS.md, "Compare marks"
   title: Compare marks
-  lede: The same questions, asked of each explorer
-  intro: "Pick the explorers and the questions to see how marks differ on the same class."
+  lede: The same questions across explorers
+  intro: "Pick explorers and questions to compare marks on the same class."
   statement: "Each explorer's published numbers, side by side. Nothing is recalculated or pooled."
   columns:                 # each explorer's short name here (default: its landing label)
     methylarginine: Methylarginine
@@ -28,12 +28,12 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
     lysine: Modified lysines
     phospho: Phosphosites
   how:
-    - "Each row is a class of a question that two or more explorers test. Each column is one explorer. A cell is that explorer's own result for the class, as its page shows it."
-    - "The number is a fold: the share of the marks in the class over the share of the comparison group in it. For a protein set (PANTHER, condensates, cell locations, GO, disease) it is the fold enrichment of the marked proteins. The q is the explorer's own Benjamini–Hochberg q for its test."
-    - "Each question row names the test and the comparison group, one line per explorer. They can differ between explorers, so read them before you compare numbers. The page flags a different test."
-    - "Filled with a ring: q is 0.05 or less and the fold is at least 1.1 or at most 1/1.1 (red ▲ more often, slate ▼ less often). Gray filled: q is 0.05 or less but the fold is within 1.1. Hollow: q is above 0.05. The circle grows with the fold. A hollow dot also marks a fold and a test that point different ways."
-    - "Not tested: the explorer doesn't test that class or has too few marks. It isn't zero."
-    - "Download gives the rows you see as a table (TSV) or as a figure (SVG, PNG, PDF). Each file names every explorer's data release and DOI."
+    - "A row is a class of a question that two or more explorers test. A column is one explorer. A cell is that explorer's own result."
+    - "The number is a fold: the share of the marks in the class over the share of the comparison group in it. For a protein set (PANTHER, condensates, cell locations, GO, disease) it is the fold enrichment of the marked proteins. The q is the explorer's Benjamini–Hochberg q."
+    - "Each question row names the test and the comparison group for each explorer. They can differ, so read them before comparing numbers. A different test is flagged."
+    - "Ringed: q is 0.05 or less and the fold is at least 1.1 or at most 1/1.1 (red ▲ more often, slate ▼ less often). Gray: q is 0.05 or less but the fold is within 1.1. Hollow: q is above 0.05, or the fold and the test point different ways. Circle size grows with the fold."
+    - "Not tested: the explorer doesn't test that class or has too few marks. It is not zero."
+    - "Download gives the rows as a table (TSV) or a figure (SVG, PNG, PDF), with each explorer's data release and DOI."
   groups:
     - id: disorder
       title: Disorder and structure
@@ -63,7 +63,7 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
             - {class: any, label: "Any interface"}
     - id: motifs
       title: Sequence motifs
-      note: Only motifs that two or more explorers test. Motifs of one mark stay on that explorer's page.
+      note: Motifs that two or more explorers test.
       questions:
         - id: motif
           analysis: motif
@@ -182,16 +182,16 @@ whats_new:             # the data releases' notes, newest first: the landing pag
   releases:                # one entry per PTM_Pipeline release: title (the data release, not the website), items, doi
     - title: PTM_Pipeline v1.7.0 data release (2026-11-21)
       items:
-        - "Mutation propensity: O/E and q for every residue the explorers test in TCGA, DepMap and gnomAD from the release, and a descriptive O/E for ClinVar."
-        - "Protein cards now draw lollipops. Stick height is the count, circle size is O/E, and a ring marks q below 0.05. They replace the flag for counts at least 3 times the protein's average."
-        - "A Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), Inherited disease (ClinVar variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
+        - "Mutation propensity: O/E and q for every tested residue in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar."
+        - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the flag for counts at least 3 times the protein's average."
+        - "Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top TCGA sites), Inherited disease (ClinVar by disease family), a chart of all sites, and a box for testing a pasted list of sites."
         - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
       doi: "10.5281/zenodo.24429699"
     - title: PTM_Pipeline v1.6.0 data release (2026-11-20)   # the notes the landing page carried for v1.6.0 (commit 773ecae)
       items:
-        - "Cancer changes at every candidate residue (TCGA tumors, DepMap cell lines) and germline variants (ClinVar, gnomAD), with the gene named for proteins that several genes encode."
-        - "A count of the changes the cards do not show, with a download of those rows."
-        - "Histones and proteins without their initiator methionine are numbered as papers number them. A protein that several genes encode has one short name (H4), and search finds old gene names too."
-        - "The four human sites show the same protein-page cards, wherever the data have the residue."
-        - "Network clusters are named against the annotated human proteome, with a tooltip of each cluster's best terms and a Highlight a term box."
+        - "Cancer changes (TCGA tumors, DepMap cell lines) and germline variants (ClinVar, gnomAD) at every candidate residue, with the gene named where several genes encode a protein."
+        - "A count of changes the cards omit, with a download."
+        - "Histones and proteins without their initiator methionine are numbered as papers number them. A protein that several genes encode has one short name (H4); search also finds old gene names."
+        - "The four human sites show the same protein-page cards wherever the data cover the residue."
+        - "Network clusters are named against the annotated human proteome, with a tooltip of best terms and a Highlight a term box."
       doi: "10.5281/zenodo.24406688"
