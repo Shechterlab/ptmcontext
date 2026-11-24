@@ -132,7 +132,8 @@
           )
         )
       );
-    return out.join('');
+    // every part of a selection must hold: the chips read as one sentence
+    return out.join('<span class="sel-and">AND</span>');
   }
   // the selection in words for a figure's subtitle and for Copy link: "category · value; counts; what it is tested against"
   function summary() {

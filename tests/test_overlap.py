@@ -173,12 +173,9 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
       const strip = r => ({ ts: r.ts.map(t => t.id), rows: r.rows, totals: r.totals, N: r.N, M: r.M, test: r.test });
       const rmiss = await K.overlap.compute(['s:onto:D2', 'sv:nope'], 'proteins');
       const rcirc = await K.overlap.compute(['s:onto:D1', 'g:GP1 GP2'], 'proteins');
-      S0.oq = 'b';
       const tsvb = K.overlap.tsv(r2), tsvx = K.overlap.tsv(rx), tables = [r2, rs, rx].map(r => K.overlap.tableHtml(r));
-      S0.oq = 'a';
-      const tsvpairs = K.overlap.tsv(r2);
       const answers = [r2, r3, rd].map(r => K.overlap.answerText(r, 'a')).concat([r2, r3].map(r => K.overlap.answerText(r, 'b')));
-      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, phGlyph: { vw: ph.vw, vh: ph.vh, err: ph.err, boxes: ph.boxes.map((b) => [b.x, b.y, b.x + b.w, b.y + b.h]), leaders: ph.leaders }, rd: strip(rd), rx: strip(rx), tables, tsvx, tsv: tsvb, tsvpairs, pairs: { r2: r2.pairs, r3: r3.pairs }, answers, ptable: K.overlap.pairTableHtml(r3), missing: rmiss.missing, circ: { names: rcirc.circ, test: rcirc.test ?? null, pairs: rcirc.pairs.all.length, ans: K.overlap.answerText(rcirc, 'b') }, sitesOR: rs.rows.filter((r) => r.mask && r.n).map((r) => String(r.or)) }));
+      console.log(JSON.stringify({ r2: strip(r2), r3: strip(r3), rs: strip(rs), rr: strip(rr), wil, err3: eu.err, err2: eu2.err, boxes, cutBrk: sc.brk, cutMax: sc.max, nLabels: eu.labels.length, phGlyph: { vw: ph.vw, vh: ph.vh, err: ph.err, boxes: ph.boxes.map((b) => [b.x, b.y, b.x + b.w, b.y + b.h]), leaders: ph.leaders }, rd: strip(rd), rx: strip(rx), tables, tsvx, tsv: tsvb, pairs: { r2: r2.pairs, r3: r3.pairs }, answers, missing: rmiss.missing, circ: { names: rcirc.circ, test: rcirc.test ?? null, pairs: rcirc.pairs.all.length, ans: K.overlap.answerText(rcirc, 'b') }, sitesOR: rs.rows.filter((r) => r.mask && r.n).map((r) => String(r.or)) }));
     """
     run = subprocess.run(
         ['node', '-e', head + harness + '(async () => {' + body + '})();'], capture_output=True, text=True
@@ -248,10 +245,11 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
         'D3': ['P5', 'P6', 'P7'],
         'T3': ['P5', 'P6'],
     }
-    universe, marked = [f'P{i}' for i in range(1, 9)], ['P1', 'P2', 'P3', 'P5']
+    universe = [f'P{i}' for i in range(1, 9)]
     for key, names in (('r2', ['D2', 'D3']), ('r3', ['D1', 'D2', 'T3'])):
-        ref = ptmstats.pair_overlap([(n, toy[n]) for n in names], universe, marked)
-        got = [r for u in ('all', 'marked') for r in j['pairs'][key][u]]
+        ref = ptmstats.pair_overlap([(n, toy[n]) for n in names], universe)
+        got = j['pairs'][key]['all']
+        assert 'marked' not in j['pairs'][key]  # the test among the methylated proteins alone is gone
         assert len(got) == len(ref) > 0
         for g, r in zip(got, ref):
             assert (g['i'], g['j'], g['n'], g['m'], g['a'], g['N']) == (r['i'], r['j'], r['n'], r['m'], r['a'], r['N'])
@@ -261,10 +259,9 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
                 g['q'] is None or g['q'] == pytest.approx(r['q'], rel=1e-9)
             )
     # the pair file, the table and the answers in words
-    assert 'pair\tsets\tamong' in j['tsvpairs'] and 'region\tterms' in j['tsv']
-    assert 'Overlap of each pair' in j['ptable'] and 'undefined' not in j['ptable']
+    assert 'region\tterms' in j['tsv'] and 'pair\tsets' not in j['tsv']
     assert all(a and 'undefined' not in a and 'NaN' not in a for a in j['answers'])
-    assert 'in both' in j['answers'][0] and 'of 3 pairs' in j['answers'][1]
+    assert 'in both' in j['answers'][0] and 'of 3 pairs' in j['answers'][1] and 'alone' not in j['answers'][0]
     # a saved selection a link cannot carry is reported, and the others keep their letters
     assert j['missing'] == ['sv:nope']
     # a set defined by having sites is not tested for having sites; the pairs are still tested

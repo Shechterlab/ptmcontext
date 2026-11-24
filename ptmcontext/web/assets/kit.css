@@ -1760,6 +1760,13 @@ body.rail-open .rail-scrim {
   padding: 0.1rem 0.5rem;
   border-radius: 0.3rem;
 }
+.sel-and {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  align-self: center;
+}
 .sel-chip {
   display: inline-flex;
   align-items: center;
@@ -10614,6 +10621,14 @@ html[data-density] .sites-tbl .cv {
   height: 12px;
   border-radius: 3px;
   flex: none;
+}
+.ov-browse {
+  margin: 6px 0;
+}
+.ov-browse summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.86rem;
 }
 .ov-res {
   max-height: 220px;

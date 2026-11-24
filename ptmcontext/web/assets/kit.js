@@ -449,8 +449,7 @@
       sites: `One row per ${W.mark}, with its evidence.`,
       idrs: `Intrinsically disordered regions of the proteins, and the ${W.marks} in them.`,
       method: 'How each question was asked and tested, all tests, the controls, the sources and how to cite.',
-      overlap:
-        'Compare two to four sets of proteins: what they share, and whether the shared proteins carry the modification more often.',
+      overlap: `Overlap of two to four protein sets, and whether the proteins in each region carry ${W.marks} more often.`,
       help: 'Searching, filters, reading a figure, and what the badges and terms mean.',
     }[v] ||
     '';
@@ -475,7 +474,7 @@
     const p = new URLSearchParams(qs || '');
     let [view, ...rest] = (path || '').split('/');
     // the old addresses: #statistics is the Every test section of Methods, and #compare (with no saved selection after it) is the
-    // Compare sets page, whose own address stays #overlap
+    // Overlap of protein sets page, whose own address stays #overlap
     const aliased = view === 'statistics' || (view === 'compare' && !rest[0]);
     if (view === 'statistics') [view, rest] = ['method', ['every']];
     else if (view === 'compare' && !rest[0]) [view, rest] = ['overlap', []];
@@ -781,13 +780,12 @@
   }
   // the tabs, the same on every explorer and in this order. A tab whose data a site lacks is greyed out with its reason on
   // hover (website.tabs.<page>.empty words it), never hidden; a page of the site's own (website.pages) follows Network
-  const TAB_ORDER = ['overview', 'proteins', 'sites', 'interactions', 'overlap', 'network', 'method', 'help'];
+  const TAB_ORDER = ['overview', 'proteins', 'sites', 'interactions', 'network', 'method', 'help'];
   const TAB_NAME = {
     overview: 'Overview',
     proteins: 'Proteins',
     sites: 'Sites',
     interactions: 'Interactions',
-    overlap: 'Compare sets',
     network: 'Network',
     method: 'Methods',
     help: 'Help',
@@ -796,7 +794,6 @@
     proteins: 'No protein table for this modification yet',
     sites: 'No site table for this modification yet',
     interactions: 'No interaction data for this modification yet',
-    overlap: 'No sets to compare for this modification yet',
     network: 'No network for this modification yet',
   };
   K.tabOrder = TAB_ORDER;
@@ -1885,6 +1882,7 @@
     f: A[r.analysis || a.id] ? fkeyOf(a) : '',
     noun: SETS(a.id) ? 'proteins' : W.marks,
     ov: SETS(a.id) && K.overlapHas?.(a.id, r.category) ? `s:${a.id}:${r.category}` : '',
+    and: K.sel?.andOk?.(a.id, r.category) || false, // a protein-set class that would narrow the selection (AND)
   });
   const frModel = (a, r) => ({
     label: r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
@@ -1973,8 +1971,8 @@
       (controlsOf(A[d.aid] || {}).length
         ? `<p class="rp-ctl"><a href="${esc(link('method', 'controls'))}">How this result is checked</a></p>`
         : '') +
-      `<div class="rp-acts">${d.f ? btn('sel', `Show these ${esc(d.noun)}`) : ''}${
-        d.ov ? btn('ov', 'Compare sets with…') : ''
+      `<div class="rp-acts">${d.f ? btn('sel', d.and ? 'Add to selection (AND)' : `Show these ${esc(d.noun)}`) : ''}${
+        d.ov ? btn('ov', 'Overlap with another set ›') : ''
       }${btn('open', K.ACT.details)}</div>`;
     document.body.append(el);
     const r = row.getBoundingClientRect(),
@@ -2006,7 +2004,7 @@
           b.click();
           b.remove();
           scrollTo(0, 0);
-        } else if (k === 'ov') K.go('overlap', { ot: [d.ov], ou: 'proteins', or: '' });
+        } else if (k === 'ov') K.overlapOpen([d.ov]);
         else if (k === 'open') {
           MORE = { aid: d.aid, cats: new Set([d.cat]), until: Date.now() + 6000, scroll: true };
           go('overview', { arg: d.aid });

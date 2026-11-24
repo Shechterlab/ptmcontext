@@ -31,13 +31,13 @@ WEBSITE = SCHEMA['properties']['website']['properties']
 
 
 def test_the_tabs_are_the_same_on_every_site_in_one_order():
-    order = (
-        "const TAB_ORDER = ['overview', 'proteins', 'sites', 'interactions', 'overlap', 'network', 'method', 'help'];"
-    )
+    order = "const TAB_ORDER = ['overview', 'proteins', 'sites', 'interactions', 'network', 'method', 'help'];"
     assert order in KIT
     # a tab the site lacks is greyed out with its reason on hover, never left out
     assert 'class="tab off" role="link" aria-disabled="true"' in KIT and 'K.tabEmpty(v)' in KIT
-    assert "overlap: 'Compare sets'" in KIT and "method: 'Methods'" in KIT
+    # the overlap of protein sets is no tab: it opens from a set's row, the selection bar and old addresses
+    assert "overlap: 'Compare sets'" not in KIT and "method: 'Methods'" in KIT
+    assert "K.tabs.push(() => ['overlap'" not in (ASSETS / 'kit-overlap.js').read_text()
     # the All tests tab is gone: its table is a part of Methods
     assert "['statistics'," not in KIT and "view === 'statistics'" in KIT  # only the old address is read
     assert 'id="m-every"><h3>All tests</h3>' in KIT
@@ -46,7 +46,7 @@ def test_the_tabs_are_the_same_on_every_site_in_one_order():
 def test_old_addresses_and_the_words_they_replace():
     assert "if (view === 'statistics') [view, rest] = ['method', ['every']];" in KIT
     assert "view === 'compare' && !rest[0]" in KIT and "['overlap', []]" in KIT
-    assert "btn('ov', 'Compare sets with…')" in KIT
+    assert "btn('ov', 'Overlap with another set ›')" in KIT
     for name in ('lysine', 'methylarginine', 'methyllysine', 'phospho', 'yeast_phospho'):
         text = (Path(__file__).resolve().parents[1] / 'sites' / f'{name}.yaml').read_text()
         assert 'All tests' not in text and 'Methods & data' not in text and 'label: Documentation' not in text
@@ -187,13 +187,12 @@ def test_a_toy_site_in_a_browser(tmp_path):
     S.run(path, root=data, log=lambda *_: None)
     out = _serve_and_browse(tmp_path, web.build(path, log=lambda *_: None))
     assert out['errs'] == []
-    names = [t[0].split(' ')[0] if t[0].split(' ')[0] != 'Compare' else 'Compare sets' for t in out['tabs']]
+    names = [t[0].split(' ')[0] for t in out['tabs']]
     assert [n for n in names] == [
         'Overview',
         'Proteins',
         'Sites',
         'Interactions',
-        'Compare sets',
         'Network',
         'Methods',
         'Help',

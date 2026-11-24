@@ -1209,7 +1209,7 @@ network view.
 
 ### Navigation (tabs, Methods, Key findings, group order)
 
-Every explorer shows the tabs Overview, Proteins, Sites, Interactions, Compare sets (`#overlap`; `#compare` is an alias), Network, Methods, Help, in this order, followed by none of the site's own except pages from `website.pages`, which sit before Methods. A tab whose page the site does not have is greyed out, not hidden; `website.tabs.<page>.empty` words the reason on hover (default: "No <page> data for this modification yet"). `website.tabs.<page>.label` and `.hint` rename a tab. `#statistics` redirects to `#method/every`.
+Every explorer shows the tabs Overview, Proteins, Sites, Interactions, Network, Methods, Help, in this order (the overlap of protein sets, `#overlap`, is no tab: it opens from a set's row and the selection bar; `#compare` is an alias), followed by none of the site's own except pages from `website.pages`, which sit before Methods. A tab whose page the site does not have is greyed out, not hidden; `website.tabs.<page>.empty` words the reason on hover (default: "No <page> data for this modification yet"). `website.tabs.<page>.label` and `.hint` rename a tab. `#statistics` redirects to `#method/every`.
 
 Methods has five parts, each an address: `#method/tests` (how the tests work, **All tests** with its filters and download, the questions, the parity check), `#method/controls`, `#method/sources`, `#method/cite` (also: what the explorer is, sharing a link and keys, accessibility, licenses and privacy), `#method/download`. An address that names a section (`#method/privacy`, `#method/q-<id>`) opens the part that holds it. `#method/every?a=<question>` filters the table to a question.
 
