@@ -957,14 +957,18 @@
     return out + speciesTag(species);
   }
   // names as a line: the first `max`, each linked (here or to UniProt), then how many more
-  function namesHtml(xs, max, isListed) {
+  function namesHtml(xs, max, isListed, moreHref = '') {
     const one = (x) =>
       x.self
         ? `<b>${esc(x.name)}</b>`
         : protRef(x.acc, x.name, { listed: !!(x.acc && isListed?.(x.acc)), species: x.species });
     return (
       xs.slice(0, max).map(one).join(', ') +
-      (xs.length > max ? ` <span class="muted">+${int(xs.length - max)} more</span>` : '')
+      (xs.length > max
+        ? moreHref
+          ? ` <a href="${esc(moreHref)}" title="Open the records table">+${int(xs.length - max)} more</a>`
+          : ` <span class="muted">+${int(xs.length - max)} more</span>`
+        : '')
     );
   }
   function partnerHtml(r, c) {
@@ -1063,6 +1067,14 @@
   }
   // the fold id of a group's table in the card's records block (an `open=` in an address opens it)
   const recFold = (g) => 'sc-rec-' + g;
+  // the partners of some groups, once each, in group order: the one place a line of names is gathered from the records
+  const groupPartners = (by, groups) => {
+    const xs = new Map();
+    for (const g of groups || []) for (const [k, x] of by.get(g) || []) xs.set(k, x);
+    return xs;
+  };
+  // the groups a role names in the records summary (role: writer or reader in website.protein.card.records.summary)
+  const roleGroups = (role) => (RC.summary || []).filter((s) => s.role === role).flatMap((s) => s.groups || []);
   const SUMMARY_MAX = 6; // names a group shows in the one-line summary and the Writer block before "+N more"
   // One line of what the records at a site say, with who: "Writes: ENZ1, ENZ2 · erases: JMJD4 · binds methylated:
   // KDM4A · +12 more", and a link to the site card with its records open. The groups it names come from
@@ -1078,8 +1090,7 @@
       shown = new Set(),
       parts = [];
     for (const s of RC.summary || []) {
-      const xs = new Map();
-      for (const g of s.groups || []) for (const [k, x] of by.get(g) || []) xs.set(k, x);
+      const xs = groupPartners(by, s.groups);
       xs.forEach((_x, k) => shown.add(k));
       if (xs.size)
         parts.push(
@@ -1203,11 +1214,14 @@
     if (!WR.who && !WR.suggest && !WR.partners) return '';
     const dl = (dt, dd) => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`;
     const lines = [];
+    let none = '';
     if (has(RC.table)) {
       const by = partnerGroups(at(c.tb, RC.table, c.pos));
+      const inCard = new Set([...roleGroups('writer'), ...roleGroups('reader')]);
       for (const w of WR.who || []) {
-        const xs = new Map();
-        for (const g of w.groups || []) for (const [k, x] of by.get(g) || []) xs.set(k, x);
+        // the writers and binders are the card's summary lines; this block keeps the rest
+        if ((w.groups || []).length && w.groups.every((g) => inCard.has(g))) continue;
+        const xs = groupPartners(by, w.groups);
         if (xs.size || w.none)
           lines.push(
             dl(
@@ -1227,15 +1241,15 @@
       const drop = new Set(hits.map((r) => r.replaces).filter(Boolean)),
         who = [...new Set(hits.map((r) => r.suggests))].filter((x) => !drop.has(x));
       const refs = (sg.sources || []).map(sourceLink).join('; ');
-      lines.push(
-        dl(
-          esc(sg.label || 'Suggested'),
-          who.length
-            ? `<b>${esc(who.join(' and '))}</b> <span ` +
-                `class="muted">(indirect) · ${esc(hits.map((r) => r.because).join('; '))}${refs ? ` (${refs})` : ''}</span>`
-            : `<span class="muted">${esc(sg.none || '')}</span>`
-        )
-      );
+      if (who.length)
+        lines.push(
+          dl(
+            esc(sg.label || 'Suggested'),
+            `<b>${esc(who.join(' and '))}</b> <span ` +
+              `class="muted">(indirect) · ${esc(hits.map((r) => r.because).join('; '))}${refs ? ` (${refs})` : ''}</span>`
+          )
+        );
+      else if (sg.none) none = sg.none;
     }
     if (WR.partners && has(WR.partners.table)) {
       const ps = rows(c.tb, WR.partners.table);
@@ -1260,12 +1274,85 @@
         );
       }
     }
-    if (!lines.length) return '';
-    return `<section class="sc-wr"><h4>${esc(WR.title || 'Writer and reader')}</h4><dl class="sc-kv">${lines.join('')}</dl>${
+    if (!lines.length && !none) return '';
+    return `<section class="sc-wr"><h4>${esc(WR.title || 'Writer and reader')}</h4>${
+      lines.length ? `<dl class="sc-kv">${lines.join('')}</dl>` : ''
+    }${none ? `<p class="muted small">${esc(none)}</p>` : ''}${
       WR.note
         ? `<details ` + `class="sc-note"><summary>Key</summary><p class="muted small">${esc(WR.note)}</p></details>`
         : ''
     }</section>`;
+  }
+
+  // ---- the card's summary: one line per item, directly under the site header ---------------------------------------------
+  // Writers: the enzymes UniProt names in a modified residue's text ("Phosphothreonine; by IKKE, PDPK1 and TBK1"): the part
+  // after "by" in its own ";" segment, split at commas, "and", "or" and "/". Not enzymes: "autocatalysis", "host".
+  function uniWriters(desc) {
+    const out = [];
+    for (const seg of String(desc || '').split(/;\s*/)) {
+      const m = /^by\s+(.+)$/i.exec(seg.trim());
+      if (!m) continue;
+      for (const n of m[1].split(/\s*,\s*|\s+(?:and|or)\s+|\s*\/\s*/)) {
+        const t = n.replace(/\s*\(.*?\)\s*$/, '').trim();
+        if (t && !/^(autocatalysis|host|similarity)$/i.test(t) && !out.includes(t)) out.push(t);
+      }
+    }
+    return out;
+  }
+  // c: the card's context; o: { uni: UniProt features at the site, near: the marks-nearby html (the attribute's own) }
+  // Each line has content or is left out; each label links to the section that holds the facts.
+  function cardSummary(c, o = {}) {
+    const href = (open) => K.link('protein', `${c.acc}/${c.label}`, open ? { open } : {}),
+      lab = (t, open, tip) =>
+        `<a href="${esc(href(open))}" title="${esc(tip || 'Open the section behind this line')}">${esc(t)}</a>`,
+      lines = [];
+    const by = has(RC.table) ? partnerGroups(at(c.tb, RC.table, c.pos)) : new Map();
+    const open = (groups) => groups.filter((g) => by.has(g)).map(recFold);
+    // 1. writers: the records' writer groups, then UniProt's "by X, Y and Z"
+    const wg = roleGroups('writer'),
+      wx = groupPartners(by, wg),
+      seen = new Set([...wx.values()].map((x) => String(x.acc || x.name).toUpperCase()));
+    const uni = [];
+    for (const f of o.uni || [])
+      for (const n of uniWriters(f.description)) {
+        const acc = K.prot?.byName?.(n) || '',
+          key = String(acc || n).toUpperCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        uni.push(acc && c.isListed?.(acc) ? protRef(acc, n, { listed: true }) : esc(n));
+      }
+    if (wx.size || uni.length) {
+      const recs = wx.size ? namesHtml([...wx.values()], SUMMARY_MAX, c.isListed, href(open(wg).join(','))) : '';
+      lines.push([
+        lab('Writer', wx.size ? open(wg).join(',') : 'sc-uniprot', 'Open the records, or UniProt'),
+        recs +
+          (recs && uni.length ? ' · ' : '') +
+          (uni.length ? `${uni.join(', ')} <span class="muted">(UniProt)</span>` : ''),
+      ]);
+    }
+    // 2. readers and binders: a count and the first three names, "+N more" opens the table
+    const rg = roleGroups('reader'),
+      rx = groupPartners(by, rg);
+    if (rx.size)
+      lines.push([
+        lab('Binding proteins', open(rg).join(','), 'Open the records table'),
+        `${int(rx.size)}: ${namesHtml([...rx.values()], 3, c.isListed, href(open(rg).join(',')))}`,
+      ]);
+    // 3. variants: the variant counter's own line
+    const vc = K.card.vc;
+    if (vc.entries.length && vc.siteVariants(c.tb, c.pos).some((x) => x.n))
+      lines.push(['Variants', vc.line(c.tb, c.acc, c.pos).replace(/^<a /, '<a title="Open the variants" ')]);
+    // 4. conservation: from the module's own lookup, once it has arrived
+    const cv = K.conserve?.siteLine?.(c.acc, c.pos);
+    if (cv) lines.push([lab('Conservation', 'p-cons', 'Open the conservation section'), esc(cv)]);
+    // 5. marks nearby: the attribute's own text
+    if (o.near) lines.push(['Other marks nearby', o.near]);
+    if (!lines.length) return '';
+    return (
+      `<section class="sc-sum" aria-label="Summary"><dl class="sc-kv">` +
+      lines.map(([t, d]) => `<div><dt>${/^<a /.test(t) ? t : esc(t)}</dt><dd>${d}</dd></div>`).join('') +
+      '</dl></section>'
+    );
   }
 
   // ---- source records (the Evidence row) -----------------------------------------------------------------------------
@@ -1764,6 +1851,8 @@
     recordsBlock,
     recordsTsv,
     writerBlock,
+    cardSummary,
+    uniWriters,
     evidenceRow,
     reportedBy,
     citeBox,

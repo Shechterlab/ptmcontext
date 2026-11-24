@@ -308,6 +308,7 @@
             UI.acc = acc;
           }
           paint(acc);
+          K.redrawSiteCard?.(acc); // the site card's conservation line
           // website.protein.open: a fold the site starts open opens when its orthologs arrive, unless the reader has touched it
           const f = document.getElementById('p-cons');
           if (f && curAcc() === acc && K.foldStarts?.('p-cons') && !K.foldTouched?.('p-cons')) f.open = true;
@@ -319,6 +320,24 @@
         st.who = st.ensg ? 'Ensembl' : 'UniProt';
         paint(acc);
       });
+  }
+  // One site, from the orthologs the lookup holds ('' until they arrive, or where none aligns the site): "Same residue in
+  // mouse, chicken; not in fly". The same residue test as the table (the ortholog's aligned residue against the protein's).
+  const lower = (n) => String(n).replace(/^([A-Z])([a-z])/, (m, a, b) => a.toLowerCase() + b);
+  function siteLine(acc, pos) {
+    const st = ST[acc];
+    if (st?.phase !== 'ok' || !st.model || st.seq[pos - 1] == null) return '';
+    const same = [],
+      diff = [];
+    for (const r of st.model.rows) {
+      const a = r.at(pos);
+      if (a == null || a === '-') continue; // not mapped, or a gap: neither kept nor changed
+      (a === st.seq[pos - 1] ? same : diff).push(lower(r.name));
+    }
+    if (!same.length && !diff.length) return '';
+    return same.length
+      ? `Same residue in ${same.join(', ')}${diff.length ? `; not in ${diff.join(', ')}` : ''}`
+      : `Not the same residue in ${diff.join(', ')}`;
   }
   const sumOf = (st) => {
     if (!st || st.phase === 'idle' || st.phase === 'ens' || st.phase === 'ortho') return 'looking up the orthologs…';
@@ -1223,7 +1242,7 @@
     return s;
   };
 
-  K.conserve = { modelOf, keepOf, columns, ensgOf, ensgsOf, orthoUrl }; // for the tests
+  K.conserve = { modelOf, keepOf, columns, ensgOf, ensgsOf, orthoUrl, siteLine }; // for the tests
 
   // ---- style -----------------------------------------------------------------------------------------------------------------
   const css = document.createElement('style');
