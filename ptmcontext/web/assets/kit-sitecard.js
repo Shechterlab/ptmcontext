@@ -1501,7 +1501,7 @@
         })
         .join('')}</ul>` +
       (pref
-        ? `<p class="muted small">Cite these for ${esc(c.label)}, with ${esc(pref.short || pref.text)} for the ` +
+        ? `<p class="muted small">Cite these for ${esc(c.label)} and ${esc(pref.short || pref.text)} for the ` +
           `compilation.</p>`
         : '')
     );

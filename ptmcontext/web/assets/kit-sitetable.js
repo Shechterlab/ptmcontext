@@ -363,8 +363,8 @@
       M.loaded === null
         ? `<p class="muted small">The changes seen at each site could not be read.</p>`
         : `<p class="muted small st-note">k: ${esc(SRC.map((s) => `${s.label} ${(s.unit || ['sample', 'samples'])[1]}`).join(', '))} with a change at the site. O/E: changes seen over changes expected from the residue’s codon. ` +
-          `q: corrected for the number of sites tested; a ring means q below ${RING}, more than expected${
-            SRC.some((s) => s.lower_tail) ? ', a dashed ring fewer than expected' : ''
+          `q: corrected for the sites tested; a ring is q below ${RING} with more than expected${
+            SRC.some((s) => s.lower_tail) ? ', a dashed ring with fewer' : ''
           }. Click a column to sort.</p>`;
     return (
       `<div class="st-bar">${K.prop.hyperSwitch('Samples')}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'stexp', 'the table of sites', null)}</div>` +

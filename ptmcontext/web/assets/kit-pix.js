@@ -127,7 +127,7 @@
       out +=
         `<section class="pix-sec"><h4>Who binds its ${esc(W.marks)}</h4>` +
         (who.n
-          ? `<p class="sub">What the records at each ${esc(W.mark)} say, and with whom. ${int(who.n)} of ${int(rec.marks.length)} ${esc(W.marks)} have a protein ` +
+          ? `<p class="sub">${int(who.n)} of ${int(rec.marks.length)} ${esc(W.marks)} have a protein ` +
             `partner on record.</p><div class="tbl-card"><table class="tbl compact stackable pix-who"><thead><tr><th>` +
             `Site</th><th>What the records show</th><th class="num">Papers</th></tr></thead><tbody>${who.rows
               .slice(0, UI.all ? 999 : UI.rows)

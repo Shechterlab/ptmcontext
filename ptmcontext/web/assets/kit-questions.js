@@ -219,8 +219,7 @@
         .filter((s) => site.has(s) && !enr(s))
         .sort((x, y) => size(y) - size(x))
         .slice(0, o.compare ?? 4);
-      if (cmp.length)
-        items.push(['head', 'For comparison: the largest classes, not enriched'], ...cmp.map((s) => ['row', s, 0]));
+      if (cmp.length) items.push(['head', 'Largest classes, not enriched'], ...cmp.map((s) => ['row', s, 0]));
     }
     LAST[a.id] = { items: items.map(([k, s, d]) => (k === 'row' ? ['row', rowOf(s), d] : [k, s])), o };
     const nSig = [...site.keys()].filter(enr).length;

@@ -642,9 +642,7 @@
     const html =
       `<section class="pc-sec pc-cc"><h4>Changes at ${esc(CMODE === 'known' ? W.marks : W.residues)}</h4>${seg}` +
       `<p class="small muted">${
-        CMODE === 'known'
-          ? `The protein's known ${esc(W.marks)} only.`
-          : `Every ${esc(W.residue)} of the protein, a known ${esc(W.mark)} or not.`
+        CMODE === 'known' ? `Known ${esc(W.marks)} only.` : `All ${esc(W.residues)} of the protein.`
       }</p>` +
       `<ul class="small pc-cc-lines">${lines || ''}</ul>` +
       lol.map((l) => l.html).join('') +
@@ -1045,9 +1043,7 @@
         .join('') +
       `</div>`;
     const html = `${seg}<p class="small muted">${
-      CMODE === 'known'
-        ? `The protein's known ${esc(W.marks)} only.`
-        : `Every ${esc(W.residue)} of the protein, a known ${esc(W.mark)} or not.`
+      CMODE === 'known' ? `Known ${esc(W.marks)} only.` : `All ${esc(W.residues)} of the protein.`
     }</p><div class="pc-grid pc-grid-wide">${secs.map((s) => s.html).join('')}</div>${excludedLine(p, tb, PC.germline)}`;
     const sum = VCK.entries.map((x) => knownSum(x)).join(' · ');
     return { html, sum, wait: secs.some((s) => s.wait) };

@@ -272,9 +272,7 @@
     `data-pctx="protein" aria-pressed="${CTX.mode === 'protein'}">This protein</button><button type="button" ` +
     `data-pctx="dataset" aria-pressed="${CTX.mode === 'dataset'}">Dataset context</button></span>` +
     `<span class="muted small ctx-note">${
-      CTX.mode === 'protein'
-        ? `${ctxNames()} show what is recorded for this ` + `protein.`
-        : 'The same sets, as the dataset’s tests rate them across all proteins.'
+      CTX.mode === 'protein' ? `${ctxNames()}, for this ` + `protein.` : 'The same sets, tested across all proteins.'
     }</span>`;
   // for the protein's own sets of an analysis: each with the dataset's test of it
   function datasetPanel(p, aids) {

@@ -2111,13 +2111,9 @@
       : '';
     // the sets' results are about every ${W.mark} in the set, not about this protein alone: their own heading says so
     const across =
-      `<h3 class="kinds-head">Across all ${esc(W.marks)}</h3><p class="muted small kinds-note">Each set this protein is in, ` +
-      `with the fold for all ${esc(W.marks)} in that set. The folds describe the whole set, not ${esc(
-        p.gene || p.acc
-      )}.</p>`;
-    const noneLine = none.length
-      ? `<p class="muted small kinds-none">In none of the sets tested for: ${none.join('; ')}.</p>`
-      : '';
+      `<h3 class="kinds-head">Across all ${esc(W.marks)}</h3><p class="muted small kinds-note">Sets this protein is in. ` +
+      `Each fold is for all ${esc(W.marks)} in the set, not for ${esc(p.gene || p.acc)}.</p>`;
+    const noneLine = none.length ? `<p class="muted small kinds-none">Not in: ${none.join('; ')}.</p>` : '';
     return covLine + across + `<div class="kinds">${blocks}</div>` + noneLine;
   }
 
