@@ -508,7 +508,7 @@
         ? `${int(x.k)} of the ${int(x.M)} ${here} ${inWord(true)}; ${
             x.k === x.n
               ? 'every one of them is here, so there is nothing to compare'
-              : 'the selection names its proteins or was made with this map, so it is not compared with it'
+              : 'the selection names its proteins or was made with this map, so it is not compared'
           }`
         : `${int(x.k)} of the ${int(x.M)} ${here} ${inWord(true)} (${int(x.n)} of the ${int(x.N)} proteins the map ` +
           `places); ${abundText(x.a)}`;
@@ -1011,8 +1011,8 @@
         title: () => `${who1}: the ${d.drawing}`,
         sub: () =>
           ONEUI.ds
-            ? `Every compartment is shaded by the fold across the dataset; the compartments where a study found ${who1} are outlined.`
-            : `Every compartment is named: colored where a study found ${who1}, gray where none did, outlined where no study tested it.`,
+            ? `Shaded by the fold across the dataset; outlined where a study found ${who1}.`
+            : `Colored where a study found ${who1}, gray where none did, outlined where none tested it.`,
         make: () => withOne(p, () => DRAW[d.drawing](false)),
         tsv: oneTsv(p),
         zoom: d.drawing,
@@ -2571,13 +2571,13 @@
     VIEW === 'z'
       ? `Cohen's h of each part's share of proteins ${scopedNow() ? 'in your selection' : `with at least one ${W.mark}`} against the share among all the proteins the maps place; filled where q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the parts shown).`
       : scopedNow()
-        ? `Percent of each part's proteins that are in your selection, among the reviewed proteins each map places there; the median of the maps that have the part.`
-        : `Percent of each part's proteins with at least one ${W.mark}, among the reviewed proteins each map places there; the median of the maps that have the part.`;
+        ? `Percent of each part's proteins in your selection, among the reviewed proteins each map places there. Median over the maps that have the part.`
+        : `Percent of each part's proteins with at least one ${W.mark}, among the reviewed proteins each map places there. Median over the maps that have the part.`;
   const keyWords = () =>
     VIEW === 'z'
-      ? `h: the effect size (Cohen's h) of a part's share ${scopedNow() ? 'in your selection' : `with a ${W.mark}`} from the share among all mapped proteins (${pctText(
+      ? `h: Cohen's h of a part's share ${scopedNow() ? 'in your selection' : `with a ${W.mark}`} from the share among all mapped proteins (${pctText(
           pctRef(scopedNow())
-        )}); about 0.2 is small, 0.5 medium, 0.8 large. Red: above, slate: below, deeper for larger h. Filled where q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the parts shown) and |h| ≥ ${MIN_H}; outlined where significant but smaller (significant but small); hatched where not significant. Dashed outline: no map measures it.`
+        )}); about 0.2 is small, 0.5 medium, 0.8 large. Red: above, slate: below, deeper for larger h. Filled where q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the parts shown) and |h| ≥ ${MIN_H}; outlined where significant but smaller; hatched where not significant. Dashed outline: no map measures it.`
       : pctOn()
         ? `Blue: the share of a part's proteins ${scopedNow() ? 'that are in your selection' : `with at least one ${W.mark}`}, darker for a larger share${
             scopedNow() ? ' (the steps are fifths of the largest share)' : ''
@@ -3043,19 +3043,15 @@
         down = clear
           .filter((p) => p.h < 0)
           .sort((a, b) => a.h - b.h)
-          .slice(0, 2),
-        verb = (xs) => (xs.length > 1 ? 'stand' : 'stands');
+          .slice(0, 2);
       return (
         (scoped
-          ? `${pctText(ref)} of mapped proteins are in the selection; `
-          : `${pctText(ref)} of mapped proteins carry ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ${W.mark}; `) +
+          ? `${pctText(ref)} of mapped proteins are in the selection. `
+          : `${pctText(ref)} of mapped proteins carry ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ${W.mark}. `) +
         (up.length || down.length
-          ? up.length
-            ? `${and(up.map(ith))} ${verb(up)} out most above that` +
-              (down.length ? `, ${and(down.map(ith))} most below` : '')
-            : `${and(down.map(ith))} ${verb(down)} out most below that`
-          : `no part stands out from that`) +
-        '.'
+          ? (up.length ? `Most above that: ${and(up.map(ith))}.` : '') +
+            (down.length ? `${up.length ? ' ' : ''}Most below: ${and(down.map(ith))}.` : '')
+          : `No part differs from that.`)
       );
     }
     if (scoped) {
@@ -3220,7 +3216,7 @@
       `<p class="tans cell-ans">Found in${esc(more)}: ` +
       `${sets.length ? esc(and(sets.slice(0, 8))) : 'no compartment of these maps'}.</p>` +
       oneDrawings(p) +
-      `<p class="tkey">Only the selection is drawn; no statistics. Tap, hover or focus a compartment for the proteins and maps behind it.</p></article>`
+      `<p class="tkey">Only the selection is drawn, without statistics. Hover or tap a compartment for details.</p></article>`
     );
   }
   function bigTile(card) {
@@ -3813,7 +3809,7 @@
                 s.cells.length > 1 ? ' (the median of ' + s.maps + ')' : ''
               }; ${pctText(pctRef(false))} of all the proteins the maps place do.`
       : s.selected
-        ? `This is the part your selection was made with, so it is not compared with itself. The drawings compare the other parts.`
+        ? `Your selection was made from this part, so it is not compared with itself.`
         : sig
           ? `${cap(wh)} are <b>${s.tone[0] === 'u' ? 'more' : 'less'} likely</b> to be found here ` +
             `than ${esc(alike)} (${esc(orWords(s.a))}${s.cells.length > 1 ? ', the median of ' + s.maps : ''}).`

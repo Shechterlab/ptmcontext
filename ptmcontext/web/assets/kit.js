@@ -1456,7 +1456,7 @@
   };
   // what the selection does, in one clause (the bar, a figure's subtitle, Copy link): follows the Test and Compared with settings
   K.selEffect = () =>
-    'Pages that follow the selection show only these · ' +
+    'Pages show only the selection · ' +
     (vsOn()
       ? `compared with ${S.vs === 'cmp' ? 'the sites of ' + cmpName() : 'the other ' + W.marks}`
       : S.m === 'fisher'
@@ -2479,7 +2479,7 @@
       };
       return SETS(a.id)
         ? `<b>${esc(noun(label))}</b> are ${esc(W.marked)} at ${f} the share of all proteins tested.`
-        : `${esc(cap(W.marks))} are more common <b>${esc(where)}</b> (share ${f} that of other ${esc(W.residues)}).`;
+        : `${esc(cap(W.marks))} are more common <b>${esc(where)}</b> (${f} the share of other ${esc(W.residues)}).`;
     };
     return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings${
       D.variant
@@ -2506,7 +2506,7 @@
     if (selOn() && !vsOn() && !selTestable() && K.sel.data() && !K.sel.nMarks()) return lead() + selBlocks(K.selSmall);
     const small = smallSel();
     const banner = small
-      ? `<p class="note small-sel" role="status"><b>Too few to test</b> (a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}): showing the whole dataset${D.cell && K.sel.proteinIds().size ? '; the cell shows where your selection is found' : ''}.</p>`
+      ? `<p class="note small-sel" role="status"><b>Too few to test</b> (needs ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}). Showing the whole dataset${D.cell && K.sel.proteinIds().size ? '; the cell shows your selection' : ''}.</p>`
       : '';
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (
@@ -2968,7 +2968,7 @@
       (a.control_too_few != null
         ? `<section class="pcard"><p class="note too-few">${esc(tooFewText(a))}</p></section>`
         : (small ? fewHtml(a) : '') +
-          `<section class="pcard">${small ? `<h3 class="whole-h">All ${esc(W.marks)}, for comparison</h3>` : ''}${
+          `<section class="pcard">${small ? `<h3 class="whole-h">All ${esc(W.marks)}</h3>` : ''}${
             (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
             (K.questionBody && K.questionBody(a, rows, card)) ??
             cardBody(a, rows)
