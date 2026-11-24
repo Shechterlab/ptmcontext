@@ -1462,10 +1462,10 @@ website:                  # the look and words of the website (ptmc web); layout
   ci: {order: 1, lower_confidence: true}   # CI: published by pages.yml, in this order; the audits' parameters (CONTRACTS.md, Site CI parameters)
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methylarginine Site Explorer
-  tagline: "Human arginine methylation sites from published studies and databases."
+  tagline: "Human arginine methylation sites from studies and databases."
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with
-    tagline: "Human arginine methylation sites from published studies and databases."
+    tagline: "Human arginine methylation sites from studies and databases."
     question: "Which proteins have methylarginine, where in the protein is it, and which other modifications are nearby?"
   band: ["#155e75", "#0f3b47"]      # the header gradient: teal
   accent: "#c2410c"                 # the orange rule, active tab and links; shared by the lab's sites
@@ -1633,7 +1633,7 @@ website:                  # the look and words of the website (ptmc web); layout
     share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in disordered regions (IDRs), disorder_boundary: next to an IDR, ordered: in ordered regions}}
     findings: [{analysis: motif, class: RGG}, {analysis: panther_group, class: RNA processing and translation}, {analysis: disorder, class: ordered}]
     protein: FUS
-    text: "Human arginine methylation sites from published studies and databases: their positions, proteins and disease links. Each tile is one question, comparing the methylarginines with the other arginines of the same proteins. Search a protein, a gene list or a disease to test your own selection."
+    text: "Human arginine methylation sites from studies and databases. Each tile compares the methylarginines with the other arginines of the same proteins. Search a protein, gene list or disease to test your own selection."
     examples:
       - {label: A list of genes, query: TAF15 EWSR1 FUS, help: "Every question is tested again on their methylarginines."}
       - {label: A disease, query: "disease_family:ALS", help: "Methylarginines on proteins linked to a disease family, and how they differ from the other arginines of their proteins."}
@@ -2094,7 +2094,7 @@ website:                  # the look and words of the website (ptmc web); layout
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
     title: Network
-    about: "Methylated proteins as one network: STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched GO biological process (or Reactome pathway). Node size is the number of sites per 100 arginines of the protein (the number of sites is the other choice)."
+    about: "Methylated proteins as one network. STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched GO biological process or Reactome pathway. Node size is sites per 100 arginines, or the number of sites."
     edges:
       - {id: string_physical, kind: pairs, label: STRING physical, input: string_partners, min_score: 700, channels: [{id: experiments, label: experiments, column: experiments}, {id: databases, label: curated databases, column: database}], cite: "STRING v12.5: Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113", url: "https://string-db.org"}
       - {id: complex_portal, kind: groups, label: Complex Portal complexes, input: complexes, name: complex_name, where: {curation: curated}, max_size: 40, weight: 700, cite: "Complex Portal (curated complexes, CC0): Meldal et al., Nucleic Acids Res 50:D578 (2022), doi:10.1093/nar/gkab991", url: "https://www.ebi.ac.uk/complexportal"}
@@ -2127,7 +2127,7 @@ website:                  # the look and words of the website (ptmc web); layout
     thin_term: best      # else the best significant term, written with its share ("..." · 18%); genes: its three busiest proteins
     background: proteome  # the terms are tested against the annotated human proteome (site: every protein the network can draw; drawn: the view's own proteins)
     clusters: {default: auto, min: 4, max: 16}   # the page's Clusters menu: auto (Louvain at its default resolution) or a target number
-    lead: "Methylated proteins joined by physical links and complexes, grouped into clusters named by GO biological process."   # the one line under the heading; the section Method has the rest
+    lead: "Methylated proteins linked by physical interactions and complexes, clustered and named by GO biological process."   # the one line under the heading; the section Method has the rest
     controls: [clusters, colour, size, outline, find]   # the main row (others under More options): label, clusters, colour, size, outline, find, score, minc, sources, claim
     protein_link: true   # a See in network button on every protein page (#network?p=<accession>)
     protein_preview: true   # and a small drawing of it among its cluster under the button
@@ -2151,7 +2151,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: binding_protein, set: dna_xl}
           - {analysis: binding_protein, set: dna_interactome}
     outline: {id: enzyme_role, name: Enzyme role, kind: role, none: "No enzyme or reader role"}   # a ring on the writers, erasers and readers (website.search.partners classes), with any color
-    tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
+    tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites, linked by physical interactions and complexes and clustered by GO biological process."}
   # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, go_binding, binding_protein]
@@ -2582,7 +2582,7 @@ website:                  # the look and words of the website (ptmc web); layout
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
         title: Location and condensates
-        summary: Human Protein Atlas locations, where the subcellular maps find it, and CD-CODE condensates
+        summary: Human Protein Atlas locations, subcellular maps and CD-CODE condensates
         hpa: {table: hpa, analysis: hpa_location, title: Subcellular location, source: Human Protein Atlas 25.1, url: "https://www.proteinatlas.org/search/{acc}", unsure: Uncertain}
         maps: true
         rna_maps: [eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]
@@ -2604,7 +2604,7 @@ website:                  # the look and words of the website (ptmc web); layout
         excluded: cancer
         table: dependency
         unit: cancer cell lines
-        sub: "Cancer genetics, not evidence about methylation: how much cancer cell lines depend on the gene in DepMap's CRISPR screens, and the protein changes at its arginines in TCGA tumors and DepMap cell lines."
+        sub: "Dependency of cancer cell lines on the gene (DepMap CRISPR screens) and changes at its arginines in TCGA tumors and DepMap cell lines. Cancer genetics, not evidence about methylation."
         histogram: {from: -3, to: 1, axis: gene effect per cell line (Chronos); lower is a stronger dependency, marks: [{at: 0, label: no effect}, {at: -1, label: median of common essentials}]}
         url: "https://depmap.org/portal/gene/{gene}?tab=overview"
         note: "Data: DepMap Public 24Q4 (CRISPR, Chronos; CC BY 4.0) and TCGA tumors (MC3 somatic calls from the GDC, open access; based on data generated by the TCGA Research Network). A change counts only at an arginine of the canonical UniProt sequence."
@@ -2615,20 +2615,20 @@ website:                  # the look and words of the website (ptmc web); layout
       experiments:
         title: Experiments on its methylation
         table: experiments
-        sub: "Curated from the papers: what was done, what was measured and what changed. Kept apart from the site table and every statistic."
-        note: "The table is in the release (supporting/functional_experiments). The curation is small and growing. A protein without rows is not yet curated, which does not mean it lacks experiments."
+        sub: "Curated from papers: what was done, measured and changed. Not part of the site table or any statistic."
+        note: "In the release as supporting/functional_experiments. The curation is small and growing; a protein without rows may not be curated yet."
       clustering:
         title: Clustering
         table: clusters
-        sub: How closely the methylarginines are spaced, and windows denser than chance.
+        sub: Spacing of methylarginines, and windows denser than chance.
         windows: [3, 5, 10, 20, 50]
       other_ptms:
         title: Other PTMs
         table: other_ptms
-        sub: "The other modifications recorded on this protein: the same marks, with the same counts, as the legend of the protein map."
+        sub: "Other modifications recorded on this protein, as in the map legend."
         kinds: {lys_acyl: Lysine acylation, ub_sumo: Ubiquitin and SUMO}
         near: 10
-        note: "Not an exhaustive list: it holds only what the cross-PTM table used here contains (an iPTMnet export of HPRD, literature mining and other curated sources, plus UniProt), so modifications reported elsewhere may be missing."
+        note: "Not exhaustive: only what the cross-PTM table holds (an iPTMnet export of HPRD, literature mining and other curated sources, plus UniProt)."
       germline:
         title: Germline variants
         excluded: germline
@@ -3215,8 +3215,8 @@ website:                  # the look and words of the website (ptmc web); layout
   pages:
     - id: interactions
       tab: Interactions
-      title: Are methylarginines enriched at contacts with RNA, DNA or other proteins?
-      sub: "Each methylarginine against the other arginines of its protein that the evidence could reach, in living cells (crosslinks and RNA-bound peptides), in solved structures and in predicted complexes. Also the proteins and partners with such evidence."
+      title: RNA, DNA and protein contacts
+      sub: "Methylarginines against the other arginines of their protein that the evidence could reach: in living cells (crosslinks, RNA-bound peptides), in solved structures and in predicted complexes. Also the proteins and partners with such evidence."
       method: |
         Each residue test compares the methylarginines with the other arginines of the same proteins, as the release does, but each against the arginines its evidence could have reached: the proteins with that kind of evidence, the residues a PDB structure observed (SIFTS), or the residues an experiment measured. Within each protein: a Mantel–Haenszel odds ratio with its 95% CI, each protein analyzed on its own; pooled: Fisher's exact test. In these questions every candidate arginine counts in the pooled test, as in the release. q is Benjamini–Hochberg within each question and test.
 
@@ -3285,7 +3285,7 @@ website:                  # the look and words of the website (ptmc web); layout
       overview:
         section: RNA and DNA binding
         title: Interactions and binding
-        question: How many sites have interaction evidence, and are they enriched at contacts with RNA, DNA or other proteins? Each test against the other arginines of the same proteins that the evidence could reach (within each protein).
+        question: How many sites have interaction evidence, and are they enriched at RNA, DNA or protein contacts? Tested within each protein, against the other arginines the evidence could reach.
         bar: interaction
         lead: experimental
         checker: [interaction, evidence, nucleic_acid, partner_class]

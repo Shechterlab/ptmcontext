@@ -1453,10 +1453,10 @@ website:                  # the look and words of the website (ptmc web); layout
   ci: {order: 2, lower_confidence: true, audit: {proteins: "P68431,P04637", selection: "f=p:histone~histone|f=p:panther_group~Transcription, chromatin and DNA"}}   # CI: published by pages.yml, in this order; the audits' parameters (CONTRACTS.md, Site CI parameters)
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methyllysine Site Explorer
-  tagline: "Human lysine methylation sites from public databases and studies."
+  tagline: "Human lysine methylation sites from databases and studies."
   landing:
     from_section: Where in the cell   # the card's strongest result is chosen from the section the Overview opens with                 # the landing page's card (ptmc pages) and the header menu of the sites
-    tagline: "Human lysine methylation sites from public databases and studies."
+    tagline: "Human lysine methylation sites from databases and studies."
     question: "Which proteins have methyllysine, and how do methylated lysines differ from the other lysines of their protein?"
     in_switcher: true
   band: ["#5b21b6", "#3b0764"]      # the header gradient: purple
@@ -1478,7 +1478,7 @@ website:                  # the look and words of the website (ptmc web); layout
   default_background: other reviewed human proteins   # examples inside the Highlight and partner boxes
   start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
     protein: H3C1
-    text: "Human lysine methylation sites from UniProt, iPTMnet and Berryhill et al. 2023: their positions, proteins and partners. Each tile is one question, comparing the methyllysines with the other lysines of the same proteins. Search a protein or a gene list to test your own selection."
+    text: "Human lysine methylation sites from UniProt, iPTMnet and Berryhill et al. 2023. Each tile compares the methyllysines with the other lysines of the same proteins. Search a protein or gene list to test your own selection."
     examples:
       - {label: A histone, query: H3C1, help: "Histone H3's methyllysines (H3 K4, K9, K27 and K36 are K5, K10, K28 and K37 in UniProt's numbering)."}
       - {label: A list of genes, query: TP53 DNMT1 EHMT2, help: "Every question is tested again on their methyllysines."}
@@ -1841,7 +1841,7 @@ website:                  # the look and words of the website (ptmc web); layout
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
     title: Network
-    about: "Methylated proteins as one network: STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched GO biological process (or Reactome pathway). Node size is the number of sites per 100 lysines of the protein (the number of sites is the other choice)."
+    about: "Methylated proteins as one network. STRING physical links and curated complexes join them, communities are the clusters, and each cluster is named by its most enriched GO biological process or Reactome pathway. Node size is sites per 100 lysines, or the number of sites."
     edges:
       - {id: string_physical, kind: pairs, label: STRING physical, input: string_partners, min_score: 700, channels: [{id: experiments, label: experiments, column: experiments}, {id: databases, label: curated databases, column: database}], cite: "STRING v12.5: Szklarczyk et al., Nucleic Acids Res 53:D730 (2025), doi:10.1093/nar/gkae1113", url: "https://string-db.org"}
       - {id: complex_portal, kind: groups, label: Complex Portal complexes, input: complexes, name: complex_name, where: {curation: curated}, max_size: 40, weight: 700, cite: "Complex Portal (curated complexes, CC0): Meldal et al., Nucleic Acids Res 50:D578 (2022), doi:10.1093/nar/gkab991", url: "https://www.ebi.ac.uk/complexportal"}
@@ -1874,7 +1874,7 @@ website:                  # the look and words of the website (ptmc web); layout
     thin_term: best      # else the best significant term, written with its share ("..." · 18%); genes: its three busiest proteins
     background: proteome  # the terms are tested against the annotated human proteome (site: every protein the network can draw; drawn: the view's own proteins)
     clusters: {default: auto, min: 4, max: 16}   # the page's Clusters menu: auto (Louvain at its default resolution) or a target number
-    lead: "Methylated proteins joined by physical links and complexes, grouped into clusters named by GO biological process."   # the one line under the heading; the section Method has the rest
+    lead: "Methylated proteins linked by physical interactions and complexes, clustered and named by GO biological process."   # the one line under the heading; the section Method has the rest
     controls: [clusters, colour, size, outline, find]   # the main row (others under More options): label, clusters, colour, size, outline, find, score, minc, sources, claim
     protein_link: true   # a See in network button on every protein page (#network?p=<accession>)
     protein_preview: true   # and a small drawing of it among its cluster under the button
@@ -1885,7 +1885,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
       - {id: abundance, name: PaxDb abundance decile, kind: decile, analysis: panther_group}   # the decile the statistics use as strata
     outline: {id: enzyme_role, name: Enzyme role, kind: role, none: "No enzyme or reader role"}   # a ring on the writers, erasers and readers (website.search.partners classes), with any color
-    tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites as one network of physical links and complexes, in clusters named by GO biological process."}
+    tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites, linked by physical interactions and complexes and clustered by GO biological process."}
   # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, histone, complex, condensate_proteome]
@@ -2242,7 +2242,7 @@ website:                  # the look and words of the website (ptmc web); layout
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
         title: Location and condensates
-        summary: Human Protein Atlas locations, where the subcellular maps find it, and CD-CODE condensates
+        summary: Human Protein Atlas locations, subcellular maps and CD-CODE condensates
         hpa: {table: hpa, analysis: hpa_location, title: Subcellular location, source: Human Protein Atlas 25.1, url: "https://www.proteinatlas.org/search/{acc}", unsure: Uncertain}
         maps: true
         condensates:
@@ -2263,13 +2263,13 @@ website:                  # the look and words of the website (ptmc web); layout
         excluded: cancer
         table: dependency
         unit: cancer cell lines
-        sub: "Cancer genetics, not evidence about methylation: how much cancer cell lines depend on the gene in DepMap's CRISPR screens, and the protein changes at its lysines in TCGA tumors and DepMap cell lines."
+        sub: "Dependency of cancer cell lines on the gene (DepMap CRISPR screens) and changes at its lysines in TCGA tumors and DepMap cell lines. Cancer genetics, not evidence about methylation."
         histogram: {from: -3, to: 1, axis: gene effect per cell line (Chronos); lower is a stronger dependency, marks: [{at: 0, label: no effect}, {at: -1, label: median of common essentials}]}
         url: "https://depmap.org/portal/gene/{gene}?tab=overview"
         note: "Data: DepMap Public 24Q4 (CRISPR, Chronos; CC BY 4.0) and TCGA tumors (MC3 somatic calls from the GDC, open access; based on data generated by the TCGA Research Network). A change counts only at a lysine of the canonical UniProt sequence."
       other_ptms:
         title: Other PTMs
-        sub: "The other modifications recorded on this protein: the same marks, with the same counts, as the legend of the protein map."
+        sub: "Other modifications recorded on this protein, as in the map legend."
         near: 10
       germline:
         title: Germline variants
@@ -2388,8 +2388,8 @@ website:                  # the look and words of the website (ptmc web); layout
   pages:
     - id: interactions
       tab: Interactions
-      title: Where do methyllysines meet RNA, DNA and other proteins?
-      sub: "The evidence at each methyllysine: crosslinks and RNA-bound peptides in living cells, interfaces and bound RNA and DNA in solved structures, and the partners found at each site."
+      title: RNA, DNA and protein contacts
+      sub: "Evidence at each methyllysine: crosslinks and RNA-bound peptides in cells, interfaces and bound RNA or DNA in solved structures, and partners."
       method: |
         The tables of this page are the release's supporting tables, read through the site file's mapping; no test reads them. One row is one piece of evidence at one methyllysine: a PDBe-KB interface residue in a PDB entry (with a protein, RNA, DNA or another copy of the protein), a residue UV-crosslinked to RNA or DNA in living cells, a residue inside an RNA-bound peptide (CAPRI) or under an RBR-ID peptide, or a residue inside a UniProt DNA-binding region.
 
