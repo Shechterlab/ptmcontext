@@ -36,7 +36,7 @@ def test_open_ids_round_trip_through_the_address_and_reapply_after_a_render():
     script = f"""
 global.window = {{}}; global.HTMLDetailsElement = class {{}};
 const listeners = {{}};
-global.document = {{ addEventListener: (t, f) => (listeners[t] = f), querySelectorAll: () => dom }};
+global.document = {{ addEventListener: (t, f) => (listeners[t] = f), querySelectorAll: () => dom, getElementById: () => null }};
 const mk = (id, open) => Object.assign(new HTMLDetailsElement(), {{ id, open }});
 let dom = [];
 const S = {{ view: 'interactions', arg: '' }}, writes = [];

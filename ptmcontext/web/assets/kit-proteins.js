@@ -674,10 +674,12 @@
       { passive: true }
     )
   );
-  function landOnCard() {
+  // a target (found by `find`, as the page is drawn again) scrolled to just below the sticky toolbar, and again as the page
+  // settles, while `keep()` holds and the reader has not scrolled; the one landing every in-page address uses (K.landOn)
+  function landOn(find, keep = () => true) {
     moved = false;
     const go = () => {
-      const t = document.getElementById('site-card');
+      const t = find();
       if (!t) return;
       const bar = document.querySelector('.toolbar, .app-bar, header.top');
       const h = bar ? bar.getBoundingClientRect().bottom : 0;
@@ -686,10 +688,23 @@
     requestAnimationFrame(go);
     [700, 1800, 3500].forEach((ms) =>
       setTimeout(() => {
-        if (!moved && PV.site) go();
+        if (!moved && keep()) go();
       }, ms)
     );
   }
+  K.landOn = landOn;
+  // the fold of a protein's page that holds a question's facts about that one protein (the site file's protein_view.context, and
+  // the cell fold), or '' when the question is about the dataset
+  K.proteinHome = (aid) => {
+    const ctx = D.protein_view?.context || {},
+      f = Object.keys(ctx).find((k) => (ctx[k] || []).includes(aid));
+    return f && FOLDS.includes(f) ? f : K.cellHome?.(aid) || '';
+  };
+  const landOnCard = () =>
+    landOn(
+      () => document.getElementById('site-card'),
+      () => PV.site
+    );
   const SC_OPEN = new Map(); // a group of the site card the reader opened or closed, kept as the card is redrawn
   document.addEventListener(
     'toggle',

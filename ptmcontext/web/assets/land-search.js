@@ -46,6 +46,13 @@
     }));
     return window.PTMNames.rank(idx.rows, q, 12);
   };
+  // the explorer's own address for a protein, or for its site when one is typed: #protein/GENE/ACC/R3?q=H4+R3 (the position is
+  // read in the protein's own numbering by the explorer, so H4 R3 is UniProt R4 there)
+  const address = ({ acc, gene }, site, q) => {
+    const tag = String(gene || '').split(/[\s;]+/)[0],
+      path = [tag, acc, site].filter(Boolean).map(encodeURIComponent).join('/');
+    return `#protein/${path}${site ? '?' + new URLSearchParams({ q }) : ''}`;
+  };
   const draw = () => {
     const q = box.value.trim();
     if (!q) {
@@ -59,12 +66,24 @@
     }
     // several names (TP53 S15, EGFR,TP53): the first one is searched, and the line says so
     let rows = find(q),
-      first = '';
+      first = '',
+      site = '';
     if (!rows.length) {
       const names = q.split(/[\s,;]+/).filter(Boolean);
       if (names.length > 1) {
         first = names[0];
         rows = find(first);
+        // a gene and a residue with its position (TP53 S15, H4 R3): the hits open that site, as a site's own search does
+        if (names.length === 2 && /^[A-Za-z]\d+$/.test(names[1]) && rows.length) {
+          site = names[1].toUpperCase();
+          first = '';
+          // only a protein that has the typed name (as a gene, another symbol or its accession) gets the site, not a near match
+          const w = names[0].toUpperCase(),
+            is = (x) => String(x || '').toUpperCase() === w;
+          rows = rows.filter(
+            (h) => is(h.row.acc) || is(h.row.gene) || h.row.genes.some(is) || h.row.aliases.some(is) || is(h.via)
+          );
+        }
       }
     }
     out.innerHTML = rows
@@ -74,8 +93,7 @@
             .map((k) => idx.sites[k])
             .filter(Boolean)
             .map(
-              (s) =>
-                `<a href="${esc(encodeURIComponent(s.id))}/#/protein/${esc(encodeURIComponent(acc))}">${esc(s.label)}</a>`
+              (s) => `<a href="${esc(encodeURIComponent(s.id))}/${esc(address(h.row, site, q))}">${esc(s.label)}</a>`
             )
             .join(' ');
         return (

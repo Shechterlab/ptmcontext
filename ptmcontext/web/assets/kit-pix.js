@@ -105,13 +105,21 @@
       : '<p class="muted small">None of its partners is in a writer or reader class.</p>';
   }
 
+  // a protein's partners in the site's partner table: the one list the protein page, its folds and every pointer count
+  const partnersOf = (tb) => (tb && K.card.has(PT.table) ? K.card.rows(tb, PT.table) : []);
+  // a line for another page (the Network panel): how many partners the protein has in all, linking to this section
+  const countNote = (acc) =>
+    K.card.load(acc).then((tb) => {
+      const n = partnersOf(tb).length;
+      return n
+        ? `${int(n)} partners in all, in <a href="${esc(K.link('protein', acc + '/interactions'))}">Protein interactions</a>`
+        : '';
+    });
   // ---- the view ---------------------------------------------------------------------------------------------------------
   function html(p, rec, tb) {
     if (!tb) return K.loading('Loading the interaction tables…');
     const gene = p.gene || p.acc,
-      parts = K.card.has(PT.table)
-        ? K.card.rows(tb, PT.table).sort((a, b) => (num(b.score) || 0) - (num(a.score) || 0))
-        : [];
+      parts = partnersOf(tb).sort((a, b) => (num(b.score) || 0) - (num(a.score) || 0));
     const who = K.card.proteinRecords?.(p, tb, (pos) => K.prot.siteLabel(p.acc, pos), isListed);
     let out = '';
     // 1. who binds each mark
@@ -221,6 +229,8 @@
   }
   K.pix = {
     html,
+    partnersOf,
+    countNote,
     fillPaths: () => {
       const el = document.querySelector('[data-pix-paths]');
       if (el) fillPaths(el.dataset.pixPaths);

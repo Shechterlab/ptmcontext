@@ -17,6 +17,8 @@
     PADJ = K.PADJ,
     MINL2 = Math.log2(K.MIN_EFFECT);
   const ID = C.id;
+  // the protein page's own fold for this question (kit-proteins.js K.proteinHome asks): where in the cell
+  K.cellHome = (aid) => (aid === ID && D.protein_view?.cards?.location?.maps ? 'p-cell' : '');
   const MAPS = C.maps.filter((m) => A[m.analysis]);
   const REGMAPS = MAPS.filter((m) => m.regions && A[m.regions]);
   const MAP = {}; // analysis -> its map (a regions question takes its map's words)

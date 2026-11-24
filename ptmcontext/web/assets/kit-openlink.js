@@ -9,6 +9,7 @@
   let key = null; // the page the state below belongs to
   let want = {}; // fold id -> the state the reader (or the link) gave it, where it differs from dflt
   let dflt = {}; // fold id -> the state it was first drawn in on this page
+  let land = ''; // the first section a link opened: the page is scrolled to it once it is drawn
   let lastClick = 0;
   let timer = 0;
   const pageKey = () =>
@@ -32,6 +33,7 @@
     if (p.has('open')) {
       if (key !== pageKey()) reset();
       want = parse(p.get('open'));
+      land = Object.keys(want).find((id) => want[id]) || '';
     } else if (key !== pageKey()) reset();
   });
   K.hashOut.push((p) => {
@@ -54,6 +56,12 @@
         K.folds[d.id] = d.open;
       }
     });
+    // arriving by a link that opens a section: the section is scrolled to, below the toolbar (as a section's own address is)
+    if (land && document.getElementById(land)) {
+      const id = land;
+      land = '';
+      K.landOn?.(() => document.getElementById(id));
+    }
   });
   document.addEventListener(
     'click',

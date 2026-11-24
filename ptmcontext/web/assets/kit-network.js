@@ -713,7 +713,7 @@
       if (ex || mini) out.push(`<g${dim(i) ? ' opacity="0.18"' : ''}>${dot}</g>`);
       else
         out.push(
-          `<a href="${esc(K.link('protein', nd.acc))}" class="nw-n" data-nn="${i}" tabindex="-1" aria-label="${esc(nd.gene)}, ${int(nd.sites)} ${esc(W.marks)}"${dim(i) ? ' style="opacity:0.18"' : ''}>` +
+          `<a href="${esc(K.link('protein', pageArg(nd.acc)))}" class="nw-n" data-nn="${i}" tabindex="-1" aria-label="${esc(nd.gene)}, ${int(nd.sites)} ${esc(W.marks)}"${dim(i) ? ' style="opacity:0.18"' : ''}>` +
             `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="${Math.max(r(i) + 3, phone ? 12 : 7).toFixed(1)}" fill="transparent"/>${dot}</a>`
         );
     });
@@ -1293,7 +1293,8 @@
     if (bsp) lines.push({ t: `${bsp.name}: ${(bsp.cats || [])[nd.bd] || bsp.none_label || 'none'}` });
     if (OUT && nd.rl >= 0) lines.push({ t: `${OUT.name}: ${(OUT.cats || [])[nd.rl] || ''}` });
     lines.push({
-      t: `${int(M.deg[i])} ${plural(M.deg[i], 'partner', 'partners')} (${int(inC)} in cluster, ${int(out)} outside)`,
+      t: `${int(M.deg[i])} ${plural(M.deg[i], 'partner', 'partners')} with ${W.marks} in this network (${int(inC)} in cluster, ${int(out)} outside)`,
+      ix: nd.acc,
     });
     if (c.l.q != null) {
       lines.push({ t: `Cluster term: ${c.name}` });
@@ -1308,7 +1309,7 @@
     lines
       .map(
         (l) =>
-          `<div>${l.b != null ? `<b>${esc(l.b)}</b>` : ''}${esc(l.t || '')}${l.m ? ` <span class="muted">${esc(l.m)}</span>` : ''}</div>`
+          `<div>${l.b != null ? `<b>${esc(l.b)}</b>` : ''}${esc(l.t || '')}${l.m ? ` <span class="muted">${esc(l.m)}</span>` : ''}${l.ix ? ` <span class="muted" data-nw-ix="${esc(l.ix)}"></span>` : ''}</div>`
       )
       .join('');
   const coarse = () => matchMedia('(pointer: coarse)').matches;
@@ -1320,6 +1321,12 @@
       `<div class="muted">${pinned ? (coarse() ? 'Tap again to open the protein page.' : 'Click again to open the protein page.') : coarse() ? 'Tap to pin it; tap again to open its page.' : 'Click to pin it; click again to open its page. Shift-click pins several.'}</div>`
     );
   }
+  // a protein's page from here: its site when the selection names one site of it (H4 R3), else the protein
+  const pageArg = (acc) => {
+    const q = K.sel?.parse?.(S.q),
+      st = q?.sites?.length === 1 ? q.sites[0] : null;
+    return st && D.proteins[st[0]]?.[0] === acc ? `${acc}/${st[1]}` : acc;
+  };
   // the pinned proteins' panel under the figure: a card each, the link to the page, Unpin
   function pinHtml(M, CL) {
     const set = [...pinNodes(M)];
@@ -1331,7 +1338,7 @@
           lines = cardLines(M, CL, i),
           shown = one ? lines : lines.filter((l, k) => k < 3 || /^Cluster term/.test(l.t || '') === false).slice(0, 5);
         return (
-          `<div class="nw-pc">${linesHtml(shown)}<div class="nw-pbtn"><a class="btn small" href="${esc(K.link('protein', nd.acc))}">Open protein page</a>` +
+          `<div class="nw-pc">${linesHtml(shown)}<div class="nw-pbtn"><a class="btn small" href="${esc(K.link('protein', pageArg(nd.acc)))}">Open protein page</a>` +
           `<button type="button" class="btn small" data-nw-unpin="${esc(nd.acc)}">Unpin${one ? '' : ' ' + esc(nd.gene)}</button></div></div>`
         );
       })
@@ -2630,7 +2637,7 @@
   const hasLinks = (p) => !LINKED || !LINKED.length || p.i == null || !!(LINKED[p.i >> 3] & (1 << (p.i & 7)));
   (K.protActions ||= []).push((p) => {
     if (NC.protein_link === false || !hasLinks(p)) return '';
-    const href = esc(K.link('network', '', { p: p.acc }));
+    const href = esc(K.net.link(p.acc));
     return (
       `<a class="btn small" href="${href}" title="Open the network with ${esc(p.gene || p.acc)} shown, its cluster lit">See in network</a>` +
       (NC.protein_preview === false
@@ -2639,7 +2646,9 @@
     );
   });
   // the protein page's STRING card links here: this protein as the selection, drawn with its partners (a protein the sources do not link has none)
-  K.netHref = (p) => (NC.protein_link === false || !hasLinks(p) ? '' : K.link('network', '', { q: p.gene || p.acc }));
+  // the one address of a protein in the network (it pinned and its cluster lit); every link to it is built here
+  K.net = { link: (acc) => K.link('network', '', { p: acc }) };
+  K.netHref = (p) => (NC.protein_link === false || !hasLinks(p) ? '' : K.net.link(p.acc));
   let viewP = null;
   const loadViewFile = () =>
     (viewP ||= fetch(NC.files.view)
@@ -2714,6 +2723,18 @@
       `<span class="nw-prev-cap muted">${esc(j.gene[i])} with ${int(sl.nodes.length - 1)} of its ${int(sl.partners)} partners in its cluster</span>`
     );
   }
+  // the partners line of a card points to the protein's partners in all (kit-pix.js owns that count)
+  (K.afterRender ||= []).push(() => {
+    document.querySelectorAll('[data-nw-ix]:not([data-done])').forEach((el) => {
+      el.dataset.done = '1';
+      K.pix?.countNote(el.dataset.nwIx).then(
+        (h) => {
+          if (h && el.isConnected) el.innerHTML = `· ${h}`;
+        },
+        () => {}
+      );
+    });
+  });
   (K.afterRender ||= []).push(() => {
     const els = [...document.querySelectorAll('.nw-prev:not([data-done])')];
     if (!els.length) return;

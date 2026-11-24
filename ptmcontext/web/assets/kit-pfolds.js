@@ -217,8 +217,7 @@
         s.textContent = n;
       };
     set1('p-sites', int(rec.marks.length));
-    const pt = PRO.card?.writer?.partners?.table,
-      n = pt && tb && K.card.has(pt) ? K.card.rows(tb, pt).length : 0;
+    const n = K.pix?.partnersOf ? K.pix.partnersOf(tb).length : 0;
     set1('p-ix', n ? int(n) : '');
   }
 

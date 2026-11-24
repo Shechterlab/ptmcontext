@@ -1666,8 +1666,15 @@
   const followsTest = (a) => a.kind !== 'protein_sets' && a.kind !== 'module' && !a.tile && !K.questions[a.id]?.tile;
   const tileTitle = (c) => c.title || FR.short?.[c.analysis] || A[c.analysis]?.title || '';
   K.tileTitle = tileTitle;
+  // where a question's tile leads: its question page, or, for a question about one protein's own facts asked of a selection
+  // that is that one protein, the section of that protein's page that holds them
+  const tileHref = (id) => {
+    const ids = K.sel?.proteinIds?.(),
+      fold = ids?.size === 1 ? K.proteinHome?.(id) : '';
+    return fold ? link('protein', D.proteins[[...ids][0]][0], { open: fold }) : link('overview', id);
+  };
   const detailsLink = (id) =>
-    `<a class="tdetails" href="${esc(link('overview', id))}" title="Open the question: ` +
+    `<a class="tdetails" href="${esc(tileHref(id))}" title="Open the question: ` +
     `every class, the tests and the downloads">${K.ACT.details} ›</a>`;
   K.detailsLink = detailsLink;
   function tile(card) {
@@ -5180,10 +5187,11 @@
       // a section's address scrolls to it; a part's (#method/cite) stays at the top, under the menu; a change to the table of tests stays at the table
       const at = S.stay || (S.arg && !M_PARTS.some(([k]) => k === S.arg) ? 'm-' + S.arg : '');
       S.stay = '';
-      if (at)
-        (document.getElementById(at) || document.getElementById(at.replace(/^m-/, 'm-q-')))?.scrollIntoView({
-          block: 'start',
-        });
+      if (at) {
+        const find = () => document.getElementById(at) || document.getElementById(at.replace(/^m-/, 'm-q-'));
+        if (K.landOn) K.landOn(find);
+        else find()?.scrollIntoView({ block: 'start' });
+      }
     }
     K.rail?.();
     (K.afterRender || []).forEach((f) => f()); // the modules' own touches after a page is drawn (kit-search.js)
@@ -5247,7 +5255,7 @@
   function linkPass() {
     const root = document.body;
     root.querySelectorAll('.tile[data-tile]:not([data-group])').forEach((t) => {
-      const h = link('overview', t.dataset.tile);
+      const h = tileHref(t.dataset.tile);
       if (t.dataset.href === h) return;
       t.dataset.href = h;
       const h3 = t.querySelector('header h3');
@@ -5257,7 +5265,7 @@
         a.href = h;
         a.append(...h3.childNodes);
         h3.append(a);
-      }
+      } else h3?.querySelector('a.tile-link')?.setAttribute('href', h);
     });
     root.querySelectorAll('tr[data-acc]:not([data-href])').forEach((r) => {
       r.dataset.href = link('protein', r.dataset.acc);

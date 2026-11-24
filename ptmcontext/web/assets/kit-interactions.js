@@ -2821,12 +2821,22 @@
   );
 
   // ---- registration ------------------------------------------------------------------------------------------------
+  let landed = ''; // the section address last landed on (forgotten once another page is shown)
+  (K.afterRender ||= []).push(() => {
+    if (!PAGES.some((pg) => pg.id === S.view)) landed = '';
+  });
   PAGES.forEach((pg) => {
     K.views[pg.id] = {
       follows: true,
       render: (arg) => view(pg, arg),
       title: (arg) => (arg && pg.sections.find((s) => s.id === arg)?.title) || pg.tab,
-      after: () => drawExample(),
+      after: (arg) => {
+        drawExample();
+        // a section's address lands on its card, below the toolbar (once for an address, not at each redraw of it)
+        const at = arg && pg.sections.some((s) => s.id === arg) ? `${pg.id}/${arg}` : '';
+        if (at && at !== landed) K.landOn?.(() => document.getElementById(`ix-${arg}`));
+        landed = at;
+      },
     };
     K.tabs.push(() => [pg.id, pg.tab, selOn() ? 'selection' : null]);
     (K.tabIcons ||= {})[pg.id] =

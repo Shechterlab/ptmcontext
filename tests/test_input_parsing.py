@@ -180,7 +180,7 @@ eval(fs.readFileSync(ASSETS + '/kit-names.js', 'utf8')); eval(fs.readFileSync(AS
   for (const q of ['TP53 S15', 'EGFR,TP53', 'TP53', 'FOO BAR']) {
     els['land-q'].value = q; els['land-q'].handlers.focus?.();
     els['land-q'].handlers.input(); await new Promise(r => setTimeout(r, 20));
-    out[q] = [els['land-hits'].innerHTML.includes('P04637') ? 'TP53' : els['land-hits'].innerHTML.includes('P00533') ? 'EGFR' : '', els['land-say'].textContent];
+    out[q] = [els['land-hits'].innerHTML.includes('P04637') ? 'TP53' : els['land-hits'].innerHTML.includes('P00533') ? 'EGFR' : '', els['land-say'].textContent, (/href="([^"]*)"/.exec(els['land-hits'].innerHTML) || [])[1]];
   }
   console.log(JSON.stringify(out));
 })();"""
@@ -189,7 +189,9 @@ eval(fs.readFileSync(ASSETS + '/kit-names.js', 'utf8')); eval(fs.readFileSync(AS
     )
     assert run.returncode == 0, run.stderr[-1500:]
     out = json.loads(run.stdout)
-    assert out['TP53 S15'][0] == 'TP53' and 'first name only, TP53' in out['TP53 S15'][1]
+    # a gene and a residue with its position is a site: no "first name only" note, and the hit opens the site
+    assert out['TP53 S15'][0] == 'TP53' and 'first name' not in out['TP53 S15'][1]
+    assert out['TP53 S15'][2] == 'a/#protein/TP53/P04637/S15?q=TP53+S15'
     assert out['EGFR,TP53'][0] == 'EGFR' and 'first name only, EGFR' in out['EGFR,TP53'][1]
     assert out['TP53'][0] == 'TP53' and 'first name' not in out['TP53'][1]
     assert out['FOO BAR'][0] == '' and out['FOO BAR'][1].endswith(
