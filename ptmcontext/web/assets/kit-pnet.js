@@ -778,11 +778,7 @@
       M = W.marks,
       m1 = W.mark;
     if (!obs.length && !pred.length)
-      return (
-        `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4><p ` +
-        `class="muted">No protein at an interface with a ${esc(m1)} of ${esc(p.gene || p.acc)} in the structure ` +
-        `tables.</p></div>`
-      );
+      return `<div class="pn-iface">${K.noData(`No protein at an interface with a ${m1} of ${p.gene || p.acc} in the structure tables.`)}</div>`;
     const by = new Map(); // partner -> { name, acc, sites: Map(pos -> { obs: ids, pred: score }) }
     const put = (g, a, pos, f) => {
       const k = a || g;

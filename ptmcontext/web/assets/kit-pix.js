@@ -138,7 +138,7 @@
                   UI.all ? 'Fewer sites' : `All ${int(who.rows.length)} sites`
                 }</button></p>`
               : '')
-          : `<p class="muted small">No record names a protein partner at a ${esc(W.mark)} of ${esc(gene)}.</p>`) +
+          : K.noData(`No protein partner at a ${W.mark} of ${gene} on record.`)) +
         '</section>';
     // 2. partners and complexes
     if (parts.length) {

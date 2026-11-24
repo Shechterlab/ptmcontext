@@ -656,6 +656,9 @@
   K.loading = (text, cls) =>
     `<p class="ld${cls ? ' ' + esc(cls) : ''}" role="status" aria-live="polite"><i class="ld-spin" aria-hidden="true"></i>` +
     `<span>${esc(text || 'Loading…')}</span></p>`;
+  // a section or card whose source has nothing for this protein: one muted line, never an empty table or chart. The
+  // text is a sentence ("No CD-CODE condensates for this protein."); every caller draws it through here
+  K.noData = (text) => `<p class="muted nodata">${esc(text)}</p>`;
   Object.assign(K, {
     GLOSS,
     BTN,
