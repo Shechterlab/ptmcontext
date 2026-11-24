@@ -75,7 +75,7 @@ const inline = {{ 'selection-data': {json.dumps(sel)} }};
 global.document = {{ getElementById: id => (inline[id] ? {{ textContent: inline[id] }} : null), addEventListener: noop, querySelector: () => null,
   querySelectorAll: () => [], documentElement: {{ style: {{ setProperty: noop }} }}, body: {{ classList: {{ toggle: noop, contains: () => false }} }} }};
 const fs = require('fs');
-for (const f of ['kit-select.js', 'kit-rail.js']) eval(fs.readFileSync({json.dumps(str(ASSETS))} + '/' + f, 'utf8'));
+for (const f of ['kit-names.js', 'kit-select.js', 'kit-rail.js']) eval(fs.readFileSync({json.dumps(str(ASSETS))} + '/' + f, 'utf8'));
 const D = {json.dumps(data)}, esc = s => String(s ?? ''), A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
 const K = {{ D, W: D.words, A, S: {{ q: '', f: {{}}, vs: 'residues' }}, esc, int: n => String(n), cap: t => t, clicks: [], render: noop, writeHash: noop,
   link: v => '#' + v, decorate: r => r, sections: {{}}, views: {{}}, tabs: [] }};
