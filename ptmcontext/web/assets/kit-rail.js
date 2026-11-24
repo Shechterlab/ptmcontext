@@ -816,28 +816,13 @@
       return `<div class="toc-grp">${disclosure(`${S.view}|g|${g.head[1]}`, g.head[1], kids, 'toc-group', g.kids.some(isCur))}</div>`;
     };
     const item = (e) => (e.head ? group(e) : leaf(e.leaf, false));
-    const pages = [...document.querySelectorAll('#tabs a.tab')].map((a) => ({
-      href: a.getAttribute('href'),
-      name: a.cloneNode(true),
-      cur: a.getAttribute('aria-current') === 'page',
-    }));
-    pages.forEach((pg) => pg.name.querySelectorAll('.count, .selmark, svg').forEach((x) => x.remove()));
-    // one rule for every page: only the Overview lists its sections under its name; the other pages are a single entry
-    if (!pages.length)
-      return '<nav class="toc flat">' + (S.view === 'overview' ? entries.map(item).join('') : '') + '</nav>';
-    return (
-      '<nav class="toc flat">' +
-      pages
-        .map(
-          (pg) =>
-            `<a class="toc-p${pg.cur ? ' on' : ''}" href="${esc(pg.href)}"${pg.cur ? ' aria-current="page"' : ''}>${esc(pg.name.textContent.trim())}</a>` +
-            (pg.cur && (S.view === 'overview' || S.view === 'method') && raw.length
-              ? `<div class="toc-secs">${entries.map(item).join('')}</div>`
-              : '')
-        )
-        .join('') +
-      '</nav>'
-    );
+    // the pages are the tabs above the page (one list of them, drawn by kit.js); the sidebar lists only the sections of the page
+    // that has any (the Overview and Methods), and is empty on the rest
+    return S.view === 'overview' || S.view === 'method'
+      ? entries.length
+        ? '<nav class="toc flat"><div class="toc-secs">' + entries.map(item).join('') + '</div></nav>'
+        : ''
+      : '';
   }
   const pinned = () => (R.pin === 'on' && innerWidth >= PIN_MIN) || (R.pin === 'auto' && innerWidth >= PIN_AUTO);
   // scroll-spy: the section in view is marked in the list
@@ -969,10 +954,15 @@
     });
     document.documentElement.classList.toggle('rail-lock', open);
     drawerHistory(open, wasOpen);
+    // a page with no sections has no Sections tab: the sidebar is its filters
+    const secs = sectionsTab(),
+      tab = secs ? R.tab : 'filters';
     el.innerHTML =
-      `<div class="rail-head"><span class="seg" role="group"><button type="button" ` +
-      `data-rail-tab="sections" aria-pressed="${R.tab === 'sections'}">☰ Sections</button>` +
-      `<button type="button" data-rail-tab="filters" aria-pressed="${R.tab === 'filters'}">⏚ ${K.ACT.filters}${
+      `<div class="rail-head"><span class="seg" role="group">` +
+      (secs
+        ? `<button type="button" data-rail-tab="sections" aria-pressed="${tab === 'sections'}">☰ Sections</button>`
+        : '') +
+      `<button type="button" data-rail-tab="filters" aria-pressed="${tab === 'filters'}">⏚ ${K.ACT.filters}${
         Object.keys(S.f).length ? ` <span class="badge">${Object.keys(S.f).length}</span>` : ''
       }</button></span>` +
       (innerWidth >= PIN_MIN
@@ -983,7 +973,7 @@
       `${
         pinned() ? '' : '<button type="button" class="btn small" data-rail-close aria-label="Close">×</button>'
       }</div>` +
-      `<div class="rail-body">${R.tab === 'sections' ? sectionsTab() : filtersTab()}</div>` +
+      `<div class="rail-body">${tab === 'sections' ? secs : filtersTab()}</div>` +
       (pinned()
         ? `<div class="rail-grip" role="separator" aria-orientation="vertical" aria-label="Sidebar width: ` +
           `drag, or use the arrow keys; double-click resets it" aria-valuenow="${Math.round(
@@ -997,7 +987,7 @@
       if (lab && !sel.hasAttribute('aria-label'))
         sel.setAttribute('aria-label', lab.textContent.replace(/\s+/g, ' ').trim());
     });
-    if (R.tab === 'sections') requestAnimationFrame(watchSections);
+    if (tab === 'sections') requestAnimationFrame(watchSections);
     const kept = (open || pinned()) && keep && el.querySelector(keep); // a sidebar being closed gives its focus back to the control that opened it, below
     if (kept) {
       kept.focus({ preventScroll: true });

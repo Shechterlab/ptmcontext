@@ -679,21 +679,35 @@
   );
   // a target (found by `find`, as the page is drawn again) scrolled to just below the sticky toolbar, and again as the page
   // settles, while `keep()` holds and the reader has not scrolled; the one landing every in-page address uses (K.landOn)
+  let landing = 0; // the landing in progress; a new one replaces it
   function landOn(find, keep = () => true) {
     moved = false;
+    const id = ++landing,
+      t0 = Date.now(),
+      live = () => id === landing && !moved && keep() && Date.now() - t0 < 6000;
     const go = () => {
       const t = find();
       if (!t) return;
-      const bar = document.querySelector('.toolbar, .app-bar, header.top');
-      const h = bar ? bar.getBoundingClientRect().bottom : 0;
-      scrollTo(0, Math.max(0, t.getBoundingClientRect().top + scrollY - Math.max(0, h) - 8));
+      // the sticky bars' real height (the toolbar and the strip above it; on a phone the strip alone)
+      const root = getComputedStyle(document.documentElement),
+        h = parseFloat(root.getPropertyValue('--sticky-h')) || parseFloat(root.getPropertyValue('--toolbar-h')) || 0;
+      scrollTo(0, Math.max(0, t.getBoundingClientRect().top + scrollY - h - 12));
     };
     requestAnimationFrame(go);
+    // the page above the target changes height as the map and the lazy sections arrive: land again on each change, before it
+    // is painted, so the target stays put
+    let ro = null;
+    if (window.ResizeObserver) {
+      ro = new ResizeObserver(() => (live() ? go() : ro.disconnect()));
+      ro.observe(document.documentElement);
+      ro.observe(document.getElementById('view') || document.body);
+    }
     [700, 1800, 3500].forEach((ms) =>
       setTimeout(() => {
-        if (!moved && keep()) go();
+        if (live()) go();
       }, ms)
     );
+    setTimeout(() => ro?.disconnect(), 6000);
   }
   K.landOn = landOn;
   // the fold of a protein's page that holds a question's facts about that one protein (the site file's protein_view.context, and

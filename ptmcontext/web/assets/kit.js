@@ -5163,6 +5163,7 @@
         ? D.site.name
         : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`; // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg) && D.header?.compact === true); // the full header band on every page unless website.header.compact: true
+    document.body.classList.toggle('compact-phone', S.view !== 'overview' || !!S.arg); // CSS: under 700 px the header is one row on these pages
     document.body.classList.remove('bar-hidden');
     document.querySelector('.toolbar')?.removeAttribute('inert');
     K.barReset?.();
@@ -5866,6 +5867,9 @@
       rail.scrollTop += h - barH;
     barH = h;
     document.documentElement.style.setProperty('--toolbar-h', `${h}px`);
+    // what covers the top of the window once the page is scrolled: the toolbar and the strip above it, or on a phone (the toolbar scrolls
+    // away) the strip alone; the one offset a jump lands below (CSS scroll-margin-top, K.landOn)
+    document.documentElement.style.setProperty('--sticky-h', `${h || dockH()}px`);
   };
   // the search, selection line and tabs slide away on the way down and come back on the way up (a transform: nothing in the page
   // moves); the compact bar above keeps the site, the way home, the switcher, a search, the pages and the selection
