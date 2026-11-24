@@ -1601,7 +1601,7 @@
 
   // ---- the folds -----------------------------------------------------------------------------------------------------
   const CARDS = [
-    ...(CELLFOLD ? [['location_cell', 'p-cell', 'Where in the cell', cellBuild]] : []),
+    ...(CELLFOLD ? [['location_cell', 'p-cell', 'Localization', cellBuild]] : []),
     ['location', 'p-cond', 'Location', locationBuild],
     ['dependency', 'p-depmap', 'Cancer cell lines', dependencyBuild],
     [
