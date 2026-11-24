@@ -2310,7 +2310,11 @@ def pages(
 
             k = len(listed_ids)
             listed_ids.append(
-                {'id': site['id'], 'label': landing.get('label') or profile.data.get('name') or site['id']}
+                {
+                    'id': site['id'],
+                    'label': landing.get('label') or profile.data.get('name') or site['id'],
+                    'residues': profile.residues,  # the search offers the explorers whose marks sit on a typed residue
+                }
             )
             ptab = pd.read_csv(plist, sep='\t', dtype=str, keep_default_na=False, usecols=['accession', 'gene', 'name'])
             multi, other = genes_mod.for_site(

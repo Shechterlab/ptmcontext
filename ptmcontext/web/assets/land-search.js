@@ -1,5 +1,5 @@
-/* The landing page's search: a gene name (any of a protein's genes, or an old or alternative symbol) or a UniProt accession, then the site to open it in. The index is
-   proteins.json beside the landing page ({sites: [{id, label}], p: [[accession, gene, name, [index of each site that has it], genes, aliases]]}), read
+/* The landing page's search: a gene name (any of a protein's genes, or an old or alternative symbol) or a UniProt accession, then the explorer to open it in. The index is
+   proteins.json beside the landing page ({sites: [{id, label, residues}], p: [[accession, gene, name, [index of each site that has it], genes, aliases]]}), read
    when the box is first used. Each hit lists the sites that have the protein, each a link to its protein page. Plain
    script (it is inlined into the landing page; the sites' pages do not load it). */
 (() => {
@@ -53,6 +53,42 @@
       path = [tag, acc, site].filter(Boolean).map(encodeURIComponent).join('/');
     return `#protein/${path}${site ? '?' + new URLSearchParams({ q }) : ''}`;
   };
+  // what the box holds, read as a site's own search reads it (notations in kit-names.js): { rows: the proteins, site: 'R3' or '',
+  // list: the names of a gene list or null }
+  const read = (q) => {
+    const N = window.PTMNames,
+      known = (name) => {
+        const e = N.exact(idx.rows, name);
+        return e.length ? e : null;
+      };
+    let rows = find(q);
+    const names = q.split(/[\s,;]+/).filter(Boolean);
+    // H4R3, TP53-R213, P04637/213: the name and its site in one word (a name that is itself the whole text wins)
+    const so = names.length === 1 && !known(q) && N.siteOf(q, known);
+    if (so) return { rows: so.hit, site: `${so.letter}${so.pos}` };
+    if (!rows.length && names.length > 1) {
+      // a gene and a residue with its position (TP53 S15, H4 R3, AKT1 T308): the hits open that site; only a protein that has
+      // the typed name gets the site, not a near match
+      const p = names.length === 2 && N.pos(names[1]),
+        hits = p && known(names[0]);
+      if (hits) return { rows: hits, site: `${p.letter}${p.pos}` };
+      // a gene list, when some of its names are proteins here
+      return names.some(known) ? { rows: [], list: names } : { rows: [], site: '' };
+    }
+    return { rows, site: '' };
+  };
+  // the sites' own addresses: a protein's page (at its site when one is typed), or the gene-list test
+  const listAddress = (s, names) => `${encodeURIComponent(s.id)}/#list?${new URLSearchParams({ q: names.join(' ') })}`;
+  // the explorers to offer for a hit: with a residue typed, the ones whose marks sit on that residue (their own residues,
+  // from the site file) open the site; the others open the protein only
+  const links = (row, site, q) => {
+    const letter = site.replace(/\d/g, ''),
+      all = row.ids.map((k) => idx.sites[k]).filter(Boolean),
+      fits = (s) => !letter || !s.residues?.length || s.residues.includes(letter),
+      one = (s, at) =>
+        `<a href="${esc(encodeURIComponent(s.id))}/${esc(address(row, at, q))}">${esc(s.label)}${at || !site ? '' : ' (protein only)'}</a>`;
+    return [...all.filter(fits).map((s) => one(s, site)), ...all.filter((s) => !fits(s)).map((s) => one(s, ''))];
+  };
   const draw = () => {
     const q = box.value.trim();
     if (!q) {
@@ -64,51 +100,27 @@
       if (say && !say.querySelector('.ld-spin')) say.textContent = 'Searching…';
       return;
     }
-    // several names (TP53 S15, EGFR,TP53): the first one is searched, and the line says so
-    let rows = find(q),
-      first = '',
-      site = '';
-    if (!rows.length) {
-      const names = q.split(/[\s,;]+/).filter(Boolean);
-      if (names.length > 1) {
-        first = names[0];
-        rows = find(first);
-        // a gene and a residue with its position (TP53 S15, H4 R3): the hits open that site, as a site's own search does
-        if (names.length === 2 && /^[A-Za-z]\d+$/.test(names[1]) && rows.length) {
-          site = names[1].toUpperCase();
-          first = '';
-          // only a protein that has the typed name (as a gene, another symbol or its accession) gets the site, not a near match
-          const w = names[0].toUpperCase(),
-            is = (x) => String(x || '').toUpperCase() === w;
-          rows = rows.filter(
-            (h) => is(h.row.acc) || is(h.row.gene) || h.row.genes.some(is) || h.row.aliases.some(is) || is(h.via)
-          );
-        }
-      }
-    }
-    out.innerHTML = rows
-      .map((h) => {
-        const { acc, ids } = h.row,
-          links = ids
-            .map((k) => idx.sites[k])
-            .filter(Boolean)
-            .map(
-              (s) => `<a href="${esc(encodeURIComponent(s.id))}/${esc(address(h.row, site, q))}">${esc(s.label)}</a>`
-            )
-            .join(' ');
-        return (
-          `<li><span class="hit-name" style="cursor:pointer" title="Open in ${esc(idx.sites[ids[0]]?.label || '')}"><b>${esc(h.label)}</b>${h.desc ? ` · ${esc(h.desc)}` : ''} ` +
-          `<span class="muted">${esc(acc)}${h.via ? ` · also ${esc(h.via)}` : ''}</span></span>` +
-          `<span class="hit-sites">Open in ${links}</span></li>`
-        );
-      })
-      .join('');
-    if (say) {
-      const lead = first ? `Searched the first name only, ${first}; search each name on its own. ` : '';
-      say.textContent = rows.length
-        ? `${lead}${rows.length} protein${rows.length === 1 ? '' : 's'}; choose a site to open it in.`
-        : `${lead}No protein with that name or accession in these sites.`;
-    }
+    const { rows, site, list } = read(q);
+    out.innerHTML = list
+      ? `<li><span class="hit-name"><b>${esc(list.join(', '))}</b></span><span class="hit-sites">Open this list in: ${idx.sites
+          .map((s) => `<a href="${listAddress(s, list)}">${esc(s.label)}</a>`)
+          .join(' ')}</span></li>`
+      : rows
+          .map((h) => {
+            const { acc, ids } = h.row;
+            return (
+              `<li><span class="hit-name" style="cursor:pointer" title="Open in ${esc(idx.sites[ids[0]]?.label || '')}"><b>${esc(h.label)}</b>${h.desc ? ` · ${esc(h.desc)}` : ''} ` +
+              `<span class="muted">${esc(acc)}${site ? ` · ${esc(site)}` : ''}${h.via ? ` · also ${esc(h.via)}` : ''}</span></span>` +
+              `<span class="hit-sites">Open in ${links(h.row, site, q).join(' ')}</span></li>`
+            );
+          })
+          .join('');
+    if (say)
+      say.textContent = list
+        ? `${list.length} names: test them as a gene list.`
+        : rows.length
+          ? `${rows.length} protein${rows.length === 1 ? '' : 's'}; open it in an explorer.`
+          : 'No protein with that name or accession in these sites.';
   };
   // a click on a hit's name (not on one of its site links) opens the protein in the first site that has it
   out.addEventListener('click', (e) => {
@@ -121,13 +133,16 @@
     load().then(draw);
     draw();
   });
+  // Enter opens the first offered link (the index may still be coming: wait for it)
+  const open = () => {
+    const a = out.querySelector('a');
+    if (a) location.href = a.href;
+  };
   box.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      // one hit in one site: open it
-      const links = out.querySelectorAll('a');
-      if (links.length === 1) location.href = links[0].href;
-      else links[0]?.focus();
+      if (idx) open();
+      else load().then(() => (draw(), open()));
     } else if (e.key === 'Escape' && box.value) {
       box.value = '';
       draw();

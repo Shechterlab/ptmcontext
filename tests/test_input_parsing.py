@@ -35,7 +35,7 @@ const inline = {{ 'selection-data': {json.dumps(selection_text(index.parent))} }
 global.document = {{ getElementById: id => (inline[id] ? {{ textContent: inline[id] }} : null), addEventListener: noop, querySelector: () => null,
   querySelectorAll: () => [], documentElement: {{ style: {{ setProperty: noop }} }}, body: {{ classList: {{ toggle: noop, contains: () => false }} }} }};
 const fs = require('fs');
-for (const f of ['kit-seldata.js', 'kit-select.js', 'kit-near.js']) eval(fs.readFileSync({json.dumps(str(ASSETS))} + '/' + f, 'utf8'));
+for (const f of ['kit-names.js', 'kit-seldata.js', 'kit-select.js', 'kit-near.js']) eval(fs.readFileSync({json.dumps(str(ASSETS))} + '/' + f, 'utf8'));
 const D = {json.dumps(data)}, esc = s => String(s ?? ''), A = Object.fromEntries(D.analyses.map(a => [a.id, a]));
 const SEQS = {json.dumps({'P1': P1, 'P2': P2, 'P3': P3})};
 const K = {{ D, W: D.words, A, S: {{ q: '', f: {{}}, vs: 'residues' }}, esc, int: n => String(n), cap: t => t, clicks: [], render: noop, writeHash: noop,
@@ -167,7 +167,7 @@ def test_a_key_value_term_keeps_its_commas_and_old_chosen_site_links_still_read(
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
-def test_the_landing_finder_searches_the_first_of_several_names_and_says_so():
+def test_the_landing_finder_reads_a_site_or_offers_a_list_of_several_names():
     script = r"""
 const fs = require('fs'); global.window = global;
 const els = {}; const mk = id => (els[id] = { id, value: '', innerHTML: '', textContent: '', handlers: {}, addEventListener(t, f) { this.handlers[t] = f; }, querySelector: () => null, querySelectorAll: () => [] });
@@ -177,7 +177,7 @@ global.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ s
 eval(fs.readFileSync(ASSETS + '/kit-names.js', 'utf8')); eval(fs.readFileSync(ASSETS + '/land-search.js', 'utf8'));
 (async () => {
   const out = {};
-  for (const q of ['TP53 S15', 'EGFR,TP53', 'TP53', 'FOO BAR']) {
+  for (const q of ['TP53 S15', 'EGFR,TP53', 'TP53', 'FOO BAR', 'TP53R213']) {
     els['land-q'].value = q; els['land-q'].handlers.focus?.();
     els['land-q'].handlers.input(); await new Promise(r => setTimeout(r, 20));
     out[q] = [els['land-hits'].innerHTML.includes('P04637') ? 'TP53' : els['land-hits'].innerHTML.includes('P00533') ? 'EGFR' : '', els['land-say'].textContent, (/href="([^"]*)"/.exec(els['land-hits'].innerHTML) || [])[1]];
@@ -192,7 +192,9 @@ eval(fs.readFileSync(ASSETS + '/kit-names.js', 'utf8')); eval(fs.readFileSync(AS
     # a gene and a residue with its position is a site: no "first name only" note, and the hit opens the site
     assert out['TP53 S15'][0] == 'TP53' and 'first name' not in out['TP53 S15'][1]
     assert out['TP53 S15'][2] == 'a/#protein/TP53/P04637/S15?q=TP53+S15'
-    assert out['EGFR,TP53'][0] == 'EGFR' and 'first name only, EGFR' in out['EGFR,TP53'][1]
+    assert 'first name' not in out['EGFR,TP53'][1] and 'gene list' in out['EGFR,TP53'][1]
+    assert out['EGFR,TP53'][2] == 'a/#list?q=EGFR+TP53'  # the explorer's own list route
+    assert out['TP53R213'][2] == 'a/#protein/TP53/P04637/R213?q=TP53R213'  # the notation the explorers read
     assert out['TP53'][0] == 'TP53' and 'first name' not in out['TP53'][1]
     assert out['FOO BAR'][0] == '' and out['FOO BAR'][1].endswith(
         'No protein with that name or accession in these sites.'
