@@ -1690,7 +1690,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [degree, degrees]
       noun: degrees
       top: 4
-      note: "A lysine has a row for each degree a database reports, so it counts under each. iPTMnet gives no degree: its records are methylated, degree not stated, and do not meet UniProt's Kme1, Kme2 and Kme3."
+      note: "A lysine has a row for each degree a database reports, so it counts under each. iPTMnet gives no degree, so its records are methylated with the degree not stated and do not match UniProt's Kme1, Kme2 and Kme3."
       method: "Each methyllysine lists the degrees its records give (the release's state column, joined over the lysine's rows). A degree's count is the methyllysines with a record of it."
     evidence:
       kind: values
@@ -1701,7 +1701,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [class, classes]
       noun: evidence classes
       top: 3
-      note: "The sites counted here have an experimental record, or an unspecified iPTMnet record. The sites UniProt reports only by similarity to another species, are the lower-confidence variant (the switch at the top)."
+      note: "Counted here: sites with an experimental record or an unspecified iPTMnet record. Sites UniProt reports only by similarity to another species are in the lower-confidence variant (the switch at the top)."
       method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, a Berryhill 2023 site; unspecified is iPTMnet's copy of UniProt, which has no ECO code"
     provenance:
       kind: values

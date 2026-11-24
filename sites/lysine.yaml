@@ -1767,7 +1767,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [type, types]
       noun: types
       top: 4
-      note: "A lysine has a row for each modification a database reports, so it counts under each. Each type is also a filter (Modification). The key questions are run again for each type with at least 200 lysines: the types with fewer have counts and filters only."
+      note: "A lysine has a row for each modification a database reports, so it counts under each. Each type is also a filter (Modification). The key questions are repeated for each type with at least 200 lysines; types with fewer have counts and filters only."
       method: "Each lysine lists the modifications its records give (the release tables' type: acyl_type for acetylation and the acylations, one table each for ubiquitination and SUMOylation). A type's count is the lysines with a record of it, by-similarity records left out."
     evidence:
       kind: values
@@ -1778,7 +1778,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [class, classes]
       noun: evidence classes
       top: 3
-      note: "The sites counted here have an experimental record, or an unspecified iPTMnet record. The sites UniProt reports only by similarity to another species, are the lower-confidence variant (the switch at the top)."
+      note: "Counted here: sites with an experimental record or an unspecified iPTMnet record. Sites UniProt reports only by similarity to another species are in the lower-confidence variant (the switch at the top)."
       method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, an iPTMnet record curated from an experiment, or a Hendriks 2017 or Akimov 2018 site; unspecified is iPTMnet's copy of UniProt, which has no ECO code."
     provenance:
       kind: values
@@ -1789,7 +1789,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [study or database, studies and databases]
       noun: studies and databases
       top: 3
-      note: "iPTMnet contains a copy of UniProt, so both databases agreeing is not always two measurements. In the main view of the pinned release, the 107,927 lysine-and-type records are mostly from two proteome-wide studies, which are sources of their own: Akimov et al. 2018 reports 62,871 ubiquitination sites (62,522 that no database reports) and Hendriks et al. 2017 39,858 SUMOylation sites (34,709 that no database reports). The other 5,198 records come from UniProt or iPTMnet, among them most glutaryl, lactyl, benzoyl, methacryl and isonicotinyl records."
+      note: "iPTMnet contains a copy of UniProt, so both databases agreeing is not always two measurements. In the main view of the pinned release, the 107,927 lysine-and-type records are mostly from two proteome-wide studies: Akimov et al. 2018 reports 62,871 ubiquitination sites (62,522 that no database reports) and Hendriks et al. 2017 39,858 SUMOylation sites (34,709 that no database reports). The other 5,198 records come from UniProt or iPTMnet, among them most glutaryl, lactyl, benzoyl, methacryl and isonicotinyl records."
       method: "Each lysine lists the databases and studies that report it (the release's sources column). A database or study's count is the lysines it reports."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Studies and databases, attributes: [sources, evidence_class, hendriks_cell_lines, akimov_cell_lines, iptmnet_score, iptmnet_sources]}

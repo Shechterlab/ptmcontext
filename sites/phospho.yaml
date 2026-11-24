@@ -1690,7 +1690,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [residue, residues]
       noun: residues
       top: 3
-      note: "A tyrosine is a small share of the residues of a proteome and of the phosphosites; the questions compare each site with the other serines, threonines and tyrosines of its own protein, so the residue's share does not explain their results."
+      note: "Tyrosine is a small share of proteome residues and of phosphosites. The questions compare each site with the other serines, threonines and tyrosines of its own protein, so the residue's share does not explain their results."
       method: "The release's residue column, one row per phosphorylated residue."
     evidence:
       kind: values
@@ -1701,7 +1701,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [class, classes]
       noun: evidence classes
       top: 3
-      note: "The sites counted here have an experimental, text-mined or unspecified record. The sites UniProt reports only by similarity to another species are the lower-confidence variant (the switch at the top)."
+      note: "Counted here: sites with an experimental, text-mined or unspecified record. Sites UniProt reports only by similarity to another species are in the lower-confidence variant (the switch at the top)."
       method: "The release's evidence_class column: experimental is UniProt ECO:0000269 or ECO:0007744, or an iPTMnet record curated from an experiment; text-mined is an iPTMnet record from text mining only; unspecified is iPTMnet's copy of UniProt, which has no ECO code."
     provenance:
       kind: values
@@ -1723,7 +1723,7 @@ website:                  # the look and words of the website (ptmc web); layout
       unit: [band, bands]
       noun: score bands
       top: 3
-      note: "The score is a model's estimate of how likely a site is to matter for the cell, not a measurement of its function; it is highest for sites that are conserved, in structured regions, or have a known kinase."
+      note: "The score is a model's estimate of how likely a site is to matter for the cell, not a measurement of its function. It is highest for sites that are conserved, in structured regions, or have a known kinase."
       method: "The functional_score column of the sites table (Ochoa et al. 2020), cut at 0.2 and 0.5."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
     - {name: Kinase motifs, analyses: [kinase_motifs]}
