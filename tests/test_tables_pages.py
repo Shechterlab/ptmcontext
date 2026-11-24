@@ -120,7 +120,7 @@ const K = {{ D, W: D.words, A, S, esc, int: n => String(n), cap: t => String(t)[
   link: (v, a) => '#' + v + '/' + (a || ''), map: {{ attrColour: () => '#000' }}, preamble: () => '# head\\n', CIT: {{}}, download: () => {{}}, render: () => {{}}, go: () => {{}}, writeHash: () => {{}},
   expBar: (k, a) => `<span data-${{a}}></span>`, exportFigure: (kind, make, name, el, tsv) => {{ got = {{ name, tsv: tsv() }}; }}, proteinAttr: (acc, n) => D.protein_attributes.values[n][D.proteins.findIndex(p => p[0] === acc)],
   PADJ: 0.05, fxn: v => String(v), fq: v => String(v), pct: () => '', fx: v => String(v),
-  seld: {{ inline: true }},
+  seld: {{ inline: true }}, markRes: m => {{ const w = (m && m[4]) || ""; return w[Math.floor(w.length / 2)] || ""; }},
   sel: {{ data: () => SD, peek: () => SD, meta: () => SD, vocab: n => SD.attributes[n], active: () => false, compute: () => ({{ active: false }}), nMarks: () => SD.marks.length, valueLabel: (n, v) => (D.attribute_specs[n]?.values || {{}})[v] ?? v,
     classLabel: (a, c) => c, listHtml: (n, vs) => vs.join(', '), selectedCountByProtein: () => ({{}}), contrastGroups: () => null, MIN_SIDE: 10 }} }};
 window.PTMC_MODULES.forEach(f => f(K));
