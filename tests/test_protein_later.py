@@ -30,3 +30,11 @@ def test_pdf_and_print_draw_the_waiting_sections_and_modules_leave_them_alone():
 def test_the_link_check_opens_the_waiting_sections():
     s = (ROOT / 'tools' / 'audit' / 'links.js').read_text()
     assert 'window.PTMC.drawOpenFolds()' in s and "opt('later-links') || 150" in s
+
+
+def test_the_maps_change_labels_follow_the_pages_numbering():
+    # a histone's TCGA, DepMap and variant labels arrive in UniProt numbering ("R46G"); the map shows them as its sites ("R45G")
+    s = _src('kit-map.js')
+    assert 'const renum = (q, lab) =>' in s
+    assert "xs.map((x) => renum(x[1], x[4]) + (x[5] > 1 ? ` ×${x[5]}` : '')).join(', ')" in s
+    assert s.count('renum(x[1], x[4])') >= 5

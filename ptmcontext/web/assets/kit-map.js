@@ -815,6 +815,13 @@
     const f = mapFiles[key];
     return f == null ? null : f.__failed ? [] : f[acc] || [];
   }
+  // a change named in UniProt numbering ("R46G" at UniProt 46) as the page numbers the protein (histones without the initiator
+  // methionine: "R45G"), so the map's labels and hovers agree with its sites
+  const renum = (q, lab) => {
+    const acc = K.protState?.()?.acc,
+      s = acc && K.prot?.shownPos ? K.prot.shownPos(acc, q) : q;
+    return s === q || !lab ? lab : String(lab).replace(new RegExp('^([A-Z])' + q + '(?!\\d)'), '$1' + s);
+  };
   const ownItems = (acc, r) => {
     const all = itemsOf(acc);
     if (!all) return null;
@@ -1277,7 +1284,7 @@
         .filter((x) => inView(x[1], x[2]))
         .forEach((x) => {
           const tip = (full) =>
-            `<b>${esc(r.title)}</b> ${rngOf(p.acc, x[1], x[2])}${x[4] ? '<br>' + esc(x[4]) : ''}${insideHtml(x[1], x[2], full)}<br><span ` +
+            `<b>${esc(r.title)}</b> ${rngOf(p.acc, x[1], x[2])}${x[4] ? '<br>' + esc(renum(x[1], x[4])) : ''}${insideHtml(x[1], x[2], full)}<br><span ` +
             `class="muted">${esc(ownHelp(r))}</span>`;
           const k = it({ tip: tip(false), card: tip(true), a: x[1], b: x[2], src: { own: r, x } });
           back.push(MK.box(XA(x[1]), top + 2, XB(x[2]) - XA(x[1]), yB + 8 - top - 2, c, op, ` rx="3" data-mi="${k}"`));
@@ -1721,7 +1728,7 @@
       const ctxHover = (x) => {
         const head = [],
           lines = [],
-          label = String(x[4] || '');
+          label = String(renum(x[1], x[4]) || '');
         HOVER_CTX.forEach((f) => {
           if (f === 'mark') head.push(`<b>${esc(r.title)}</b>`);
           else if (f === 'residue') head.push(esc(resName(x[1])));
@@ -1748,9 +1755,9 @@
         const cs = clsOf(x),
           head =
             !order.length && x[4] && x[1] === x[2]
-              ? `<b>${esc(x[4])}</b>${x[5] != null ? ' ' + esc(valText(x[5])) : ''}`
-              : `<b>${esc(cs.label || x[4] || r.title)}</b> ${span2(x[1], x[2])}${
-                  cs.label && x[4] ? '<br>' + esc(x[4]) : ''
+              ? `<b>${esc(renum(x[1], x[4]))}</b>${x[5] != null ? ' ' + esc(valText(x[5])) : ''}`
+              : `<b>${esc(cs.label || renum(x[1], x[4]) || r.title)}</b> ${span2(x[1], x[2])}${
+                  cs.label && x[4] ? '<br>' + esc(renum(x[1], x[4])) : ''
                 }${x[5] != null ? '<br>' + esc(valText(x[5])) : ''}`;
         const words =
           r.sequence?.words && x[8]
@@ -2070,7 +2077,7 @@
             labelAt(
               X(q),
               mid,
-              xs.map((x) => x[4] + (x[5] > 1 ? ` ×${x[5]}` : '')).join(', '),
+              xs.map((x) => renum(x[1], x[4]) + (x[5] > 1 ? ` ×${x[5]}` : '')).join(', '),
               right,
               shown.filter((x) => markOf(x) === 'tick').map((x) => X(x[1]))
             )
@@ -3034,7 +3041,7 @@
     const ev = [];
     OWN_ROWS.filter((r) => !r.sequence && isOn(ownId(r))).forEach((r) => {
       const its = (ownItems(ctx.p.acc, r) || []).filter((x) => x[1] <= pos && x[2] >= pos);
-      const w = [...new Set(its.map((x) => (r.classes || {})[x[3]]?.label || x[4] || r.title))];
+      const w = [...new Set(its.map((x) => (r.classes || {})[x[3]]?.label || renum(x[1], x[4]) || r.title))];
       if (w.length) ev.push(`${esc(r.title)}: ${esc(w.slice(0, 3).join('; '))}`);
     });
     const pk = PDBK[ctx.p.acc];
