@@ -4212,6 +4212,16 @@ b.trend.c-increased {
 .sp-more {
   display: inline;
 }
+.sc-sum {
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+}
+[data-density='compact'] td .sc-sum {
+  max-width: 26rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .sp-more > summary {
   display: inline;
   cursor: pointer;
