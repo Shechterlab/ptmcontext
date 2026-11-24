@@ -533,6 +533,13 @@
     S.legacy = ov || routed || slashed || aliased || (S.view !== view && !!view); // written back as this site's own link (replaceState)
     // #overview/<section> is a place on the Overview (a shared sidebar entry): the page opens there
     S.jumpArg = S.view === 'overview' && S.arg && !A[S.arg] ? S.arg : '';
+    // older links carry the Overview's former section names: the same places under the shorter names
+    const OLD_SECTIONS = {
+      'where-in-the-cell': 'localization',
+      'which-proteins': 'classes-and-pathways',
+      'where-in-the-protein': 'position-in-the-protein',
+    };
+    if (S.jumpArg && OLD_SECTIONS[S.jumpArg]) S.jumpArg = OLD_SECTIONS[S.jumpArg];
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';
     S.q = K.sel?.canonQ ? K.sel.canonQ(p.get('q') || '') : p.get('q') || '';
     S.m = p.get('m') || 'mantel_haenszel';
