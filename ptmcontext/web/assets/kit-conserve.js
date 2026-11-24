@@ -531,7 +531,8 @@
             )
           : ''
       );
-    el.querySelector('.pfold-body').innerHTML = bodyHtml(acc);
+    const body = el.querySelector('.pfold-body');
+    if (!body.hasAttribute('data-later')) body.innerHTML = bodyHtml(acc); // else drawn when the section is opened
     chip(acc);
   }
   // the chip among the protein's chips: loading, then "82% still R in orthologs" (it opens the card)

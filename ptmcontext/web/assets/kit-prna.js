@@ -438,7 +438,7 @@
   (K.proteinFoldSections ||= []).push(['p-na', TITLE, 1]);
   const repaint = () => {
     const el = document.querySelector('#p-na .pfold-body');
-    if (!el || !LAST) return;
+    if (!el || !LAST || el.hasAttribute('data-later')) return;
     el.innerHTML = bodyHtml(LAST.p, LAST.rec, LAST.M);
   };
   K.prnaModel = (p, rec, tb) => model(p, rec, tb); // the pictures in the protein page's fold headers (kit-pfolds.js)

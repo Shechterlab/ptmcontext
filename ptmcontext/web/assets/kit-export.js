@@ -181,6 +181,7 @@
     document.querySelectorAll('details.pgroup, details.pfold, details.mfold').forEach((d) => {
       d.open = true;
     });
+    K.drawOpenFolds?.();
     const theme = document.documentElement.dataset.theme;
     document.documentElement.dataset.theme = 'light';
     document.body.dataset.printFoot = `${D.site.name} · ${location.href} · printed ${K.hdate(new Date().toISOString())}. ${K.creditLines()[0] || ''}`;
@@ -197,6 +198,7 @@
       document.querySelectorAll('details.pgroup, details.pfold, details.mfold').forEach((d) => {
         d.open = true;
       });
+      K.drawOpenFolds?.();
       const { title, file } = pageInfo();
       K.pagePdf?.(document.getElementById('view'), title, file, el);
     },

@@ -126,11 +126,28 @@
     lightAll: false,
     cleanArg: false,
   };
+  // the page draws a section left empty while closed when it is opened (several at once, as Open all does, in one draw)
+  const LATER_CHARS = 20000;
+  let laterT = 0;
+  function drawOpened() {
+    clearTimeout(laterT);
+    if (!document.querySelector('#view details.pfold[open] > .pfold-body[data-later]')) return false;
+    document.querySelectorAll('#view details.pgroup, #view details.pfold').forEach((d) => {
+      if (d.id) PV.open[d.id] = d.open;
+    });
+    K.render();
+    return true;
+  }
+  K.drawOpenFolds = drawOpened; // the page's PDF and print open every section first (kit-export.js)
   document.addEventListener(
     'toggle',
     (e) => {
       const d = e.target;
       if (d.classList?.contains('pfold') || d.classList?.contains('pgroup')) PV.open[d.id] = d.open;
+      if (d.open && d.querySelector?.(':scope > .pfold-body[data-later]')) {
+        clearTimeout(laterT);
+        laterT = setTimeout(drawOpened, 0);
+      }
     },
     true
   );
@@ -1575,10 +1592,16 @@
     const rec = PV.rec,
       sel = K.sel?.active() ? K.sel.selectedPositions(acc) : null;
     const isOpen = (id, open) => PV.open[id] ?? foldOpen(id, open);
-    const fold = (id, title, sum, body, open) =>
-      `<details class="pfold" id="${id}"${isOpen(id, open) ? ' open' : ''}><summary>` +
-      `<span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary>` +
-      `<div class="pfold-body">${body}</div></details>`;
+    // a closed section with a long body is drawn when it is first opened (a large protein's sites, sequence and regions)
+    const fold = (id, title, sum, body, open) => {
+      const o = isOpen(id, open),
+        later = !o && body.length > LATER_CHARS;
+      return (
+        `<details class="pfold" id="${id}"${o ? ' open' : ''}><summary>` +
+        `<span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary>` +
+        `<div class="pfold-body"${later ? ' data-later' : ''}>${later ? '' : body}</div></details>`
+      );
+    };
     const nSrc = Object.keys(SPECS).find((n) => SPECS[n].kind === 'list' && SPECS[n].link);
     const page = (laid) => arrangeFolds(laid);
     return (

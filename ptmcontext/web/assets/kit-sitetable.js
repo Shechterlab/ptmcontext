@@ -409,6 +409,7 @@
       f = document.getElementById('p-sitetab');
     f.querySelector('.fsum').innerHTML = summary(M);
     const host = f.querySelector('.pfold-body');
+    if (host.hasAttribute('data-later')) return; // drawn when the section is opened
     if (bodyToo) host.innerHTML = body(M);
     else host.querySelector('.st-card').outerHTML = table(M);
   }

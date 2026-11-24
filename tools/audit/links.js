@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Broken-link tracking for a built site: links and controls inside the page's cards and boxes that lead nowhere or do nothing.
    node tools/audit/links.js <base-url> [--yeast <url>] [--external] [--max N] [--workers N] [--no-selection] [--only "#overview,#help"] [--verbose] [--out report.json]
-     [--budget MINUTES] [--page-minutes MINUTES]
+     [--budget MINUTES] [--page-minutes MINUTES] [--later-links N]
    Visits the Overview and every question page, Proteins, Sites, Disordered regions, Interactions and its question pages, All tests, Methods
    & data, Help, and protein pages (two of the site's own example proteins and, with --yeast, one yeast protein), each without and with a selection (the
    first example search the page offers). On each page:
@@ -16,6 +16,8 @@
    named in the summary, and what was checked still counts. --verbose prints each page and each break as it is found; a
    SIGTERM or SIGINT (a job's time limit) writes the report of what was checked so far.
    --page-minutes: a page still being checked after that many minutes (default 10) is stopped and listed as not finished.
+   --later-links: a protein page draws its long sections only when they are opened; the check opens them all and checks their
+   external links and up to that many of their new internal links, evenly spread (default 150).
    Exit 1 when an internal link is broken, a control is dead, a page throws, or (with --external) an external link answers 4xx/5xx.
    JSON report on stdout (or --out); a one-line summary and the list of breaks on stderr. */
 'use strict';
@@ -53,6 +55,7 @@ const externals = new Map(); // url -> first page it was seen on
 const T0 = Date.now();
 const BUDGET = opt('budget') ? +opt('budget') * 60000 : Infinity;
 const PAGE_LIMIT = +(opt('page-minutes') || 10) * 60000; // one page's longest visit
+const LATER_LINKS = +(opt('later-links') || 150); // internal links checked in the sections a page draws when opened
 // a break, kept for the report and, with --verbose, printed as it is found
 const note = (list, item) => {
   report[list].push(item);
@@ -198,8 +201,29 @@ async function visit(ctx, site, label, url, sel, state, out) {
   await open(pg, full);
   out.checked.pages++;
   if (errs.length) note('errors', { where, why: errs[0] });
-  // anchors
+  // anchors: those the page draws, then those of the long sections it draws only when opened (a protein page), opened all
+  // at once; of those, the internal links not already seen are checked up to LATER_LINKS, evenly spread
   const anchors = await pg.evaluate(ANCHORS);
+  const later = await pg.evaluate(() => {
+    if (!document.querySelector('#view .pfold-body[data-later]') || !window.PTMC?.drawOpenFolds) return null;
+    document.querySelectorAll('#view .pfold-body[data-later]').forEach((b) => {
+      b.parentElement.open = true;
+      const g = b.closest('details.pgroup');
+      if (g) g.open = true;
+    });
+    window.PTMC.drawOpenFolds();
+    return true;
+  });
+  if (later) {
+    await settle(pg);
+    const seen = new Set(anchors.map((a) => a.href)),
+      more = (await pg.evaluate(ANCHORS)).filter((a) => !seen.has(a.href) && (seen.add(a.href), true)),
+      ext = more.filter((a) => !/^#/.test(a.href)),
+      hash = more.filter((a) => /^#/.test(a.href)),
+      step = Math.max(1, Math.ceil(hash.length / LATER_LINKS));
+    anchors.push(...ext, ...hash.filter((_, k) => k % step === 0));
+    await open(pg, full); // the links and controls are tried from the page as it loads, its long sections closed
+  }
   for (const a of anchors) {
     out.checked.links++;
     if (/^#/.test(a.href)) {
