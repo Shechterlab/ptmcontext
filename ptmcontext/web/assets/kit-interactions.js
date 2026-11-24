@@ -764,40 +764,17 @@
     const meter = (k, n, K2, N) =>
       `<span class="ix-meter" title="${int(k)} of ${int(n)} (${pcS(k, n)}) vs ${int(K2)} of ${int(N)} (${pcS(K2, N)})"><i style="width:${((100 * k) / (n || 1)).toFixed(1)}%"></i><b ` +
       `style="left:${((100 * K2) / (N || 1)).toFixed(1)}%"></b></span>`;
-    const hold = (x) => {
-      const h = K.holdStatus(x.site);
-      const s2 = x.strat;
-      return s2
-        ? `<span class="ix-hold ${h || ''}" title="Within ` +
-            `abundance deciles: OR ${fxn(s2.or ?? s2.eff)}${
-              s2.lo != null ? ` [${fxn(s2.lo)}–${fxn(s2.hi)}]` : ''
-            }, q ${fq(s2.q)}"><span aria-hidden="true">${
-              h === 'holds' ? '✓' : h === 'weaker' ? '◌' : h === 'lost' ? '○' : dirOf(s2) === 'less' ? '▼' : '·'
-            }</span><span class="vh">${
-              h === 'holds'
-                ? 'holds within deciles'
-                : h === 'weaker'
-                  ? 'same direction within deciles, not significant'
-                  : h === 'lost'
-                    ? 'lost within deciles'
-                    : dirOf(s2) === 'less'
-                      ? 'fewer within deciles'
-                      : 'no reading within deciles'
-            }:</span> ${fxn(s2.or ?? s2.eff)}</span>`
-        : '–';
-    };
     return (
       `<div class="tbl-card"><table class="tbl ix-sets"><thead><tr><th>Set</th><th>${esc(cap(W.marked))} proteins</th>` +
       `<th class="num">In the set</th><th class="num">All proteins</th><th class="num">Fold</th><th class="num">` +
-      `q</th><th class="num" title="The same test within protein abundance deciles: ✓ holds, ◌ same direction ` +
-      `but not significant, ○ lost">Within deciles</th></tr></thead><tbody>` +
+      `q</th></tr></thead><tbody>` +
       rows
         .map((x) => {
           const r = selOn() && x.mine ? x.mine : x.site,
             d = dirOf(r);
           return (
             `<tr data-f="p:${esc(b.analysis)}" data-v="${esc(x.site.category)}" title="Select the ${esc(W.marks)} on proteins ` +
-            `in it"><td class="wrapok">${esc(x.site.label)}</td><td>${meter(
+            `in it${!selOn() && K.estLine(x.site) ? `. ${esc(K.estLine(x.site))}` : ''}"><td class="wrapok">${esc(x.site.label)}</td><td>${meter(
               r.a,
               r.a + r.b,
               r.a + r.c,
@@ -805,8 +782,7 @@
             )}</td><td ` +
             `class="num">${int(r.a)} <span class="muted">of ${int(r.a + r.b)} (${pcS(r.a, r.a + r.b)})</span></td>` +
             `<td class="num">${int(r.a + r.c)} <span class="muted">of ${int(r.a + r.b + r.c + r.d)} (${pcS(r.a + r.c, r.a + r.b + r.c + r.d)})</span></td>` +
-            `<td class="num ixf-or ${d}">${fxn(r.fold ?? r.eff)}×</td><td class="num">${fq(r.q)}</td><td ` +
-            `class="num">${selOn() ? '<span class="muted">–</span>' : hold(x)}</td></tr>`
+            `<td class="num ixf-or ${d}">${fxn(r.fold ?? r.eff)}×</td><td class="num">${fq(r.q)}</td></tr>`
           );
         })
         .join('') +
@@ -821,20 +797,7 @@
   }
   function setsTsv(b) {
     return (
-      [
-        'set',
-        'label',
-        'rows',
-        'a',
-        'b',
-        'c',
-        'd',
-        'fold_enrichment',
-        'p',
-        'q',
-        'within_deciles_or',
-        'within_deciles_q',
-      ].join('\t') +
+      ['set', 'label', 'rows', 'a', 'b', 'c', 'd', 'fold_enrichment', 'p', 'q', 'est_odds_ratio', 'est_q'].join('\t') +
       '\n' +
       setRows(b)
         .flatMap((x) =>
@@ -3045,7 +3008,6 @@
     `{ position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
 .ix-mrow2 { display: grid; grid-template-columns: minmax(0, 1fr) 7rem auto; gap: 0.5rem; align-items: center; ` +
     `font-size: 0.84rem; }
-.ix-hold { white-space: nowrap; } .ix-hold.holds { color: var(--more); } .ix-hold.lost { color: var(--muted); }
 .ix-upset th.ix-vh, .ix-matrix th.ix-vh { height: 9rem; vertical-align: bottom; white-space: nowrap; padding: ` +
     `0.3rem 0.2rem; }
 .ix-vh span { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.74rem; ` +

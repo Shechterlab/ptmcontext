@@ -457,7 +457,8 @@
     const cv = ps.covariate,
       counts = cv?.counts,
       res = new Map(),
-      tested = [];
+      tested = [],
+      estTested = [];
     const at = counts ? Object.fromEntries(counts.codes.map((x, i) => [x, i])) : null;
     const nS = counts ? counts.codes.map(() => 0) : null;
     if (counts)
@@ -478,26 +479,32 @@
         circular = !!n && (blocked || k === n || selected);
       const x = { k, M, n, N: ps.N, circular, selected, a: { l2: null, lo: null, hi: null, q: null } };
       if (n && !circular) {
+        // the selection's own test: hypergeometric, as the selection retest (K.sel) runs it, not adjusted for protein
+        // abundance. Where the map has abundance strata, the Mantel–Haenszel odds ratio goes beside it as `est`
+        if (k) x.a = { l2: Math.log2(k / n / (M / ps.N)), lo: null, hi: null, p: ST.hyperSF(k, ps.N, M, n), q: null };
         if (counts && counts.sets[s]) {
           const Ms = counts.sets[s],
             m = ST.mh(kS.map((ki, i) => [ki, nS[i] - ki, Ms[i] - ki, counts.N[i] - nS[i] - Ms[i] + ki]));
-          x.a = {
-            mh: true,
+          x.est = {
             l2: L2(m.or === Infinity ? 1e300 : m.or),
             lo: m.lo ? Math.log2(m.lo) : null,
             hi: m.hi ? Math.log2(m.hi) : null,
             p: m.p,
             q: null,
           };
-        } else if (k)
-          x.a = { l2: Math.log2(k / n / (M / ps.N)), lo: null, hi: null, p: ST.hyperSF(k, ps.N, M, n), q: null };
+        }
         if (x.a.p != null && Number.isFinite(x.a.p)) tested.push(x.a);
+        if (x.est && x.est.p != null && Number.isFinite(x.est.p)) estTested.push(x.est);
       }
       res.set(s, x);
     }
     const q = ST.bh(tested.map((a) => a.p));
     tested.forEach((a, i) => {
       a.q = q[i];
+    });
+    const qe = ST.bh(estTested.map((a) => a.p));
+    estTested.forEach((a, i) => {
+      a.q = qe[i];
     });
     return (memo.maps[aid] = { n, N: ps.N, res, blocked });
   }
@@ -577,7 +584,7 @@
             hi: null,
             q: x.a.q,
             p: x.a.p,
-            test: x.a.mh ? x.a : null,
+            ...(x.est ? { est: x.est } : {}),
             small: smallOf(x.k, x.M),
           };
       return {
@@ -2283,8 +2290,8 @@
   function gridTsv(L, scoped) {
     if (pctOn()) return pctTsv(L, scoped);
     const head = scoped
-      ? 'group\tcompartment\tmap\tmap_category\tmembers\tselected\tselected_placed\tplaced\tlog2_odds_ratio\tlog2_ci_low\tlog2_ci_high\tp\tq\tnot_compared\n'
-      : 'group\tcompartment\tmap\tmap_category\tmembers\tmarked\tlog2_fold_enrichment\tq\tlog2_odds_ratio_within_strata\tlog2_ci_low\tlog2_ci_high\tq_within_strata\n';
+      ? 'group\tcompartment\tmap\tmap_category\tmembers\tselected\tselected_placed\tplaced\tlog2_fold_enrichment\test_log2_odds_ratio\test_log2_ci_low\test_log2_ci_high\tp\tq\tnot_compared\n'
+      : 'group\tcompartment\tmap\tmap_category\tmembers\tmarked\tlog2_fold_enrichment\tq\test_log2_odds_ratio\test_log2_ci_low\test_log2_ci_high\test_q\n';
     const body = L.groups.flatMap(([group, rows]) =>
       rows.flatMap((row) =>
         L.cols
@@ -2326,6 +2333,7 @@
                 '',
                 '',
                 '',
+                '',
                 'no selection data',
               ].join('\t');
             return [
@@ -2338,8 +2346,9 @@
               x.n,
               x.N,
               v6(x.a.l2),
-              v6(x.a.lo),
-              v6(x.a.hi),
+              v6(x.est?.l2),
+              v6(x.est?.lo),
+              v6(x.est?.hi),
               x.a.p ?? '',
               x.a.q ?? '',
               x.circular

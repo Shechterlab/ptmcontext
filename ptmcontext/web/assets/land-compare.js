@@ -323,9 +323,9 @@
   }
   function cellRecord(e, r, q, c) {
     const base = [q.title, r.label, e.label];
-    if (!c) return [...base, 'not tested', '', '', '', '', '', '', '', '', '', '', c ? c.label : ''];
+    if (!c) return [...base, 'not tested', '', '', '', '', '', '', '', '', '', '', '', '', '', '', c ? c.label : ''];
     if (c.state !== 'ok')
-      return [...base, 'not tested (too few)', '', '', '', '', '', '', '', '', '', '', c.label || ''];
+      return [...base, 'not tested (too few)', '', '', '', '', '', '', '', '', '', '', '', '', '', '', c.label || ''];
     return [
       ...base,
       'tested',
@@ -338,6 +338,10 @@
       c.dir,
       c.n ?? '',
       c.test,
+      c.est?.or ?? '',
+      c.est?.lo ?? '',
+      c.est?.hi ?? '',
+      c.est?.q ?? '',
       c.group,
       c.label || '',
     ];
@@ -360,6 +364,10 @@
         'reading',
         'n',
         'test',
+        'est_or',
+        'est_lo',
+        'est_hi',
+        'est_q',
         'comparison_group',
         'explorer_class_label',
       ].join('\t')
