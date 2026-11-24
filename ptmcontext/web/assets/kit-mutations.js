@@ -1232,7 +1232,7 @@
       .join('');
     const qTip = 'Benjamini–Hochberg across the sites of your list, not across the release';
     return (
-      `<section class="mu-listres"><div class="mu-top"><h4>Your list against expectation</h4>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mulist', 'sites of a pasted list', 'propensity')}</div>` +
+      `<section class="mu-listres"><div class="mu-top"><h4>Your list</h4>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mulist', 'sites of a pasted list', 'propensity')}</div>` +
       listVerdict(res) +
       `<p class="small muted">${hyper() ? 'With' : 'Without'} hypermutated samples. Per source, the changes (k) at the listed sites against the expected count, summed over their proteins: the release's site-set test, with your sites in place of a site set (both tails). p is the ${esc(LIST_TEST)}. ClinVar is descriptive.</p>` +
       `<div class="tbl-wrap"><table class="tbl mu-lt"><thead><tr><th>Source</th><th class="num">Sites tested</th><th class="num" title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th class="num">Expected</th><th class="num">O/E</th><th class="num">p (more)</th><th class="num">p (fewer)</th></tr></thead><tbody>${pool}</tbody></table></div>` +
@@ -2079,8 +2079,8 @@
       else {
         const f = oncoprintSvg(o, { ...ONC_THEME }, 760, ['var(--onc-1)', 'var(--onc-2)'], true);
         body =
-          `<section class="mu-card"><div class="mu-top"><h3>Top sites across TCGA tumors</h3>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muon', 'top sites across TCGA tumors', 'propensity')}</div>` +
-          `<svg id="mu-svg" class="mu-svg" viewBox="0 0 760 ${f.H}" role="img" aria-label="Top sites across TCGA tumors, with the tumors that carry them">${f.svg}` +
+          `<section class="mu-card"><div class="mu-top"><h3>Top TCGA sites</h3>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muon', 'top sites across TCGA tumors', 'propensity')}</div>` +
+          `<svg id="mu-svg" class="mu-svg" viewBox="0 0 760 ${f.H}" role="img" aria-label="Top TCGA sites, with the tumors that carry them">${f.svg}` +
           `<rect id="mu-hover" class="mu-link" x="${f.ml}" y="0" width="${f.pw}" height="${f.H}" fill="transparent" data-prtip=""/></svg>` +
           `<p class="pr-key small muted"><span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-1)"/></svg>missense change</span>` +
           `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-2)"/></svg>stop gained</span>` +
@@ -2231,7 +2231,7 @@
     const o = onco(),
       f = oncoprintSvg(o, ONC_LIGHT, 720, ['#2a78d6', '#eb6834']);
     return K.figureFrame({
-      title: 'Top sites across TCGA tumors',
+      title: 'Top TCGA sites',
       sub: `${K.sel.describe() || 'every ' + W.mark}: ${int(o.top.length)} ${W.marks}, ${int(o.cols.length)} tumors`,
       body: `<g transform="translate(20,0)">${f.svg}</g>`,
       bodyH: f.H,
@@ -2243,7 +2243,7 @@
     const o = onco();
     return (
       K.preamble(
-        'Top sites across TCGA tumors',
+        'Top TCGA sites',
         `${hyper() ? 'with' : 'without'} hypermutated tumors; sample burden from sample_burden`
       ) +
       'site\taccession\tsample_id\tproject\tchange\tcoding_calls_per_mb\thypermutated\n' +

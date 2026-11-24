@@ -568,7 +568,7 @@
             .join(', ')} <span class="muted">in ${int(t)} ${esc(t === 1 ? unit[0] : unit[1])} (${esc(x.label)})</span>`
         : `<span class="muted">no change in ${esc(unit[1])} (${esc(x.label)})</span>`;
       return (
-        `<div>${head}<br><span class="muted small">changes at this ${esc(nm)}: ${int(t)} · ` +
+        `<div>${head}<br><span class="muted small">${t ? `at this ${esc(nm)}: ${int(t)} · ` : ''}` +
         `protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`
       );
     }).join('');

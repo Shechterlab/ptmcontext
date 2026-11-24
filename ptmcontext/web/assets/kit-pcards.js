@@ -1147,7 +1147,7 @@
       `${
         cfg.url ? `<p class="actions">${ext(cfg.url.replace('{gene}', encodeURIComponent(g)), 'Source ↗')}</p>` : ''
       }` +
-      `<div class="pc-grid"><section class="pc-sec"><h4>Dependency in CRISPR knockout screens</h4>${dep}</section>` +
+      `<div class="pc-grid"><section class="pc-sec"><h4>CRISPR dependency</h4>${dep}</section>` +
       (ch.length
         ? `<section class="pc-sec"><h4>Changes at ${esc(W.residues)}</h4>${chg}${cfg.changes_note ? `` : ''}</section>`
         : '') +

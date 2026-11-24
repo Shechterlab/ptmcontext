@@ -620,9 +620,9 @@
   (K.proteinFolds ||= []).push((p, rec, fold) => {
     if (!rec.seq) return '';
     ST[p.acc] ||= { phase: 'idle', seq: rec.seq, sites: (rec.marks || []).map((m) => m[0]) };
-    return fold('p-cons', 'Conservation across species', sumOf(ST[p.acc]), bodyHtml(p.acc), false);
+    return fold('p-cons', 'Conservation', sumOf(ST[p.acc]), bodyHtml(p.acc), false);
   });
-  (K.proteinFoldSections ||= []).push(['p-cons', 'Conservation across species', 1]);
+  (K.proteinFoldSections ||= []).push(['p-cons', 'Conservation', 1]);
   K.clicks.push(
     [
       '[data-cv-pos]',
@@ -987,7 +987,7 @@
       );
     return (
       K.preamble(
-        'Site alignment and sequence logo',
+        'Alignment and sequence logo',
         `the residue counts at each position of the sequence ` +
           `windows of the selection and of the other ${W.marks}; then the selection's aligned windows`
       ) +

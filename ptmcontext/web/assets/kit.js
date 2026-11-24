@@ -1838,17 +1838,17 @@
     if (r.dir !== 'same' || q == null || q > PADJ || t.eff == null) return '';
     const big = t.eff >= MIN_EFFECT || t.eff <= 1 / MIN_EFFECT;
     if (!big) return '';
-    const head = `${effName(t)} ${fxn(t.eff)} at q ${fq(q)}, but the fold is ${fx(valOf(r))}, under the 1.1× a difference needs`;
+    const head = `${effName(t)} ${fxn(t.eff)} at q ${fq(q)}, but the fold is ${fx(valOf(r))}, under the 1.1× needed for a difference`;
     if (SETS(r.analysis) && r.a != null && r.a + r.b + r.c + r.d > 0) {
       const n = r.a + r.b,
         N = n + r.c + r.d;
       return (
         `${head}: the fold is against the whole background, and ${int(n)} of its ${int(N)} proteins ` +
-        `(${pcD(n / N)}) are ${W.marked}, so it stays near 1×; the odds ratio compares with the other proteins only`
+        `(${pcD(n / N)}) are ${W.marked}, so it stays near 1×. The odds ratio compares with the other proteins only`
       );
     }
     return sharePair(r)
-      ? `${head}: the shares (${sharePair(r)}) are close, and the odds ratio is large where a class is common in both groups`
+      ? `${head}: the shares (${sharePair(r)}) are close, and the odds ratio overstates the difference when a class is common in both groups`
       : head;
   };
   K.sameWhy = sameWhy;
@@ -2058,28 +2058,13 @@
       }` +
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">${S.how ? 'Hide details' : 'Show details'}</button></p>`;
     const howP = S.how
-      ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a ` +
-        `log scale (the solid line is no difference). The number is the fold: for questions about where ${esc(W.marks)} ` +
-        `lie, the share of ${esc(W.marks)} in the class over the share of the other ${esc(W.residues)} in it${
+      ? `<p class="how-text">Each row is a class, drawn as a fold on a log scale (the solid line is 1×, no difference). The line under it is the test: odds ratio, 95% interval and q. A row differs when q ≤ ${PADJ} and the fold or odds ratio is at least 1.1× the same way. ` +
+        `Within each protein compares each ${esc(W.mark)} only with the other ${esc(W.residues)} of its own protein (Mantel–Haenszel odds ratio). ` +
+        `Across all proteins pools the ${esc(W.residues)} of the ${esc(W.marked)} proteins (Fisher’s exact test). ${
           D.analyses.some((a) => a.kind === 'protein_sets')
-            ? '; for questions about protein classes, the share of ' +
-              esc(W.marked) +
-              ' proteins in the set over the share of all proteins'
+            ? `Protein-set questions show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). `
             : ''
-        }. Beneath it is the test: the odds ratio with its 95% interval, and q. Tapping or hovering a row gives the counts. A row ` +
-        `differs when q ≤ ${PADJ}, the odds ratio (or fold) is at least 1.1× either way and the test points the same way. Within ` +
-        `each protein, each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein ` +
-        `(Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} lie from which proteins were found ${esc(W.marked)}. Across ` +
-        `all proteins puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact ` +
-        `test). ${
-          D.analyses.some((a) => a.kind === 'protein_sets')
-            ? `Questions about protein types show the ` +
-              `fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). `
-            : ''
-        }Red: more ` +
-        `often (q ≤ 0.05 and at least 1.1×). Slate: less often. Gray: about the same (q ≤ 0.05 but within 1.1×). Hollow: no ` +
-        `difference (q above 0.05). A tile shows the classes that differ most and opens to every class. Tap or hover a row ` +
-        `for its counts.</p>`
+        }Hover or tap a row for its counts. <a href="${esc(link('help', 'h-read'))}">More in Help</a>.</p>`
       : '';
     const key = keyP + howP;
     const methods = vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher'];

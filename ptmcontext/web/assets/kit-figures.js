@@ -26,7 +26,7 @@
       head +
       note +
       (`<details class="pfold" id="fg-align"${open('fg-align') ? ' open' : ''}><summary><span ` +
-        `class="pfm" aria-hidden="true"></span><h3>Site alignment and sequence logo</h3>`) +
+        `class="pfm" aria-hidden="true"></span><h3>Alignment and sequence logo</h3>`) +
       `<span class="fsum">${int(lp.n)} ${esc(W.marks)}</span></summary><div class="pfold-body">${lp.html()}</div></details>`
     );
   }
