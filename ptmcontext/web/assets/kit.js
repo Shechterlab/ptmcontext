@@ -5195,7 +5195,10 @@
     `<div class="pfold-body">${body}</div></details>`;
   K.foldsForSave = () => ({ ...K.folds });
   K.restoreFolds = (f) => {
-    foldPending = f && Object.keys(f).length ? { ...f } : null;
+    foldPending =
+      f && Object.keys(f).length
+        ? Object.fromEntries(Object.entries(f).map(([id, on]) => [K.foldId?.(id) || id, on]))
+        : null;
   };
   document.addEventListener('click', (e) => {
     const d = e.target.closest?.('summary')?.parentElement;

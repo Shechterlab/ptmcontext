@@ -1293,7 +1293,7 @@
     if (bsp) lines.push({ t: `${bsp.name}: ${(bsp.cats || [])[nd.bd] || bsp.none_label || 'none'}` });
     if (OUT && nd.rl >= 0) lines.push({ t: `${OUT.name}: ${(OUT.cats || [])[nd.rl] || ''}` });
     lines.push({
-      t: `${int(M.deg[i])} ${plural(M.deg[i], 'partner', 'partners')} with ${W.marks} in this network (${int(inC)} in cluster, ${int(out)} outside)`,
+      t: `${int(M.deg[i])} ${plural(M.deg[i], 'protein partner', 'protein partners')} with ${W.marks} in this network (${int(inC)} in cluster, ${int(out)} outside)`,
       ix: nd.acc,
     });
     if (c.l.q != null) {
@@ -1481,7 +1481,7 @@
       slot.push(
         `Your selection has ${int(M.seeds)} ${plural(M.seeds, 'protein', 'proteins')}: ${M.seeds === 1 ? 'it is' : 'they are'} drawn with ${M.seeds === 1 ? 'its' : 'their'} ${int(np)} ${plural(np, 'partner', 'partners')}.` +
           (one?.acc
-            ? ` <a href="${esc(K.link('protein', `${one.acc}/interactions`))}">${esc(one.gene)}’s live STRING partners are on its protein page</a>`
+            ? ` <a href="${esc(K.link('protein', `${one.acc}/interactions`))}">${esc(one.gene)}’s protein partners (STRING) are on its protein page</a>`
             : '')
       );
     } else if (sel0 && M.picked != null && M.nodes.length)
