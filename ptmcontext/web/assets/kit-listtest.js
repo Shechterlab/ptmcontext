@@ -145,7 +145,7 @@
       if (isMark.has(k)) return;
       isMark.add(k);
       if (!marksOf.has(m[0])) marksOf.set(m[0], []);
-      marksOf.get(m[0]).push([m[1], (m[4] || '')[7] || '']);
+      marksOf.get(m[0]).push([m[1], K.markRes(m)]);
     });
     const sites = [],
       seen = new Set(),

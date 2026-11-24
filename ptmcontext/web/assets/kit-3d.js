@@ -371,7 +371,7 @@
     return all.filter((m) => (!sp || sp.has(m[0])) && !(hide && hide.has(stateKey(m))));
   };
   const markAt = (pos) => marks().find((m) => m[0] === pos);
-  const seqAt = (pos) => (T.rec?.seq || '')[pos - 1] || (D.residues || [''])[0];
+  const seqAt = (pos) => (T.rec?.seq || '')[pos - 1] || (D.residues?.length === 1 ? D.residues[0] : '');
   // a residue as the protein page numbers it (K.prot: histones without the initiator methionine)
   const sp = (pos) => (K.prot?.shownPos ? K.prot.shownPos(T.acc, pos) : pos);
   const rl = (pos) => `${seqAt(pos)}${sp(pos)}`;

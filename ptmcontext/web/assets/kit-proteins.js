@@ -985,7 +985,7 @@
   const residueOf = (p, pos) => {
     if (!p) return '';
     const sd = K.sel?.peek(),
-      mid = (m) => (m[4] || '')[Math.floor((m[4] || '').length / 2)] || '';
+      mid = K.markRes;
     if (sd && !resIdx) {
       resIdx = {};
       sd.marks.forEach((m) => {

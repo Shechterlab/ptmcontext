@@ -235,12 +235,11 @@
   };
 
   // ---- links and cells ---------------------------------------------------------------------------------------------
-  const residueLetter = () => (D.residues || [''])[0];
+  // a site's name as the protein page gives it: the row's own residue, numbered as the page numbers it
+  const siteName = (acc, pos) => (K.prot?.siteLabel ? K.prot.siteLabel(acc, pos) : String(pos));
   const siteLink = (p, pos) => {
-    const sh = K.prot?.shownPos ? K.prot.shownPos(prot(p)[0], pos) : pos; // as the protein page numbers it
-    return `<a href="${esc(
-      K.link('protein', `${prot(p)[0]}/${residueLetter()}${sh}`)
-    )}"><b>${esc(gene(p))}</b> ${esc(residueLetter())}${int(sh)}</a>`;
+    const name = siteName(prot(p)[0], pos);
+    return `<a href="${esc(K.link('protein', `${prot(p)[0]}/${name}`))}"><b>${esc(gene(p))}</b> ${esc(name)}</a>`;
   };
   const protLink = (p) => `<a href="${esc(K.link('protein', prot(p)[0]))}"><b>${esc(gene(p))}</b></a>`;
   const accLink = (acc, label) => {
@@ -1248,7 +1247,7 @@
     const one = ([p, pos, i]) => {
       if (i == null)
         return (
-          `<div class="ix-card"><b>${esc(gene(p))} ${esc(residueLetter())}${int(pos)}</b> <span ` +
+          `<div class="ix-card"><b>${esc(gene(p))} ${int(pos)}</b> <span ` +
           `class="muted">is not a ${esc(W.mark)} in this explorer.</span></div>`
         );
       const m = sd.marks[i],
@@ -1306,8 +1305,8 @@
           .map(
             ([m]) =>
               `<a href="${esc(
-                K.link('protein', `${prot(p)[0]}/${residueLetter()}${m[1]}`)
-              )}">${esc(residueLetter())}${m[1]}</a>`
+                K.link('protein', `${prot(p)[0]}/${siteName(prot(p)[0], m[1])}`)
+              )}">${esc(siteName(prot(p)[0], m[1]))}</a>`
           )
           .join(' ')}</p></div>`;
       })
@@ -1452,7 +1451,7 @@
       rows = rows.filter((r) => {
         const h =
           (t.key !== 'none'
-            ? `${gene(r[0])} ${prot(r[0])[0]} ${t.key === 'residue' ? residueLetter() + r[1] : ''} `
+            ? `${gene(r[0])} ${prot(r[0])[0]} ${t.key === 'residue' ? siteName(prot(r[0])[0], r[1]) : ''} `
             : '') + cols.map((c) => cellText(t, r, c)).join(' ');
         const hl = h.toLowerCase();
         return toks.every((x) => hl.includes(x));
@@ -2349,7 +2348,7 @@
   }
   const ownCtx = (m, tb) => {
     const p = K.tables?.P?.[m[0]] || { acc: prot(m[0])[0], gene: gene(m[0]) },
-      label = K.prot?.siteLabel ? K.prot.siteLabel(p.acc, m[1]) : residueLetter() + m[1];
+      label = siteName(p.acc, m[1]);
     return {
       p,
       m,

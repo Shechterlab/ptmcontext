@@ -241,7 +241,7 @@
   const isHl = (x) => HLS.on && (HLS.prots.has(x.p) || siteIn(x).length > 0);
   const resLetter = (t) => {
     const m = K.sel?.data()?.marks.find((k) => k[0] === t.p && k[1] === t.pos);
-    return (m && (m[4] || '')[7]) || (/([A-Z])\d+$/i.exec(t.label) || [])[1]?.toUpperCase() || '';
+    return (m && K.markRes(m)) || (/([A-Z])\d+$/i.exec(t.label) || [])[1]?.toUpperCase() || '';
   };
   const hlName = (x) =>
     `${gene(x)} ${rg(x)}${
@@ -298,7 +298,7 @@
     return (MI[x.p] || [])
       .filter((k) => SD.marks[k][1] >= x.s && SD.marks[k][1] <= x.e)
       .sort((a, b) => SD.marks[a][1] - SD.marks[b][1])
-      .map((k) => [`${(SD.marks[k][4] || '')[7] || ''}${SD.marks[k][1]}`, !SC.on || SC.set.has(k)]);
+      .map((k) => [`${K.markRes(SD.marks[k])}${SD.marks[k][1]}`, !SC.on || SC.set.has(k)]);
   }
 
   // ---- colours: the page's own (CSS variables, so the dark theme works), or a figure's (white) ---------------------

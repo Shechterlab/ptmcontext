@@ -139,7 +139,7 @@
         key = acc + ':' + m[1];
       if (seen.has(key)) return;
       seen.add(key);
-      out.push([acc, m[1], (m[4] || '')[7] || '']);
+      out.push([acc, m[1], K.markRes(m)]);
     };
     if (idx) idx.forEach((i) => add(SD.marks[i]));
     else SD.marks.forEach(add);

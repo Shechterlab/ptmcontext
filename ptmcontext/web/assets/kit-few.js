@@ -45,11 +45,15 @@
   }
   // ---- what the tabs share: the selected sites, and a site's or a protein's name as a link -----------------------------
   const prot = (i) => D.proteins[i] || [];
-  const letter = () => (D.residues || [''])[0];
   const shownAt = (pi, pos) => (K.prot?.shownPos ? K.prot.shownPos(prot(pi)[0], pos) : pos);
-  const siteLink = (pi, pos) =>
-    `<a href="${esc(K.link('protein', `${prot(pi)[0]}/${letter()}${shownAt(pi, pos)}`))}"><b>${esc(prot(pi)[1] || prot(pi)[0] || '')}</b> ` +
-    `${esc(letter())}${int(shownAt(pi, pos))}</a>`;
+  // the site's name comes from the protein module (the row's own residue), the same everywhere
+  const siteLink = (pi, pos) => {
+    const name = K.prot?.siteLabel ? K.prot.siteLabel(prot(pi)[0], pos) : `${shownAt(pi, pos)}`;
+    return (
+      `<a href="${esc(K.link('protein', `${prot(pi)[0]}/${name}`))}"><b>${esc(prot(pi)[1] || prot(pi)[0] || '')}</b> ` +
+      `${esc(name)}</a>`
+    );
+  };
   const protLink = (pi) =>
     `<a href="${esc(K.link('protein', prot(pi)[0]))}"><b>${esc(prot(pi)[1] || prot(pi)[0] || '')}</b></a>`;
   // the selected sites in protein and position order: { all: how many, list: the first MAX as mark rows [protein, position, ...] }

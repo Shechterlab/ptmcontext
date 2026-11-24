@@ -112,6 +112,11 @@
     return p._num;
   };
   K.numbering = numOf;
+  // the residue letter of a mark row: the middle of its window (the site file's own data), never an assumed default
+  K.markRes = (m) => {
+    const w = (m && m[4]) || '';
+    return w[Math.floor(w.length / 2)] || '';
+  };
   const uniPos = (p, typed) => typed - (numOf(p)?.offset || 0);
   // symbols one edit away from a word (a letter added, dropped, changed, or two swapped), most marks first: "did you mean"
   function nearSymbols(word, max = 3) {
@@ -176,7 +181,7 @@
     if (!markRes) {
       markRes = {};
       SD.marks.forEach((m) => {
-        markRes[m[0] + ':' + m[1]] = (m[4] || '')[Math.floor((m[4] || '').length / 2)] || '';
+        markRes[m[0] + ':' + m[1]] = K.markRes(m);
       });
     }
     return markRes[p.i + ':' + u] || '';

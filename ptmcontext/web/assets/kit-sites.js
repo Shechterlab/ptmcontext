@@ -29,10 +29,7 @@
   const colourAttr = Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category') || null;
   const short = (n, v) => (SV.short?.[n] || {})[v] ?? K.sel.valueLabel(n, v);
   const tagAids = () => AN().filter((a) => A[a]?.shape === 'flags' && (!SV.tags || SV.tags[a])); // the site file's, else every flags question
-  const siteName = (p, pos, m) =>
-    K.prot?.siteLabel
-      ? K.prot.siteLabel(p.acc, pos)
-      : `${m ? (m[4] || '')[Math.floor((m[4] || '').length / 2)] || '' : ''}${pos}`;
+  const siteName = (p, pos, m) => (K.prot?.siteLabel ? K.prot.siteLabel(p.acc, pos) : `${m ? K.markRes(m) : ''}${pos}`);
   const dash = '<span class="muted">—</span>';
 
   // ---- each protein's tables (website.tables), loaded as rows need them -------------------------------------------
@@ -164,7 +161,7 @@
           `<a class="mono" href="${esc(
             K.link('protein', p.acc + '/' + m[1])
           )}"><b>${esc(siteName(p, m[1], m))}</b></a>${
-            num ? `<span class="acc">` + `UniProt ${esc((m[4] || '')[7] || '')}${m[1]}</span>` : ''
+            num ? `<span class="acc">` + `UniProt ${esc(K.markRes(m))}${m[1]}</span>` : ''
           }` +
           (LC && K.shown.counted(raw(m)) ? `<div class="tags">${K.shown.tag(raw(m), false)}</div>` : '') +
           (tg.length
@@ -488,7 +485,7 @@
     if (c.id === 'site')
       return (
         `<a class="mono" href="${esc(K.link('protein', p.acc + '/' + m[1]))}"><b>${esc(
-          K.prot?.siteLabel ? K.prot.siteLabel(p.acc, m[1]) : `${(m[4] || '')[7] || ''}${m[1]}`
+          K.prot?.siteLabel ? K.prot.siteLabel(p.acc, m[1]) : `${K.markRes(m)}${m[1]}`
         )}</b></a><div ` +
         `class="tags">${K.shown.tag(m.lc.mk, true)}</div><span class="acc">${esc(K.shown.row())}</span>`
       );
@@ -881,7 +878,7 @@
             site: K.prot?.siteLabel ? K.prot.siteLabel(p.acc, m[1]) : m[1],
             position: m[1],
             window: m[4],
-            residue: (m[4] || '')[7] || '',
+            residue: K.markRes(m),
           }[c.value] ?? ''
         );
       if (c.attribute)
@@ -906,7 +903,7 @@
           site: siteName(p, m[1], m),
           position: m[1],
           window: m[4],
-          residue: (m[4] || '')[7] || '',
+          residue: K.markRes(m),
         }[c.value] ?? ''
       );
     }
