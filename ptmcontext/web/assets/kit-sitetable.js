@@ -2,9 +2,9 @@
    site of the protein, with its state, the changes seen at it in each source of website.propensity (k, O/E, q), the ClinVar
    pathogenic and likely pathogenic variants with their conditions, the cell lines a map row names for its changes
    (website.protein.map.rows[].from.names), a hotspot flag and whether the site lies in a disordered region. It reads what the
-   page already loads (the propensity shard data/m/NNN.json, the map's items), plus data/cv.json (the Disease variants page's
-   ClinVar file, 40 to 110 KB), once, when a protein page opens. The fold is closed; its one-line
-   summary counts the sites with q < 0.05 in the first somatic source and the sites with ClinVar variants. Sortable by any
+   page already loads (the propensity shard data/m/NNN.json, the map's items, the protein's tables). A site's variants are one
+   line from the site card's own counter (K.card.vc), linked to the card's variants. The fold is closed; its one-line
+   summary counts the sites with q < 0.05 in the first somatic source and the sites with a highlighted (P/LP) ClinVar variant. Sortable by any
    column (default: the first somatic source's q, then its p); Data (TSV) with the standard citation header. A module of the
    site kit; without website.propensity it does nothing. */
 (window.PTMC_MODULES ||= []).push((K) => {
@@ -16,26 +16,12 @@
     TITLE = CFG.title || 'Sites and their variants',
     RING = K.prop.ring;
   const SRC = PR.sources.filter((s) => !K.prop.desc(s.id)); // sources with a test: k, O/E and q
-  const CV_SRC = PR.sources.find((s) => K.prop.desc(s.id)); // the descriptive one (ClinVar): variants and conditions instead
   const TOP = SRC.find((s) => s.kind === 'somatic') || SRC[0]; // the source the default sort and the summary read
   if (!SRC.length) return;
   const ST = { key: `${TOP.id}:q`, dir: 1 };
   const numOf = (v) => (v == null || Number.isNaN(+v) ? null : +v);
 
-  // ---- the files: data/cv.json (once) and the protein's propensity shard (K.prop.load) ------------------------------------------
-  let CV; // undefined: not asked; null: could not be read; else the file
-  const cvLoad = () => {
-    if (!PR.cv || CV !== undefined) return;
-    CV = 'pending';
-    fetch(PR.cv.file)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(
-        (j) => (CV = j),
-        () => (CV = null)
-      )
-      .then(() => refresh())
-      .then(() => asked && again());
-  };
+  // ---- the files: the protein's propensity shard (K.prop.load) and its tables (K.card.load, for the variant counts) ----------------
   // a selection's few-sites blocks (K.siteFew) read the same files; they ask the page to draw again when one arrives
   let asked = false,
     redraw = 0;
@@ -48,11 +34,10 @@
         scrollTo(0, y);
       });
   };
-  let CV_AT = null; // accession -> Map(position -> variants)
-  const cvAt = (acc) => {
-    if (!CV || CV === 'pending') return null;
-    if (!CV_AT) CV_AT = new Map(Object.entries(CV.sites).map(([a, list]) => [a, new Map(list)]));
-    return CV_AT.get(acc) || new Map();
+  const cardTb = (acc) => {
+    const tb = K.card?.peek(acc);
+    if (tb === undefined) K.card?.load(acc).then(() => (cur() ? refresh() : asked && again()));
+    return tb;
   };
 
   // ---- the rows ------------------------------------------------------------------------------------------------------------------
@@ -75,11 +60,10 @@
       hot: v.hot && v.hot.self ? K.prop.hotNote(acc, v.hot, s.id) : '',
     };
   };
-  const short = (t, n) => (t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t);
   function model(p, rec) {
     const acc = p.acc,
       loaded = K.prop.peek(acc),
-      cv = cvAt(acc),
+      vtb = cardTb(acc),
       named = K.map?.namedRows?.() || [],
       NM = named.map((n) => ({ ...n, data: K.map.namedChanges(acc, n.column) }));
     const rows = [...rec.marks]
@@ -88,9 +72,6 @@
         const pos = m[0],
           src = {};
         if (loaded) SRC.forEach((s) => (src[s.id] = sourceCells(acc, pos, s)));
-        const vs = cv ? cv.get(pos) || [] : null;
-        const conds = new Map();
-        (vs || []).forEach((v) => v[3].forEach((c) => conds.set(c, (conds.get(c) || 0) + 1)));
         const names = NM.map((n) =>
           n.data
             ? (n.data.at.get(pos) || []).flatMap((h) =>
@@ -104,17 +85,14 @@
           m,
           state: K.prot.stateText(m),
           src,
-          clin: vs ? vs.length : null,
-          conds: vs
-            ? [...conds.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).map(([c]) => K.us(CV.cond[c][0]))
-            : null,
+          vars: vtb ? K.card.vc.siteVariants(vtb, pos) : null, // the site card's counts
           names,
           hot: loaded ? SRC.filter((s) => src[s.id]?.hot).map((s) => ({ s, tip: src[s.id].hot })) : null,
           dis: inDisorder(rec, pos),
           am: K.prot.am?.(acc, pos),
         };
       });
-    return { p, rec, rows, loaded, NM, cvOk: !PR.cv || (CV && CV !== 'pending') };
+    return { p, rec, rows, loaded, NM, vtb };
   }
 
   // ---- the columns: each with its words, its cell and its value to sort and download -------------------------------------------
@@ -199,38 +177,16 @@
         }
       );
     }
-    if (CV_SRC && PR.cv)
-      cols.push(
-        {
-          id: 'clin:n',
-          tsvName: `${CV_SRC.id}_pathogenic_n`,
-          label: `${CV_SRC.label} pathogenic`,
-          num: 1,
-          help: `${CV_SRC.long || CV_SRC.label}: pathogenic and likely pathogenic variants at the site`,
-          cell: (r) => (r.clin == null ? '…' : r.clin ? int(r.clin) : '0'),
-          val: (r) => r.clin,
-          tsv: (r) => r.clin ?? '',
-        },
-        {
-          id: 'clin:c',
-          tsvName: `${CV_SRC.id}_conditions`,
-          label: `${CV_SRC.label} conditions`,
-          help: 'The conditions named by those variants, most variants first; all of them on hover',
-          cell: (r) =>
-            r.conds == null
-              ? '…'
-              : r.conds.length
-                ? `<span class="st-cond" title="${esc(r.conds.join('\n'))}">${esc(
-                    r.conds
-                      .slice(0, 2)
-                      .map((c) => short(c, 34))
-                      .join('; ')
-                  )}${r.conds.length > 2 ? ` <span class="muted">+${r.conds.length - 2}</span>` : ''}</span>`
-                : '<span class="muted">–</span>',
-          val: (r) => (r.conds?.length ? r.conds[0] : null),
-          tsv: (r) => (r.conds || []).join('; '),
-        }
-      );
+    if (K.card?.vc.entries.length)
+      cols.push({
+        id: 'variants',
+        tsvName: 'variants',
+        label: 'Variants',
+        help: `Variants at the site, from the site card: every variant at the residue, then those classified pathogenic or likely pathogenic (${K.card.vc.entries.map((x) => x.highlight?.label).filter(Boolean)[0] || 'highlighted'}). Click for the site card's variants`,
+        cell: (r) => (r.vars ? K.card.vc.line(M.vtb, M.p.acc, r.pos) : '…'),
+        val: (r) => (r.vars ? r.vars.reduce((a, v) => a + v.hot, 0) * 1e6 + r.vars.reduce((a, v) => a + v.n, 0) : null),
+        tsv: (r) => (r.vars ? K.card.vc.text(M.vtb, r.pos) : ''),
+      });
     M.NM.forEach((n, i) =>
       cols.push({
         id: `names:${i}`,
@@ -321,8 +277,17 @@
       parts = [`${int(n)} ${n === 1 ? W.mark : W.marks}`];
     if (M.loaded)
       parts.push(`${int(M.rows.filter((r) => r.src[TOP.id]?.more).length)} with q < ${RING} in ${TOP.label}`);
-    if (CV_SRC && PR.cv && M.cvOk)
-      parts.push(`${int(M.rows.filter((r) => r.clin).length)} with ${CV_SRC.label} pathogenic variants`);
+    if (M.vtb)
+      K.card.vc.entries
+        .filter((x) => x.highlight?.label)
+        .forEach((x) => {
+          const n = K.card.vc.sites(
+            M.vtb,
+            x,
+            M.rows.map((r) => r.pos)
+          ).hot;
+          parts.push(`${int(n)} with ${x.label} ${x.highlight.label} variants`);
+        });
     return esc(parts.join('; '));
   }
   // the columns as drawn: each source is one column (k · O/E, with q under it) with a small menu to sort by any of its three values
@@ -414,7 +379,6 @@
     else host.querySelector('.st-card').outerHTML = table(M);
   }
   function load(acc) {
-    cvLoad();
     if (K.prop.peek(acc) === undefined) K.prop.load(acc).then(() => refresh());
   }
   (K.proteinFolds ||= []).push((p, rec, fold) => {
@@ -428,29 +392,26 @@
   K.prop.onHyper(() => refresh());
   (K.mapReady ||= []).push(() => refresh());
 
-  // ---- a small selection: each selected site's changes and variants, as the table's row would show them ----------------
-  // mode 'sites' leads with the changes seen at the site, 'variants' with the ClinVar variants. Called by the Sites and
-  // Disease variants pages; '' when the selection is not small or there is no selection.
-  const MORE = (n) => `${int(n)} ${n === 1 ? 'variant' : 'variants'}`;
+  // ---- a small selection: each selected site as one line --------------------------------------------------------------------
+  // mode 'sites' leads with the changes seen at the site, 'variants' shows only the site's variants. A site's variants are one
+  // line from the site card's counter (K.card.vc.line), linked to the card's variants; nothing here counts or lists them.
+  // Called by the Sites and Disease variants pages; '' when the selection is not small or there is no selection.
   K.siteFew = (mode) => {
     if (!K.few?.picked) return '';
     const P = K.few.picked();
     if (!P || !K.few.active(P.all)) return '';
     asked = true;
-    cvLoad();
-    const letter = (D.residues || [''])[0];
     const sites = P.list.map((m) => {
       const pi = m[0],
         pos = m[1],
         acc = D.proteins[pi][0];
       if (K.prop.peek(acc) === undefined) K.prop.load(acc).then(again);
-      const loaded = K.prop.peek(acc),
-        cv = cvAt(acc),
-        vs = cv ? cv.get(pos) || [] : null,
+      const vtb = cardTb(acc),
+        loaded = K.prop.peek(acc),
         src = loaded ? SRC.map((x) => ({ x, c: sourceCells(acc, pos, x) })) : null,
         hot = src ? src.filter((y) => y.c.hot) : [],
         facts = [];
-      if (src)
+      if (mode !== 'variants' && src)
         src.forEach(({ x, c }) =>
           facts.push({
             text:
@@ -460,12 +421,8 @@
             to: 'changes',
           })
         );
-      if (vs)
-        facts.push({
-          text: vs.length ? MORE(vs.length) + ' pathogenic' : 'no pathogenic variants',
-          to: vs.length ? 'clinvar' : undefined,
-        });
-      if (hot.length) facts.push({ text: 'hotspot', to: 'changes' });
+      if (vtb && K.card.vc.entries.length) facts.push({ text: K.card.vc.line(vtb, acc, pos) });
+      if (mode !== 'variants' && hot.length) facts.push({ text: 'hotspot', to: 'changes' });
       const changes =
         src &&
         `<div class="st-mini">${src
@@ -475,44 +432,26 @@
           .join('')}</div><p class="muted small">k: ${esc(
           SRC.map((x) => `${x.label} ${(x.unit || ['sample', 'samples'])[1]}`).join(', ')
         )} with a change at the site. O/E: changes seen over changes expected from the residue’s codon. A ring means q below ${RING}.</p>`;
-      const clin =
-        vs && vs.length
-          ? `<ul class="st-vars">${vs
-              .map(
-                (v) =>
-                  `<li><a href="https://www.ncbi.nlm.nih.gov/clinvar/variation/${esc(v[0])}/" target="_blank" rel="noopener">${esc(letter)}${esc(String(K.prot?.shownPos ? K.prot.shownPos(acc, pos) : pos))}${esc(v[2])}</a> · ${v[1]} ${v[1] === 1 ? 'star' : 'stars'} · ${esc(v[3].map((c) => K.us(CV.cond[c][0])).join('; ') || 'no condition named')}</li>`
-              )
-              .join('')}</ul>`
-          : '';
-      const conds = vs && vs.length ? [...new Set(vs.flatMap((v) => v[3].map((c) => K.us(CV.cond[c][0]))))] : [];
-      const secs = [
-        {
-          id: 'changes',
-          title: 'Changes seen at the site',
-          sum: src ? src.map(({ x, c }) => `${x.label} ${c.k ?? 0}`).join(', ') : '',
-          body: changes || K.loading('Loading…'),
-        },
-        {
-          id: 'clinvar',
-          title: `${CV_SRC ? CV_SRC.label + ' ' : ''}pathogenic variants`,
-          sum: conds.slice(0, 2).join('; '),
-          body: clin,
-        },
-      ];
-      if (mode === 'variants') secs.reverse();
       return {
         key: `${pi}-${pos}`,
         head: `${K.few.siteLink(pi, pos)} <span class="muted">${esc(D.proteins[pi][2] || '')}</span>`,
-        facts:
+        facts,
+        sections:
           mode === 'variants'
-            ? [...facts.filter((f) => f.to === 'clinvar' || !f.to), ...facts.filter((f) => f.to === 'changes')]
-            : facts,
-        sections: secs,
+            ? []
+            : [
+                {
+                  id: 'changes',
+                  title: 'Changes seen at the site',
+                  sum: src ? src.map(({ x, c }) => `${x.label} ${c.k ?? 0}`).join(', ') : '',
+                  body: changes || K.loading('Loading…'),
+                },
+              ],
       };
     });
     return K.few.html({
       title: `Your selected ${P.all === 1 ? W.mark : W.marks}: ${mode === 'variants' ? 'variants' : 'changes and variants'}`,
-      note: `Each ${W.mark}'s own counts, as the protein page's table of sites shows them.`,
+      note: `Each ${W.mark}'s variants are counted by its site card; the link opens the card at its variants.`,
       sites,
       more: P.all - P.list.length,
     });
@@ -524,7 +463,7 @@
       '[data-stsort]',
       (th) => {
         const id = th.dataset.stsort;
-        ST.dir = ST.key === id ? -ST.dir : id === 'site' || id.startsWith('clin:c') || id === 'state' ? 1 : -1;
+        ST.dir = ST.key === id ? -ST.dir : id === 'site' || id === 'state' ? 1 : -1;
         if (ST.key !== id && /:q$/.test(id)) ST.dir = 1; // q: the smallest first
         ST.key = id;
         refresh(false);
@@ -543,7 +482,7 @@
         const tsv =
           K.preamble(
             `${TITLE}, ${gene}`,
-            `one row for each ${W.mark} of ${gene} (${ps.p.acc}): its state, the changes seen at it in each source (k: samples or variants with a change; O/E: changes seen over expected; q: corrected binomial p, for fewer than expected where a source's column says so), the ${CV_SRC ? CV_SRC.label + ' ' : ''}pathogenic and likely pathogenic variants with their conditions, the cell lines named for its changes, the hotspot flag, the disordered-region flag${K.prot.amReady?.(ps.p.acc) ? ' and the mean AlphaMissense score of its substitutions (less reliable in disordered regions)' : ''}. ${
+            `one row for each ${W.mark} of ${gene} (${ps.p.acc}): its state, the changes seen at it in each source (k: samples or variants with a change; O/E: changes seen over expected; q: corrected binomial p, for fewer than expected where a source's column says so), its variants as the site card counts them (variants at the residue, and those classified pathogenic or likely pathogenic), the cell lines named for its changes, the hotspot flag, the disordered-region flag${K.prot.amReady?.(ps.p.acc) ? ' and the mean AlphaMissense score of its substitutions (less reliable in disordered regions)' : ''}. ${
               K.prop.state.hyper ? 'With' : 'Without'
             } hypermutated samples; sorted as shown on the page`
           ) +
@@ -580,7 +519,7 @@
     '.st-src{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1.2;padding:.05rem .4rem;border:1.5px solid transparent;border-radius:.5rem}.st-src small{font-size:.75em;color:var(--ink-2)}',
     '.st-ring{border-color:var(--ink)}.st-ring.dash{border-style:dashed}',
     '.st-sm{display:flex;gap:.15rem;justify-content:flex-end;margin-top:.1rem}.st-sm button{font:inherit;font-size:.72rem;font-weight:500;padding:0 .3rem;border:1px solid var(--line-strong);border-radius:.3rem;background:var(--surface);color:var(--ink-2);cursor:pointer}.st-sm button[aria-pressed="true"]{background:var(--wash);color:var(--ink);font-weight:700}',
-    '.st-mini{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem}.st-vars{margin:.2rem 0;padding-left:1.1rem;font-size:.9rem}',
+    '.st-mini{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem}',
     '.st-cond{cursor:help;display:inline-block;max-width:10rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}.st-tbl th.st-grp::after{content:none!important}.st-tbl th{white-space:normal;vertical-align:bottom}',
     '.sc-names{margin-top:.15rem}',
     '@media (max-width:640px){.st-card{max-height:24rem}}',

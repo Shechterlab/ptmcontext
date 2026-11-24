@@ -916,9 +916,13 @@
       shown = (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, q) : q),
       limit = PC.germline?.limit || 12,
       all = pool.flatMap((q) => VCK.at(tb, x, q).map((r) => ({ q, r }))),
-      byQ = new Map();
-    for (const v of all) byQ.set(v.q, (byQ.get(v.q) || 0) + 1);
-    const nHot = new Set(all.filter((v) => VCK.hot(x, v.r)).map((v) => v.q)).size;
+      byQ = new Map(),
+      mine = VCK.sites(tb, x, pool); // the sites with a variant and with a highlighted one: the site card's counter
+    for (const q of pool) {
+      const n = VCK.sum(tb, x, q).n;
+      if (n) byQ.set(q, n);
+    }
+    const nHot = mine.hot;
     const known1 = CMODE === 'known';
     const lines = letters
       .map((l) => {
@@ -979,7 +983,7 @@
       `<section class="pc-sec pc-vc"><h4>${esc(x.label)}</h4>` +
       `<ul class="small pc-cc-lines">${lines}</ul>` +
       lol.html +
-      `<p class="small">${int(byQ.size)} of ${esc(what)} ${byQ.size === 1 ? 'has' : 'have'} a variant${hotWord}.</p>` +
+      `<p class="small">${int(mine.any)} of ${esc(what)} ${mine.any === 1 ? 'has' : 'have'} a variant${hotWord}.</p>` +
       (all.length
         ? `<div class="tbl-wrap"><table class="pc-tbl"><thead><tr><th>${known1 ? 'Site' : 'Residue'}</th><th>Change</th>${geneOn ? '<th>Gene</th>' : ''}${fields
             .map((f) => `<th>${esc(f.label || f.column)}</th>`)
@@ -997,8 +1001,7 @@
     return {
       html,
       nHot,
-      nSites: byQ.size,
-      nKnown: rec.marks.filter((m) => VCK.at(tb, x, m[0]).length).length,
+      nSites: mine.any,
       wait: lol.wait,
     };
   }
@@ -1012,16 +1015,19 @@
     for (let i = 0; i < seq.length; i++) if (resSet.has(seq[i])) cands.push(i + 1);
     const pool = CMODE === 'all' ? cands : [...known].filter((q) => seq[q - 1]).sort((a, b) => a - b);
     const letters = [...new Set(pool.map((q) => seq[q - 1]))].sort((a, b) => order(a) - order(b));
+    // the closed card's summary: the known sites with a variant, and with a highlighted one (the site card's counter)
+    const knownSum = (x) => {
+      const c = VCK.sites(
+        tb,
+        x,
+        rec.marks.map((q) => q[0])
+      );
+      return `${x.label}: ${c.any ? plural(c.any, 'site') : 'no site'} with a variant${x.highlight?.label && c.any ? ` (${int(c.hot)} ${x.highlight.label})` : ''}`;
+    };
     const lazy = VCK.entries.some((x) => x.lazy);
     if (lazy && !tb._vd) {
       // the variant lists are in files of their own: read when the card is opened; closed, only the counts show
-      const sums = VCK.entries.map((x) => {
-        const m = VCK.sums(tb, x);
-        return `${x.label}: ${(() => {
-          const n = rec.marks.filter((q) => m.has(q[0])).length;
-          return n ? plural(n, 'site') : 'no site';
-        })()}`;
-      });
+      const sums = VCK.entries.map((x) => knownSum(x));
       if (!el.closest('details')?.open) return { html: '', sum: sums.join(' · ') };
       const d = detail(p.acc);
       if (d === undefined) return { html: K.loading('Loading the variants…'), sum: sums.join(' · '), wait: true };
@@ -1043,9 +1049,7 @@
         ? `The protein's known ${esc(W.marks)} only.`
         : `Every ${esc(W.residue)} of the protein, a known ${esc(W.mark)} or not.`
     }</p><div class="pc-grid pc-grid-wide">${secs.map((s) => s.html).join('')}</div>${excludedLine(p, tb, PC.germline)}`;
-    const sum = VCK.entries
-      .map((x, k) => `${x.label}: ${secs[k].nKnown ? plural(secs[k].nKnown, 'site') : 'no site'}`)
-      .join(' · ');
+    const sum = VCK.entries.map((x) => knownSum(x)).join(' · ');
     return { html, sum, wait: secs.some((s) => s.wait) };
   }
   function dependencyBuild(p, rec, tb) {

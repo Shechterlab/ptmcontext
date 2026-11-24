@@ -870,7 +870,7 @@
         (CC.tables || []).some((x) => K.card.has(x.table)) ||
         (CC.calls?.tables || []).some(K.card.has));
     const varBlock =
-      `<section class="sc-vars" aria-label="Variants at ${esc(siteOf(p, m[0]))}"><h4>Variants at ${esc(siteOf(p, m[0]))}</h4><dl ` +
+      `<details class="sc-vars" id="sc-variants" data-sc-group="variants"${SC_OPEN.get('variants') === false ? '' : ' open'} aria-label="Variants at ${esc(siteOf(p, m[0]))}"><summary><h4>Variants at ${esc(siteOf(p, m[0]))}</h4></summary><dl ` +
       `class="sc-kv">` +
       kv(
         'UniProt variants',
@@ -892,7 +892,7 @@
             'O/E: changes seen at this residue over the changes its codon predicts, with the q of the test; descriptive for ClinVar'
           )
         : '') +
-      '</dl></section>';
+      '</dl></details>';
     return (
       `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.mark)}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)}${
         K.shown?.on ? ' ' + K.shown.tag(m, false) : ''
