@@ -7058,6 +7058,23 @@ a[href^='http']:hover::after {
 .ov-sec.caveat {
   border-top-style: dashed;
 }
+.ov-unch {
+  margin: 1.2rem 0;
+}
+.ov-unch > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.ov-unch .u-show,
+.ov-unch .u-hide {
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+.ov-unch[open] .u-show,
+.ov-unch:not([open]) .u-hide {
+  display: none;
+}
 .sec-more {
   margin: -0.6rem 0 1.2rem;
 }
