@@ -39,7 +39,7 @@ eval(fs.readFileSync({json.dumps(str(ASSETS / 'kit-figures.js'))}, 'utf8'));
 window.PTMC_MODULES.forEach(m => m(K));
 const before = K.views.figures.render();
 loaded = true;
-console.log(JSON.stringify({{ before: before.includes('Loading'), asked, after: K.views.figures.render().includes('Site alignment') }}));
+console.log(JSON.stringify({{ before: before.includes('Loading'), asked, after: K.views.figures.render().includes('Alignment and sequence logo') }}));
 """
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-600:]
