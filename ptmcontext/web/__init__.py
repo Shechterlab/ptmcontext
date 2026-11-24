@@ -91,6 +91,7 @@ MODULES = (
     'kit-sites.js',
     'kit-idrs.js',
     'kit-compare.js',
+    'kit-cmplink.js',
     'kit-questions.js',
     'kit-start.js',
     'kit-random.js',

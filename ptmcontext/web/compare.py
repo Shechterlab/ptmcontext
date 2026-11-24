@@ -45,6 +45,10 @@ CSS = """
 .cmp-picks label { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 36px; padding: 0 0.7rem; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); cursor: pointer; }
 .cmp-picks input { margin: 0; width: 1rem; height: 1rem; }
 .cmp-picks i { width: 0.7rem; height: 0.7rem; border-radius: 50%; display: inline-block; }
+.cmp-find { flex: 1 1 16rem; max-width: 26rem; }
+.cmp-find input { font: inherit; width: 100%; box-sizing: border-box; min-height: 36px; padding: 0 0.6rem; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.cmp-n { display: block; min-height: 1.3em; margin-top: 0.15rem; font-size: 0.85rem; color: var(--muted); }
+.cmp-n .linkish { font: inherit; padding: 0; border: 0; background: none; color: inherit; text-decoration: underline; cursor: pointer; }
 .cmp-bar select { font: inherit; min-height: 36px; padding: 0 0.6rem; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); max-width: 100%; }
 .cmp-dl { position: relative; margin-left: auto; }
 .cmp-dl > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; min-height: 36px; padding: 0 0.9rem; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); font-weight: 600; }

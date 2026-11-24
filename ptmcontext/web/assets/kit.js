@@ -2873,6 +2873,7 @@
       `<div class="focus-bar"><a href="${esc(link('overview'))}">‹ All sections</a><span class="crumb">` +
       `Overview › ${esc(card.section || '')} › <b>${esc(card.title || a.title)}</b></span>` +
       (i >= 0 ? `<span class="muted">${i + 1} of ${cards.length}</span>` : '') +
+      (K.compareLink ? K.compareLink(aid) : '') +
       `<span class="pn">${
         prev
           ? `<a href="${esc(link('overview', prev.analysis))}">‹ Previous · ${esc(
