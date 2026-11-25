@@ -668,49 +668,69 @@
     );
   }
   const shownAt = (rec, pos) => (rec.shown || []).find((x) => x[0] === pos);
-  // opening an address with a site lands on the card's header (under the sticky bar); the page above it settles for a few seconds
-  // (UniProt's text, the map), so the landing is repeated until the reader scrolls
+  // opening an address with a site lands on the card's header (under the sticky bar); the page above it settles for several
+  // seconds (UniProt's text, AlphaFold, Ensembl, RCSB), so the target is kept pinned until the reader acts
   let moved = false;
-  ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev) =>
+  ['wheel', 'touchstart', 'keydown', 'mousedown', 'pointerdown', 'click'].forEach((ev) =>
     addEventListener(
       ev,
       () => {
         moved = true;
       },
-      { passive: true }
+      { passive: true, capture: true }
     )
   );
-  // a target (found by `find`, as the page is drawn again) scrolled to just below the sticky toolbar, and again as the page
-  // settles, while `keep()` holds and the reader has not scrolled; the one landing every in-page address uses (K.landOn)
+  // a target (found by `find`, as the page is drawn again) scrolled to just below the sticky toolbar and kept there: on every
+  // size change above it, and on any scroll that moves it, its measured top is put back (no browser anchoring needed). Held
+  // until the reader scrolls, clicks or presses a key, `keep()` fails, 15 s pass, or the page's own fetches (K.inflight, from
+  // kit-openlink.js) have all settled and the page has stopped growing for 4 s; the one landing every in-page address uses (K.landOn)
   let landing = 0; // the landing in progress; a new one replaces it
   function landOn(find, keep = () => true) {
     moved = false;
     const id = ++landing,
-      t0 = Date.now(),
-      live = () => id === landing && !moved && keep() && Date.now() - t0 < 6000;
-    const go = () => {
+      t0 = Date.now();
+    let quiet = 0,
+      lastH = 0,
+      ro = null,
+      poll = 0;
+    const live = () => id === landing && !moved && keep() && Date.now() - t0 < 15000;
+    // the browser's own scroll anchoring moves the page when a section above is redrawn, then the pin moves it back: off
+    // while the pin holds, so the page does not jump in between
+    document.documentElement.style.overflowAnchor = 'none';
+    const stop = () => {
+      if (id === landing) document.documentElement.style.overflowAnchor = '';
+      ro?.disconnect();
+      clearInterval(poll);
+      removeEventListener('scroll', go);
+    };
+    function go() {
+      if (!live()) return stop();
       const t = find();
       if (!t) return;
       // the sticky bars' real height (the toolbar and the strip above it; on a phone the strip alone)
       const root = getComputedStyle(document.documentElement),
-        h = parseFloat(root.getPropertyValue('--sticky-h')) || parseFloat(root.getPropertyValue('--toolbar-h')) || 0;
-      scrollTo(0, Math.max(0, t.getBoundingClientRect().top + scrollY - h - 12));
-    };
+        h = parseFloat(root.getPropertyValue('--sticky-h')) || parseFloat(root.getPropertyValue('--toolbar-h')) || 0,
+        want = Math.max(0, t.getBoundingClientRect().top + scrollY - h - 12);
+      if (Math.abs(want - scrollY) > 1) scrollTo(0, want);
+    }
     requestAnimationFrame(go);
     // the page above the target changes height as the map and the lazy sections arrive: land again on each change, before it
     // is painted, so the target stays put
-    let ro = null;
     if (window.ResizeObserver) {
-      ro = new ResizeObserver(() => (live() ? go() : ro.disconnect()));
+      ro = new ResizeObserver(go);
       ro.observe(document.documentElement);
       ro.observe(document.getElementById('view') || document.body);
     }
-    [700, 1800, 3500].forEach((ms) =>
-      setTimeout(() => {
-        if (live()) go();
-      }, ms)
-    );
-    setTimeout(() => ro?.disconnect(), 6000);
+    addEventListener('scroll', go, { passive: true });
+    poll = setInterval(() => {
+      if (!live()) return stop();
+      go();
+      // settled: nothing in flight and the page's height unchanged for 4 s, and at least 8 s since the address opened
+      const hgt = document.documentElement.scrollHeight;
+      quiet = (K.inflight?.() ?? 1) > 0 || hgt !== lastH ? 0 : quiet + 250;
+      lastH = hgt;
+      if (quiet >= 4000 && Date.now() - t0 > 8000) stop();
+    }, 250);
   }
   K.landOn = landOn;
   // the fold of a protein's page that holds a question's facts about that one protein (the site file's protein_view.context, and
