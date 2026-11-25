@@ -17,7 +17,7 @@ def test_the_landing_search_opens_the_site_of_a_gene_and_residue_in_the_explorer
     js = _src('land-search.js')
     assert '#protein/${path}${site ?' in js and 'new URLSearchParams({ q })' in js
     assert '#/protein/' not in js  # the old form that dropped the site
-    assert 'N.pos(names[1])' in js  # "H4 R3", "TP53 S15": the explorer reads the position in its numbering
+    assert 'N.read(names, known)' in js  # "H4 R3", "TP53 S15": the explorer reads the position in its numbering
 
 
 def test_every_link_to_a_protein_in_the_network_is_built_by_one_function():

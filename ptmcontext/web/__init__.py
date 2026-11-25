@@ -2264,6 +2264,8 @@ def pages(
         str, list
     ] = {}  # accession -> [gene, name, indexes of the listed sites that have it, genes, symbols], for the landing search
     listed_ids: list[dict] = []
+    # the explorers' own names for proteins (website.search.shorthand: H4), for the landing search
+    shorthand: dict[str, str] = {}
     for_compare: list[tuple] = []  # the listed sites built: what the Compare marks page reads (compare.py)
     switcher_label = (cfg.get('switcher') or {}).get('label')
     for sp in site_paths:
@@ -2304,6 +2306,8 @@ def pages(
             log(f'  {site["id"]} -> {dest} (unlisted)')
             continue
         for_compare.append((site, src.parent, web, registry[-1]['label'], profile))
+        for n, a in ((web.get('search') or {}).get('shorthand') or {}).items():
+            shorthand.setdefault(n, a)
 
         # the landing search: the proteins this site has marks on (a site's own protein list, its proteins.tsv)
         plist = src.parent / 'proteins.tsv'
@@ -2398,7 +2402,12 @@ def pages(
                 favicon_href = name
     if found:  # read by the landing page's search box when it is first used (assets/land-search.js)
         rows = [[acc, *v[:3], *([v[3], v[4]] if v[3] or v[4] else [])] for acc, v in sorted(found.items())]
-        (out / 'proteins.json').write_text(json.dumps({'sites': listed_ids, 'p': rows}, separators=(',', ':')))
+        (out / 'proteins.json').write_text(
+            json.dumps(
+                {'sites': listed_ids, 'p': rows} | ({'shorthand': shorthand} if shorthand else {}),
+                separators=(',', ':'),
+            )
+        )
     kit = kit_citation()
     lab_html = (
         (

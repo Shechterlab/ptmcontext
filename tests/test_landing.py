@@ -359,7 +359,7 @@ def test_the_landing_search_reads_a_site_as_the_explorers_do_and_offers_the_fitt
     search = (assets / 'land-search.js').read_text()
     # the notations come from the one shared module, which the explorers' search also calls
     assert 'PTMNames.siteOf' in (assets / 'kit-select.js').read_text()
-    assert 'N.siteOf(' in search and 'N.pos(' in search and 'N.exact(' in search
+    assert 'N.siteOf(' in search and 'N.read(' in search and 'N.exact(' in search
     assert 'Searched the first name only' not in search and 'choose a site' not in search
     script = (
         "const window = {}; const known = (n) => (['H4', 'TP53'].includes(n.toUpperCase()) ? { n } : null);"
@@ -382,3 +382,36 @@ def test_the_landing_search_reads_a_site_as_the_explorers_do_and_offers_the_fitt
         None,
         None,
     ]
+
+
+def test_a_phrase_with_a_name_and_a_site_is_that_site_and_a_list_needs_two_names_and_no_site():
+    import json
+    import subprocess
+
+    assets = Path(__file__).parent.parent / 'ptmcontext' / 'web' / 'assets'
+    names = (assets / 'kit-names.js').read_text()
+    script = (
+        "const window = {}; const known = (n) => (['H4', 'TP53', 'FUS', 'EWSR1', 'AKT1'].includes(n.toUpperCase()) ? { n } : null);"
+        + names
+        + "const r = (t) => { const x = window.PTMNames.read(t.split(' '), known); return x && (x.site ? ['site', x.site.name, x.site.letter + x.site.pos] : x.list ? ['list', ...x.list] : ['one', x.one.name]); };"
+        "console.log(JSON.stringify(['TP53 R213 mutation methylation', 'AKT1 T308 phosphorylation', 'FUS EWSR1 TAF15', "
+        "'FUS EWSR1 R3', 'TP53 mutation', 'mutation methylation', 'H4 R3'].map(r)));"
+    )
+    out = subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout
+    assert json.loads(out) == [
+        ['site', 'TP53', 'R213'],
+        ['site', 'AKT1', 'T308'],
+        ['list', 'FUS', 'EWSR1'],
+        ['site', 'FUS', 'R3'],
+        ['one', 'TP53'],
+        None,
+        ['site', 'H4', 'R3'],
+    ]
+
+
+def test_a_search_naming_a_site_is_carried_only_where_it_means_something():
+    assets = Path(__file__).parent.parent / 'ptmcontext' / 'web' / 'assets'
+    kit, sel, sw = [(assets / f).read_text() for f in ('kit.js', 'kit-select.js', 'kit-switch.js')]
+    # the one place a link carries q (kit.js carry, which K.link and K.card.protRef use) and the explorer switcher ask qFor
+    assert 'K.sel.qFor(S.q, { segs' in kit and 'qFor(S.q, { segs, residues' in sw
+    assert 'function qFor(' in sel and 'qFor,' in sel
