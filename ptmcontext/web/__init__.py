@@ -2099,6 +2099,11 @@ COLUMN_TYPES = {
 LIST_TYPES = ('list', 'accessions', 'pdb')
 
 
+def _flat_blocks(blocks: list) -> list:
+    """A section's blocks with those inside its folds (kind fold, blocks:) in place of the fold."""
+    return [x for b in blocks for x in (_flat_blocks(b.get('blocks') or []) if b['kind'] == 'fold' else [b])]
+
+
 def page_tables(site: dict, specs: dict, run: dict, listing: list, out: Path, log=print) -> tuple[dict, str]:
     """data/pages/<name>.json for each of the site's tables (website.tables, in a format of CONTRACTS.md) that a page
     (website.pages) reads, whole: {key, columns, rows}, a row's protein an index into the page's protein list (rows of
@@ -2117,7 +2122,7 @@ def page_tables(site: dict, specs: dict, run: dict, listing: list, out: Path, lo
         for pg in pages
         for g in pg['groups']
         for sec in g['sections']
-        for b in sec['blocks']
+        for b in _flat_blocks(sec['blocks'])
         if b.get('table')
     }
     used |= {
@@ -2125,8 +2130,16 @@ def page_tables(site: dict, specs: dict, run: dict, listing: list, out: Path, lo
         for pg in pages
         for g in pg['groups']
         for sec in g['sections']
-        for bl in sec['blocks']
+        for bl in _flat_blocks(sec['blocks'])
         for b in bl.get('tables') or []
+    }
+    used |= {
+        b['modeled']['table']
+        for pg in pages
+        for g in pg['groups']
+        for sec in g['sections']
+        for b in _flat_blocks(sec['blocks'])
+        if b.get('modeled')
     }
     used |= {h['share']['table'] for pg in pages for h in pg.get('highlights') or [] if h.get('share')}
     shown = {}
@@ -2150,15 +2163,27 @@ def page_tables(site: dict, specs: dict, run: dict, listing: list, out: Path, lo
             for pg in pages
             for g in pg['groups']
             for sec in g['sections']
-            for b in sec['blocks']
+            for b in _flat_blocks(sec['blocks'])
             if b.get('table') == name
+        ]
+        blocks += [  # another block's reading of this table (contact_list.modeled): the rows its where holds, the columns it names
+            {
+                'table': name,
+                'columns': [m['entry'], m['state']],
+                'where': [{'column': c, 'in': [v]} for c, v in (m.get('where') or {}).items()],
+            }
+            for pg in pages
+            for g in pg['groups']
+            for sec in g['sections']
+            for m in (b.get('modeled') for b in _flat_blocks(sec['blocks']))
+            if m and m['table'] == name
         ]
         whole = any(
             name in (b.get('tables') or [])
             for pg in pages
             for g in pg['groups']
             for sec in g['sections']
-            for b in sec['blocks']
+            for b in _flat_blocks(sec['blocks'])
         )
         if blocks and not whole and all(b.get('where') for b in blocks):
             keep = None

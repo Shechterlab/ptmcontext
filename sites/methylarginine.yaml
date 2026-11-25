@@ -1250,6 +1250,21 @@ controls:
     note: "Only the arginines inside intrinsically disordered regions (MobiDB) count, methylarginines and other arginines alike, so the comparison shows whether the result holds inside disordered regions"
     analyses: [near_phospho, near_phospho_high, near_methyllysine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
     only_in: idr
+  # Ribosomes and nucleosomes hold most of the RNA and DNA in the structures: the within-protein test of the distance to
+  # RNA and DNA is run again without their proteins (PANTHER: the ribosomal protein class PC00202, and the histone families)
+  - id: nohist
+    label: ribosomal and histone proteins set aside
+    when: "ribosomal and histone proteins are set aside"
+    note: "Ribosomal proteins (PANTHER protein class PC00202) and histones (PANTHER families HISTONE H1, H2A, H2B, H3 and H4) set aside: neither their methylarginines nor their other arginines count. Ribosome and nucleosome structures hold most of the RNA and DNA in the structures"
+    analyses: [nucleic_acid_distance]
+    without_proteins:
+      input: panther_classes
+      column: uniprot_accession
+      include:
+        - any_of:
+            - {column: protein_class_ids, contains: PC00202}
+            - {column: family_name, in: [HISTONE H1, HISTONE H2A, HISTONE H2B, HISTONE H3, HISTONE H4]}
+      label: ribosomal and histone proteins
 
 reference:
   statistics: methylarginine_statistics_v1_5_1
@@ -3217,6 +3232,10 @@ website:                  # the look and words of the website (ptmc web); layout
     - id: interactions
       tab: Interactions
       title: RNA, DNA and protein contacts
+      aliases:           # sections that moved: the Evidence map (now a line in the crosslinking section) and the sequence proximity chart
+        ix-ex: ixs-cells
+        ix-ix-ex: ixg-rna-and-dna
+        ix-prox: ixs-cells
       sub: "Methylarginines against the other arginines of their protein that the evidence could reach: in living cells (crosslinks, RNA-bound peptides), in solved structures and in predicted complexes. Also the proteins and partners with such evidence."
       method: |
         Each residue test compares the methylarginines with the other arginines of the same proteins, as the release does, but each against the arginines its evidence could have reached: the proteins with that kind of evidence, the residues a PDB structure observed (SIFTS), or the residues an experiment measured. Within each protein: a Mantel–Haenszel odds ratio with its 95% CI, each protein analyzed on its own; pooled: Fisher's exact test. In these questions every candidate arginine counts in the pooled test, as in the release. q is Benjamini–Hochberg within each question and test.
@@ -3285,6 +3304,9 @@ website:                  # the look and words of the website (ptmc web); layout
         - {counts: [{attribute: nucleic_acid, values: [rna_at]}, {attribute: nucleic_acid, values: [dna_at]}], label: methylarginines in contact with RNA · with DNA, tag: Solved structures · to explore, section: ix-na, glyph: structure}
       overview:
         section: RNA and DNA binding
+        tiles:             # three of the page's sections as tiles of their own: crosslinking in cells, the structure test, the partners
+          section: Interactions and enzymes
+          sections: [ixs-cells, ix-na, ixs-partners]
         title: Interactions and binding
         question: How many sites have interaction evidence, and are they enriched at RNA, DNA or protein contacts? Tested within each protein, against the other arginines the evidence could reach.
         bar: interaction
@@ -3379,12 +3401,6 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {filter: "a:disorder", value: disordered, label: In an IDR, group: Context}
                     - {filter: "a:domain_context", value: in_domain, label: In a domain, group: Context}
                 - {kind: checker, title: Check one site, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], tables: [interactions]}
-            - id: ix-ex
-              title: Evidence map
-              question: Evidence along one protein
-              place: top
-              blocks:
-                - {kind: example, protein: HNRNPA1, tracks: [rna_cells, rbrid, dna_cells, intact, predicted]}
         - name: RNA and DNA
           sections:
             - id: ixs-cells
@@ -3408,25 +3424,30 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: crosslink, category: rbrid_residue, label: RBR-ID+ residue}
                     - {analysis: crosslink, category: dna_crosslink_or_candidate, label: DNA crosslink or candidate}
                     - {analysis: crosslink, category: dna_crosslinked_peptide, label: DNA-crosslinked peptide}
-                - {kind: table, table: interactions, title: The crosslinks and RNA-bound peptides at each site, chips: kind, columns: [accession, kind, detail], limit: 25,
-                   where: [{column: kind, in: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, dna_crosslink, dna_binding_region]}]}
-            - id: ix-prox
-              title: Sequence proximity to RNA-binding residues
-              question: How far along the sequence do methylarginines lie from residues that bind RNA in cells, against the other arginines of the same proteins?
-              blocks:
-                - kind: lines
+                - kind: lines            # the sequence-proximity chart, said as a sentence from its rows, the chart behind a toggle
                   analysis: sequence_proximity
+                  title: How far along the sequence
                   series: [rna_crosslink, rbdmap_fragment, capri_adj_peptide, capri_xl_peptide, pclap_peptide, rbrid_residue]
                   x: {within_0_residues: 0, within_3_residues: 3, within_5_residues: 5, within_10_residues: 10, within_20_residues: 20}
                   x_label: within this many residues of the evidence (aa)
+                  sentence: {residue: rna_crosslink, inside: inside RNA-bound peptides}
+                  fold: Show by distance
+                - {kind: table, table: interactions, title: The crosslinks and RNA-bound peptides at each site, chips: kind, columns: [accession, kind, detail], limit: 25,
+                   where: [{column: kind, in: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, dna_crosslink, dna_binding_region]}]}
+                - {kind: pointer, text: "See the evidence along any protein on its map, for example", protein: HNRNPA1}
             - id: ix-na
               title: Bound RNA and DNA
-              question: Which RNA and DNA do methylarginines contact in structures, and how close do they come?
-              tile: 1
+              question: Are methylarginines closer to RNA or DNA in solved structures than the other arginines of the same proteins, and which are in contact?
               blocks:
-                - {kind: table, table: contacts, title: RNA and DNA at methylarginines, sub: "Each PDB chain of RNA or DNA within 4 Å of a site’s side chain, with the bound sequence around the closest nucleotide.", chips: type, columns: [accession, window, type, name, distance, entry], sort: distance, descending: false}
-                - {kind: histogram, table: distances, value: rna_distance_a, among: entries_with_rna, step: 0.5, max: 8, title: Distance to RNA, x_label: side-chain distance to RNA (Å)}
-                - {kind: histogram, table: distances, value: dna_distance_a, among: entries_with_dna, step: 0.5, max: 8, title: Distance to DNA, x_label: side-chain distance to DNA (Å)}
+                - kind: tiles
+                  title: Within the same protein
+                  sub: "Methylarginines against the other arginines of the same proteins that are modeled in a PDB entry with RNA or DNA: the side chain within 4 Å of it. Each arginine counts once, at its closest distance over its structures; each protein is a stratum."
+                  pooled: true
+                  tiles:
+                    - {label: within 4 Å of RNA or DNA, row: {analysis: nucleic_acid_distance, category: any_within_4a}, tag: All proteins}
+                    - {label: within 4 Å of RNA or DNA, row: {analysis: nucleic_acid_distance_nohist, category: any_within_4a}, tag: Without ribosomal and histone proteins}
+                    - {label: within 4 Å of RNA, row: {analysis: nucleic_acid_distance, category: rna_within_4a}, tag: All proteins}
+                    - {label: within 4 Å of DNA, row: {analysis: nucleic_acid_distance, category: dna_within_4a}, tag: All proteins}
                 - kind: forest
                   title: Within 4 and 8 Å
                   rows:
@@ -3436,6 +3457,21 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: nucleic_acid_distance, category: dna_within_8a}
                     - {analysis: nucleic_acid_distance, category: any_within_4a}
                     - {analysis: nucleic_acid_distance, category: any_within_8a}
+                - kind: contact_list
+                  title: Methylarginines in contact with RNA or DNA in a structure
+                  sub: "Sites where methylation would change a contact seen in a solved structure: a side-chain atom within 4 Å of RNA or DNA in a PDB entry. Each site is shown with its closest contact."
+                  table: contacts
+                  columns: [kind, type, name, entry, distance]
+                  limit: 25
+                  note: "Methyl group modeled: whether that PDB entry models the arginine as methylated."
+                  modeled: {table: records, entry: id, state: state, where: {group: nucleic_acid, source: PDB}, unmodified: [arginine], unknown: [not_recorded, other_residue]}
+                - {kind: table, table: contacts, title: RNA and DNA at methylarginines, sub: "Each PDB chain of RNA or DNA within 4 Å of a site’s side chain, with the bound sequence around the closest nucleotide.", chips: type, columns: [accession, window, type, name, distance, entry], sort: distance, descending: false}
+                - kind: fold
+                  label: Show distance distribution
+                  caption: "Counts every structure; dominated by nucleosome and ribosome entries."
+                  blocks:
+                    - {kind: histogram, table: distances, value: rna_distance_a, among: entries_with_rna, step: 0.5, max: 8, title: Distance to RNA, x_label: side-chain distance to RNA (Å)}
+                    - {kind: histogram, table: distances, value: dna_distance_a, among: entries_with_dna, step: 0.5, max: 8, title: Distance to DNA, x_label: side-chain distance to DNA (Å)}
             - id: ix-pref
               title: Preferred RNA and DNA, by protein
               question: What do these proteins prefer to bind, in vitro and in cells?

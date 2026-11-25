@@ -40,7 +40,12 @@
     'ixg-partners-and-complexes': 'ixg-protein-partners-and-complexes',
     'ixg-partners': 'ixg-binding-proteins',
   };
-  K.foldId = (id) => ALIAS[id] || id;
+  // a page's own renamed sections and folds (website.pages[].aliases: {old id: current id}) say the same
+  const pageAlias = (id) => {
+    for (const pg of K.D?.pages || []) if (pg.aliases?.[id]) return pg.aliases[id];
+    return '';
+  };
+  K.foldId = (id) => ALIAS[id] || pageAlias(id) || id;
   const parse = (v) => {
     const o = {};
     String(v || '')

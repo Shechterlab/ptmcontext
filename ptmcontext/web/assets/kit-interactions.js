@@ -52,6 +52,16 @@
         return !!TB[b.table] && TB[b.table].n > 0;
       case 'text':
         return !!b.text;
+      case 'tiles':
+        b.tiles = (b.tiles || []).filter((t) => hasRow(t.row));
+        return b.tiles.length > 0;
+      case 'contact_list':
+        return !!TB[b.table] && TB[b.table].n > 0;
+      case 'pointer':
+        return (D.proteins || []).some((p) => p[1] === b.protein);
+      case 'fold':
+        b.blocks = (b.blocks || []).filter(usable);
+        return b.blocks.length > 0;
       default:
         return false;
     }
@@ -240,6 +250,10 @@
   const siteLink = (p, pos) => {
     const name = siteName(prot(p)[0], pos);
     return `<a href="${esc(K.link('protein', `${prot(p)[0]}/${name}`))}"><b>${esc(gene(p))}</b> ${esc(name)}</a>`;
+  };
+  const siteOnlyLink = (p, pos) => {
+    const name = siteName(prot(p)[0], pos);
+    return `<a href="${esc(K.link('protein', `${prot(p)[0]}/${name}`))}">${esc(name)}</a>`;
   };
   const protLink = (p) => `<a href="${esc(K.link('protein', prot(p)[0]))}"><b>${esc(gene(p))}</b></a>`;
   const accLink = (acc, label) => {
@@ -682,6 +696,61 @@
     });
     return { body: parts.join(''), H: H0 };
   }
+  // the chart in a sentence made from the same rows (sentence: {residue: the series that is the residue itself, inside: the
+  // phrase for the others}): the evidence's fold where it is at the residue's own place, how far along the sequence it
+  // lasts, and the residue's own fold against it
+  function proximitySentence(b, m) {
+    const sn = b.sentence,
+      ser = linesData(b, m);
+    if (!sn || !ser.length) return '';
+    const near = (x) => x.pts[0],
+      far = (x) => x.pts[x.pts.length - 1],
+      lastX = Math.max(...ser.map((x) => far(x).x)),
+      rs = (xs) => xs.map((x) => x.r);
+    const others = ser.filter((x) => x.c !== sn.residue),
+      own = ser.find((x) => x.c === sn.residue),
+      more = others.filter((x) => dirOf(near(x).r) === 'more');
+    if (selOn() && !testable()) return '';
+    const head = more.length
+      ? `${cap(theMarks())} sit ${sn.inside} ${range(rs(more.map(near)))} more often than the other ${W.residues} of the same proteins`
+      : `${cap(theMarks())} are not significantly more often ${sn.inside} than the other ${W.residues} of the same proteins`;
+    let fade = '';
+    if (more.length) {
+      const still = more.filter((x) => dirOf(far(x).r) === 'more'),
+        keep = more.map((x) => (effOf(far(x).r) - 1) / (effOf(near(x).r) - 1));
+      fade =
+        still.length === more.length
+          ? keep.every((k) => k >= 0.5)
+            ? `, and the excess fades only slowly to ${int(lastX)} residues`
+            : `, and the excess fades with distance but is still there at ${int(lastX)} residues`
+          : still.length
+            ? `, and the excess is gone by ${int(lastX)} residues for some of them`
+            : `, and the excess is gone by ${int(lastX)} residues`;
+    }
+    let tail = '';
+    if (more.length && own && near(own)) {
+      const o = near(own).r,
+        low = Math.min(...more.map((x) => effOf(near(x).r)));
+      tail =
+        dirOf(o) === 'more' && effOf(o) < low
+          ? `: they lie in RNA-bound regions rather than at the crosslinked residue (${fx2(effOf(o))})`
+          : dirOf(o) === 'ns'
+            ? `: not more often at the crosslinked residue itself (${fx2(effOf(o))}, not significant)`
+            : '';
+    }
+    const odd = ser.filter((x) => x.pts.some((p) => dirOf(p.r) === 'less')),
+      shortLabel = (x) => x.label.replace(/\s*\(.*$/, ''),
+      from = (x) => x.pts.find((p) => dirOf(p.r) === 'less').x;
+    const exception = odd.length
+      ? ` ${odd
+          .map(
+            (x) =>
+              `${shortLabel(x)} is the exception: less often than the other ${W.residues} from ${int(from(x))} residues out`
+          )
+          .join('; ')}.`
+      : '';
+    return `<p class="ix-prox">${esc(head + fade + tail)}.${esc(exception)}</p>`;
+  }
   function linesHtml(pg, sec, b, bi) {
     const s = st(bkey(pg, sec, bi), { m: b.method || 'mantel_haenszel' }),
       L = linesBody(b, s.m, false);
@@ -694,11 +763,16 @@
         return `${esc(x.label)}: ${fx2(effOf(at0.r))} at ${int(at0.x)}, ${fx2(effOf(far.r))} at ${int(far.x)}`;
       })
       .join('; ');
-    return (
+    const chart =
       seg(bkey(pg, sec, bi), s.m) +
       (`<div class="ix-plot"><svg viewBox="0 0 760 ${L.H}" role="img" ` +
-        `aria-label="${esc(sec.title)}">${L.body}</svg></div><p class="muted small">${say}. Filled: q ≤ 0.05; the ` +
-        `band is the 95% CI (within each protein). Tap, hover or focus a point for its test.</p>`)
+        `aria-label="${esc(b.title || sec.title)}">${L.body}</svg></div><p class="muted small">${say}. Filled: q ≤ 0.05; the ` +
+        `band is the 95% CI (within each protein). Tap, hover or focus a point for its test.</p>`);
+    if (!b.sentence) return chart;
+    const key = `${bkey(pg, sec, bi)}.fold`;
+    return (
+      proximitySentence(b, 'mantel_haenszel') +
+      `<details class="ix-fold ix-rows" data-ix-open="${esc(key)}"${OPEN.has(key) ? ' open' : ''}><summary>${esc(b.fold || 'Show by distance')}</summary>${chart}</details>`
     );
   }
   function linesTsv(b, m) {
@@ -1849,11 +1923,216 @@
     );
   };
 
+  // ---- tiles: one test's reading as a card (the fold, its q, the marks counted), each from a row of the statistics --------
+  function statTile(t) {
+    const x = rowsFor([t.row], 'mantel_haenszel')[0],
+      r = shown(x),
+      d = dirOf(r);
+    const n = r ? r.a + r.b : 0;
+    return (
+      `<div class="ix-hl ${d}"><b>${r && effOf(r) != null ? esc(fx2(effOf(r))) : '–'}</b><span>${esc(t.label)}</span>` +
+      `<em class="ix-hq">${
+        r
+          ? `${d === 'ns' ? 'not significant · ' : ''}q ${esc(fq(r.q))} · n ${int(n)} ${esc(n === 1 ? W.mark : W.marks)}${
+              r.strata ? ` in ${int(r.strata)} proteins` : ''
+            }`
+          : 'not tested'
+      }</em>${t.tag ? `<small>${esc(t.tag)}</small>` : ''}</div>`
+    );
+  }
+  // the same counts tested across all proteins at once, against within each protein: said from the two rows
+  function pooledLine(b) {
+    const t = b.tiles[0].row,
+      fi = rowOf(t.analysis, t.category, 'fisher'),
+      mh = rowOf(t.analysis, t.category, 'mantel_haenszel');
+    if (!fi || !mh || effOf(fi) == null || effOf(mh) == null) return '';
+    return (
+      `<p class="muted small">Counting all the ${esc(W.residues)} together, the fold is ${esc(fx2(effOf(fi)))} (q ${esc(fq(fi.q))}); ` +
+      `within each protein it is ${esc(fx2(effOf(mh)))} (q ${esc(fq(mh.q))}).</p>`
+    );
+  }
+  function tilesHtml(b) {
+    return (
+      `${b.sub ? `<p class="muted small">${esc(b.sub)}</p>` : ''}<div class="ix-hls">${b.tiles.map(statTile).join('')}</div>` +
+      (b.pooled && !selOn() ? pooledLine(b) : '')
+    );
+  }
+
+  // ---- the methylarginines in contact with RNA or DNA in a structure: one row a site, its closest contact ------------
+  // the records' state of a site in an entry (records table: entry id and state, on the rows its where keeps)
+  function modeledIndex(b) {
+    const m = b.modeled,
+      t = m && table(m.table);
+    if (!t) return null;
+    if (t._ix) return t._ix;
+    const ei = colIdx(t, m.entry),
+      si = colIdx(t, m.state),
+      w = Object.entries(m.where || {}).map(([c, v]) => [colIdx(t, c), v]);
+    const ix = new Map();
+    t.rows.forEach((r) => {
+      if (w.some(([j, v]) => r[j] !== v)) return;
+      const k = `${r[0]}:${r[1]}`;
+      (ix.get(k) || ix.set(k, new Map()).get(k)).set(String(r[ei]).toLowerCase(), r[si]);
+    });
+    return (t._ix = ix);
+  }
+  function contactSites(b) {
+    const t = table(b.table);
+    if (!t || (b.modeled && !modeledIndex(b))) return null;
+    const j = Object.fromEntries(['kind', 'type', 'name', 'entry', 'distance'].map((c) => [c, colIdx(t, c)]));
+    const by = new Map();
+    tableRows(t).forEach((r) => {
+      const k = `${r[0]}:${r[1]}`;
+      (by.get(k) || by.set(k, []).get(k)).push(r);
+    });
+    const mi = b.modeled ? modeledIndex(b) : null,
+      m = b.modeled || {};
+    const say = (st) =>
+      st == null
+        ? 'unknown'
+        : (m.unmodified || []).includes(st)
+          ? 'no'
+          : (m.unknown || []).includes(st)
+            ? 'unknown'
+            : 'yes';
+    const out = [];
+    by.forEach((rs, k) => {
+      const best = K.card.contact.best(
+        rs.map((r) => ({
+          kind: r[j.kind],
+          type: r[j.type],
+          name: r[j.name],
+          entry: r[j.entry],
+          distance: r[j.distance],
+        }))
+      );
+      if (!best) return;
+      const states = mi?.get(k),
+        mine = say(states?.get(best.entry.toLowerCase()));
+      const other =
+        mine === 'yes'
+          ? ''
+          : [...new Set(rs.flatMap((r) => (Array.isArray(r[j.entry]) ? r[j.entry] : [r[j.entry]])))].find(
+              (id) => id && say(states?.get(String(id).toLowerCase())) === 'yes'
+            ) || '';
+      out.push({ p: rs[0][0], pos: rs[0][1], best, modeled: other ? 'other' : mine, other });
+    });
+    return out.sort((x, y) => x.best.dist - y.best.dist || gene(x.p).localeCompare(gene(y.p)) || x.pos - y.pos);
+  }
+  const contactKinds = (b) => ({ rna: 'RNA', dna: 'DNA', hybrid: 'RNA-DNA hybrid', ...(b.kinds || {}) });
+  const contactType = (b, x) => {
+    const t = table(b.table),
+      lab = (colMeta(t, 'type').values || {})[x.best.type] ?? x.best.type;
+    const word = K.card.contact.word(x.best, contactKinds(b));
+    return !lab ? word : String(lab).includes(word) ? lab : `${word} · ${lab}`; // "rRNA", not "RNA · rRNA"
+  };
+  const MODELED = { yes: 'Yes', no: 'No', unknown: '–' };
+  const modeledWord = (x) => (x.modeled === 'other' ? `Only in PDB ${x.other.toUpperCase()}` : MODELED[x.modeled]);
+  function contactListHtml(pg, sec, b, bi) {
+    const list = contactSites(b);
+    if (!list) return TERR[b.table] ? `<p class="muted">${esc(TERR[b.table])}</p>` : loading();
+    const s = st(bkey(pg, sec, bi), { all: false }),
+      limit = b.limit || 25,
+      shownRows = s.all ? list : list.slice(0, limit);
+    if (!list.length) return `<p class="muted">None${selOn() ? ' for your selection' : ''}.</p>`;
+    const kinds = contactKinds(b),
+      three = typeof K.show3d === 'function';
+    return (
+      `${b.sub ? `<p class="muted small">${esc(b.sub)}</p>` : ''}` +
+      `<div class="tbl-card"><table class="tbl ix-tbl"><thead><tr><th>Protein</th><th>Site</th><th>RNA or DNA</th><th class="num">Closest (Å)</th>` +
+      `<th>PDB entry</th><th title="Whether that structure has the methyl group modeled on the arginine">Methyl group modeled</th></tr></thead><tbody>` +
+      shownRows
+        .map((x) => {
+          const acc = prot(x.p)[0],
+            id = x.best.entry,
+            phrase = K.card.contact.phrase(x.best, kinds);
+          return (
+            `<tr title="${esc(phrase)}"><td>${protLink(x.p)}</td><td>${siteOnlyLink(x.p, x.pos)}</td>` +
+            `<td>${esc(contactType(b, x))}</td><td class="num">${x.best.dist.toFixed(1)}</td>` +
+            `<td><a class="mono" href="https://www.ebi.ac.uk/pdbe/entry/pdb/${encodeURIComponent(id.toLowerCase())}" title="PDBe entry ${esc(id)}">PDB ${esc(id.toUpperCase())}</a>` +
+            (three
+              ? ` <button type="button" class="linkish small" data-entry3d="${esc(id)}" data-acc="${esc(acc)}" data-pos="${x.pos}">Show in 3D at site</button>`
+              : '') +
+            `</td><td>${esc(modeledWord(x))}</td></tr>`
+          );
+        })
+        .join('') +
+      `</tbody></table></div><p class="muted small">${int(list.length)} ${esc(W.marks)} in contact with RNA or DNA in at least one structure, closest first${
+        s.all || list.length <= limit ? '' : `; the first ${int(limit)} are shown`
+      }. ${esc(b.note || '')}</p>` +
+      (list.length > limit
+        ? `<p><button type="button" class="linkish" data-ix-all="${esc(bkey(pg, sec, bi))}">${
+            s.all ? `Show the first ${int(limit)}` : `Show all ${int(list.length)}`
+          }</button></p>`
+        : '')
+    );
+  }
+  function contactTsv(b) {
+    const list = contactSites(b) || [],
+      kinds = contactKinds(b),
+      t = table(b.table);
+    return (
+      [
+        'protein',
+        'gene',
+        'site',
+        'nucleic_acid',
+        'type',
+        'molecule',
+        'closest_distance_a',
+        'pdb_entry',
+        'methyl_modeled',
+        'contact',
+      ].join('\t') +
+      '\n' +
+      list
+        .map((x) =>
+          [
+            prot(x.p)[0],
+            gene(x.p),
+            siteName(prot(x.p)[0], x.pos),
+            kinds[x.best.kind] || x.best.kind,
+            (colMeta(t, 'type').values || {})[x.best.type] ?? x.best.type,
+            x.best.name || '',
+            x.best.dist.toFixed(2),
+            x.best.entry.toUpperCase(),
+            modeledWord(x),
+            K.card.contact.phrase(x.best, kinds),
+          ].join('\t')
+        )
+        .join('\n') +
+      '\n'
+    );
+  }
+  // ---- a line that points to another page (a protein's map), and a fold that holds other blocks ------------------------
+  function pointerHtml(b) {
+    const i = (D.proteins || []).findIndex((p) => p[1] === b.protein);
+    return i < 0
+      ? ''
+      : `<p class="ix-links">${esc(b.text || '')} <a href="${esc(K.link('protein', D.proteins[i][0]))}">${esc(b.protein)} ›</a></p>`;
+  }
+  function foldHtml(pg, sec, b, bi) {
+    const key = `${bkey(pg, sec, bi)}.fold`;
+    return (
+      `<details class="ix-fold ix-rows" data-ix-open="${esc(key)}"${OPEN.has(key) ? ' open' : ''}><summary>${esc(b.label || 'Show')}</summary>` +
+      b.blocks
+        .map(
+          (sb, j) =>
+            `<div class="ix-block" id="ix-${esc(sec.id)}-${bi}-${j}">${
+              sb.title ? `<div class="card-head"><div><h4>${esc(sb.title)}</h4></div></div>` : ''
+            }${blockHtml(pg, sec, sb, `${bi}.${j}`)}${exportsOf(pg, sec, sb, `${bi}.${j}`)}</div>`
+        )
+        .join('') +
+      (b.caption ? `<p class="muted small">${esc(b.caption)}</p>` : '') +
+      '</details>'
+    );
+  }
+
   // ---- a block, its exports, and a section ---------------------------------------------------------------------------
   const loading = () => K.loading('Loading…');
   const FIG = { forest: 1, lines: 1, shares: 1, matrix: 1, bars: 1, histogram: 1, example: 1 };
   function blockHtml(pg, sec, b, bi) {
-    if (!ready() && !['text', 'example'].includes(b.kind)) return loading();
+    if (!ready() && !['text', 'example', 'pointer'].includes(b.kind)) return loading();
     switch (b.kind) {
       case 'forest':
         return forestHtml(pg, sec, b, bi);
@@ -1881,6 +2160,14 @@
         return histHtml(pg, sec, b);
       case 'text':
         return `<p>${esc(b.text)}</p>`;
+      case 'tiles':
+        return tilesHtml(b);
+      case 'contact_list':
+        return contactListHtml(pg, sec, b, bi);
+      case 'pointer':
+        return pointerHtml(b);
+      case 'fold':
+        return foldHtml(pg, sec, b, bi);
       default:
         return '';
     }
@@ -1892,8 +2179,8 @@
         ? b.analysis
         : null;
   function exportsOf(pg, sec, b, bi) {
-    if (b.kind === 'text' || b.kind === 'checker') return '';
-    const kinds = ['pdf', 'svg', 'png', 'tsv']; // a block without a drawing of its own is drawn as the table on the page (K.tableFigure)
+    if (['text', 'checker', 'pointer', 'tiles', 'fold'].includes(b.kind)) return '';
+    const kinds = b.kind === 'contact_list' ? ['tsv'] : ['pdf', 'svg', 'png', 'tsv']; // a block without a drawing of its own is drawn as the table on the page (K.tableFigure)
     const m = methodOf(b);
     return K.expBar(
       b.kind === 'example' ? ['pdf', 'svg', 'png'] : kinds,
@@ -1963,7 +2250,7 @@
   };
   function tileBody(pg, sec) {
     const b = sec.blocks[Math.min(sec.tile ?? 0, sec.blocks.length - 1)];
-    if (!ready() && !['text', 'example'].includes(b.kind)) return loading();
+    if (!ready() && !['text', 'example', 'pointer'].includes(b.kind)) return loading();
     switch (b.kind) {
       case 'forest': {
         const pickR = b.rows.slice(0, 6),
@@ -2138,8 +2425,23 @@
           `<div class="ix-plot ` + `ix-mini"><svg viewBox="0 0 330 ${L.H}" aria-hidden="true">${L.body}</svg></div>`
         );
       }
+      case 'tiles':
+        return `<div class="trows ix-stiles">${b.tiles
+          .slice(0, 2)
+          .map((t) => {
+            const r = shown(rowsFor([t.row], 'mantel_haenszel')[0]);
+            return (
+              `<p class="ix-stile ${dirOf(r)}"><b>${r && effOf(r) != null ? esc(fx2(effOf(r))) : '–'}</b> <span>${esc(t.label)}</span>${
+                t.tag ? ` <span class="muted small">${esc(t.tag.toLowerCase())}</span>` : ''
+              }` + `<br><em class="muted small">q ${r ? esc(fq(r.q)) : '–'} · n ${r ? int(r.a + r.b) : '–'}</em></p>`
+            );
+          })
+          .join('')}</div>`;
       case 'example':
       case 'checker':
+      case 'pointer':
+      case 'contact_list':
+      case 'fold':
         return '';
       default:
         return b.text ? `<p class="small">${esc(b.text)}</p>` : '';
@@ -2581,8 +2883,9 @@
   }
   function view(pg, arg) {
     if (arg === 'overview' && pg.overview) return ovQuestion(pg);
-    const sec = arg && pg.sections.find((s) => s.id === arg);
-    return sec ? focus(pg, arg) : hub(pg);
+    const id = arg && K.foldId(arg), // a section that moved (website.pages[].aliases) opens where it is now
+      sec = id && pg.sections.find((s) => s.id === id);
+    return sec ? focus(pg, id) : hub(pg);
   }
 
   // ---- the Overview's tile -------------------------------------------------------------------------------------------
@@ -2634,12 +2937,19 @@
     );
   }
   (K.ovTiles ||= []).push(
-    ...PAGES.filter((pg) => pg.overview).map((pg) => ({ section: pg.overview.section, html: () => ovTile(pg) }))
+    ...PAGES.filter((pg) => pg.overview).map((pg) => ({ section: pg.overview.section, html: () => ovTile(pg) })),
+    // more of the page's sections as tiles of their own (website.pages[].overview.tiles): each the section's tile, as on the page
+    ...PAGES.flatMap((pg) =>
+      (pg.overview?.tiles?.sections || [])
+        .map((id) => pg.sections.find((s) => s.id === id))
+        .filter(Boolean)
+        .map((sec) => ({ section: pg.overview.tiles.section, html: () => sectionTile(pg, sec) }))
+    )
   );
 
   // ---- figures and tables for the downloads -------------------------------------------------------------------------
   function findBlock(key) {
-    const [pid, sid, bi] = key.split('.'),
+    const [pid, sid, bi, bj] = key.split('.'),
       pg = PAGES.find((p) => p.id === pid);
     if (!pg) return null;
     if (sid === 'overview')
@@ -2650,7 +2960,10 @@
         bi,
       };
     const sec = pg.sections.find((s) => s.id === sid);
-    return sec ? { pg, sec, b: sec.blocks[+bi], bi } : null;
+    if (!sec) return null;
+    return bj == null
+      ? { pg, sec, b: sec.blocks[+bi], bi }
+      : { pg, sec, b: sec.blocks[+bi]?.blocks?.[+bj], bi: `${bi}.${bj}` }; // a block inside a fold
   }
   function figureOf(x) {
     const { pg, sec, b, bi } = x,
@@ -2721,7 +3034,9 @@
                         ? pairsTsv(b)
                         : b.kind === 'histogram'
                           ? histTsv(b)
-                          : '';
+                          : b.kind === 'contact_list'
+                            ? contactTsv(b)
+                            : '';
     const src = b.table
       ? ` From ${
           D.inputs?.[(D.run.inputs && Object.keys(D.run.inputs).find((k) => k === b.table)) || '']
@@ -2780,12 +3095,13 @@
     K.views[pg.id] = {
       follows: true,
       render: (arg) => view(pg, arg),
-      title: (arg) => (arg && pg.sections.find((s) => s.id === arg)?.title) || pg.tab,
+      title: (arg) => (arg && pg.sections.find((s) => s.id === K.foldId(arg))?.title) || pg.tab,
       after: (arg) => {
         drawExample();
         // a section's address lands on its card, below the toolbar (once for an address, not at each redraw of it)
-        const at = arg && pg.sections.some((s) => s.id === arg) ? `${pg.id}/${arg}` : '';
-        if (at && at !== landed) K.landOn?.(() => document.getElementById(`ix-${arg}`));
+        const sid = arg && K.foldId(arg),
+          at = sid && pg.sections.some((s) => s.id === sid) ? `${pg.id}/${sid}` : '';
+        if (at && at !== landed) K.landOn?.(() => document.getElementById(`ix-${sid}`));
         landed = at;
       },
     };

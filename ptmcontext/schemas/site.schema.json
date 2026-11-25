@@ -1194,13 +1194,13 @@
               "include": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/condition"
+                  "$ref": "#/$defs/proteins_condition"
                 }
               },
               "exclude": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/condition"
+                  "$ref": "#/$defs/proteins_condition"
                 }
               },
               "label": {
@@ -8040,6 +8040,13 @@
                   }
                 }
               },
+              "aliases": {
+                "type": "object",
+                "description": "ids this page's sections and folds had before they moved or went (a link with open= or an address of the old id): old id -> the id it opens now",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
               "overview": {
                 "type": "object",
                 "required": [
@@ -8050,6 +8057,27 @@
                   "section": {
                     "type": "string",
                     "description": "the Overview section the page's tile goes in"
+                  },
+                  "tiles": {
+                    "type": "object",
+                    "required": [
+                      "section",
+                      "sections"
+                    ],
+                    "additionalProperties": false,
+                    "description": "more of the page's sections as Overview tiles of their own, each the section's tile (its `tile` block) as on the page",
+                    "properties": {
+                      "section": {
+                        "type": "string",
+                        "description": "the Overview section they go in"
+                      },
+                      "sections": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
                   },
                   "title": {
                     "type": "string"
@@ -8256,7 +8284,11 @@
                                     "bars",
                                     "pairs",
                                     "histogram",
-                                    "text"
+                                    "text",
+                                    "tiles",
+                                    "contact_list",
+                                    "pointer",
+                                    "fold"
                                   ]
                                 },
                                 "title": {
@@ -8457,6 +8489,124 @@
                                 "among": {
                                   "type": "string",
                                   "description": "histogram: only the rows whose column is non-zero (the residues an evidence could reach)"
+                                },
+                                "tiles": {
+                                  "type": "array",
+                                  "description": "tiles: a card for each test row: its fold, q and the marks counted",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "label",
+                                      "row"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "tag": {
+                                        "type": "string"
+                                      },
+                                      "row": {
+                                        "type": "object",
+                                        "required": [
+                                          "analysis",
+                                          "category"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "analysis": {
+                                            "type": "string"
+                                          },
+                                          "category": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "pooled": {
+                                  "type": "boolean",
+                                  "description": "tiles: add a line with the first tile's fold across all proteins against within each protein"
+                                },
+                                "modeled": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "description": "contact_list: whether the structure models the methyl group, from a records table keyed by site: its entry column (a PDB id), its state column, the rows that count (where, column: value), the states that mean the plain residue (unmodified) and those that say nothing (unknown); any other state is a modeled modification",
+                                  "required": [
+                                    "table",
+                                    "entry",
+                                    "state"
+                                  ],
+                                  "properties": {
+                                    "table": {
+                                      "type": "string"
+                                    },
+                                    "entry": {
+                                      "type": "string"
+                                    },
+                                    "state": {
+                                      "type": "string"
+                                    },
+                                    "where": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "unmodified": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "unknown": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "kinds": {
+                                  "type": "object",
+                                  "description": "contact_list: the words for the nucleic_acid codes (rna, dna, hybrid)",
+                                  "additionalProperties": {
+                                    "type": "string"
+                                  }
+                                },
+                                "sentence": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "description": "lines: say the chart in a sentence made from its rows: the series that is the residue itself, and the phrase for the others (inside RNA-bound peptides)",
+                                  "required": [
+                                    "residue",
+                                    "inside"
+                                  ],
+                                  "properties": {
+                                    "residue": {
+                                      "type": "string"
+                                    },
+                                    "inside": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "fold": {
+                                  "type": "string",
+                                  "description": "lines with a sentence: the words that open the chart (Show by distance)"
+                                },
+                                "caption": {
+                                  "type": "string",
+                                  "description": "fold: a line under the blocks inside it"
+                                },
+                                "blocks": {
+                                  "type": "array",
+                                  "description": "fold: the blocks it holds (a fold opens by its label)",
+                                  "items": {
+                                    "type": "object"
+                                  }
                                 }
                               }
                             }
@@ -9504,6 +9654,30 @@
           }
         }
       }
+    },
+    "proteins_condition": {
+      "description": "a condition on the rows of a table that lists proteins: a condition on one column, or any_of, which holds when one of the conditions listed does",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/condition"
+        },
+        {
+          "type": "object",
+          "required": [
+            "any_of"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "any_of": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        }
+      ]
     },
     "condition": {
       "type": "object",
