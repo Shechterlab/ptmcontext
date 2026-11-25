@@ -9316,6 +9316,13 @@
                 },
                 "description": "a number attribute's filter: the thresholds offered"
               },
+              "level_labels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "a number attribute's filter: the words for a threshold in the menu, by threshold (for example \"0.05\": \"Yes (q <= 0.05)\"); a threshold without one reads as at least or at most it"
+              },
               "direction": {
                 "enum": [
                   "min",

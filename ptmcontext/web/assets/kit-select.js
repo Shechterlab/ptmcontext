@@ -427,13 +427,15 @@
     const sc = A[id]?.scores || {};
     return `${+v === sc.max ? '' : '≥ '}${v}${sc.max != null ? ` of ${sc.max}` : ''}`;
   };
+  // a threshold level's words: the spec's level_labels when it has them, else "≤ 0.05" / "at least 3"
+  K.levelText = (sp, v) => sp.level_labels?.[v] ?? `${sp.direction === 'max' ? '≤' : 'at least'} ${v}`;
   function valueName(key, v) {
     const [kind, id] = key.split(':');
     if (K.filterKinds?.[kind]?.value) return K.filterKinds[kind].value(id, v);
     if (kind === 'm' || kind === 'x') return v;
     if (kind === 'r') {
       const sp = RSPEC(id) || {};
-      return sp.kind === 'number' ? `${sp.direction === 'max' ? '≤' : 'at least'} ${v}` : (sp.values || {})[v] || v;
+      return sp.kind === 'number' ? K.levelText(sp, v) : (sp.values || {})[v] || v;
     }
     if (kind === 's') return scoreText(id, v);
     if (kind === 'p' && v === '*') return A[id]?.filter?.any || 'in any set';

@@ -619,7 +619,7 @@
         cur = S.f[key]?.[0] || '';
       const opts =
         sp.kind === 'number'
-          ? (sp.levels || []).map((v) => [String(v), `${sp.direction === 'max' ? '≤' : 'at least'} ${v}`])
+          ? (sp.levels || []).map((v) => [String(v), K.levelText(sp, v)])
           : [
               ...new Set(
                 (D.protein_attributes?.values?.[id] || [])
