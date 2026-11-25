@@ -99,7 +99,11 @@ def test_list_page_rows_equal_the_python_reference(tmp_path):
         )
         assert j['p'] == pytest.approx(p['p'], rel=1e-9) and j['q'] == pytest.approx(p['q'], rel=1e-9)
     h = out['html']
-    assert 'A new test, not in the release statistics' in h and 'chosen, not drawn at random' in h
+    assert (
+        'One-sided hypergeometric test of your proteins' in h
+        and '>Method</a>' in h
+        and 'chosen, not drawn at random' in h
+    )
     assert (
         'Left out of the list' in h
         and 'FOOBAR' in h
