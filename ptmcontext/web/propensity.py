@@ -709,6 +709,9 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         'hypermutated': {'per_mb': HYPER_PER_MB},
         'zero_rows': ZERO_ROWS,
         'hotspot': {'min_changes': hot_cfg[0], 'min_share': hot_cfg[1]},
+        'group_names': json.loads((Path(__file__).resolve().parents[1] / 'config' / 'tcga_projects.json').read_text())[
+            'names'
+        ],
         'summary': summaries(site['id'], run, cfg, log),
     }
     # the waterfall and oncoprint files
