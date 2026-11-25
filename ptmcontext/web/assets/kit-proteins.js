@@ -1258,7 +1258,8 @@
   // ---- the site table directly under the map: one row per site, open by default ---------------------------------------
   // Cells come from the site card's own summary (K.card.summaryItems, through summaryAt), so nothing is computed twice.
   // At most GL_CAP rows are drawn until asked; the lazy sections are not touched.
-  const GL_CAP = 25;
+  const GL_CAP = 25,
+    GL_ALL = 40; // up to GL_ALL sites are all drawn; past it the first GL_CAP, plus every site with a writer or a P/LP variant
   const GL = { sort: 'pos', all: false };
   let uniIdx = null;
   // the UniProt "Modified residue" features by position, built once per UniProt answer
@@ -1284,6 +1285,11 @@
     return K.card.summaryItems(cardCtx(p, PV.rec, m), { uni: uniAtPos().get(pos) || [] });
   }
   const glanceVars = (pos) => (PV.tb && K.card.vc.entries.length ? K.card.vc.siteVariants(PV.tb, pos) : []);
+  // the sites drawn before "Show all": all of them up to GL_ALL, else the first GL_CAP and those with a writer or P/LP variant
+  const glanceKept = (p, marks) =>
+    marks.length <= GL_ALL
+      ? marks
+      : marks.filter((m, i) => i < GL_CAP || summaryAt(p.acc, m[0])?.writer || glanceVars(m[0]).some((v) => v.hot));
   const glanceN = (pos) => glanceVars(pos).reduce((a, v) => a + (v.n || 0), 0);
   function siteGlance(p, rec) {
     const marks = [...rec.marks];
@@ -1292,7 +1298,8 @@
       const n = new Map(marks.map((m) => [m[0], glanceN(m[0])]));
       marks.sort((a, b) => n.get(b[0]) - n.get(a[0]) || a[0] - b[0]);
     } else marks.sort((a, b) => a[0] - b[0]);
-    const shown = GL.all ? marks : marks.slice(0, GL_CAP),
+    const kept = glanceKept(p, marks),
+      shown = GL.all ? marks : kept,
       win = HV.window || 10,
       hasNear = !!(K.map?.nearby && K.map.ctxIds?.().length),
       hasVar = !!K.card.vc.entries.length,
@@ -1334,11 +1341,11 @@
       `<section class="site-glance card" id="site-glance" aria-label="Sites of ${esc(p.gene || p.acc)}"><div class="card-head"><h3>${esc(cap(W.marks))} at a glance</h3>` +
       `<p class="small muted">Sort by ${sortBtn('pos', 'position')} · ${hasVar ? sortBtn('var', 'variant count') : ''}</p></div>` +
       `<div class="tbl-card"><table class="tbl stackable sg-tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
-      (marks.length > GL_CAP
+      (kept.length < marks.length
         ? `<p class="small">${
             GL.all
-              ? `<button type="button" class="linkish" data-glance-all="0">Show the first ${GL_CAP}</button>`
-              : `Showing ${GL_CAP} of ${int(marks.length)}. <button type="button" class="linkish" data-glance-all="1">Show all ${int(marks.length)} ${esc(W.marks)}</button>`
+              ? `<button type="button" class="linkish" data-glance-all="0">Show fewer</button>`
+              : `Showing ${int(kept.length)} of ${int(marks.length)}. <button type="button" class="linkish" data-glance-all="1">Show all ${int(marks.length)} ${esc(W.marks)}</button>`
           }</p>`
         : '') +
       '</section>'

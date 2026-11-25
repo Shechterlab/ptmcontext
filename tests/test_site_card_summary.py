@@ -166,7 +166,7 @@ console.log(JSON.stringify(K.card.cardSummary(c, {{}})));""",
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
-def test_a_line_of_only_other_species_is_shown_labeled():
+def test_a_line_of_only_other_species_says_no_human_and_folds_the_names():
     cols = ['position', 'group', 'partner_kind', 'partner', 'partner_accession', 'species']
     rows = [[15, 'binds', 'protein', 'hrp1', '', 'Mus musculus']]
     view = {
@@ -185,4 +185,5 @@ const c = {{ acc: 'P1', pos: 15, label: 'R3', tb: {{ rec: {json.dumps(rows)}, _s
 console.log(JSON.stringify(K.card.cardSummary(c, {{}})));""",
         view,
     )
-    assert 'hrp1' in out and '(M. musculus)' in out and 'other species' not in out
+    assert 'No human binder' in out and '1 in other species ▸' in out
+    assert 'hrp1' in out and '(M. musculus)' in out

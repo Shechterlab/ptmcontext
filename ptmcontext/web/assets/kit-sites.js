@@ -232,7 +232,9 @@
     'changes',
     'nearest_domain',
     'nearest',
+    'writer',
   ]);
+  const isWriter = (c) => (c.show || []).length === 1 && c.show[0] === 'writer';
   function optCols() {
     let cs = SV.table || D.protein_view?.table?.columns || null;
     if (!cs) {
@@ -254,6 +256,19 @@
         ...ctxs.map((a) => ({ id: 'q:' + a, label: A[a]?.title || a, analyses: [a], default: true })),
       ];
     }
+    // the writers, on every site: the records' writers (where the site file names writer groups), then those UniProt
+    // names in the residue's text (read for the rows shown). A site file's own entry (show: [writer]) sets its place and default.
+    if (!cs.some(isWriter))
+      cs = [
+        ...cs,
+        {
+          id: 'writer',
+          label: 'Writer (UniProt)',
+          menu: 'Writers: the records’ writers, then those UniProt names for the residue',
+          show: ['writer'],
+          hide: 'sm',
+        },
+      ];
     // the 3D column, on every site: opens the structure at the site (the viewer of the protein page)
     cs = [...cs.filter((c) => c.id !== 'view3d'), { id: 'view3d', label: '3D', view3d: true, default: true }];
     return cs.filter((c) =>
@@ -265,6 +280,58 @@
             ? c.analyses.every((a) => A[a])
             : (c.show || []).some((k) => BLOCKS.has(k) && !PROT_ONLY.has(k))
     );
+  }
+  // ---- the writer column: UniProt's "Modified residue" features, one small request per protein, for the rows shown only ------
+  const WU = {},
+    WUQ = [];
+  let wuBusy = 0;
+  function wuNext() {
+    while (wuBusy < 6 && WUQ.length) {
+      const acc = WUQ.shift();
+      wuBusy++;
+      fetch(`https://rest.uniprot.org/uniprotkb/${encodeURIComponent(acc)}?fields=ft_mod_res&format=json`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then(
+          (j) => {
+            const by = new Map();
+            for (const f of j.features || []) {
+              const a = f.location?.start?.value;
+              if (f.type === 'Modified residue' && a != null && a === f.location?.end?.value) {
+                if (!by.has(a)) by.set(a, []);
+                by.get(a).push(f);
+              }
+            }
+            WU[acc] = by;
+          },
+          () => (WU[acc] = new Map())
+        )
+        .then(() => {
+          wuBusy--;
+          wuNext();
+          again();
+        });
+    }
+  }
+  function writerHtml(m, quiet) {
+    const p = pr(m[0]),
+      acc = p.acc;
+    if (WU[acc] === undefined) {
+      if (quiet) return null;
+      if (!WUQ.includes(acc)) {
+        WUQ.push(acc);
+        wuNext();
+      }
+      return null;
+    }
+    let tb = {};
+    if (K.card.hasWriterRecords?.()) {
+      if (TB[acc] === undefined) {
+        if (!quiet) need(acc);
+        return null;
+      }
+      tb = TB[acc];
+    }
+    return K.card.summaryItems(ctxOf(m, tb), { uni: WU[acc].get(m[1]) || [] }).writer?.[1] || '';
   }
   const WAITS = new Set(['sequences', 'around', 'calls', 'states', 'changes', 'nearest_domain']); // blocks drawn once the tables are in
   // a block's sort: the site file's attributes (sort), else those the blocks read: a status's order, then how many values
@@ -371,6 +438,10 @@
       const n = nearest(m);
       return n == null ? dash : `${int(n)} aa`;
     }
+    if (isWriter(c)) {
+      const h = writerHtml(m);
+      return h == null ? '<span class="muted">…</span>' : h || dash;
+    }
     const p = pr(m[0]);
     let dtb;
     if (covered(c)) {
@@ -452,10 +523,11 @@
           .join(' ') || null
       );
     if ((c.show || []).includes('nearest')) return nearest(m);
+    if (isWriter(c)) return writerHtml(m, true)?.replace(/<[^>]*>/g, '') || null;
     const names = sortAttrs(c);
     return names.length ? rank(m, names) : null;
   }
-  const optText = (c) => !!c.analyses;
+  const optText = (c) => !!c.analyses || isWriter(c);
 
   // ---- the marks shown and counted nowhere (K.shown, website.shown_marks): rows of their own, after a toggle that is
   // on where there are any; never in the selection, its counts or the sites' number -------------------------------------

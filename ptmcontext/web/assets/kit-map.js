@@ -1120,7 +1120,7 @@
     Object.assign(c, { marks, nLev, level });
   }
   function draw_labels(c) {
-    const { marks, resName, X, shown, X0, X1, nLev } = c;
+    const { marks, resName, X, X0, X1, nLev } = c;
     // labels: Auto (3 lines, merged where they collide; none above 120 marks), All (12 lines), None
     const labels = [];
     const lmode = M.labels,
@@ -1146,7 +1146,7 @@
           if (!prev) return;
           prev.pos.push(m[0]);
           prev.n++;
-          prev.txt = prev.n === 2 ? `${prev.base}/${shown(prev.pos[1])}` : `${prev.base} +${prev.n - 1}`;
+          prev.txt = prev.n === 2 ? `${prev.base}/${resName(prev.pos[1])}` : `${prev.base} +${prev.n - 1}`;
           prev.left ??= prev.x - (K.tw(prev.base, 10.5) + 6) / 2;
           lineEnd[prev.line] = Math.max(lineEnd[prev.line], prev.left + K.tw(prev.txt, 10.5) + 6);
         }
@@ -1174,7 +1174,7 @@
         a.pos.push(...b.pos);
         a.n += b.n;
         a.left ??= a.x - (K.tw(a.base, 10.5) + 6) / 2;
-        a.txt = a.n === 2 ? `${a.base}/${shown(a.pos[1])}` : `${a.base} +${a.n - 1}`;
+        a.txt = a.n === 2 ? `${a.base}/${resName(a.pos[1])}` : `${a.base} +${a.n - 1}`;
         labels.splice(k, 1);
         again = true;
         break;

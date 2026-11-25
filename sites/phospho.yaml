@@ -2132,6 +2132,7 @@ website:                  # the look and words of the website (ptmc web); layout
     table:                 # the optional columns (the Columns menu): the same set on every site, where the data has it
       - {id: na, label: RNA/DNA contacts, menu: "RNA/DNA contacts (structures) and crosslinks (cells)", show: [sequences, around], default: true}
       - {id: src, label: Reported by, attribute: sources, default: true, hide: sm}
+      - {id: writer, label: Writer (UniProt), menu: "Writers: the records’ writers, then those UniProt names for the residue", show: [writer], default: true, hide: sm}
       - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context], hide: xs}
       - {id: nn, label: "Nearest other mark", menu: "Distance to the nearest other mark", show: [nearest], hide: sm}
       - {id: struct, label: Structural context, analyses: [structure_context], hide: sm}
