@@ -994,11 +994,19 @@
     );
   }
   // names with the site's own species first: the human records (the first `max`), then the others folded into a muted
-  // "+N in other species" that expands inline with each name's species label; a list with no human record shows its
-  // names, labeled. Returns { n: the count shown first, html }.
-  function namesBySpecies(xs, max, isListed, moreHref = '') {
+  // "+N in other species" that expands inline with each name's species label; a list with no human record says so
+  // ("No human writer · 2 in other species ▸", noun: writer, eraser, binder) and folds the labeled names.
+  // Returns { n: the human count shown first, html }.
+  function namesBySpecies(xs, max, isListed, moreHref = '', noun = 'record') {
     const own = xs.filter((x) => !x.species),
       other = xs.filter((x) => x.species);
+    if (!own.length && other.length)
+      return {
+        n: 0,
+        html:
+          `<span class="muted">No human ${esc(noun)}</span> · <details class="sp-more muted"><summary>${int(other.length)} in other species ▸</summary>` +
+          `${namesHtml(other, other.length, isListed)}</details>`,
+      };
     if (!own.length || !other.length) return { n: xs.length, html: namesHtml(xs, max, isListed, moreHref) };
     return {
       n: own.length,
@@ -1361,14 +1369,17 @@
         uni.push(protRef(acc, n, { listed: !!(acc && c.isListed?.(acc)), byName: true }));
       }
     if (wx.size || uni.length) {
-      const recs = wx.size
-        ? namesBySpecies([...wx.values()], SUMMARY_MAX, c.isListed, href(open(wg).join(','))).html
-        : '';
+      const wxs = [...wx.values()],
+        folded = !!uni.length && !!wxs.length && wxs.every((x) => x.species), // UniProt names human writers: the other species only fold
+        recs = !wxs.length
+          ? ''
+          : folded
+            ? `<details class="sp-more muted"><summary>+${int(wxs.length)} in other species ▸</summary>${namesHtml(wxs, wxs.length, c.isListed)}</details>`
+            : namesBySpecies(wxs, SUMMARY_MAX, c.isListed, href(open(wg).join(',')), 'writer').html,
+        uniHtml = uni.length ? `${uni.join(', ')} <span class="muted">(UniProt)</span>` : '';
       lines.writer = [
         lab('Writer', wx.size ? open(wg).join(',') : 'sc-uniprot', 'Open the records, or UniProt'),
-        recs +
-          (recs && uni.length ? ' · ' : '') +
-          (uni.length ? `${uni.join(', ')} <span class="muted">(UniProt)</span>` : ''),
+        folded ? `${uniHtml} · ${recs}` : recs + (recs && uni.length ? ' · ' : '') + uniHtml,
       ];
       lines.push(lines.writer);
     }
@@ -1378,14 +1389,17 @@
     if (ex.size)
       lines.push([
         lab('Eraser', open(eg).join(','), 'Open the records table'),
-        namesBySpecies([...ex.values()], SUMMARY_MAX, c.isListed, href(open(eg).join(','))).html,
+        namesBySpecies([...ex.values()], SUMMARY_MAX, c.isListed, href(open(eg).join(',')), 'eraser').html,
       ]);
     // 3. readers and binders: a count and the first three names, "+N more" opens the table
     const rg = roleGroups('reader'),
       rx = groupPartners(by, rg);
     if (rx.size) {
-      const r = namesBySpecies([...rx.values()], 3, c.isListed, href(open(rg).join(',')));
-      lines.push([lab('Binding proteins', open(rg).join(','), 'Open the records table'), `${int(r.n)}: ${r.html}`]);
+      const r = namesBySpecies([...rx.values()], 3, c.isListed, href(open(rg).join(',')), 'binder');
+      lines.push([
+        lab('Binding proteins', open(rg).join(','), 'Open the records table'),
+        r.n ? `${int(r.n)}: ${r.html}` : r.html,
+      ]);
     }
     // 4. variants: the variant counter's own line
     const vc = K.card.vc;
@@ -1909,6 +1923,7 @@
     writerBlock,
     cardSummary,
     summaryItems,
+    hasWriterRecords: () => has(RC.table) && roleGroups('writer').length > 0,
     uniWriters,
     evidenceRow,
     reportedBy,

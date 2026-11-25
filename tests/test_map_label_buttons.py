@@ -25,7 +25,7 @@ def test_site_table_uses_summary_items_and_is_capped():
     prot, card = read('kit-proteins.js'), read('kit-sitecard.js')
     assert 'function summaryItems(' in card and 'summaryItems,' in card
     assert 'K.card.summaryItems(' in prot
-    assert 'const GL_CAP = 25' in prot and 'marks.slice(0, GL_CAP)' in prot
+    assert 'GL_CAP = 25' in prot and 'GL_ALL = 40' in prot and 'glanceKept(p, marks)' in prot
     assert 'siteGlance(p, rec) +' in prot
     assert "'All site tables'" in prot
 
@@ -33,3 +33,25 @@ def test_site_table_uses_summary_items_and_is_capped():
 def test_sites_tab_has_writer_column():
     js = read('kit-sitetable.js')
     assert "label: 'Writer (UniProt)'" in js and 'K.prot.summaryAt' in js
+
+
+def test_sites_tab_writer_column_reads_uniprot_for_shown_rows():
+    js = read('kit-sites.js')
+    assert "label: 'Writer (UniProt)'" in js and "show: ['writer']" in js  # added on every explorer
+    assert 'ft_mod_res' in js and 'K.card.summaryItems(' in js and 'writerHtml(m, true)' in js  # sorting never fetches
+    assert 'show: [writer], default: true' in (
+        Path(__file__).resolve().parents[1] / 'sites' / 'phospho.yaml'
+    ).read_text(encoding='utf-8')
+
+
+def test_merged_map_label_names_every_site_with_its_letter():
+    js = read('kit-map.js')
+    assert '/${resName(prev.pos[1])}' in js and '/${resName(a.pos[1])}' in js
+    assert '${prev.base}/${shown(' not in js and '${a.base}/${shown(' not in js
+
+
+def test_human_less_writers_say_so_and_fold_the_others():
+    js = read('kit-sitecard.js')
+    assert 'No human ${esc(noun)}' in js and 'in other species ▸' in js
+    for noun in ('writer', 'eraser', 'binder'):
+        assert f"'{noun}'" in js
