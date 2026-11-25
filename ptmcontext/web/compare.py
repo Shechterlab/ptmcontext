@@ -220,8 +220,8 @@ def cell(rows: dict, analysis: dict, aid: str, cat: str) -> dict | None:
 
 
 def _one_wording(text: str) -> str:
-    """One phrase for 'each protein is analyzed on its own' on the page: the methylarginine release keeps its v1.4.3 text
-    ('a stratum') in its own rows, the other explorers say 'analyzed separately'."""
+    """One phrase for 'each protein is analyzed on its own' on the page: a site that keeps its release's older wording
+    ('a stratum') in its own rows reads like the others ('analyzed separately')."""
     return text.replace('each protein a stratum', 'each protein analyzed separately').replace(
         'decile a stratum', 'decile analyzed separately'
     )
