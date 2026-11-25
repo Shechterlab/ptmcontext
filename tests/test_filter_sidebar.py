@@ -37,3 +37,14 @@ def test_long_groups_show_eight_values_and_show_all():
 def test_the_header_is_one_row_on_a_wide_screen_off_the_overview():
     css = (ASSETS / 'kit.css').read_text()
     assert 'body.compact-phone:not(.slim) .hero .lede' in css and '.hero-stats' in css
+
+
+def test_threshold_levels_can_carry_plain_words_and_clusters_are_named_plainly():
+    select = (ASSETS / 'kit-select.js').read_text()
+    rail = (ASSETS / 'kit-rail.js').read_text()
+    assert 'K.levelText' in select and 'K.levelText(sp, v)' in rail  # one home for a level's words
+    yaml = (Path(__file__).resolve().parents[1] / 'sites' / 'methylarginine.yaml').read_text()
+    assert 'Dense patch of methylarginines' in yaml and 'Where the clusters sit' in yaml
+    assert 'Clustering and crosstalk' not in yaml and 'Protein has a significant dense region' not in yaml
+    for word in ('dtIDR', 'domain-tethered', 'domain flanks'):
+        assert word not in yaml

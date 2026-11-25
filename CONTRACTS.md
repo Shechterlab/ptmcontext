@@ -398,7 +398,7 @@ numbers]}}` (`K.proteinAttr(accession, name)`). The Overview's `starting_points`
 attribute (`lists: [{title, by, order, where: {attribute, max, min}, show, n, help}]`) and offer ready-made selections
 (`quick: [{label, query, view}]`); a list whose attribute a site lacks is left out. A filter group's `proteins` lists
 protein-level filters (key `r:<name>`): a number attribute with its `levels` and `direction` (at least, or at most, the
-threshold, with an optional second condition `also`), a category's values, or `marks` (the protein's count of marks).
+threshold, with an optional second condition `also` and optional `level_labels`, the menu's words for a threshold), a category's values, or `marks` (the protein's count of marks).
 
 ## Per-mark tables and count questions
 
