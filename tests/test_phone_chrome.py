@@ -47,5 +47,6 @@ def test_the_landing_stays_pinned_until_the_reader_acts_or_the_page_settles():
     assert "addEventListener('scroll', go" in land  # the measured top is put back after any move
     assert '15000' in land and 'K.inflight' in land
     assert all(f"'{e}'" in _t('kit-proteins.js') for e in ('click', 'keydown', 'wheel', 'touchstart'))
+    assert "style.overflowAnchor = 'none'" in land  # no browser scroll anchoring against the pin
     opn = _t('kit-openlink.js')
     assert 'K.inflight = ' in opn and 'window.fetch = counted' in opn

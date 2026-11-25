@@ -693,7 +693,11 @@
       ro = null,
       poll = 0;
     const live = () => id === landing && !moved && keep() && Date.now() - t0 < 15000;
+    // the browser's own scroll anchoring moves the page when a section above is redrawn, then the pin moves it back: off
+    // while the pin holds, so the page does not jump in between
+    document.documentElement.style.overflowAnchor = 'none';
     const stop = () => {
+      if (id === landing) document.documentElement.style.overflowAnchor = '';
       ro?.disconnect();
       clearInterval(poll);
       removeEventListener('scroll', go);
