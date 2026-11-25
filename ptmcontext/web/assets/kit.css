@@ -1625,9 +1625,11 @@ body.rail-open .rail-scrim {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.55rem 0;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 0.75rem 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink-2);
 }
 .fgroup > summary::-webkit-details-marker {
@@ -7023,41 +7025,7 @@ a[href^='http']:hover::after {
 .fgroup .gcount {
   margin-left: auto;
   font-size: 0.74rem;
-  font-weight: 600;
-  color: var(--accent-dark);
   font-variant-numeric: tabular-nums;
-}
-.rail-find {
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0.6rem 0 0.3rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 0.4rem;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 0.88rem;
-}
-.rail-active {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
-}
-.rail-active .rail-sel {
-  flex: 1;
-}
-.rail-active .linkish {
-  white-space: nowrap;
-}
-.fgroups [hidden] {
-  display: none !important;
-}
-.fchips:not(.all) > .fmore {
-  display: none;
-}
-.fchips .fshow {
-  align-self: center;
 }
 /* STRING network: more options, zoom, who binds the marks */
 .pn-opts2 {

@@ -20,6 +20,7 @@
     keyName,
     matcher,
     nMarks,
+    nProteins,
     scoreText,
     setFilter,
     termValues,
@@ -371,17 +372,6 @@
       }
     })(),
     open: false,
-    showAll: new Set(), // filters whose long chip lists are shown in full
-    find: '', // the text in "Find a filter"
-    openGroups: (() => {
-      // the groups the reader left open, by name, kept per explorer in this browser
-      try {
-        return new Set(JSON.parse(localStorage.getItem(`ptmc-fgroups-${D.site.id}`) || '[]'));
-      } catch (e) {
-        return new Set();
-      }
-    })(),
-    autoOpened: new Set(), // groups opened because a filter in them is in use
     width: (() => {
       try {
         return +localStorage.getItem('ptmc-rail-w') || 0;
@@ -486,29 +476,6 @@
     const F = c.facets;
     return (F.memo[key] ||= tally(key, F.keys.has(key) ? [...F.all, ...(F.except[key] || [])] : F.all));
   }
-  // a list of chips: the 8 with the most marks (and any in use) show; the rest wait behind "Show all N"
-  const CHIPS_SHOWN = 8;
-  function chipRow(key, items) {
-    // items: [html, n, on]
-    const keep = new Set(
-      items
-        .map((it, i) => [i, it[1] || 0, it[2]])
-        .sort((a, b) => b[1] - a[1] || a[0] - b[0])
-        .slice(0, CHIPS_SHOWN)
-        .map((x) => x[0])
-    );
-    items.forEach((it, i) => it[2] && keep.add(i));
-    const more = items.length - keep.size,
-      all = more > 0 && R.showAll.has(key);
-    return (
-      `<div class="fchips${all ? ' all' : ''}" data-fk="${esc(key)}">` +
-      items.map((it, i) => (keep.has(i) ? it[0] : it[0].replace('class="fchip', 'class="fchip fmore'))).join('') +
-      (more > 0
-        ? `<button type="button" class="linkish small fshow" data-fmore="${esc(key)}">${all ? 'Show fewer' : `Show all ${items.length}`}</button>`
-        : '') +
-      '</div>'
-    );
-  }
   const NONE_RE = /^(no |not |none|unknown|unassigned)/i;
   function control(key) {
     const [kind, id] = key.split(':'),
@@ -527,10 +494,9 @@
       const codes = (sd()?.classes[id] || Object.keys(A[id]?.labels || {})).filter(
         (c) => !NONE_RE.test(classLabel(id, c)) && cnt(key, c) !== 0
       );
-      return `<div class="fctl"><p class="flabel">${esc(A[id].title)}</p>${chipRow(
-        key,
-        codes.map((c) => [chip(c, classLabel(id, c)), shownN(c), on.has(c)])
-      )}</div>`;
+      return `<div class="fctl"><p class="flabel">${esc(A[id].title)}</p><div class="fchips">${codes
+        .map((c) => chip(c, classLabel(id, c)))
+        .join('')}</div></div>`;
     }
     if (kind === 'p') {
       const lab = (x) => (A[id].labels || {})[x] || x;
@@ -601,16 +567,14 @@
           .sort((x, y) => (order.includes(x) ? order.indexOf(x) : 99) - (order.includes(y) ? order.indexOf(y) : 99));
       return (
         `<div class="fctl"><p class="flabel" title="${esc(sp.help || '')}">${esc(sp.label || id)} <span class="muted">` +
-        `(proteins; match any)</span></p>` +
-        chipRow(
-          key,
-          sorted.map((v) => [
-            `<button type="button" class="fchip" data-f="${esc(key)}" data-v="${esc(v)}" aria-pressed="${on.has(v)}">${esc((sp.values || {})[v] || v)}</button>`,
-            0,
-            on.has(v),
-          ])
-        ) +
-        '</div>'
+        `(proteins; match any)</span></p><div class="fchips">` +
+        sorted
+          .map(
+            (v) =>
+              `<button type="button" class="fchip" data-f="${esc(key)}" data-v="${esc(v)}" aria-pressed="${on.has(v)}">${esc((sp.values || {})[v] || v)}</button>`
+          )
+          .join('') +
+        '</div></div>'
       );
     }
     if (kind === 'r') {
@@ -674,12 +638,10 @@
     return (
       `<div class="fctl"><p class="flabel" title="${esc(spec.help || '')}">${esc(spec.label)}${
         spec.kind === 'list' ? ' <span class="muted">(match any)</span>' : ''
-      }</p>` +
-      chipRow(
-        key,
-        sorted.map((v) => [chip(v, valueLabel(id, v)), shownN(v), on.has(v)])
-      ) +
-      '</div>'
+      }</p><div ` +
+      `class="fchips">` +
+      sorted.map((v) => chip(v, valueLabel(id, v))).join('') +
+      '</div></div>'
     );
   }
   function keysOf(g) {
@@ -692,97 +654,38 @@
       ...(g.keys || []).filter((k) => validKey(k)),
     ].filter((k) => !k.startsWith('a:') || !sd() || sd().classes[k.slice(2)]); // not a question whose classes the marks do not carry
   }
-  const phone = () => innerWidth < 700;
-  function saveGroups() {
-    try {
-      localStorage.setItem(`ptmc-fgroups-${D.site.id}`, JSON.stringify([...R.openGroups]));
-    } catch (e) {
-      /* kept for this visit only */
-    }
-  }
-  // the filters in use as chips, with Clear all; the counts are in the selection bar above the page
-  function activeHtml() {
-    if (!active()) return '';
-    if (K.sel.loading?.()) return `<p class="muted small">${esc(K.sel.loadingText())}</p>`;
-    if (!sd()) return '';
-    return (
-      `<div class="rail-active"><div class="rail-sel">${chipsHtml()}</div>` +
-      `<button class="linkish small" type="button" data-sel-clear-all>Clear all</button></div>`
-    );
-  }
   function filtersTab() {
     M.need();
-    const gs = groups(),
-      rows = gs.map((g) => {
-        const keys = keysOf(g);
-        return { g, keys, n: keys.filter((k) => S.f[k]?.length || termValues(k).length).length };
-      });
-    rows.forEach(({ g, n }) => {
-      if (n && !R.autoOpened.has(g.name)) {
-        R.autoOpened.add(g.name);
-        R.openGroups.add(g.name);
-      }
-    });
-    let one = false; // a phone has one group open at a time
+    const gs = groups();
     return (
-      activeHtml() +
-      `<input type="search" class="rail-find" data-rail-find placeholder="Find a filter" value="${esc(R.find)}" ` +
-      `aria-label="Find a filter by group or value" autocomplete="off">` +
-      savedHtml() +
-      '<div class="fgroups">' +
-      rows
-        .map(({ g, keys, n }, gi) => {
-          const open = R.openGroups.has(g.name) && !(phone() && one);
-          one ||= open;
+      `<div class="rail-sel">${
+        bar() ||
+        `<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>`
+      }</div>${savedHtml()}` +
+      gs
+        .map((g, gi) => {
+          const keys = keysOf(g),
+            n = keys.filter((k) => S.f[k]?.length || termValues(k).length).length;
           return (
-            `<details class="fgroup${n ? ' active' : ''}" data-g="${gi}"${open ? ' open' : ''}><summary><span>${esc(g.name)}</span>${
-              n ? `<span class="gcount">${n} active</span>` : ''
+            `<details class="fgroup${n ? ' active' : ''}" data-g="${gi}"${R.openGroups?.has(gi) ? ' open' : ''}><summary><span>${esc(g.name)}</span><span ` +
+            `class="gcount muted" title="${keys.length} filter${keys.length === 1 ? '' : 's'} in this group${n ? `, ${n} in use` : ''}">${n ? `${n} of ` : ''}${keys.length}</span>${
+              n
+                ? `<span class="badge">${n}</span><button ` +
+                  `type="button" class="linkish small" data-fgroup-clear="${gi}">Clear</button>`
+                : ''
             }</summary>` +
             keys.map(control).join('') +
             '</details>'
           );
         })
         .join('') +
-      '<p class="muted small rail-nofind" hidden>No filter matches.</p></div>' +
-      (K.hl?.section?.() || '')
+      (K.hl?.section?.() || '') +
+      `<div class="rail-foot"><span>${
+        K.sel.loading?.()
+          ? esc(K.sel.loadingText())
+          : `<b>${int(nMarks())}</b> ${esc(nMarks() === 1 ? W.mark : W.marks)} on <b>${int(nProteins())}</b> protein${nProteins() === 1 ? '' : 's'}${active() ? '' : ' (all)'}`
+      }</span>${active() ? '<button class="linkish" type="button" data-sel-clear-all>Clear all</button>' : ''}</div>`
     );
-  }
-  // "Find a filter": groups, filters and values that contain the text stay (opened); the rest are hidden. No rebuild, so typing keeps its focus.
-  function applyFind(root) {
-    const el = root || document.getElementById('rail');
-    if (!el) return;
-    const q = R.find.trim().toLowerCase(),
-      txt = (x) => (x.textContent || '').replace(/\s+/g, ' ').toLowerCase();
-    let any = false;
-    el.querySelectorAll('.fgroup').forEach((d) => {
-      let hit = false;
-      const gName = txt(d.querySelector('summary > span')).includes(q);
-      d.querySelectorAll('.fctl').forEach((c) => {
-        const lab = txt(c.querySelector('.flabel') || c).includes(q),
-          chips = [...c.querySelectorAll('.fchip')],
-          sel = c.querySelector('select'),
-          optHit = sel && [...sel.options].some((o) => o.textContent.toLowerCase().includes(q)),
-          vHit = chips.filter((x) => txt(x).includes(q));
-        const show = !q || gName || lab || optHit || vHit.length > 0;
-        c.hidden = !show;
-        const row = c.querySelector('.fchips');
-        if (row) {
-          row.classList.toggle('all', !!q || R.showAll.has(row.dataset.fk));
-          // a match on the group or the filter shows all its values; a match on a value shows that value
-          chips.forEach((x) => (x.hidden = !!q && !gName && !lab && !vHit.includes(x)));
-          const f = row.querySelector('.fshow');
-          if (f) f.hidden = !!q;
-        }
-        hit ||= show;
-      });
-      d.hidden = !!q && !hit;
-      if (q && hit) d.open = true;
-      else if (!q && R.found) d.open = R.openGroups.has(d.querySelector('summary > span').textContent);
-      any ||= hit;
-    });
-    const none = el.querySelector('.rail-nofind');
-    if (none) none.hidden = !q || any;
-    R.found = !!q;
   }
   // every page, as the tab bar lists them, with the Overview's sections under it (no other page lists its own), in their groups (as the
   // original explorer's sidebar): [id, label, level, href?] from K.sections; level 0 is a group heading; a section with
@@ -1079,7 +982,6 @@
           )}" aria-valuemin="0" ` +
           `aria-valuemax="${innerWidth}" tabindex="0" data-rail-grip></div>`
         : '');
-    applyFind(el);
     // every filter list is named by the label above it
     el.querySelectorAll('.fctl select').forEach((sel) => {
       const lab = sel.closest('.fctl')?.querySelector('.flabel');
@@ -1253,11 +1155,12 @@
       },
     ],
     [
-      '[data-fmore]',
-      (el) => {
-        const k = el.dataset.fmore;
-        R.showAll[R.showAll.has(k) ? 'delete' : 'add'](k);
-        rail();
+      '[data-fgroup-clear]',
+      (el, e) => {
+        e.preventDefault();
+        keysOf(groups()[+el.dataset.fgroupClear]).forEach((k) => delete S.f[k]);
+        K.writeHash(true);
+        K.render();
       },
     ],
     [
@@ -1394,12 +1297,6 @@
       },
     ]
   );
-  document.addEventListener('input', (e) => {
-    if (e.target.matches?.('[data-rail-find]')) {
-      R.find = e.target.value;
-      applyFind();
-    }
-  });
   document.addEventListener('change', (e) => {
     const k = e.target.dataset?.fsel;
     if (k != null) setFilter(k, e.target.value ? [e.target.value] : []);
@@ -1408,14 +1305,8 @@
     'toggle',
     (e) => {
       const d = e.target;
-      if (d.classList?.contains('fgroup') && !R.find.trim()) {
-        const name = d.querySelector('summary > span').textContent;
-        if (d.open && phone())
-          document.querySelectorAll('#rail .fgroup[open]').forEach((o) => {
-            if (o !== d) o.open = false;
-          });
-        R.openGroups[d.open ? 'add' : 'delete'](name);
-        saveGroups();
+      if (d.classList?.contains('fgroup')) {
+        (R.openGroups ||= new Set())[d.open ? 'add' : 'delete'](+d.dataset.g);
       }
     },
     true
