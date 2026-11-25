@@ -542,8 +542,8 @@
     // a protein's gene where the release lists it, else ''; and whether it has a page
     gene: (acc) => byAcc[acc]?.gene || '',
     isListed: (acc) => !!byAcc[acc],
-    // the listed protein a gene or alias names, else ''
-    byName: (name) => nameOf(name) || '',
+    // the listed protein a gene symbol (current, previous or alternative) names, else ''; never a free-text alias
+    byName: (name) => P_SYM[String(name || '').toUpperCase()] || '',
     shownPos: (acc, pos) => shownPos(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), pos),
     siteLabel: (acc, pos) => siteOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null) || { acc }, pos),
     numbering: (acc) => numOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
@@ -1059,6 +1059,17 @@
         if (!P_BY_NAME[g.toUpperCase()]) addName(g, acc);
       })
   );
+  // gene symbols only: genes, and the previous and alternative symbols a site lists (D.protein_symbols); not the free-text
+  // aliases of a table, which name complexes and families ("AMPK") that no one protein stands for
+  const P_SYM = {};
+  (D.proteins || []).forEach(([acc, gene]) =>
+    String(gene || '')
+      .split(/[\s;,]+/)
+      .filter(Boolean)
+      .forEach((g) => (P_SYM[g.toUpperCase()] ||= acc))
+  );
+  Object.entries(D.protein_genes || {}).forEach(([acc, gs]) => gs.forEach((g) => (P_SYM[g.toUpperCase()] ||= acc)));
+  Object.entries(D.protein_symbols || {}).forEach(([acc, gs]) => gs.forEach((g) => (P_SYM[g.toUpperCase()] ||= acc)));
   const accOf = (x) => {
     const a = String(x || '')
       .toUpperCase()

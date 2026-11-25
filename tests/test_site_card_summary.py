@@ -87,3 +87,10 @@ console.log(JSON.stringify(K.card.cardSummary(c, { uni })));"""
     assert 'uniprotkb/' not in out.replace('uniprotkb?', '')  # no guessed accession
     for n in ('PRMT5', 'AMPK', 'PRPK'):  # unlisted or family names: a human reviewed gene search
         assert f'query=gene%3A{n}+AND+organism_id%3A9606+AND+reviewed%3Atrue' in out
+
+
+def test_by_name_resolves_through_gene_symbols_only():
+    src = (ASSETS / 'kit-proteins.js').read_text()
+    line = next(x for x in src.splitlines() if 'byName:' in x)
+    assert 'P_SYM' in line and 'nameOf' not in line  # not the free-text aliases ("AMPK" is a complex, not PRKAA2)
+    assert 'D.protein_symbols' in src

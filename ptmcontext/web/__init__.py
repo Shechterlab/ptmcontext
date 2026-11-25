@@ -1853,6 +1853,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
             al = data.setdefault('protein_aliases', {})
             have = [x for x in str(al.get(a, '')).split('; ') if x]
             al[a] = '; '.join(dict.fromkeys(have + names))
+            data.setdefault('protein_symbols', {})[a] = names  # gene symbols only (no protein-name text): a writer's name resolves by these
     if listing:
         # the search's words and the filters that read more than the marks' classes (website.search): windows and
         # distances beside the marks, the partners in their own file
