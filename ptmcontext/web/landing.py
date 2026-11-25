@@ -24,7 +24,7 @@ SEARCH_JS = ''.join(
 SEARCH_HTML = (
     '<section class="land-search" role="search" aria-label="Find a protein, site or topic">'
     '<label for="land-q">Find a protein, site or topic</label>'
-    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene, old gene symbol or UniProt accession" '
+    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene, site (H4 R3), gene list or topic (stress granule)" '
     'aria-controls="land-hits">'
     '<p class="say" id="land-say" role="status"></p><ul id="land-hits" aria-label="Proteins found"></ul></section>'
 )
