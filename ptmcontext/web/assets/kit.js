@@ -539,6 +539,7 @@
       'where-in-the-cell': 'localization',
       'which-proteins': 'classes-and-pathways',
       'where-in-the-protein': 'position-in-the-protein',
+      'rna-and-dna-binding': 'interactions-and-enzymes', // its tile is a link under Interactions and enzymes
     };
     if (S.jumpArg && OLD_SECTIONS[S.jumpArg]) S.jumpArg = OLD_SECTIONS[S.jumpArg];
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';
@@ -2988,8 +2989,7 @@
     if (!up.length && !dn.length) return '';
     const one = (r, d) =>
       `<article class="tile qtile ${d}"><h4>${d === 'more' ? 'More often' : 'Less often'}: <b>${esc(afterIn(r.label))}</b></h4>` +
-      `<p class="qt-fold">${esc(fx(valOf(r)))}</p>` +
-      `<p class="muted small">q ${esc(fq(r.q))} · n = ${int(r.a)}</p></article>`;
+      `<p class="qt-line"><span class="qt-fold">${esc(fx(valOf(r)))}</span> <span class="muted small">q ${esc(fq(r.q))} · n = ${int(r.a)}</span></p></article>`;
     return `<div class="tiles q-tiles">${up.map((r) => one(r, 'more')).join('')}${dn.map((r) => one(r, 'less')).join('')}</div>`;
   }
   function focus(aid) {

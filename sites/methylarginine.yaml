@@ -425,7 +425,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     universe: snapshot
     whole_universe: true
     background: other reviewed human proteins
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: panther_class
     test: protein_sets
     title: Protein classes (PANTHER)
@@ -442,7 +442,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     universe: snapshot
     whole_universe: true
     background: other reviewed human proteins
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: panther_subclass
     test: protein_sets
     title: Protein subclasses (PANTHER)
@@ -459,7 +459,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 10
     background: other reviewed human proteins
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   # Disease families (scripts/14_disease_enrichment.py): DisGeNET terms (as DOSE 4.4.0 ships them) gathered into
   # families by name (the release's rules, sites/data/methylarginine_disease_families.yaml); the sets are Entrez genes,
   # each protein's through its UniProt primary gene name (the first of several) and org.Hs.eg.db's symbols. Every
@@ -485,7 +485,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [audited]}
     universe: snapshot
     background: other reviewed human genes (Entrez) with a DisGeNET term
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
   - id: disease_family_additional
     test: protein_sets
     title: Disease families, additional
@@ -506,7 +506,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [additional]}
     universe: snapshot
     background: other reviewed human genes (Entrez) with a DisGeNET term
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
   # Disease Ontology (scripts/14_disease_enrichment.py): the gene sets DOSE enrichDO tests (each term holds the genes of
   # the terms under it; Human Disease Ontology 2026-09-30), on the genes of the disease families: every reviewed
   # protein's genes are the universe, those with a Disease Ontology term the background, and every term of 10 genes or
@@ -583,7 +583,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 5
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
     background: other reviewed human proteins
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     scores: {input: cdcode_members, set: condensate_uid, protein: uniprot_accession, value: confidence_score, label: Membership confidence (CD-CODE),
              help: "CD-CODE's 0-5 confidence that the protein belongs to the condensate (CD-CODE 2.3)", levels: [2, 3, 4, 5], max: 5}
     filter: {label: CD-CODE condensate (methylated members), any: In any CD-CODE condensate, sets: all}   # every condensate with a methylated member, as the original
@@ -606,7 +606,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 5
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
     background: other human proteins in CD-CODE condensates (export of 2026-03-18)
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   # Driver or client in condensates: CD-CODE 2.3 gives each membership its roles (driver, client, regulator, member, or unknown; a
   # membership may have several). A protein is in a role's set when it has that role in any human condensate; each set is
   # tested against the other proteins of the human condensates. Not in the release
@@ -641,7 +641,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       member: "Proteins that CD-CODE lists as a member of at least one human condensate, with no further role stated"
       unknown: "Proteins whose role CD-CODE does not state"
     background: other human proteins in CD-CODE 2.3 condensates (export of 2026-10-16)
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   # Proteins that bind RNA or DNA (scripts/37_export_interaction_data.py): GO annotations, against every reviewed protein;
   # and the proteins each in-cell experiment found binding, each against the proteins that experiment measured where it
   # lists them (else every reviewed protein): one test per set, BH over the sets, again within PaxDb abundance deciles
@@ -662,7 +662,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     universe: snapshot
     whole_universe: true
     background: all reviewed human proteins
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: binding_protein
     test: protein_sets
     title: Proteins found binding RNA or DNA in cells
@@ -687,7 +687,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            background: other reviewed human proteins}
     universe: snapshot
     whole_universe: true
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: reactome_top_level
     test: protein_sets
     title: Reactome pathways, top level
@@ -697,7 +697,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
     names: {input: reactome_names, set: pathway_id, name: name, include: [{column: depth, equals: "0"}]}
     background: other reviewed human proteins with at least one Reactome 97 pathway
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: reactome_pathway
     test: protein_sets
     title: Reactome pathways
@@ -709,7 +709,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 10
     max_size: 500
     background: other reviewed human proteins with at least one Reactome 97 pathway
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: hpa_location
     test: protein_sets
     title: Human Protein Atlas locations
@@ -719,7 +719,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
     whole_universe: true
     background: other proteins with an HPA 25.1 location (Approved or better)
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   # Where in the cell, beyond the Human Protein Atlas (scripts/cell_maps.py): each map tested against the proteins it
   # places, compartment by compartment (compartments of at least 5 proteins), and again within PaxDb abundance deciles.
   # The regions of the cell: each map's compartments gathered into the nucleus, the cytoplasm and the organelles and
@@ -739,7 +739,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "other proteins with an HPA 25.1 location (Approved or better). A region is the Human Protein Atlas locations it holds (scripts/cell_maps.py, REGION_OF)"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_region_hcm
     test: protein_sets
     title: Regions of the cell (Human Cell Map)
@@ -754,7 +754,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_region_organelle_ip
     test: protein_sets
     title: Regions of the cell (organelle IP)
@@ -770,7 +770,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "the other proteins organelle IP classifies (HEK293T). A region is the Organelle IP it holds (scripts/cell_maps.py, REGION_OF)"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_hcm_compartment
     test: protein_sets
     title: Human Cell Map compartments
@@ -781,7 +781,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments)
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_hcm_domain
     test: protein_sets
     title: Human Cell Map domains
@@ -792,7 +792,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: the other proteins the Human Cell Map places in a SAFE domain
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_organelle_ip
     test: protein_sets
     title: Organelle IP
@@ -808,7 +808,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
              14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
              early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,
              mitochondrion: Mitochondrion, peroxisome: Peroxisome, plasma_membrane: Plasma membrane}
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_chromatin
     test: protein_sets
     title: Chromatin probability
@@ -828,7 +828,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     background: the other proteins with an interphase chromatin probability
     labels: {"ICP >= 0.8 (chromatin)": "Chromatin (probability ≥ 0.8)", "ICP 0.5-0.8": "Chromatin probability 0.5–0.8", "ICP 0.2-0.5": "Chromatin probability 0.2–0.5",
              "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   # Where the RNAs bound by proteins with eCLIP data gather (scripts/cell_maps.py, GENE_MAPS): the release's calls per
   # protein and map (supporting/eclip_rna_compartments). The nuclear-body map (Barutcu et al. 2022) stays out
   - id: eclip_rna_apexseq
@@ -842,7 +842,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "the other proteins with eCLIP data that APEX-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein APEX-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   - id: eclip_gene_tsaseq
     test: protein_sets
@@ -855,7 +855,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "the other proteins with eCLIP data that TSA-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein TSA-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   - id: eclip_gene_hic
     test: protein_sets
@@ -868,7 +868,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "the other proteins with eCLIP data that Hi-C subcompartments tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein Hi-C subcompartments tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   # Cancer cell lines (scripts/release_layers.py, CANCER): cancer cell genetics beside the sites, not evidence about
   # methylation. The dependency classes partition the entries whose gene DepMap 24Q4 screened (gene_effect)
@@ -895,7 +895,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       most_lines: "not commonly essential, and at least 50% of the screened lines depend on it"
       some_lines: "not commonly essential, and 5% to under 50% of the lines depend on it (selective dependencies)"
       few_or_none: "fewer than 5% of the lines depend on it"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
     values:                        # each screened protein's numbers, for the website (website.set_views); no test reads them
       columns:
         - {name: median, label: median gene effect, background: true}
