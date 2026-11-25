@@ -374,7 +374,8 @@
       await DATA.sdReady();
       const SD = DATA.sd();
       if (SD) {
-        let marks = null;
+        let marks = null,
+          typed = null;
         if (kind === 'c') {
           const ai = SD.analyses.indexOf(a1),
             ci = SD.classes[a1]?.indexOf(rest);
@@ -392,6 +393,7 @@
           const q = K.sel.parse(id.slice(2)),
             ps = new Set([...q.genes, ...q.sites.map((s) => s[0])]);
           marks = SD.marks.map((m, i) => (ps.has(m[0]) ? i : -1)).filter((i) => i >= 0);
+          typed = ps.size;
         }
         if (marks) {
           const mk = new Uint8Array(SD.marks.length);
@@ -401,6 +403,7 @@
           t = {
             prot: fromProteins(new Set(marks.map((i) => SD.marks[i][0]))),
             mark: kind === 'g' || kind === 'sel' || kind === 'sv' || kind === 'c' ? mk : null,
+            typed,
           };
         }
       }
@@ -432,7 +435,9 @@
         nT,
         partial: U.partial,
         circ,
-        lists: ts.filter((t) => t.id.startsWith('g:')).map((t) => ({ label: t.label, n: t.n })), // a pasted list: not chosen for having sites
+        lists: ts
+          .filter((t) => ['g', 'sel', 'sv'].includes(t.id.split(':')[0]))
+          .map((t) => ({ label: t.label, n: t.n, typed: t.typed, list: t.id.startsWith('g:') })), // pasted, typed or selected by the reader: not chosen for having sites
         rows: [],
         totals: [],
         note: '',
@@ -1518,7 +1523,7 @@
         else
           o.push(
             res.circ?.length
-              ? `${noTestWhy(res)} Counts only.`
+              ? 'Counts only.'
               : res.partial
                 ? 'Not tested here: only the proteins with sites are known for these sets.'
                 : 'No test: a set describes sites, and the comparison residues are not known for several features at once. Counts only.'
@@ -2217,8 +2222,14 @@
       return `<p class="muted">${MAXT} sets are chosen, the most that can be compared. Remove one to add another.</p>`;
     const w = q.trim().toLowerCase(),
       g = UIP.group,
-      all = [...specials(), ...termPool()].filter((t) => !S.ot.includes(t.id) && (!g || t.group === g));
+      all = [...specials(), ...termPool()].filter((t) => !S.ot.includes(t.id) && (!g || t.group === g)),
+      seen = new Set();
     let hit;
+    // two questions of one source hold the same class, with the same members (a condensate under both condensate questions): offered once
+    const once = (t) => {
+      const k = [t.group, t.label, t.ref, t.tag, t.size].join('|');
+      return !seen.has(k) && seen.add(k);
+    };
     if (w)
       hit = all
         .filter(
@@ -2242,6 +2253,7 @@
         .map((x) => x[0]);
     else if (g) hit = all.slice().sort((x, y) => (y.size || 0) - (x.size || 0));
     else hit = all.filter((t) => ['Selection', 'Readers', 'Enzymes'].includes(t.group));
+    hit = hit.filter(once);
     if (!hit.length) return `<p class="muted">${w ? 'No set matches.' : 'Type to search, or browse by kind.'}</p>`;
     const shown = hit.slice(0, 40);
     let head0 = '';
@@ -2293,13 +2305,14 @@
   const noTestWhy = (res) => {
     const lists = res.lists || [],
       defined = res.circ.filter((l) => !lists.some((x) => x.label === l)),
-      out = lists.map(
-        (x) =>
-          `All ${fmtInt(x.n)} proteins in your list carry ${W.marks} here, so the share with sites can't be tested; the overlap test below can.`
-      );
+      out = lists.map((x) => {
+        const what = x.list ? 'list' : 'selection',
+          all = x.typed == null || x.typed <= x.n;
+        return `${all ? `All ${fmtInt(x.n)}` : `${fmtInt(x.n)} of ${fmtInt(x.typed)}`} proteins in your ${what} carry ${W.marks} here, so the share with sites can't be tested; the overlap test below can.`;
+      });
     if (defined.length)
       out.push(
-        `${joinNames(defined)} ${defined.length === 1 ? 'is' : 'are'} defined by having sites, so the regions are not tested for it (that would be circular). The first question can still be asked.`
+        `${joinNames(defined)} ${defined.length === 1 ? 'is' : 'are'} defined by having sites, so the regions are not tested for it (that would be circular). The overlap test below can still be run.`
       );
     return out.join(' ');
   };

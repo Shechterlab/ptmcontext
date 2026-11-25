@@ -1251,13 +1251,22 @@
   };
   K.whyShown = whyShown;
   K.whyOf = whyOf;
+  // a class label after "in": the label's own leading "In" would double it ("in In an IDR")
+  const afterIn = (t) => String(t ?? '').replace(/^in\s+(?=\S)/i, '');
+  // a row's effect for the one-line summary: the fold, or the counts when the fold is huge or nil (almost no comparison
+  // residues in the class), read from the row's own counts
+  const foldOrCounts = (r) => {
+    const v = valOf(r);
+    if (r.a == null || r.c == null || (v != null && v < 1000 && v >= 0.01)) return fx(v);
+    return `${int(r.a)} of ${int(r.a + r.b)} ${esc(W.marks)}, ${int(r.c)} of ${int(r.c + r.d)} other ${esc(W.residues)}`;
+  };
   function summaryLine(rows, tmpl, card = {}) {
     rows = rows.filter((r) => !EXCL.test(r.label));
     if (rows.some((r) => r.vs)) {
       const ok = rows.filter(enough),
         up = ok.filter((r) => r.dir === 'more').sort((x, y) => strength(y) - strength(x))[0],
         dn = ok.filter((r) => r.dir === 'less').sort((x, y) => strength(y) - strength(x))[0];
-      const one = (r) => `<b>${esc(r.label)}</b> (${pcS(share1(r))} vs ${pcS(share2(r))})`;
+      const one = (r) => `<b>${esc(afterIn(r.label))}</b> (${pcS(share1(r))} vs ${pcS(share2(r))})`;
       return up || dn
         ? [up ? 'More often in ' + one(up) : '', dn ? 'Less often in ' + one(dn) : ''].filter(Boolean).join('. ')
         : `None differs from ${esc(vsName())} (q ≤ 0.05 ` + `and at least 1.1×)`;
@@ -1269,14 +1278,14 @@
         .sort(card.order === 'q' ? byOrder(card) : (x, y) => valOf(x) - valOf(y))[0];
     if (tmpl && top)
       return esc(tmpl)
-        .replace('{top}', `<b>${esc(top.label)}</b>`)
-        .replace('{fold}', fx(valOf(top)));
+        .replace('{top}', `<b>${esc(afterIn(top.label))}</b>`)
+        .replace('{fold}', foldOrCounts(top));
     if (top)
       return (
-        `More often in <b>${esc(top.label)}</b> (${fx(valOf(top))})` +
-        (low ? `. Less often in <b>${esc(low.label)}</b> (${fx(valOf(low))})` : '')
+        `More often in <b>${esc(afterIn(top.label))}</b> (${foldOrCounts(top)})` +
+        (low ? `. Less often in <b>${esc(afterIn(low.label))}</b> (${foldOrCounts(low)})` : '')
       );
-    if (low) return `Least often in <b>${esc(low.label)}</b> (${fx(valOf(low))})`;
+    if (low) return `Least often in <b>${esc(afterIn(low.label))}</b> (${foldOrCounts(low)})`;
     return 'None differs (q ≤ 0.05 and at least 1.1×)';
   }
   const EXCL = /^(no |not |unknown|unassigned|other\b)/i;

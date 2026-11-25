@@ -8022,14 +8022,6 @@ a.pchip:hover {
   color: var(--ink-2);
   margin: 0.3rem 0;
 }
-.gl-new {
-  font-size: 0.9rem;
-  color: var(--ink-2);
-  border-left: 3px solid var(--accent);
-  padding: 0.3rem 0.7rem;
-  margin: 0.5rem 0 0.8rem;
-  max-width: 60rem;
-}
 .gl-tbl td.wrapok {
   min-width: 9rem;
 }
