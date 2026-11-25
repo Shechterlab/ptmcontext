@@ -415,3 +415,29 @@ def test_a_search_naming_a_site_is_carried_only_where_it_means_something():
     # the one place a link carries q (kit.js carry, which K.link and K.card.protRef use) and the explorer switcher ask qFor
     assert 'K.sel.qFor(S.q, { segs' in kit and 'qFor(S.q, { segs, residues' in sw
     assert 'function qFor(' in sel and 'qFor,' in sel
+
+
+def test_the_landing_page_leads_with_the_question_the_search_and_examples_and_keeps_the_fine_print(tmp_path):
+    root, a = _built(tmp_path)
+    cfg = tmp_path / 'landing.yml'
+    cfg.write_text(
+        yaml.safe_dump(
+            CFG
+            | {
+                'page_title': 'Toy hub: toy explorers',
+                'examples': [{'label': 'A B', 'href': 'toya/#protein/X/P1/R3'}],
+                'references': [{'label': 'Paper', 'doi': '10.1/x'}],
+            }
+        )
+    )
+    out = tmp_path / 'site'
+    land = web.pages([a], out, out_root=root, log=lambda *_: None, landing_config=cfg).read_text()
+    assert '<title>Toy hub: toy explorers</title>' in land and '<meta name="description" content="Toy sites.">' in land
+    if 'role="search"' in land:  # the box and its examples come before the cards and before the fine print
+        assert land.index('role="search"') < land.index('class="land-examples"') < land.index('id="toya"')
+    assert land.index('id="toya"') < land.index('class="land-fine"') < land.index('Data: toy license')
+    assert 'doi:10.1/x' in land
+    robots = (out / 'robots.txt').read_text()
+    assert 'Sitemap: https://shechterlab.github.io/ptmcontext/sitemap.xml' in robots
+    locs = re.findall(r'<loc>(.*?)</loc>', (out / 'sitemap.xml').read_text())
+    assert locs[0] == 'https://shechterlab.github.io/ptmcontext/' and locs[-1].endswith('/toya/')
