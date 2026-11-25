@@ -356,14 +356,22 @@
   };
   const contactWord = (b, kinds = KINDS) =>
     (kinds && kinds[b.kind]) || KINDS[b.kind] || String(b.kind || '').toUpperCase();
+  // heavy atoms closer than any hydrogen bond or salt bridge: shown as it is, flagged (display only; the rows and tests are not changed)
+  const CLASH_A = 2.0,
+    CLASH_WORD = 'possible model clash',
+    CLASH_TIP =
+      'The side chain is closer to the nucleic acid than a hydrogen bond or salt bridge allows (under 2.0 Å between heavy atoms): the model may be misplaced here, as in low-resolution structures';
+  const contactClash = (b) => !!b && b.dist < CLASH_A;
   const contactPhrase = (b, kinds) =>
-    `In contact with ${contactWord(b, kinds)} in PDB ${b.entry.toUpperCase()} (${b.dist.toFixed(1)} Å)`;
+    `In contact with ${contactWord(b, kinds)} in PDB ${b.entry.toUpperCase()} (${b.dist.toFixed(1)} Å${contactClash(b) ? ', ' + CLASH_WORD : ''})`;
   function contactLine(c) {
     const b = contactBest((SQ.tables || []).filter(has).flatMap((name) => at(c.tb, name, c.pos)));
     if (!b) return '';
     return (
       `<p class="sc-contact"><span class="flabel">${esc(contactWord(b, SQ.kinds))} contact:</span> ` +
-      `${entryBtn(b.entry, c, 'PDB ' + b.entry.toUpperCase())}, ${b.dist.toFixed(1)} Å</p>`
+      `${entryBtn(b.entry, c, 'PDB ' + b.entry.toUpperCase())}, ${b.dist.toFixed(1)} Å${
+        contactClash(b) ? ` <span class="tag t-flag" title="${esc(CLASH_TIP)}">${CLASH_WORD}</span>` : ''
+      }</p>`
     );
   }
   function sequences(c, compact) {
@@ -1907,7 +1915,15 @@
     tags,
     entries,
     sequences,
-    contact: { best: contactBest, phrase: contactPhrase, word: contactWord, line: contactLine },
+    contact: {
+      best: contactBest,
+      phrase: contactPhrase,
+      word: contactWord,
+      line: contactLine,
+      clash: contactClash,
+      clashWord: CLASH_WORD,
+      clashTip: CLASH_TIP,
+    },
     around,
     states,
     changes,

@@ -95,7 +95,7 @@ def test_an_old_id_opens_where_the_section_is_now():
 def test_the_card_and_the_page_word_a_contact_through_one_helper():
     card = (ASSETS / 'kit-sitecard.js').read_text()
     page = (ASSETS / 'kit-interactions.js').read_text()
-    assert 'contact: { best: contactBest, phrase: contactPhrase' in card
+    assert 'best: contactBest,' in card and 'phrase: contactPhrase,' in card
     assert card.count('const contactBest') == 1 and 'contactBest' not in page
     assert 'K.card.contact.best' in page and 'K.card.contact.phrase' in page
     assert 'In contact with ${contactWord' in card

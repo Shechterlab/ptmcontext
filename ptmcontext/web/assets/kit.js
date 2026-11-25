@@ -3277,12 +3277,33 @@
     }),
     ...(selOn() || S.arg ? [] : (K.overviewSections || []).flatMap((f) => f())),
   ];
+  // A set question whose folds stop at a ceiling: when most proteins of the universe carry the mark, no set can show a
+  // fold above all proteins over the marked ones, and sets of near-identical members all sit at it. The card then says
+  // so in one sentence (from its own rows: no new test) and keeps the chart behind a toggle.
+  function ceilingLine(a, rows) {
+    if (a.kind !== 'protein_sets' || vsOn() || selOn()) return '';
+    const rs = rows.filter((r) => r.a != null && r.b != null && r.c != null && r.d != null && r.eff != null);
+    if (rs.length < 3) return '';
+    const marked = rs[0].a + rs[0].b,
+      total = marked + rs[0].c + rs[0].d,
+      top = rs.reduce((x, y) => (y.eff > x.eff ? y : x)),
+      cap = marked ? total / marked : 0;
+    if (!cap || top.eff < 0.9 * cap) return '';
+    const nSig = rs.filter((r) => r.q != null && r.q <= PADJ && r.eff > 1).length,
+      what = String(a.describe || 'proteins of the universe').replace(/^other /, '');
+    return (
+      `<p class="note ix-ceiling"><b>${pcS(marked / total)}</b> of the ${esc(what)} have ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ${esc(W.mark)}, ` +
+      `so no set can reach more than <b>${fxn(cap)}×</b>. The highest is ${fxn(top.eff)}× (${esc(top.label)}); ` +
+      `${int(nSig)} of ${int(rs.length)} sets are above 1× at q ≤ ${PADJ}.</p>`
+    );
+  }
   function cardBody(a, rows) {
     // a residue question shows every class, and so does a set question with 12 sets or fewer (a partition)
     const mark = moreMarks(a, rows),
       all = S.all.has(a.id),
       shown = shownOf(a, rows),
-      own = ownClasses(a);
+      own = ownClasses(a),
+      ceil = ceilingLine(a, rows);
     const noun = a.kind === 'protein_sets' ? 'sets' : 'classes';
     const toggle =
       a.kind === 'protein_sets' && rows.length > 12
@@ -3313,8 +3334,11 @@
         /data-exp="(\w+)"/g,
         `data-exp="$1" data-aid="${esc(a.id)}"`
       )}</div>` +
-      chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark, own) +
-      `${toggle}</div>`
+      (ceil
+        ? ceil +
+          `<details class="ix-more"><summary>Show the chart</summary>${chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark, own)}${toggle}</details>`
+        : chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark, own) + toggle) +
+      `</div>`
     );
   }
 
