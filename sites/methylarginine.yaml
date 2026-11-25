@@ -2561,6 +2561,8 @@ website:                  # the look and words of the website (ptmc web); layout
     controls: propensity_controls
     validation: propensity_validation
   protein:                 # the protein page
+    complex_names:         # complexes and families a writer name must never resolve to one protein (they link to a UniProt search)
+      [AMPK, CK2, CK1, IKK, PKA, PKC, CaMKII, CDK, MAPK, ERK, PP2A, PP1]
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
     order: [p-map, p-cell, p-cc, p-ix, p-na, p-sites, p-sitetab, p-cons, p-score, p-pert, p-exp, p-struct, p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cluster, p-ptm, p-seq]   # the explorer's order, with the orthologs after the sites
     groups:                # about five headings, each holding its folds (website.protein.groups)
@@ -2912,7 +2914,7 @@ website:                  # the look and words of the website (ptmc web); layout
         open: [writes, removes, binds_methylated, mutation_changes_binding, binds_region, other_reaction, not_a_protein]
         summary:             # the one line that names partners (Interactions page, Sites table): its groups' names, the other partners counted
           - {label: Writes, groups: [writes], role: writer}
-          - {label: erases, groups: [removes]}
+          - {label: erases, groups: [removes], role: eraser}
           - {label: binds methylated, groups: [binds_methylated], role: reader}
         rollup:              # the groups under two headings: the residue in the site's state, against in any other
           - {label: Binds it methylated, groups: [binds_methylated]}

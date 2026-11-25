@@ -5018,6 +5018,11 @@
                 }
               }
             },
+            "complex_names": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "complex and family names (AMPK, CK2, PKC, bare CDK) that a writer name never resolves to one protein, though a gene may list the name as an alias; they link to a UniProt search instead"
+            },
             "conservation": {
               "type": "object",
               "additionalProperties": false,

@@ -4234,6 +4234,9 @@ b.trend.c-increased {
   cursor: pointer;
   color: var(--accent);
 }
+.sp-more.muted > summary {
+  color: var(--muted);
+}
 .col-menu {
   position: relative;
   display: inline-block;

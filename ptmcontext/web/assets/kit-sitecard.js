@@ -944,9 +944,18 @@
   // is shown (`show`) or in the tooltip; the organism follows when it is not the site's own. The one drawing of a partner.
   // `byName`: the name is a bare gene symbol or alias (no accession): the explorer's own index resolves it (gene, previous
   // names, aliases), and a name it does not know links to a UniProt search of human reviewed entries (never a guessed accession).
+  // Complex and family names (website.protein.complex_names) never resolve to one protein, even when a
+  // gene lists the name as an alias; they link to the UniProt search like any unresolved name.
+  const normName = (n) =>
+    String(n || '')
+      .toUpperCase()
+      .replace(/[\s-]+/g, '');
+  const COMPLEX = new Set((D.protein_view?.complex_names || []).map(normName));
+  const isComplexName = (n) => COMPLEX.has(normName(n));
+  const accByName = (n) => (isComplexName(n) ? '' : K.prot?.byName?.(n) || '');
   function protRef(acc, name, { listed = false, species = '', show = false, title = '', byName = false } = {}) {
     if (byName && !acc && name && !species) {
-      acc = K.prot?.byName?.(name) || '';
+      acc = accByName(name);
       listed = !!acc && !!K.prot?.isListed?.(acc);
       if (!acc) {
         const q = encodeURIComponent(`gene:${name} AND organism_id:9606 AND reviewed:true`).replace(/%20/g, '+');
@@ -983,6 +992,21 @@
           : ` <span class="muted">+${int(xs.length - max)} more</span>`
         : '')
     );
+  }
+  // names with the site's own species first: the human records (the first `max`), then the others folded into a muted
+  // "+N in other species" that expands inline with each name's species label; a list with no human record shows its
+  // names, labeled. Returns { n: the count shown first, html }.
+  function namesBySpecies(xs, max, isListed, moreHref = '') {
+    const own = xs.filter((x) => !x.species),
+      other = xs.filter((x) => x.species);
+    if (!own.length || !other.length) return { n: xs.length, html: namesHtml(xs, max, isListed, moreHref) };
+    return {
+      n: own.length,
+      html:
+        namesHtml(own, max, isListed, moreHref) +
+        ` <details class="sp-more muted"><summary>+${int(other.length)} in other species</summary>` +
+        `${namesHtml(other, other.length, isListed)}</details>`,
+    };
   }
   function partnerHtml(r, c) {
     const kinds = RC.kinds || {},
@@ -1086,7 +1110,7 @@
     for (const g of groups || []) for (const [k, x] of by.get(g) || []) xs.set(k, x);
     return xs;
   };
-  // the groups a role names in the records summary (role: writer or reader in website.protein.card.records.summary)
+  // the groups a role names in the records summary (role: writer, eraser or reader in website.protein.card.records.summary)
   const roleGroups = (role) => (RC.summary || []).filter((s) => s.role === role).flatMap((s) => s.groups || []);
   const SUMMARY_MAX = 6; // names a group shows in the one-line summary and the Writer block before "+N more"
   // One line of what the records at a site say, with who: "Writes: ENZ1, ENZ2 · erases: JMJD4 · binds methylated:
@@ -1230,7 +1254,7 @@
     let none = '';
     if (has(RC.table)) {
       const by = partnerGroups(at(c.tb, RC.table, c.pos));
-      const inCard = new Set([...roleGroups('writer'), ...roleGroups('reader')]);
+      const inCard = new Set([...roleGroups('writer'), ...roleGroups('eraser'), ...roleGroups('reader')]);
       for (const w of WR.who || []) {
         // the writers and binders are the card's summary lines; this block keeps the rest
         if ((w.groups || []).length && w.groups.every((g) => inCard.has(g))) continue;
@@ -1330,14 +1354,16 @@
     const uni = [];
     for (const f of o.uni || [])
       for (const n of uniWriters(f.description)) {
-        const acc = K.prot?.byName?.(n) || '',
+        const acc = accByName(n),
           key = String(acc || n).toUpperCase();
         if (seen.has(key)) continue;
         seen.add(key);
         uni.push(protRef(acc, n, { listed: !!(acc && c.isListed?.(acc)), byName: true }));
       }
     if (wx.size || uni.length) {
-      const recs = wx.size ? namesHtml([...wx.values()], SUMMARY_MAX, c.isListed, href(open(wg).join(','))) : '';
+      const recs = wx.size
+        ? namesBySpecies([...wx.values()], SUMMARY_MAX, c.isListed, href(open(wg).join(','))).html
+        : '';
       lines.writer = [
         lab('Writer', wx.size ? open(wg).join(',') : 'sc-uniprot', 'Open the records, or UniProt'),
         recs +
@@ -1346,25 +1372,32 @@
       ];
       lines.push(lines.writer);
     }
-    // 2. readers and binders: a count and the first three names, "+N more" opens the table
+    // 2. erasers: the records' eraser groups (demethylases)
+    const eg = roleGroups('eraser'),
+      ex = groupPartners(by, eg);
+    if (ex.size)
+      lines.push([
+        lab('Eraser', open(eg).join(','), 'Open the records table'),
+        namesBySpecies([...ex.values()], SUMMARY_MAX, c.isListed, href(open(eg).join(','))).html,
+      ]);
+    // 3. readers and binders: a count and the first three names, "+N more" opens the table
     const rg = roleGroups('reader'),
       rx = groupPartners(by, rg);
-    if (rx.size)
-      lines.push([
-        lab('Binding proteins', open(rg).join(','), 'Open the records table'),
-        `${int(rx.size)}: ${namesHtml([...rx.values()], 3, c.isListed, href(open(rg).join(',')))}`,
-      ]);
-    // 3. variants: the variant counter's own line
+    if (rx.size) {
+      const r = namesBySpecies([...rx.values()], 3, c.isListed, href(open(rg).join(',')));
+      lines.push([lab('Binding proteins', open(rg).join(','), 'Open the records table'), `${int(r.n)}: ${r.html}`]);
+    }
+    // 4. variants: the variant counter's own line
     const vc = K.card.vc;
     if (vc.entries.length && vc.siteVariants(c.tb, c.pos).some((x) => x.n))
       lines.push(
         (lines.variants = ['Variants', vc.line(c.tb, c.acc, c.pos).replace(/^<a /, '<a title="Open the variants" ')])
       );
-    // 4. conservation: from the module's own lookup, once it has arrived
+    // 5. conservation: from the module's own lookup, once it has arrived
     const cv = K.conserve?.siteLine?.(c.acc, c.pos);
     if (cv)
       lines.push((lines.conservation = [lab('Conservation', 'p-cons', 'Open the conservation section'), esc(cv)]));
-    // 5. marks nearby: the attribute's own text
+    // 6. marks nearby: the attribute's own text
     if (o.near) lines.push(['Other marks nearby', o.near]);
     return lines;
   }

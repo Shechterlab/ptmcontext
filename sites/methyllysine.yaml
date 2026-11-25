@@ -2104,6 +2104,8 @@ website:                  # the look and words of the website (ptmc web); layout
     controls: propensity_controls
     validation: propensity_validation
   protein:                 # the protein page
+    complex_names:         # complexes and families a writer name must never resolve to one protein (they link to a UniProt search)
+      [AMPK, CK2, CK1, IKK, PKA, PKC, CaMKII, CDK, MAPK, ERK, PP2A, PP1]
     conservation:          # orthologs live from Ensembl Compara, and the selection's logo (CONTRACTS.md, Conservation across species)
       reference: Human
       ensembl: {rest: "https://rest.ensembl.org", xref: Ensembl, source: human}
