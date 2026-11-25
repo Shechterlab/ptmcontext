@@ -544,6 +544,7 @@
     isListed: (acc) => !!byAcc[acc],
     // the listed protein a gene symbol (current, previous or alternative) names, else ''; never a free-text alias
     byName: (name) => P_SYM[String(name || '').toUpperCase()] || '',
+    summaryAt,
     shownPos: (acc, pos) => shownPos(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), pos),
     siteLabel: (acc, pos) => siteOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null) || { acc }, pos),
     numbering: (acc) => numOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
@@ -729,6 +730,7 @@
     const p = byAcc[acc],
       card = document.getElementById('site-card');
     if (card && p && PV.acc === acc && PV.site && PV.rec) card.outerHTML = siteCard(p, PV.rec);
+    if (PV.acc === acc) redrawGlance();
   };
   // the variant lists arrive after the card is drawn: draw its variants again with the conditions
   K.card.vc.onDetail((acc) => {
@@ -1233,6 +1235,104 @@
     const r = f.table ? K.card?.rows(PV.tb, f.table)?.[0] : null;
     return r ? r[f.column] : '';
   };
+  // ---- the site table directly under the map: one row per site, open by default ---------------------------------------
+  // Cells come from the site card's own summary (K.card.summaryItems, through summaryAt), so nothing is computed twice.
+  // At most GL_CAP rows are drawn until asked; the lazy sections are not touched.
+  const GL_CAP = 25;
+  const GL = { sort: 'pos', all: false };
+  let uniIdx = null;
+  // the UniProt "Modified residue" features by position, built once per UniProt answer
+  const uniAtPos = () => {
+    if (uniIdx?.j !== PV.uniJson) {
+      const by = new Map();
+      for (const f of PV.uniJson?.features || []) {
+        const a = f.location?.start?.value;
+        if (f.type === 'Modified residue' && a != null && a === f.location?.end?.value) {
+          if (!by.has(a)) by.set(a, []);
+          by.get(a).push(f);
+        }
+      }
+      uniIdx = { j: PV.uniJson, by };
+    }
+    return uniIdx.by;
+  };
+  // the summary items (writer, variants, conservation) of one site of the open protein, or null until its tables are in
+  function summaryAt(acc, pos) {
+    const p = byAcc[acc],
+      m = PV.acc === acc && PV.rec?.marks.find((x) => x[0] === pos);
+    if (!p || !m || !PV.tb) return null;
+    return K.card.summaryItems(cardCtx(p, PV.rec, m), { uni: uniAtPos().get(pos) || [] });
+  }
+  const glanceVars = (pos) => (PV.tb && K.card.vc.entries.length ? K.card.vc.siteVariants(PV.tb, pos) : []);
+  const glanceN = (pos) => glanceVars(pos).reduce((a, v) => a + (v.n || 0), 0);
+  function siteGlance(p, rec) {
+    const marks = [...rec.marks];
+    if (!marks.length) return '';
+    if (GL.sort === 'var') {
+      const n = new Map(marks.map((m) => [m[0], glanceN(m[0])]));
+      marks.sort((a, b) => n.get(b[0]) - n.get(a[0]) || a[0] - b[0]);
+    } else marks.sort((a, b) => a[0] - b[0]);
+    const shown = GL.all ? marks : marks.slice(0, GL_CAP),
+      win = HV.window || 10,
+      hasNear = !!(K.map?.nearby && K.map.ctxIds?.().length),
+      hasVar = !!K.card.vc.entries.length,
+      none = '<span class="muted">–</span>',
+      wait = '<span class="muted">…</span>';
+    const rows = shown.map((m) => {
+      const it = summaryAt(p.acc, m[0]),
+        pill = statePill(m),
+        cv = it?.conservation?.[1];
+      return {
+        m,
+        html:
+          `<tr data-site="${m[0]}"><td data-label="Site"><a class="mono" href="${esc(K.link('protein', `${p.acc}/${siteOf(p, m[0])}`))}">${esc(siteOf(p, m[0]))}</a></td>` +
+          `<td data-label="State">${pill || none}</td>` +
+          `<td data-label="Writer">${it ? it.writer?.[1] || none : wait}</td>` +
+          (hasVar ? `<td data-label="Variants">${it ? it.variants?.[1] || none : wait}</td>` : '') +
+          `<td data-label="Conservation" data-cons>${cv ? esc(cv) : none}</td>` +
+          (hasNear
+            ? `<td data-label="Marks nearby" class="num">${(() => {
+                const n = K.map.nearby(p.acc, m[0], win).length;
+                return n ? int(n) : none;
+              })()}</td>`
+            : '') +
+          '</tr>',
+      };
+    });
+    const anyCons = rows.some((r) => /data-cons>(?!<span)/.test(r.html));
+    const head =
+      '<th>Site</th><th>State</th><th>Writer</th>' +
+      (hasVar ? '<th>Variants</th>' : '') +
+      (anyCons ? '<th>Conservation</th>' : '') +
+      (hasNear ? '<th>Marks nearby</th>' : '');
+    const body = rows
+      .map((r) => (anyCons ? r.html : r.html.replace(/<td data-label="Conservation"[^>]*>.*?<\/td>/, '')))
+      .join('');
+    const sortBtn = (k, t) =>
+      `<button type="button" class="linkish" data-glance-sort="${k}" aria-pressed="${GL.sort === k}">${GL.sort === k ? `<b>${t}</b>` : t}</button>`;
+    return (
+      `<section class="site-glance card" id="site-glance" aria-label="Sites of ${esc(p.gene || p.acc)}"><div class="card-head"><h3>${esc(cap(W.marks))} at a glance</h3>` +
+      `<p class="small muted">Sort by ${sortBtn('pos', 'position')} · ${hasVar ? sortBtn('var', 'variant count') : ''}</p></div>` +
+      `<div class="tbl-card"><table class="tbl stackable sg-tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
+      (marks.length > GL_CAP
+        ? `<p class="small">${
+            GL.all
+              ? `<button type="button" class="linkish" data-glance-all="0">Show the first ${GL_CAP}</button>`
+              : `Showing ${GL_CAP} of ${int(marks.length)}. <button type="button" class="linkish" data-glance-all="1">Show all ${int(marks.length)} ${esc(W.marks)}</button>`
+          }</p>`
+        : '') +
+      '</section>'
+    );
+  }
+  // drawn again where it stands (a file arrived, a sort, show all)
+  const redrawGlance = () => {
+    const el = document.getElementById('site-glance'),
+      p = byAcc[PV.acc];
+    if (el && p && PV.rec) el.outerHTML = siteGlance(p, PV.rec);
+  };
+  (K.afterUni ||= []).push(redrawGlance);
+  K.card.vc.onDetail(redrawGlance);
+
   function headline(p, rec) {
     const facts = D.protein_view?.facts;
     if (!facts?.length) return '';
@@ -1693,10 +1793,11 @@
             `id="pmap" class="pmap"></div>${siteCard(p, rec)}`,
           true
         ) +
+          siteGlance(p, rec) +
           (headline(p, rec) || legacyFacts(p, rec, nSrc)) +
           fold(
             'p-sites',
-            `${esc(cap(W.marks))}`,
+            'All site tables',
             `${int(rec.marks.length)}${
               nSrc
                 ? ` · ${int(
@@ -2358,6 +2459,7 @@
       }
       const first = !PV.uniJson;
       PV.uniJson = j;
+      K.afterUni?.forEach((f) => f(acc));
       const names = [
         ...new Set(
           (j.genes || [])
@@ -2626,6 +2728,20 @@
     ],
     ['[data-msite]', (el) => openSite(+el.dataset.msite, el.closest('.seq') ? 'sequence' : 'map')],
     ['[data-site-open]', (el) => openSite(+el.dataset.siteOpen)],
+    [
+      '[data-glance-sort]',
+      (el) => {
+        GL.sort = el.dataset.glanceSort;
+        redrawGlance();
+      },
+    ],
+    [
+      '[data-glance-all]',
+      (el) => {
+        GL.all = el.dataset.glanceAll === '1';
+        redrawGlance();
+      },
+    ],
     [
       '[data-folds]',
       (el) => {

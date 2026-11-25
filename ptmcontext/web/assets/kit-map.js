@@ -1269,10 +1269,20 @@
       parts.push(
         `<line x1="${r1(l.x)}" x2="${r1(l.x)}" y1="${r1(y + 2)}" y2="${r1(hy)}" stroke="${P.line}" stroke-width="0.7"/>`
       );
-      parts.push(
+      const tx =
         l.left != null
           ? `<text x="${r1(l.left + 3)}" y="${r1(y)}" font-size="10.5" fill="${P.ink}">${esc(l.txt)}</text>`
-          : `<text x="${r1(l.x)}" y="${r1(y)}" font-size="10.5" text-anchor="middle" fill="${P.ink}">${esc(l.txt)}</text>`
+          : `<text x="${r1(l.x)}" y="${r1(y)}" font-size="10.5" text-anchor="middle" fill="${P.ink}">${esc(l.txt)}</text>`;
+      // a label is a button: one site opens it, several open a chooser (not in an export)
+      const lx = l.left != null ? l.left : l.x - w / 2;
+      parts.push(
+        ex
+          ? tx
+          : `<g data-mlabel="${l.pos.join(',')}" tabindex="0" role="button" style="cursor:pointer" aria-label="${esc(
+              l.pos.length > 1
+                ? `Choose among ${l.pos.length} sites: ${l.pos.map(c.resName).join(', ')}`
+                : `Open site ${c.resName(l.pos[0])}`
+            )}"><rect x="${r1(lx)}" y="${r1(y - 11)}" width="${r1(w)}" height="14" rx="3" fill="transparent"/>${tx}</g>`
       );
     });
     // the site file's rows drawn behind the marks (dense windows, say): bands from the heads to the backbone
@@ -2590,7 +2600,7 @@
     }
     const svg = back.join('') + parts.join('');
     return {
-      svg: ex ? svg.replace(/ data-(mi|msite|rowhelp)="[^"]*"/g, '') : svg,
+      svg: ex ? svg.replace(/ data-(mi|msite|mlabel|rowhelp)="[^"]*"/g, '') : svg,
       H: c.y + 4,
       X,
       za,
@@ -2957,7 +2967,7 @@
       cross.setAttribute('visibility', 'visible');
     };
     svg.addEventListener('pointerdown', (ev) => {
-      if (ev.button !== 0 || ev.target.closest('[data-mi],[data-msite],[data-comb]')) return;
+      if (ev.button !== 0 || ev.target.closest('[data-mi],[data-msite],[data-comb],[data-mlabel]')) return;
       d0 = toPos(ev);
       if (d0 == null) return;
       svg.setPointerCapture(ev.pointerId);
@@ -2981,7 +2991,7 @@
       if (d0 != null) svg.dispatchEvent(new MouseEvent('mousemove', ev));
     });
     svg.addEventListener('dblclick', (ev) => {
-      if (M.zoom && !ev.target.closest('[data-mi],[data-msite],[data-comb]')) {
+      if (M.zoom && !ev.target.closest('[data-mi],[data-msite],[data-comb],[data-mlabel]')) {
         M.zoom = null;
         render(el, ctx);
       }
@@ -3418,7 +3428,8 @@
         else togglePin(x);
       },
     ],
-    ['[data-pin-close]', () => closePin(true)]
+    ['[data-pin-close]', () => closePin(true)],
+    ['[data-mlabel]', (el) => openLabel(el)]
   );
   document.addEventListener('change', (e) => {
     const d = e.target.dataset || {};
@@ -3693,6 +3704,76 @@
     document.querySelectorAll('[data-map-size]').forEach((s) => {
       s.value = '';
     });
+  });
+  // a map label: one site opens like its dot; a merged label opens a small chooser of its sites (Escape closes it)
+  const hideMapTip = () => {
+    const t = document.getElementById('tip');
+    if (t) t.hidden = true;
+  };
+  function closeChooser(back) {
+    const c = document.getElementById('map-chooser');
+    if (!c) return;
+    const from = c._from;
+    c.remove();
+    if (back && from?.isConnected) from.focus();
+  }
+  function openLabel(el) {
+    hideMapTip();
+    closeChooser();
+    const pos = el.dataset.mlabel.split(',').map(Number),
+      acc = M.ctx.p.acc;
+    if (pos.length === 1) {
+      K.site?.focus(acc, pos[0], { from: 'map' });
+      return;
+    }
+    const nm = (q) => (K.prot?.siteLabel ? K.prot.siteLabel(acc, q) : String(q));
+    const box = document.createElement('div');
+    box.id = 'map-chooser';
+    box.setAttribute('role', 'group');
+    box.setAttribute('aria-label', 'Sites at this label');
+    box._from = el;
+    box.innerHTML = pos
+      .map(
+        (q, i) =>
+          `${i ? '<span class="muted"> · </span>' : ''}<a href="#" class="mono" data-chooser-site="${q}">${esc(nm(q))}</a>`
+      )
+      .join('');
+    const r = el.getBoundingClientRect();
+    box.style.cssText =
+      `position:fixed;z-index:60;left:${Math.max(8, Math.min(r.left, innerWidth - 240))}px;top:${r.bottom + 4}px;` +
+      'max-width:min(92vw,28rem);padding:.4rem .6rem;background:var(--bg,#fff);color:var(--ink,inherit);' +
+      'border:1px solid var(--line,#999);border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.25)';
+    document.body.appendChild(box);
+    box.querySelector('a')?.focus();
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest?.('[data-chooser-site]');
+    if (a) {
+      e.preventDefault();
+      const q = +a.dataset.chooserSite;
+      closeChooser();
+      K.site?.focus(M.ctx.p.acc, q, { from: 'map' });
+    } else if (!e.target.closest?.('#map-chooser,[data-mlabel]')) closeChooser();
+    if (e.target.closest?.('#pmap')) hideMapTip();
+  });
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      const lab = e.target.closest?.('[data-mlabel]');
+      if (lab && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        openLabel(lab);
+      } else if (e.key === 'Escape' && document.getElementById('map-chooser')) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeChooser(true);
+      }
+    },
+    true
+  );
+  addEventListener('hashchange', () => {
+    closeChooser();
+    hideMapTip();
   });
   K.map = {
     render,

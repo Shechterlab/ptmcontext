@@ -87,6 +87,7 @@
           src,
           vars: vtb ? K.card.vc.siteVariants(vtb, pos) : null, // the site card's counts
           names,
+          writer: K.prot.summaryAt ? (K.prot.summaryAt(acc, pos)?.writer?.[1] ?? (vtb ? '' : null)) : null,
           hot: loaded ? SRC.filter((s) => src[s.id]?.hot).map((s) => ({ s, tip: src[s.id].hot })) : null,
           dis: inDisorder(rec, pos),
           am: K.prot.am?.(acc, pos),
@@ -134,6 +135,17 @@
         cell: (r) => esc(r.state || '–'),
         val: (r) => r.state,
         tsv: (r) => r.state,
+      });
+    // the writers, from the site card's summary (K.card.summaryItems, through K.prot.summaryAt): the records' writers, then UniProt's
+    if (K.prot.summaryAt)
+      cols.push({
+        id: 'writer',
+        tsvName: 'writer_uniprot',
+        label: 'Writer (UniProt)',
+        help: 'Enzymes that write the mark at the site: the records’ writers, then those UniProt names for the residue',
+        cell: (r) => (r.writer == null ? '…' : r.writer || '<span class="muted">–</span>'),
+        val: (r) => (r.writer ? r.writer.replace(/<[^>]*>/g, '') : null),
+        tsv: (r) => (r.writer ? r.writer.replace(/<[^>]*>/g, '') : ''),
       });
     for (const s of SRC) {
       const unit = (s.unit || ['sample', 'samples'])[1],
@@ -392,6 +404,7 @@
   function load(acc) {
     if (K.prop.peek(acc) === undefined) K.prop.load(acc).then(() => refresh());
   }
+  (K.afterUni ||= []).push(() => cur() && refresh());
   (K.proteinFolds ||= []).push((p, rec, fold) => {
     if (!rec.marks?.length) return '';
     load(p.acc);

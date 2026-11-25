@@ -1314,7 +1314,9 @@
   }
   // c: the card's context; o: { uni: UniProt features at the site, near: the marks-nearby html (the attribute's own) }
   // Each line has content or is left out; each label links to the section that holds the facts.
-  function cardSummary(c, o = {}) {
+  // The summary's items by key (writer, readers, variants, conservation, near), each [label html, value html]; the
+  // card draws them as lines and the protein page's site table takes its cells from the same items.
+  function summaryItems(c, o = {}) {
     const href = (open) => K.link('protein', `${c.acc}/${c.label}`, open ? { open } : {}),
       lab = (t, open, tip) =>
         `<a href="${esc(href(open))}" title="${esc(tip || 'Open the section behind this line')}">${esc(t)}</a>`,
@@ -1336,12 +1338,13 @@
       }
     if (wx.size || uni.length) {
       const recs = wx.size ? namesHtml([...wx.values()], SUMMARY_MAX, c.isListed, href(open(wg).join(','))) : '';
-      lines.push([
+      lines.writer = [
         lab('Writer', wx.size ? open(wg).join(',') : 'sc-uniprot', 'Open the records, or UniProt'),
         recs +
           (recs && uni.length ? ' · ' : '') +
           (uni.length ? `${uni.join(', ')} <span class="muted">(UniProt)</span>` : ''),
-      ]);
+      ];
+      lines.push(lines.writer);
     }
     // 2. readers and binders: a count and the first three names, "+N more" opens the table
     const rg = roleGroups('reader'),
@@ -1354,12 +1357,19 @@
     // 3. variants: the variant counter's own line
     const vc = K.card.vc;
     if (vc.entries.length && vc.siteVariants(c.tb, c.pos).some((x) => x.n))
-      lines.push(['Variants', vc.line(c.tb, c.acc, c.pos).replace(/^<a /, '<a title="Open the variants" ')]);
+      lines.push(
+        (lines.variants = ['Variants', vc.line(c.tb, c.acc, c.pos).replace(/^<a /, '<a title="Open the variants" ')])
+      );
     // 4. conservation: from the module's own lookup, once it has arrived
     const cv = K.conserve?.siteLine?.(c.acc, c.pos);
-    if (cv) lines.push([lab('Conservation', 'p-cons', 'Open the conservation section'), esc(cv)]);
+    if (cv)
+      lines.push((lines.conservation = [lab('Conservation', 'p-cons', 'Open the conservation section'), esc(cv)]));
     // 5. marks nearby: the attribute's own text
     if (o.near) lines.push(['Other marks nearby', o.near]);
+    return lines;
+  }
+  function cardSummary(c, o = {}) {
+    const lines = summaryItems(c, o);
     if (!lines.length) return '';
     return (
       `<section class="sc-sum" aria-label="Summary"><dl class="sc-kv">` +
@@ -1865,6 +1875,7 @@
     recordsTsv,
     writerBlock,
     cardSummary,
+    summaryItems,
     uniWriters,
     evidenceRow,
     reportedBy,
