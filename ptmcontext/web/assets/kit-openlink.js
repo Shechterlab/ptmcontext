@@ -6,6 +6,21 @@
 (window.PTMC_MODULES ||= []).push((K) => {
   'use strict';
   const { S } = K;
+  // the fetches the page has started and not yet settled: K.landOn holds a landed target in place while any is open
+  let open = 0;
+  const nativeFetch = window.fetch;
+  if (nativeFetch && !nativeFetch.counted) {
+    const counted = function (...a) {
+      open++;
+      const done = () => open--;
+      const p = nativeFetch.apply(this, a);
+      p.then(done, done);
+      return p;
+    };
+    counted.counted = true;
+    window.fetch = counted;
+  }
+  K.inflight = () => open;
   let key = null; // the page the state below belongs to
   let want = {}; // fold id -> the state the reader (or the link) gave it, where it differs from dflt
   let dflt = {}; // fold id -> the state it was first drawn in on this page

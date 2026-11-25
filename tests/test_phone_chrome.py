@@ -40,3 +40,12 @@ def test_methods_is_in_the_tabs_and_the_footer_not_the_header_links():
     for f in ('methylarginine', 'methyllysine', 'lysine', 'phospho', 'yeast_phospho'):
         text = (ROOT / 'sites' / f'{f}.yaml').read_text()
         assert 'url: "#method"}' not in text, f
+
+
+def test_the_landing_stays_pinned_until_the_reader_acts_or_the_page_settles():
+    land = _t('kit-proteins.js').split('function landOn')[1].split('K.landOn = landOn')[0]
+    assert "addEventListener('scroll', go" in land  # the measured top is put back after any move
+    assert '15000' in land and 'K.inflight' in land
+    assert all(f"'{e}'" in _t('kit-proteins.js') for e in ('click', 'keydown', 'wheel', 'touchstart'))
+    opn = _t('kit-openlink.js')
+    assert 'K.inflight = ' in opn and 'window.fetch = counted' in opn
