@@ -727,7 +727,7 @@
     c.inline && c.kind === 'values' && c.total
       ? `<p class="qm-inline">${c.values
           .filter((v) => v[2] > 0)
-          .map((v) => `${int(v[2])} ${esc(v[1].toLowerCase())} (${pc(v[2], c.total)}%)`)
+          .map((v) => `${int(v[2])} ${esc(v[1])} (${pc(v[2], c.total)}%)`)
           .join(', ')} of ${int(c.total)} ${esc(W.marks)}.</p>`
       : '';
   // ---- Method: each count's own section, after the questions' --------------------------------------------------------
