@@ -98,6 +98,7 @@
     );
   const str = (s, v) => (typeof v === 'number' ? (s[v] ?? '') : v);
   const NUMS = new Set(['position', 'start', 'end']); // the columns whose numbers are numbers
+  // (but a free table's values (protein_records) are all text, a start or end included: the shard may hold one as an index)
   let lightIdx = null;
   const lightIndex = () =>
     (lightIdx ||= fetch('data/u/index.json')
@@ -111,7 +112,9 @@
     if (!m) OBJ.set(tb, (m = {}));
     const s = tb._s || [];
     return (m[name] ||= tb[name].map((r) =>
-      Object.fromEntries(TH[name].columns.map((c, i) => [c, NUMS.has(c) ? r[i] : str(s, r[i])]))
+      Object.fromEntries(
+        TH[name].columns.map((c, i) => [c, NUMS.has(c) && TH[name].format !== 'protein_records' ? r[i] : str(s, r[i])])
+      )
     ));
   }
   const at = (tb, name, pos) => rows(tb, name).filter((r) => r.position === pos);

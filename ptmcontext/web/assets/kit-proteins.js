@@ -325,6 +325,28 @@
     )
       K.render();
   });
+  // the card's "Other marks nearby", from the map's one count (K.map.nearMarks): the window is printed, and a kind with a score
+  // cut-off says what that cut-off leaves ("Phosphosite with score ≥ 0.5: none"); the run's own column is the fallback until the map's items load
+  const nearCard = (p, m) => {
+    const nm = K.map?.nearMarks?.(p.acc, [m[0]]);
+    if (!nm) return '';
+    const sg = (d) => `${d > 0 ? '+' : '−'}${Math.abs(d)}`,
+      at = (x) => K.prot.siteLabel(p.acc, x.pos),
+      hits = nm.kinds
+        .flatMap((k) => k.near.map((x) => ({ k, ...x })))
+        .sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist) || a.dist - b.dist);
+    const cuts = nm.kinds
+      .filter((k) => k.high != null)
+      .map((k) => {
+        const hs = k.near.filter((x) => k.score.has(x.pos));
+        return `${esc(k.label)} with ${esc(k.cut)}: ${hs.length ? hs.map((x) => esc(at(x))).join(', ') : 'none'}`;
+      });
+    return (
+      `<span class="muted">within ±${nm.win} aa:</span> ` +
+      (hits.length ? hits.map((x) => `${esc(x.k.label)} ${esc(at(x))} (${sg(x.dist)})`).join(', ') : 'none') +
+      (cuts.length ? `<br><span class="muted">${cuts.join(' · ')}</span>` : '')
+    );
+  };
   function attrHtml(m, name, full) {
     const s = SPECS[name],
       v = attrVal(m, name);
@@ -372,120 +394,12 @@
     const k = Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category');
     return k ? pillOf(m, k) : '';
   };
-  // classes of one question that share a label (a test at several distances, in all, ordered and disordered parts) say what sets
-  // each apart: the words of its category that the others do not share ("ordered", "within 5 residues"), "all" for the shortest
-  function qualified(aid, cats) {
-    const byLab = {};
-    cats.forEach((c) => (byLab[label(aid, c)] ||= []).push(c));
-    const out = {};
-    Object.entries(byLab).forEach(([lab, cs]) => {
-      if (cs.length < 2) {
-        out[cs[0]] = lab;
-        return;
-      }
-      const ws = cs.map((c) => String(c).split('_'));
-      let k = 0;
-      while (ws.every((w) => w[k] != null && w[k] === ws[0][k])) k++;
-      cs.forEach((c, i) => {
-        const rest = ws[i].slice(k);
-        out[c] = `${lab} (${
-          rest.length ? (/^\d/.test(rest[0]) && k ? ws[i][k - 1] + ' ' : '') + rest.join(' ') : 'all'
-        })`;
-      });
-    });
-    return out;
-  }
-  function scoreRows(p, rec) {
-    return D.analyses
-      .filter((a) => rec.counts[a.id])
-      .map((a) => {
-        const rows = rec.counts[a.id].filter((r) => r[1] > 0).sort((x, y) => y[1] - x[1]),
-          [mt, ot] = rec.totals[a.id] || [0, 0],
-          ql = qualified(
-            a.id,
-            rec.counts[a.id].map((r) => r[0])
-          ),
-          label = (aid, c) => ql[c] || label0(aid, c);
-        // a class with its own totals (a question of several tests, each counting its own background) uses them
-        const ans =
-          rows
-            .slice(0, 2)
-            .map(
-              ([c, mi, oi, m2 = mt, o2 = ot]) =>
-                `${esc(label(a.id, c))}: <span class="an">${int(mi)} of ${int(m2)} (${pct(mi, m2)}) vs ${int(oi)} of ${int(o2)} other ${esc(W.residues)} (${pct(oi, o2)})</span>`
-            )
-            .join('; ') || '<span class="muted">none</span>';
-        const all = rec.counts[a.id].slice().sort((x, y) => y[1] - x[1] || y[2] - x[2]);
-        return (
-          `<details class="score small"><summary><span class="pm" aria-hidden="true"></span><span class="tq">` +
-          `<span class="t">${esc(a.title)}</span></span><span class="ans">${ans}</span><span class="go" ` +
-          `aria-hidden="true"></span></summary>` +
-          (`<div class="card-body"><div class="tbl-card"><table class="tbl"><thead><tr><th>Class</th><th class="num">On this protein</th>` +
-            `<th class="num">Other ${esc(W.residues)} on this protein</th></tr></thead><tbody>`) +
-          all
-            .map(
-              ([c, mi, oi, m2 = mt, o2 = ot]) =>
-                `<tr><td title="${esc(help(a.id, c))}">${esc(label(a.id, c))}</td><td ` +
-                `class="num">${int(mi)} of ${int(m2)} (${pct(mi, m2)})</td><td class="num">${int(oi)} of ${int(o2)} (${pct(oi, o2)})</td></tr>`
-            )
-            .join('') +
-          `</tbody></table></div></div></details>`
-        );
-      })
-      .join('');
-  }
-  // the one-line answer to "is that unusual?" for a single protein: what these counts can and cannot say, and where the dataset-wide answer is
-  function scoreVerdict(p, rec) {
-    const qs = D.analyses.filter((a) => rec.counts[a.id] && a.kind !== 'protein_sets'),
-      n = rec.marks.length,
-      others = Math.max(0, (rec.totals[qs[0]?.id] || [0, 0])[1]);
-    return (
-      `<p class="verdict"><b>Unusual?</b> One protein cannot say: its ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} are not ` +
-      `independent and only ${int(others)} other ${esc(W.residues)} are left to compare with, so no test is made ` +
-      `here. ${baseText() ? `Dataset-wide, the largest difference is ${esc(baseText())}. ` : ''}` +
-      (`These counts describe ${esc(p.gene || p.acc)}. Whether a class is unusual for ${esc(W.marks)} is tested ` +
-        `across the whole dataset, one question at a time: ${qs
-          .slice(0, 8)
-          .map((a) => `<a href="${esc(K.link('overview', a.id))}">${esc(a.title)}</a>`)
-          .join(', ')}${qs.length > 8 ? ', …' : ''}.</p>`)
-    );
-  }
-  // the dataset-wide base rate beside the verdict: the most over-represented class of the site's residue questions (q within
-  // the cut-off), the figure a single protein is read against. A control of another question (control_of) is not the main
-  // result, and the measure is the fold the Overview's tiles and the question's page show
+  // what a single protein's counts cannot say, in one sentence that points to the dataset-wide tests (one protein's marks
+  // are not independent, so the page makes no test of them)
   const shownOf = (r) => (K.valOf ? K.valOf(r) : r.eff);
-  function baseRate() {
-    const ids = new Set(D.analyses.filter((a) => a.kind !== 'protein_sets' && !a.control_of).map((a) => a.id)),
-      cut = K.PADJ ?? 0.05;
-    let best = null;
-    // the within-protein test the Overview and the tiles read, else the pooled one
-    for (const m of ['mantel_haenszel', 'fisher'])
-      if (!best)
-        D.rows.forEach((r) => {
-          if (
-            ids.has(r.analysis) &&
-            r.method === m &&
-            r.dir === 'more' &&
-            r.q != null &&
-            r.q <= cut &&
-            r.eff > 1 &&
-            r.eff < 1e299 &&
-            r.category !== '' &&
-            !/^(no |not |unknown|unassigned|other\b|none\b)/i.test(label(r.analysis, r.category)) &&
-            (!best || shownOf(r) > shownOf(best))
-          )
-            best = r;
-        });
-    return best;
-  }
-  const baseText = () => {
-    const b = baseRate();
-    return b
-      ? `${K.fxn(shownOf(b))}× in ${label(b.analysis, b.category)} (fold; ${
-          b.method === 'fisher' ? 'pooled' : 'within-protein'
-        } OR ${K.fxn(b.eff)})`
-      : '';
-  };
+  const untestedNote = () =>
+    `<p class="muted small p-untested">Whether a class is unusual for ${esc(W.marks)} is tested across the whole dataset, ` +
+    `not for one protein: <a href="${esc(K.link('overview'))}">see the questions on the Overview</a>.</p>`;
   const winHtml = (w) => {
     const c = Math.floor(w.length / 2);
     return `<span class="win">${esc(w.slice(0, c))}<b>${esc(w[c])}</b>${esc(w.slice(c + 1))}</span>`;
@@ -1030,7 +944,7 @@
     const sumHtml = ready
       ? K.card.cardSummary(c, {
           uni: uniAt.filter((f) => f.type === 'Modified residue'),
-          near: NEAR ? attrHtml(m, NEAR, true) : '',
+          near: NEAR ? nearCard(p, m) || attrHtml(m, NEAR, true) : '',
         })
       : '';
     return (
@@ -1180,7 +1094,6 @@
     'p-exp',
     'p-cluster',
     'p-ptm',
-    'p-score',
     'p-kinds',
     'p-regions',
     'p-struct',
@@ -1203,6 +1116,7 @@
     ...Object.fromEntries(FOLDS.map((f) => [f, f])),
     ...NAME_TO_FOLD,
     'site-glance': 'p-sitetab', // the first site table sat under this name
+    'p-score': 'p-sitetab', // the list of counts is gone; the sentence that replaced it sits under the site table
     ...(D.legacy_routes || {}),
   };
   const sectionKey = (at) => {
@@ -1826,13 +1740,7 @@
             sitesTable(p, rec, sel),
             true
           ) +
-          fold(
-            'p-score',
-            `${esc(cap(W.marks))} vs other ${esc(W.residues)} in ${esc(p.gene || p.acc)}`,
-            esc(`Can't be ` + `tested for one protein${baseText() ? '; dataset-wide: ' + baseText() : ''}`),
-            `${scoreVerdict(p, rec)}<div class="hub">${scoreRows(p, rec)}</div>`,
-            false
-          ) +
+          untestedNote() +
           (D.analyses.some((a) => a.kind === 'protein_sets')
             ? fold('p-kinds', 'Protein classes and pathways', '', kindsHtml(p), false)
             : '') +
@@ -2162,7 +2070,6 @@
       ['g-marks', `${cap(W.marks)} on this protein`, 0],
       ['p-map', 'Protein map', 1],
       ['p-sites', cap(W.marks), 1],
-      ['p-score', `${cap(W.marks)} vs other ${W.residues}`, 1],
       ['g-protein', 'The protein', 0],
       ...(D.analyses.some((a) => a.kind === 'protein_sets') ? [['p-kinds', 'Protein classes and pathways', 1]] : []),
       ['p-regions', 'Domains and regions', 1],
@@ -2240,22 +2147,17 @@
           none.push(esc(a.title));
           return '';
         }
-        const shown = PV.open['kinds:' + a.id] ? mine : mine.slice(0, 10);
+        const shown = PV.open['kinds:' + a.id] ? mine : mine.slice(0, 12);
         return (
-          `<article class="tile kind"><header><h3>${esc(a.title)} <span class="muted">${int(mine.length)} set${
-            mine.length === 1 ? '' : 's'
-          }</span></h3></header>` +
-          K.rowsTile(
-            a,
-            shown.map((x) => x.r),
-            'in-set'
-          ) +
-          (mine.length > 10
-            ? `<button class="linkish" type="button" data-kinds-all="${esc(a.id)}">${
+          `<div class="kind-set"><a href="${esc(K.link('overview', a.id))}"><b>${esc(a.title)}</b></a> ` +
+          `<span class="muted">${int(mine.length)}</span> ` +
+          shown.map((x) => `<a class="chip" href="${esc(K.link('overview', a.id))}">${esc(x.r.label)}</a>`).join(' ') +
+          (mine.length > 12
+            ? ` <button class="linkish" type="button" data-kinds-all="${esc(a.id)}">${
                 PV.open['kinds:' + a.id] ? 'Fewer' : `All ${int(mine.length)}`
               }</button>`
             : '') +
-          '</article>'
+          '</div>'
         );
       })
       .join('');
@@ -2266,12 +2168,10 @@
           (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input
         )}; the decile ` + `of the estimate within abundance deciles)</span></p>`
       : '';
-    // the sets' results are about every ${W.mark} in the set, not about this protein alone: their own heading says so
-    const across =
-      `<h3 class="kinds-head">Across all ${esc(W.marks)}</h3><p class="muted small kinds-note">Sets this protein is in. ` +
-      `Each fold is for all ${esc(W.marks)} in the set, not for ${esc(p.gene || p.acc)}. ${esc(K.SET_NOTE)}</p>`;
+    // names only: a set's test is for every mark in it, not for this protein, so its numbers stay on the question's page
+    const across = `<p class="muted small kinds-note">Sets ${esc(p.gene || p.acc)} is in; each name opens its question.</p>`;
     const noneLine = none.length ? `<p class="muted small kinds-none">Not in: ${none.join('; ')}.</p>` : '';
-    return covLine + across + `<div class="kinds">${blocks}</div>` + noneLine;
+    return covLine + across + `<div class="kinds kinds-chips">${blocks}</div>` + noneLine;
   }
 
   // ---- domains and regions: every region the questions of this explorer read, as a table, with the marks inside each --------
@@ -2980,7 +2880,7 @@
       .filter((n) => SPECS[n].provenance && !SPECS[n].present)
       .slice(0, 3);
   const nearbyHtml = (pos) => {
-    const win = HV.window || 10,
+    const win = K.nearWindow?.() || HV.window || 10,
       max = HV.nearby_max || 3,
       hits = K.map?.nearby ? K.map.nearby(PV.acc, pos, win) : [];
     if (!hits.length) return '';

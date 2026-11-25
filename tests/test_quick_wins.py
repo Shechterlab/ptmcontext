@@ -13,13 +13,10 @@ def read(name: str) -> str:
     return (ASSETS / name).read_text()
 
 
-def test_score_and_kinds_folds_start_closed():
+def test_kinds_fold_starts_closed_and_score_fold_is_gone():
     js = read('kit-proteins.js')
-    assert (
-        "fold(\n            'p-score'" in js
-        and '`${scoreVerdict(p, rec)}<div class="hub">${scoreRows(p, rec)}</div>`,\n            false' in js
-    )
     assert "fold('p-kinds', 'Protein classes and pathways', '', kindsHtml(p), false)" in js
+    assert "'p-score'" not in js.split('const fold = (id, title, sum, body, open, pin)')[1].split('K.pfoldsSwitch')[0]
     for site in SITES.glob('*.yaml'):
         for line in site.read_text().splitlines():
             if line.startswith('    open: ['):

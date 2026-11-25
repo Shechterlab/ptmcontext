@@ -315,7 +315,10 @@ def specs(site: dict) -> tuple[dict, dict]:
             marks[a['near_subset']] = {
                 'label': f'Has {with_article(e)} ({subset_label(e)}) within ±{w}',
                 'kind': 'category',
-                'values': {'yes': f'{e["label"]} ({subset_label(e)}) within ±{w}', 'no': f'None within ±{w}'},
+                'values': {
+                    'yes': f'{e["label"]} ({subset_label(e)}) within ±{w}',
+                    'no': f'No {noun(e)} ({subset_label(e)}) within ±{w}',
+                },
                 'filter': True,
                 'help': f'A {noun(e)} with {subset_label(e)} (from {e["citation"].get("short", e["label"])}) within {w} '
                 f'residues of the site on either side',

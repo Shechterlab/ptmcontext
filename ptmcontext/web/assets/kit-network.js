@@ -2653,19 +2653,22 @@
     }
   })();
   const hasLinks = (p) => !LINKED || !LINKED.length || p.i == null || !!(LINKED[p.i >> 3] & (1 << (p.i & 7)));
+  const previewSlot = (p) =>
+    NC.protein_preview === false || NC.protein_link === false || !hasLinks(p)
+      ? ''
+      : `<span class="nw-prev" data-nw-prev="${esc(p.acc)}" data-href="${esc(K.net.link(p.acc))}"></span>`;
   (K.protActions ||= []).push((p) => {
     if (NC.protein_link === false || !hasLinks(p)) return '';
     const href = esc(K.net.link(p.acc));
     return (
       `<a class="btn small" href="${href}" title="Open the network with ${esc(p.gene || p.acc)} shown, its cluster lit">See in network</a>` +
-      (NC.protein_preview === false
-        ? ''
-        : `<span class="nw-prev" data-nw-prev="${esc(p.acc)}" data-href="${href}"></span>`)
+      // the small drawing sits in the protein network's section (pn-net, kit-pnet.js) where the page has one
+      (K.pix ? '' : previewSlot(p))
     );
   });
   // the protein page's STRING card links here: this protein as the selection, drawn with its partners (a protein the sources do not link has none)
   // the one address of a protein in the network (it pinned and its cluster lit); every link to it is built here
-  K.net = { link: (acc) => K.link('network', '', { p: acc }) };
+  K.net = { link: (acc) => K.link('network', '', { p: acc }), previewSlot: (p) => previewSlot(p) };
   K.netHref = (p) => (NC.protein_link === false || !hasLinks(p) ? '' : K.net.link(p.acc));
   let viewP = null;
   const loadViewFile = () =>
@@ -2696,7 +2699,7 @@
       L = K.netlayout.finish(sub, pos, 'desktop', 12.5 / s, 10.5 / s);
     }
     s = Math.min(2.4, 300 / L.w, 190 / L.h);
-    L.clabels.forEach((l) => (l.count = `${sl.nodes.length} of ${j.labels[c].n} proteins`));
+    L.clabels.forEach((l) => (l.count = `${sl.nodes.length} shown of ${j.labels[c].n} in the cluster`));
     const shown = j.labels
         .map((l, k) => k)
         .filter((k) => j.labels[k].n >= OPT.min_cluster)
@@ -2738,7 +2741,7 @@
     return (
       `<a class="nw-prev-a" href="${href}" aria-label="${esc(j.gene[i])} among ${int(j.labels[c].n)} proteins of its cluster${term ? ', ' + esc(term) : ''}; open the network">` +
       `<svg class="nw-prev-svg" width="${Math.round(L.w * s)}" height="${Math.round(L.h * s)}" viewBox="0 0 ${L.w} ${L.h}" role="img" aria-hidden="true">${svg}</svg></a>` +
-      `<span class="nw-prev-cap muted">${esc(j.gene[i])} with ${int(sl.nodes.length - 1)} of its ${int(sl.partners)} partners in its cluster</span>`
+      `<span class="nw-prev-cap muted" data-in="${sl.partners}" data-shown="${sl.nodes.length - 1}">${int(sl.partners)} of ${esc(j.gene[i])}’s STRING partners are in this cluster; ${int(sl.nodes.length - 1)} shown</span>`
     );
   }
   // the partners line of a card points to the protein's partners in all (kit-pix.js owns that count)
@@ -2761,7 +2764,19 @@
       el.dataset.done = '1';
       loadViewFile().then(
         (j) => {
-          if (el.isConnected) el.innerHTML = previewHtml(j, el.dataset.nwPrev, el.dataset.href);
+          if (!el.isConnected) return;
+          el.innerHTML = previewHtml(j, el.dataset.nwPrev, el.dataset.href);
+          // the caption's total is the protein's STRING partners in all (the partner table kit-pix.js reads)
+          const cap = el.querySelector('.nw-prev-cap');
+          if (cap && K.card?.load && K.pix?.partnersOf)
+            K.card.load(el.dataset.nwPrev).then(
+              (tb) => {
+                const n = K.pix.partnersOf(tb).length;
+                if (n >= +cap.dataset.in && cap.isConnected)
+                  cap.textContent = `${int(+cap.dataset.in)} of its ${int(n)} STRING partners are in this cluster; ${int(+cap.dataset.shown)} shown`;
+              },
+              () => {}
+            );
         },
         () => {}
       );

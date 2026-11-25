@@ -1320,26 +1320,27 @@
       n = rec.marks.length,
       win = num(r.window_size),
       sites = num(r.window_sites),
-      q = num(r.window_q),
-      l2 = num(r.window_log2);
+      q = num(r.window_q);
     const wins = (cfg.windows || []).map((w) => [w, num(r['max_' + w])]).filter(([, v]) => v != null);
     const clusters = list(r.clusters)
       .map((c) => c.split(',').map(Number))
       .filter((c) => c.length);
     const sh = (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, +q) : +q);
     const range = `${letter(rec, +r.window_start)}${sh(r.window_start)}–${sh(r.window_end)}`;
-    const html =
-      sub +
+    // one sentence answers "are they bunched?"; spacing, windows, architecture and the sequence picture sit behind a toggle
+    const bunched = win != null && sites != null && q != null,
+      verdict = !bunched
+        ? ''
+        : q > PADJ
+          ? `${esc(gene(p))}’s ${esc(W.marks)} are no more bunched than its ${esc(W.residues)} allow (q ${qf(q)}).`
+          : `${int(sites)} ${esc(W.marks)} within ${int(win)} aa (${esc(range)}), more than the spacing of its ${esc(W.residues)} predicts (q ${qf(q)}).`;
+    const dl =
       '<dl class="pc-dl">' +
       (sp == null
         ? `<dt>Spacing</dt><dd>${n === 1 ? `a single ${esc(W.mark)}` : 'not recorded'}</dd>`
         : `<dt>Closest ` + `/ median spacing</dt><dd>${int(num(r.spacing_min))} aa / ${int(sp)} aa</dd>`) +
       (wins.length
         ? `<dt>Most ${esc(W.marks)} within</dt><dd>${wins.map(([w, v]) => `${w} aa: ${int(v)}`).join(' · ')}</dd>`
-        : '') +
-      (win != null && sites != null
-        ? `<dt>Most significant cluster window <span class="muted small">(lowest q against a null ` +
-          `drawn from its other ${esc(W.residues)}, not necessarily the densest)</span></dt><dd>${int(sites)} sites in ${int(win)} aa (${esc(range)}), log2 obs/null ${l2 > 0 ? '+' : ''}${l2 == null ? '–' : l2.toFixed(2)}, q ${q == null ? '–' : qf(q)}</dd>`
         : '') +
       (r.architecture
         ? `<dt>Architecture</dt><dd>${esc(r.architecture)}${
@@ -1351,8 +1352,7 @@
               : ''
           }</dd>`
         : '') +
-      '</dl>' +
-      (cfg.note ? `` : '');
+      '</dl>';
     const len0 = p.len || (rec.seq || '').length || 1,
       bw =
         win != null && r.window_start
@@ -1372,19 +1372,20 @@
           p.acc
         )
       : '';
+    const html =
+      sub +
+      (verdict ? `<p class="pc-verdict">${verdict}</p>` : '') +
+      `<details class="pc-more"><summary>Spacing and sequence picture</summary>${dl}${pic}</details>`;
     return {
-      pic,
+      pic: '',
       html,
-      sum: [
-        sp != null ? `median spacing ${int(sp)} aa` : '',
-        win != null && sites != null
-          ? `top window ${int(sites)} sites in ${int(win)} aa${
-              q != null ? `, q ${qf(q)}${q > PADJ ? ' (not significant)' : ''}` : ''
-            }`
-          : '',
-      ]
-        .filter(Boolean)
-        .join(' · '),
+      sum: !bunched
+        ? sp != null
+          ? `median spacing ${int(sp)} aa`
+          : ''
+        : q > PADJ
+          ? `not bunched (q ${qf(q)})`
+          : `${int(sites)} within ${int(win)} aa (q ${qf(q)})`,
     };
   }
 
@@ -1406,39 +1407,54 @@
         html: `<p class="muted">No other modification is recorded on ${esc(gene(p))}.</p>`,
         sum: 'none recorded',
       };
-    const kinds0 = [...Object.keys(kinds), ...[...new Set(rs.map((r) => r.kind))].filter((k) => !(k in kinds))];
-    const by = (k) => rs.filter((r) => r.kind === k),
-      closest = (r) => Math.min(...marks.map((m) => Math.abs(m - r.start)));
+    // the counts come from the one function (K.nearIn, kit-cols.js): window and score cut-off are its own and are printed
+    const kinds0 = [...Object.keys(kinds), ...[...new Set(rs.map((r) => r.kind))].filter((k) => !(k in kinds))],
+      cm = ctx
+        ? ctx
+        : kinds0.map((k) => ({
+            id: k,
+            label: word(kinds, k),
+            short: word(kinds, k),
+            pos: [...new Set(rs.filter((r) => r.kind === k).map((r) => r.start))].sort((x, y) => x - y),
+            high: null,
+            cut: '',
+            score: new Map(),
+          })),
+      win = near ? K.D.context_window || near : 0,
+      nm = near && K.nearIn ? K.nearIn(cm, marks, win) : null;
+    const by = (k) => rs.filter((r) => r.kind === k);
     const body = kinds0
       .filter((k) => by(k).length)
       .map((k) => {
-        const all = by(k),
-          nr = near ? all.filter((r) => marks.length && closest(r) <= near).sort((a, b) => a.start - b.start) : [];
+        const kn = nm?.kinds.find((x) => x.id === k),
+          nr = kn ? kn.near : [],
+          n = new Set(by(k).map((r) => r.start)).size,
+          cutNote = kn?.high != null ? ` <span class="muted">(${int(kn.high)} with ${esc(kn.cut)})</span>` : '';
         return {
           k,
           label: word(kinds, k),
-          n: all.length,
+          n,
           near: nr,
           html:
             `<div class="pc-kind"><b>${esc(word(kinds, k))}</b> <span ` +
-            `class="num">${int(all.length)}</span>` +
-            (near
+            `class="num">${int(n)}</span>${cutNote}` +
+            (nm
               ? `<p class="small">${
                   nr.length
-                    ? `${plural(nr.length, 'site')} within ${near} aa of a ${esc(W.mark)}`
-                    : `none within ${near} aa of a ${esc(W.mark)}`
+                    ? `${plural(nr.length, 'site')} within ±${win} aa of a ${esc(W.mark)}${
+                        kn.high != null ? ` (${int(kn.nearHigh)} with ${esc(kn.cut)})` : ''
+                      }`
+                    : `none within ±${win} aa of a ${esc(W.mark)}`
                 }${
                   nr.length
                     ? `: ` +
                       nr
                         .slice(0, 12)
-                        .map((r) => {
-                          const m = marks.reduce((a, b) => (Math.abs(b - r.start) < Math.abs(a - r.start) ? b : a));
-                          return (
+                        .map(
+                          (r) =>
                             `<span class="tag" ` +
-                            `title="${esc(r.source || '')}">${esc(siteName(rec, r.start, p.acc))} · ${esc(siteName(rec, m, p.acc))}</span>`
-                          );
-                        })
+                            `title="${esc(by(k).find((x) => x.start === r.pos)?.source || '')}">${esc(siteName(rec, r.pos, p.acc))} · ${esc(siteName(rec, r.from, p.acc))}</span>`
+                        )
                         .join(' ') +
                       (nr.length > 12 ? ` +${nr.length - 12}` : '')
                     : ''
@@ -1447,7 +1463,6 @@
             '</div>',
         };
       });
-    const nNear = body.reduce((s, b) => s + b.near.length, 0);
     const len1 = p.len || (rec.seq || '').length || 1;
     return {
       pic: K.pfolds
@@ -1467,7 +1482,7 @@
       html: `` + body.map((b) => b.html).join('') + (cfg.note ? `` : ''),
       sum:
         body.map((b) => `${b.label} ${int(b.n)}`).join(' · ') +
-        (near && nNear ? ` · ${int(nNear)} within ${near} aa of a ${W.mark}` : ''),
+        (nm && nm.residues ? ` · ${plural(nm.residues, 'residue')} within ±${win} aa of a ${W.mark}` : ''),
     };
   }
 

@@ -1872,6 +1872,9 @@
           help: r.help || r.title,
           loaded: its != null, // null while the protein's items load: the count is not 0 yet
           total: new Set((its || []).map((x) => x[1])).size,
+          // when a score subset is shown (its row is on), the entry's whole count and the cut-off are printed beside it
+          all: new Set((ownItems(acc, rows[rows.length - 1]) || []).map((x) => x[1])).size,
+          cut: r === rows[rows.length - 1] ? '' : String(r.title || '').replace(/^[^:]*:\s*/, ''),
           pts: (its || [])
             .filter((x) => inView(x[1], x[1]))
             .map((x) => ({ pos: x[1], x, r, tip: () => tipOf(x, false), card: () => tipOf(x, true) })),
@@ -1945,9 +1948,13 @@
       order.forEach((d) => {
         const n = new Set(d.pts.map((q) => q.pos)).size, // marks, not records: two records at one residue are one mark
           off = M.combOff.has(d.id),
-          text = `${d.label} (${d.loaded === false ? '–' : n})`,
+          // the count is the protein's, as the Other modifications section counts it; the zoom only changes the hover's "in view"
+          shownN = d.total,
+          text = `${d.label} (${d.loaded === false ? '–' : d.cut ? `${shownN} of ${d.all}, ${d.cut}` : shownN})`,
           what =
-            d.loaded === false ? 'still loading' : `${n} in view${d.total > n ? ` of ${d.total} in the protein` : ''}`,
+            d.loaded === false
+              ? 'still loading'
+              : `${shownN} in the protein${d.cut ? ` with ${d.cut} (${d.all} in all)` : ''}${n < shownN ? `; ${n} in view` : ''}`,
           w = 14 + K.tw(text, 9.5) * SL;
         if (lx > X0 && lx + w > X1) {
           lx = X0;
@@ -3565,56 +3572,65 @@
       );
     return rows.concat(tracks).join('');
   });
-  // the context marks within win residues of a position (either side, the position itself left out), nearest first:
-  // [{mark, res, pos, dist, score}]. A score is read from the subset row's label (the number it ends with)
-  function nearby(acc, pos, win) {
-    const its = itemsOf(acc);
-    if (!its) return [];
-    const out = [];
-    CTX_IDS.forEach((id) => {
-      const rows = CTX_ROWS.filter((r) => r.context_mark === id),
-        full = rows[rows.length - 1],
-        scores = new Map();
-      rows.slice(0, -1).forEach((r) => {
-        const k = ROW_INDEX.indexOf(r.id);
-        its
-          .filter((x) => x[0] === k)
-          .forEach((x) => {
-            const m = String(x[4] || '').match(/(-?\d*\.?\d+)\s*$/);
-            if (m) scores.set(x[1], m[1]);
-          });
-      });
-      const k = ROW_INDEX.indexOf(full.id);
-      its
-        .filter((x) => x[0] === k && x[1] !== pos && Math.abs(x[1] - pos) <= win)
-        .forEach((x) =>
-          out.push({
-            mark: full.title,
-            res: K.prot?.siteLabel ? K.prot.siteLabel(acc, x[1]) : String(x[1]),
-            pos: x[1],
-            dist: x[1] - pos,
-            score: scores.get(x[1]) ?? null,
-          })
-        );
-    });
-    return out.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist) || a.dist - b.dist);
-  }
-  // the protein's context marks, from the same items as the map's legend: [{id, label, short, pos: [positions]}], one
-  // entry for each mark the protein has, or null while the map's items load
+  // ---- the one count of other modifications --------------------------------------------------------------------------
+  // Every place that says how many other modifications a protein has, or how many lie near its marks, reads these two
+  // functions: the map's legend, the Other modifications section, the hover and card lists, the Sites table. One window
+  // (website.context_window, as the run's "Other marks nearby" column reads it), the residue itself left out, a residue
+  // counted once for each kind of modification on it; a score cut-off (the entry's subset, "score ≥ 0.5") is a count of
+  // its own, printed with its cut-off, never mixed into the count of every site.
+  const ctxWindow = K.nearWindow; // the one window (kit-cols.js)
+  // the protein's context marks, from the same items as the map's legend, or null while the map's items load:
+  // [{id, label, short, pos: every position of the entry's table, high: the positions inside its score subset (null
+  // without one), cut: the subset's cut-off as words, score: position -> score of the subset's items}]
   function contextMarks(acc) {
     const its = itemsOf(acc);
     if (!its) return null;
     return CTX_IDS.map((id) => {
       const rows = CTX_ROWS.filter((r) => r.context_mark === id),
         full = rows[rows.length - 1],
-        k = ROW_INDEX.indexOf(full.id);
+        at = (r) => its.filter((x) => x[0] === ROW_INDEX.indexOf(r.id)),
+        score = new Map(),
+        sub = rows.slice(0, -1);
+      sub.forEach((r) =>
+        at(r).forEach((x) => {
+          const m = String(x[4] || '').match(/(-?\d*\.?\d+)\s*$/);
+          if (m) score.set(x[1], m[1]);
+        })
+      );
+      const uniq = (xs) => [...new Set(xs.map((x) => x[1]))].sort((p, q) => p - q);
       return {
         id,
         label: full.title,
         short: full.short || full.title,
-        pos: [...new Set(its.filter((x) => x[0] === k).map((x) => x[1]))].sort((a, b) => a - b),
+        pos: uniq(at(full)),
+        high: sub.length ? uniq(sub.flatMap(at)) : null,
+        cut: sub.length ? String(sub[0].title || '').replace(/^[^:]*:\s*/, '') : '',
+        score,
       };
     }).filter((c) => c.pos.length);
+  }
+  // the context marks within `win` residues of any of `from` (either side, a residue itself left out), by kind:
+  // { win, kinds: [{id, label, short, cut, n, high, near: [{pos, dist, from}], nearHigh}], residues: distinct positions
+  // near in all kinds }; dist is mark minus residue, taken to the nearest of `from`; null while the items load
+  function nearMarks(acc, from, win = ctxWindow()) {
+    const cm = contextMarks(acc);
+    return cm ? K.nearIn(cm, from, win) : null;
+  }
+  // the context marks within win residues of a position, nearest first: [{mark, res, pos, dist, score}] (the hover's and card's list)
+  function nearby(acc, pos, win = ctxWindow()) {
+    const nm = nearMarks(acc, [pos], win);
+    if (!nm) return [];
+    return nm.kinds
+      .flatMap((k) =>
+        k.near.map((x) => ({
+          mark: k.label,
+          res: K.prot?.siteLabel ? K.prot.siteLabel(acc, x.pos) : String(x.pos),
+          pos: x.pos,
+          dist: x.dist,
+          score: k.score.get(x.pos) ?? null,
+        }))
+      )
+      .sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist) || a.dist - b.dist);
   }
   // on a touch screen the first tap on a mark shows its hover, a second tap on the same mark opens its detail
   {
@@ -3780,6 +3796,8 @@
     exportOpts,
     cross: (pos) => M.cross?.(pos),
     nearby,
+    nearMarks,
+    ctxWindow,
     contextMarks,
     ctxIds: () => CTX_IDS.slice(),
     namedChanges,
