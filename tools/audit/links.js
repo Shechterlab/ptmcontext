@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Broken-link tracking for a built site: links and controls inside the page's cards and boxes that lead nowhere or do nothing.
-   node tools/audit/links.js <base-url> [--yeast <url>] [--external] [--max N] [--workers N] [--no-selection] [--only "#overview,#help"] [--verbose] [--out report.json]
-     [--budget MINUTES] [--page-minutes MINUTES] [--later-links N]
+   node tools/audit/links.js <base-url> [--yeast <url>] [--external] [--max N] [--concurrency N] [--no-selection] [--only "#overview,#help"] [--verbose] [--out report.json]
+     [--budget MINUTES] [--page-seconds S] [--later-links N] [--page-links N] [--simple] [--cache file]
    Visits the Overview and every question page, Proteins, Sites, Disordered regions, Interactions and its question pages, All tests, Methods
    & data, Help, and protein pages (two of the site's own example proteins and, with --yeast, one yeast protein), each without and with a selection (the
    first example search the page offers). On each page:
@@ -10,12 +10,20 @@
      controls         buttons, summaries and clickable [data-*] boxes (cursor: pointer) inside #view: each is clicked after a reload, and
                       must change the page (the DOM or the address), fire a download or a popup, open a dialog, print or copy. Up to
                       --max per page (default 8; with a selection half of that); a control that does nothing is dead.
-     external links   with --external, each a[href^=http] is fetched once (HEAD, then GET): 4xx and 5xx are broken (429 and a bot check such as Cloudflare's
-                      are unverified); a network failure or timeout is unverified, listed apart and never fails the run.
-   --budget: no new page is started after that many minutes; the pages not visited are listed in the report (skipped) and
-   named in the summary, and what was checked still counts. --verbose prints each page and each break as it is found; a
+     external links   with --external, each a[href^=http] is checked once for the whole run by tools/audit/external.js (deduped, HEAD then
+                      GET, a short timeout, a few requests per host, known-good answers cached 24 h in --cache): 4xx and 5xx are broken; 429,
+                      a bot check, a 403 from a bot-blocking host and a network failure are unverified, listed apart and never fail the run.
+                      The report always lists them (externalUrls), so tools/audit/all.js can check them once for several runs.
+   --simple: for a page that is not an explorer (the landing page, Compare): the one page is visited, its anchors are checked (ids, and
+             same-site addresses fetched), its controls clicked.
+   --concurrency: pages checked at once, each in its own browser context (default 4; --workers is the old name).
+   --budget: minutes for the whole run of one explorer (default 12): no new page is started after that; the pages not visited are listed
+   in the report (skipped) and named in the summary, and what was checked still counts. --verbose prints each page and each break as it is found; a
    SIGTERM or SIGINT (a job's time limit) writes the report of what was checked so far.
-   --page-minutes: a page still being checked after that many minutes (default 10) is stopped and listed as not finished.
+   --page-seconds: a page still being checked after that many seconds (default 60) is stopped and listed as not finished, with how many
+   of its links and controls were reached.
+   --page-links: a page with more internal links than this (default 80) has the ones not yet seen on an earlier page checked up to that
+   many, evenly spread; the rest are counted in the report (sampled). Links and controls share the page's time: links stop at half of it.
    --later-links: a protein page draws its long sections only when they are opened; the check opens them all and checks their
    external links and up to that many of their new internal links, evenly spread (default 150).
    Exit 1 when an internal link is broken, a control is dead, a page throws, or (with --external) an external link answers 4xx/5xx.
@@ -37,7 +45,7 @@ const opt = (k) => {
 };
 const flag = (k) => args.includes('--' + k);
 const MAX = +(opt('max') || 8);
-const WORKERS = +(opt('workers') || 3);
+const WORKERS = +(opt('concurrency') || opt('workers') || 4);
 const yeast = opt('yeast');
 const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
 const norm = (u) => u.replace(/\/?(index\.html)?(#.*)?$/, '/index.html');
@@ -47,14 +55,19 @@ const report = {
   broken: [],
   dead: [],
   errors: [],
+  sampled: [], // pages with more new internal links than --page-links: how many were checked
   skipped: [], // pages not visited: the --budget ran out
   external: { ok: 0, broken: [], unverified: [] },
+  externalUrls: [], // every external address seen: {url, where, text}
   checked: { pages: 0, links: 0, controls: 0 },
 };
 const externals = new Map(); // url -> first page it was seen on
-const T0 = Date.now();
-const BUDGET = opt('budget') ? +opt('budget') * 60000 : Infinity;
-const PAGE_LIMIT = +(opt('page-minutes') || 10) * 60000; // one page's longest visit
+const siteUrls = new Map(); // --simple: same-site addresses (a page of the site, a file) to fetch
+const SIMPLE = flag('simple');
+let T0 = Date.now(); // restarted for each explorer: the budget is per explorer
+const BUDGET = +(opt('budget') || 12) * 60000;
+const PAGE_LIMIT = +(opt('page-seconds') || 60) * 1000; // one page's longest visit
+const PAGE_LINKS = +(opt('page-links') || 80); // internal links tried on one page
 const LATER_LINKS = +(opt('later-links') || 150); // internal links checked in the sections a page draws when opened
 // a break, kept for the report and, with --verbose, printed as it is found
 const note = (list, item) => {
@@ -84,15 +97,16 @@ async function open(pg, url) {
   await pg.goto('about:blank'); // a new document each time: a hash-only change would keep the state of the last click
   await pg.goto(url, { waitUntil: 'load' });
   await pg
-    .waitForFunction(() => (document.getElementById('view')?.innerText || '').length > 30, null, { timeout: 20000 })
+    .waitForFunction(() => ((document.getElementById('view') || document.body).innerText || '').length > 30, null, {
+      timeout: 20000,
+    })
     .catch(() => {});
   await settle(pg);
 }
 
 // the controls of the page worth a click: outermost, visible, enabled
 const CONTROLS = () => {
-  const root = document.getElementById('view');
-  if (!root) return [];
+  const root = document.getElementById('view') || document.body;
   const out = [];
   const seen = new Set();
   root.querySelectorAll('*').forEach((el) => {
@@ -147,13 +161,20 @@ async function checkHash(pg, url, href, state) {
   const res = { href, ok: true, why: '' };
   state.hashes.set(mode + key, res);
   if (href === '#' || href === '') return Object.assign(res, { ok: false, why: 'an empty link (#)' });
+  if (SIMPLE) {
+    // a page without views: the address must name an element
+    const id = decodeURIComponent(key.replace(/^#/, ''));
+    if (!(await pg.evaluate((i) => !!document.getElementById(i) || !!document.getElementsByName(i).length, id)))
+      Object.assign(res, { ok: false, why: 'no element with this id' });
+    return res;
+  }
   if (/[{}]|%7B/i.test(href)) return res; // a template, not a link
   const seg = key.replace(/^#/, '').split('/')[0];
   const errs = [];
   const onerr = (e) => errs.push(String(e.message).slice(0, 120));
   pg.on('pageerror', onerr);
   await pg.evaluate((h) => (location.hash = h), href);
-  await pg.waitForTimeout(600);
+  await pg.waitForTimeout(350);
   const got = await pg.evaluate(
     ([key, seg]) => ({
       hash: location.hash.split('?')[0],
@@ -186,7 +207,7 @@ async function checkHash(pg, url, href, state) {
   return res;
 }
 
-async function visit(ctx, site, label, url, sel, state, out) {
+async function visit(ctx, site, label, url, sel, state, out, prog = {}) {
   const pg = await ctx.newPage();
   const errs = [];
   pg.on('pageerror', (e) => errs.push(String(e.message).slice(0, 140)));
@@ -197,7 +218,7 @@ async function visit(ctx, site, label, url, sel, state, out) {
   pg.on('dialog', (d) => (state.dialogs++, d.dismiss().catch(() => {})));
   await pg.addInitScript(INIT);
   const full = url + (sel ? (url.includes('?') ? '&' : '?') + 'q=' + encodeURIComponent(sel) : '');
-  const where = `${site} ${label}${sel ? ' [selection]' : ''}`;
+  const where = `${site} ${label || '(page)'}${sel ? ' [selection]' : ''}`;
   await open(pg, full);
   out.checked.pages++;
   if (errs.length) note('errors', { where, why: errs[0] });
@@ -224,18 +245,36 @@ async function visit(ctx, site, label, url, sel, state, out) {
     anchors.push(...ext, ...hash.filter((_, k) => k % step === 0));
     await open(pg, full); // the links and controls are tried from the page as it loads, its long sections closed
   }
+  {
+    // the internal links not yet checked on this site, evenly spread down to PAGE_LINKS; the rest are listed as sampled
+    const mode = /[?&]q=/.test(full) ? 'selection ' : '';
+    const fresh = (a) => /^#/.test(a.href) && !state.hashes.has(mode + a.href.split('?')[0]);
+    const nf = anchors.filter(fresh);
+    if (nf.length > PAGE_LINKS) {
+      const step = nf.length / PAGE_LINKS;
+      const keep = new Set(Array.from({ length: PAGE_LINKS }, (_, k) => nf[Math.floor(k * step)]));
+      const rest = anchors.filter((a) => !fresh(a) || keep.has(a));
+      out.sampled.push(`${where}: ${rest.length} of ${anchors.length} links`);
+      anchors.splice(0, anchors.length, ...rest);
+    }
+  }
+  prog.links = [0, anchors.length];
+  const tLinks = Date.now() + PAGE_LIMIT / 2;
   for (const a of anchors) {
+    if (/^#/.test(a.href) && Date.now() > tLinks) continue; // the controls get the rest of the page's time
     out.checked.links++;
+    prog.links[0]++;
     if (/^#/.test(a.href)) {
       const r = await checkHash(pg, full, a.href, state);
       if (!r.ok && !state.reported.has(a.href + '|' + r.why)) {
         state.reported.add(a.href + '|' + r.why);
         note('broken', { where, href: a.href, text: a.text, why: r.why });
       }
-      await pg.evaluate((h) => (location.hash = h), new URL(full).hash);
-      await pg.waitForTimeout(300);
     } else if (/^https?:/i.test(a.href)) {
       if (!externals.has(a.href)) externals.set(a.href, { where, text: a.text });
+    } else if (SIMPLE && !/^(mailto:|tel:|javascript:)/i.test(a.href)) {
+      const u = new URL(a.href, full).href.replace(/#.*/, '');
+      if (u.startsWith(new URL(full).origin) && !siteUrls.has(u)) siteUrls.set(u, { where, text: a.text });
     } else if (/^(mailto:|tel:)/i.test(a.href)) {
       /* not checked */
     } else if (/^javascript:/i.test(a.href))
@@ -251,8 +290,10 @@ async function visit(ctx, site, label, url, sel, state, out) {
     ...(body.length <= max ? body : body.filter((_, k) => k % Math.ceil(body.length / max) === 0).slice(0, max)),
     ...items,
   ];
+  prog.controls = [0, pick.length];
   for (const c of pick) {
     out.checked.controls++;
+    prog.controls[0]++;
     await open(pg, full);
     await pg.evaluate(CONTROLS);
     const loc = pg.locator(`[data-lk="${c.i}"]`).first();
@@ -322,6 +363,8 @@ async function discover(ctx, root) {
 }
 
 async function runSite(browser, name, root, isYeast) {
+  T0 = Date.now();
+  if (SIMPLE) return runSimple(browser, name, root);
   const ctx0 = await browser.newContext({
     viewport: { width: 1440, height: 1000 },
     permissions: ['clipboard-read', 'clipboard-write'],
@@ -351,6 +394,33 @@ async function runSite(browser, name, root, isYeast) {
       }
     await ctx.close();
   }
+  await runJobs(browser, name, root, jobs, state);
+}
+
+// a page without views (the landing page, Compare): visited once; its same-site addresses are fetched
+async function runSimple(browser, name, root) {
+  report.sites.push({ site: name, url: root, pages: 1, proteins: [], selection: '' });
+  const state = { hashes: new Map(), roots: new Map(), reported: new Set(), dialogs: 0 };
+  await runJobs(browser, name, root, [['', '']], state);
+  const rc = await request.newContext(proxy ? { proxy: { server: proxy } } : {});
+  for (const [u, src] of siteUrls) {
+    report.checked.links++;
+    let st = null;
+    for (const m of ['head', 'get']) {
+      st = await rc[m](u, { timeout: 15000 }).then(
+        (r) => r.status(),
+        () => null
+      );
+      if (st != null && st < 400) break;
+    }
+    if (st == null || st >= 400)
+      note('broken', { where: src.where, href: u, text: src.text, why: st ? `HTTP ${st}` : 'no answer' });
+  }
+  await rc.dispose();
+}
+
+// the jobs [view, selection] of one site, WORKERS at a time, each worker in its own browser context
+async function runJobs(browser, name, root, jobs, state) {
   let next = 0;
   const newCtx = () =>
     browser.newContext({
@@ -364,20 +434,25 @@ async function runSite(browser, name, root, isYeast) {
       const k = next++;
       if (k >= jobs.length) break;
       const [h, sel] = jobs[k];
+      const tag = `${name} ${h || '(page)'}${sel ? ' [selection]' : ''}`;
       if (Date.now() - T0 > BUDGET) {
-        report.skipped.push(`${name} ${h}${sel ? ' [selection]' : ''}`);
+        report.skipped.push(`${tag} (the ${BUDGET / 60000} minute budget was used up)`);
         continue;
       }
-      if (flag('verbose')) console.error(`[${k + 1}/${jobs.length}] ${name} ${h}${sel ? ' [selection]' : ''}`);
+      if (flag('verbose')) console.error(`[${k + 1}/${jobs.length}] ${tag}`);
       let timer;
       const slow = new Promise((resolve) => (timer = setTimeout(() => resolve('slow'), PAGE_LIMIT)));
+      const prog = {};
       try {
-        const r = await Promise.race([visit(ctx, name, h, root + h, sel, state, report), slow]);
+        const run = visit(ctx, name, h, root + h, sel, state, report, prog);
+        run.catch(() => {}); // when the page is given up its context is closed under it
+        const r = await Promise.race([run, slow]);
         if (r === 'slow') {
           // one page over its limit (a very large protein page with thousands of links): listed as not finished, and the
           // worker goes on with a fresh browser context instead of holding up the rest
+          const at = (p) => (p ? `${p[0]} of ${p[1]}` : 'none');
           report.skipped.push(
-            `${name} ${h}${sel ? ' [selection]' : ''} (stopped after ${opt('page-minutes') || 10} minutes)`
+            `${tag} (stopped after ${PAGE_LIMIT / 1000} s; reached links ${at(prog.links)}, controls ${at(prog.controls)})`
           );
           await ctx.close().catch(() => {});
           ctx = await newCtx();
@@ -391,52 +466,6 @@ async function runSite(browser, name, root, isYeast) {
     await ctx.close();
   };
   await Promise.all(Array.from({ length: WORKERS }, worker));
-}
-
-async function checkExternal() {
-  const rc = await request.newContext(proxy ? { proxy: { server: proxy } } : {});
-  const list = [...externals.entries()];
-  let next = 0;
-  const one = async () => {
-    for (;;) {
-      const k = next++;
-      if (k >= list.length) break;
-      const [url, src] = list[k];
-      if (/[{}]|%7B/i.test(url)) continue;
-      let status = null;
-      let err = '';
-      let challenge = false; // a bot check (Cloudflare), not an answer about the page
-      for (const method of ['head', 'get']) {
-        try {
-          const r = await rc[method](url, {
-            timeout: 20000,
-            maxRedirects: 5,
-            headers: { 'user-agent': 'Mozilla/5.0 (link audit)' },
-          });
-          status = r.status();
-          challenge = !!r.headers()['cf-mitigated'];
-          if (status < 400 || method === 'get') break;
-        } catch (e) {
-          err = String(e.message).split('\n')[0].slice(0, 100);
-          status = null;
-        }
-      }
-      if (status != null && status < 400) report.external.ok++;
-      else if (status != null && status !== 429 && !challenge) report.external.broken.push({ url, status, ...src });
-      else
-        report.external.unverified.push({
-          url,
-          why: challenge
-            ? `HTTP ${status} (bot check)`
-            : status === 429
-              ? 'HTTP 429 (rate-limited)'
-              : err || 'no answer',
-          ...src,
-        });
-    }
-  };
-  await Promise.all(Array.from({ length: 6 }, one));
-  await rc.dispose();
 }
 
 function finish(note) {
@@ -458,14 +487,18 @@ function finish(note) {
     `${report.checked.pages} pages, ${report.checked.links} links, ${report.checked.controls} controls; ` +
       `${report.broken.length} broken, ${report.dead.length} dead, ${report.errors.length} errors` +
       (flag('external')
-        ? `; external ${report.external.ok} ok, ${report.external.broken.length} broken, ${report.external.unverified.length} unverified`
+        ? `; external ${report.external.ok} ok (${report.external.cached} cached), ${report.external.broken.length} broken, ${report.external.unverified.length} unverified`
         : '')
   );
   if (L.length) console.error(L.join('\n'));
   if (note) console.error(note);
+  if (report.sampled.length)
+    console.error(
+      `${report.sampled.length} pages had more new links than --page-links ${PAGE_LINKS}: ${report.sampled.join('; ')}`
+    );
   if (report.skipped.length)
     console.error(
-      `${report.skipped.length} pages not visited (--budget ${opt('budget')} minutes): ${report.skipped.join(', ')}`
+      `${report.skipped.length} pages not visited or not finished (--budget ${BUDGET / 60000} minutes, --page-seconds ${PAGE_LIMIT / 1000}): ${report.skipped.join('; ')}`
     );
   return fail;
 }
@@ -481,7 +514,9 @@ function finish(note) {
   await runSite(browser, 'main', norm(base), false);
   if (yeast) await runSite(browser, 'yeast', norm(yeast), true);
   await browser.close();
-  if (flag('external')) await checkExternal();
+  report.externalUrls = [...externals].map(([url, src]) => ({ url, ...src }));
+  if (flag('external'))
+    Object.assign(report.external, await require('./external.js').checkExternal(externals, { cache: opt('cache') }));
   const fail = finish();
   process.exit(fail ? 1 : 0);
 })();
