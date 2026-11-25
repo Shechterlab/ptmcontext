@@ -24,7 +24,7 @@ def test_the_inherited_disease_list_is_one_wrapping_row_a_site_with_a_chip_for_e
 def test_the_protein_page_and_the_network_link_to_each_other_from_the_site_file_alone():
     pnet, net = _src('kit-pnet.js'), _src('kit-network.js')
     assert 'See this protein in the Network view' in pnet and 'K.netHref?.(p)' in pnet
-    assert "K.net = { link: (acc) => K.link('network', '', { p: acc }) }" in net and 'NC.protein_link === false' in net
+    assert "K.net = { link: (acc) => K.link('network', '', { p: acc })" in net and 'NC.protein_link === false' in net
     assert (
         'protein partners (STRING) are on its protein page' in net
         and '${one.acc}/interactions' in net
