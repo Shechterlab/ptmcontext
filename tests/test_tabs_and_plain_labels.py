@@ -71,7 +71,7 @@ def test_jargon_has_a_plain_label_and_a_help_entry():
     for term in (
         'Moderately charged, mixed',
         'Strongly charged, balanced',
-        'Seen/expected',
+        'Observed/expected',
         'Likely interface',
         'RNA-contact',
     ):

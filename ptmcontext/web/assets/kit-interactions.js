@@ -2167,7 +2167,11 @@
             phrase = K.card.contact.phrase(x.best, kinds);
           return (
             `<tr title="${esc(phrase)}"><td>${protLink(x.p)}</td><td>${siteOnlyLink(x.p, x.pos)}</td>` +
-            `<td>${esc(contactType(b, x))}</td><td class="num">${x.best.dist.toFixed(1)}</td>` +
+            `<td>${esc(contactType(b, x))}</td><td class="num">${x.best.dist.toFixed(1)}${
+              K.card.contact.clash(x.best)
+                ? ` <span class="tag t-flag" title="${esc(K.card.contact.clashTip)}">${esc(K.card.contact.clashWord)}</span>`
+                : ''
+            }</td>` +
             `<td><a class="mono" href="https://www.ebi.ac.uk/pdbe/entry/pdb/${encodeURIComponent(id.toLowerCase())}" title="PDBe entry ${esc(id)}">PDB ${esc(id.toUpperCase())}</a>` +
             (three
               ? ` <button type="button" class="linkish small" data-entry3d="${esc(id)}" data-acc="${esc(acc)}" data-pos="${x.pos}">Show in 3D at site</button>`
@@ -2476,11 +2480,15 @@
             : t.key === 'protein'
               ? new Set(rs.map((r) => r[0])).size
               : rs.length;
-        const lab =
-          (b.columns || []).filter((c) => c !== 'accession')[1] || (b.columns || []).find((c) => c !== 'accession');
-        const groups = b.group_by
+        // counted by the table's grouping, or by its chips when they are few (curated and predicted complexes, say)
+        const by =
+          b.group_by ||
+          (b.chips && colIdx(t, b.chips) >= 0 && new Set(rs.map((r) => r[colIdx(t, b.chips)])).size <= 4
+            ? b.chips
+            : '');
+        const groups = by
           ? (() => {
-              const j = colIdx(t, b.group_by),
+              const j = colIdx(t, by),
                 g = {};
               rs.forEach((r) => {
                 const k = r[j];
@@ -2490,7 +2498,7 @@
               const rolled = new Map(); // a rollup counts the sites of its groups together
               Object.entries(g).forEach(([k, v]) => {
                 const roll = (b.rollup || []).find((x) => (x.values || []).includes(k)),
-                  key = roll ? roll.label : ((colMeta(t, b.group_by).values || {})[k] ?? k);
+                  key = roll ? roll.label : ((colMeta(t, by).values || {})[k] ?? k);
                 const set = rolled.get(key) || new Set();
                 v.forEach((x) => set.add(x));
                 rolled.set(key, set);
@@ -2500,13 +2508,7 @@
           : '';
         return `<p class="ix-big"><b>${int(n)}</b> <span>${esc(
           sec.sub || (t.key === 'residue' ? W.marks : t.key === 'protein' ? 'proteins' : 'rows')
-        )}</span></p>${
-          groups
-            ? `<p class="small">${groups}</p>`
-            : rs.length && lab && String(cellText(t, rs[0], lab) ?? '').trim()
-              ? `<p class="tfoot">` + `Top: ${esc(cellText(t, rs[0], lab))}</p>`
-              : ''
-        }`;
+        )}</span></p>${groups ? `<p class="small">${groups}</p>` : ''}`;
       }
       case 'bars': {
         const gs = barsData(b);
@@ -2615,7 +2617,7 @@
         d.length ? range(d) : 'n.s.',
         d.length && d.every((r) => dirOf(r) === 'more') ? 'more' : d.length ? 'less' : 'ns',
         d.length
-          ? `${rs.length > 1 ? `${int(d.length)} of ${int(rs.length)} tests differ · ` : ''}q ${d.length > 1 ? '≤ ' : ''}${fq(qmax)}`
+          ? `${rs.length > 1 ? `${int(d.length)} of ${int(rs.length)} tests differ · ` : ''}q ${d.length > 1 && !fq(qmax).startsWith('<') ? '≤ ' : ''}${fq(qmax)}`
           : `${rs.length > 1 ? `none of ${int(rs.length)} tests differ` : 'q'}${rs.length > 1 ? '' : ' ' + fq(rs[0]?.q)}`,
       ];
     }
@@ -3051,8 +3053,9 @@
         })()
       : '';
     const fs = ready() && ov.findings ? findingsList(pg, 3) : '';
+    // a tile with no tests of its own (rows: []) points at the page, where its findings are drawn from the same rows
     return (
-      `<article class="tile ix-tile" data-ix-tile="${esc(K.link(pg.id, 'overview'))}" tabindex="0"><header>` +
+      `<article class="tile ix-tile" data-ix-tile="${esc(ov.rows.length ? K.link(pg.id, 'overview') : K.link(pg.id))}" tabindex="0"><header>` +
       `<h3>${esc(ov.title || pg.tab)}</h3><span class="chev" aria-hidden="true">›</span></header>${bar}${forest}${
         fs ? `<div class="ix-tile-findings">${fs}</div>` : ''
       }<p class="tfoot">` +

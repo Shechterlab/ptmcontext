@@ -538,12 +538,12 @@
     const s = K.prop?.sources.find((q) => q.card === x.id);
     if (!s) return { html: '', wait: false };
     const v = propOf(p.acc);
-    if (v === undefined) return { html: K.loading('Loading seen/expected…'), wait: true };
+    if (v === undefined) return { html: K.loading('Loading observed/expected…'), wait: true };
     if (v === null || !v[s.id]) return { html: '', wait: false };
     return {
       wait: false,
       html:
-        `<h5 class="pr-h">${esc(s.label)}: changes along the protein, with seen/expected</h5>` +
+        `<h5 class="pr-h">${esc(s.label)}: changes along the protein, with observed/expected</h5>` +
         K.prop.lollipop({
           acc: p.acc,
           id: s.id,

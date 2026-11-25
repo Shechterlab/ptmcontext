@@ -1126,7 +1126,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: rna_crosslink, inside: rna_crosslinks, proteins_with: rna_crosslinks, label: RNA-crosslinked residue}
       - {category: rna_crosslink_single_residue, inside: rna_crosslinks_single, proteins_with: rna_crosslinks_single, label: "RNA crosslink, one residue"}
       - {category: rna_crosslink_within_3, inside: rna_crosslinks, within: 3, proteins_with: rna_crosslinks, label: "≤3 aa from an RNA crosslink"}
-      - {category: rbdmap_fragment, inside: rbdmap_fragments, proteins_with: rbdmap_fragments, label: RNA-bound fragment (RBDmap)}
+      - {category: rbdmap_fragment, inside: rbdmap_fragments, proteins_with: rbdmap_fragments, label: "RBDmap fragment, among all arginines of proteins with one"}
       - {category: dna_crosslink, inside: dna_crosslinks, proteins_with: dna_crosslinks, label: DNA-crosslinked residue}
       - {category: dna_crosslink_or_candidate, inside: dna_crosslink_candidates, proteins_with: dna_crosslink_candidates, label: DNA crosslink or candidate}
       - {category: dna_crosslinked_peptide, inside: dna_crosslinked_peptides, proteins_with: dna_crosslinked_peptides, label: DNA-crosslinked peptide}
@@ -1134,20 +1134,20 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: rna_crosslink_outside_rg, inside: rna_crosslinks, proteins_with: rna_crosslinks, unless: &rg {any: [{at: 1, in: G}, {at: -1, in: G}]}, label: "RNA crosslink, outside RG/GR"}
       - {category: rbdmap_fragment_outside_rg, inside: rbdmap_fragments, proteins_with: rbdmap_fragments, unless: *rg, label: "RBDmap fragment, outside RG/GR"}
       - {category: capri_xl_peptide, inside: capri_xl, proteins_with: capri_xl, label: RNA-crosslinked peptide (CAPRI)}
-      - {category: capri_adj_peptide, inside: capri_adj, proteins_with: capri_adj, label: CAPRI adjacent peptide}
+      - {category: capri_adj_peptide, inside: capri_adj, proteins_with: capri_adj, label: "CAPRI adjacent peptide, among all arginines of proteins with one"}
       - {category: capri_xl_peptide_outside_rg, inside: capri_xl, proteins_with: capri_xl, unless: *rg, label: "RNA-crosslinked peptide (CAPRI), outside RG/GR"}
       - {category: capri_adj_peptide_outside_rg, inside: capri_adj, proteins_with: capri_adj, unless: *rg, label: "CAPRI adjacent peptide, outside RG/GR"}
       - {category: pclap_lysc_region, inside: pclap_lysc_regions, proteins_with: pclap_lysc_regions, label: pCLAP RNA-binding region}
       - {category: pclap_lysc_region_outside_rg, inside: pclap_lysc_regions, proteins_with: pclap_lysc_regions, unless: *rg, label: "pCLAP region, outside RG/GR"}
-      - {category: pclap_peptide, inside: pclap_peptides, proteins_with: pclap_peptides, label: pCLAP RNA-binding peptide}
-      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RNA-contact residue (RBR-ID)}
+      - {category: pclap_peptide, inside: pclap_peptides, proteins_with: pclap_peptides, label: "pCLAP peptide, among all arginines of proteins with one"}
+      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: "RNA-contact residue (RBR-ID), among all arginines of proteins with one"}
       - {category: rbrid_residue_outside_rg, inside: rbrid_residues, proteins_with: rbrid_residues, unless: *rg, label: "RNA-contact residue (RBR-ID), outside RG/GR"}
       - {category: rbrid_residue_published_rule, inside: rbrid_residues_published_rule, proteins_with: rbrid_residues_published_rule, label: "RNA-contact residue (RBR-ID), published rule"}
-      - {category: rbrid_region, inside: rbrid_regions, proteins_with: rbrid_regions, label: RBR-ID region}
-      - {category: pclap_peptide_among_measured, inside: pclap_peptides, proteins_with: pclap_peptides, covered_by: pclap_measured, label: "pCLAP peptide, among measured"}
-      - {category: capri_adj_peptide_among_measured, inside: capri_measured_adjacent, proteins_with: capri_measured_adjacent, covered_by: capri_measured, label: "CAPRI adjacent peptide, among measured"}
-      - {category: rbdmap_peptide_among_measured, inside: rbdmap_measured_bound, proteins_with: rbdmap_measured_bound, covered_by: rbdmap_measured, label: "RBDmap peptide, among measured"}
-      - {category: rbrid_residue_among_measured, inside: rbrid_residues, proteins_with: rbrid_residues, covered_by: rbrid_quantified, label: "RNA-contact residue (RBR-ID), among measured"}
+      - {category: rbrid_region, inside: rbrid_regions, proteins_with: rbrid_regions, label: RNA-contact region (RBR-ID)}
+      - {category: pclap_peptide_among_measured, inside: pclap_peptides, proteins_with: pclap_peptides, covered_by: pclap_measured, label: "pCLAP peptide, among arginines pCLAP measured"}
+      - {category: capri_adj_peptide_among_measured, inside: capri_measured_adjacent, proteins_with: capri_measured_adjacent, covered_by: capri_measured, label: "CAPRI adjacent peptide, among arginines CAPRI measured"}
+      - {category: rbdmap_peptide_among_measured, inside: rbdmap_measured_bound, proteins_with: rbdmap_measured_bound, covered_by: rbdmap_measured, label: "RBDmap peptide, among arginines RBDmap measured"}
+      - {category: rbrid_residue_among_measured, inside: rbrid_residues, proteins_with: rbrid_residues, covered_by: rbrid_quantified, label: "RNA-contact residue (RBR-ID), among arginines RBR-ID measured"}
   - id: sequence_proximity
     title: Distance along the chain to RNA evidence
     question: "Are methylarginines near RNA-crosslinked residues along the sequence?"
@@ -3340,18 +3340,18 @@ website:                  # the look and words of the website (ptmc web); layout
         lead: experimental
         checker: [interaction, evidence, nucleic_acid, partner_class]
         findings:          # the explorer's four, each said with its direction, significant or not (the first three on the tile)
-          - {lead: In living cells, section: ixs-cells, rows: [{analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue, phrase: the residue crosslinked to RNA}]}
+          - {lead: In living cells, section: ixs-cells, rows: [{analysis: crosslink, category: rna_crosslink, phrase: the residue crosslinked to RNA}]}
           - {lead: In PDB structures, section: ixs-pdb, rows: [{analysis: pdb_interface, category: rna, label: RNA interface, phrase: at RNA interfaces},
                                                                {analysis: pdb_interface, category: protein, label: Protein interface, phrase: at protein interfaces}]}
           - {lead: In predicted complexes, section: ixs-predicted, rows: [{analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, phrase: "at the interface (AlphaFold-Multimer models, pDockQ ≥ 0.23)"}]}
           - {share: {table: string, of: partner_accession, flag: partner_marked}, label: "of the physical partners of methylated proteins (STRING ≥ 0.7) are themselves methylated (22% of human proteins)", section: ixs-partners}
         rows:
-          - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue, group: In living cells, phrase: the residue crosslinked to RNA}
-          - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: "CAPRI peptide (measured)", group: In living cells, phrase: inside a CAPRI RNA-bound peptide (among the arginines CAPRI measured)}
-          - {analysis: crosslink, category: pclap_peptide_among_measured, label: "pCLAP peptide (measured)", group: In living cells, phrase: inside a pCLAP RNA-binding peptide (among the arginines pCLAP measured)}
-          - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: "RBDmap peptide (measured)", group: In living cells, phrase: inside an RBDmap RNA-bound peptide (among the arginines RBDmap measured)}
-          - {analysis: crosslink, category: rbrid_residue_among_measured, label: "RNA-contact residue (RBR-ID) (measured)", group: In living cells, phrase: an RNA-contact residue (RBR-ID) (among the arginines RBR-ID measured)}
-          - {analysis: crosslink, category: dna_crosslink_or_candidate, label: DNA-crosslinked residue, group: In living cells, phrase: at a DNA crosslink or one of its candidate residues}
+          - {analysis: crosslink, category: rna_crosslink, group: In living cells, phrase: the residue crosslinked to RNA}
+          - {analysis: crosslink, category: capri_adj_peptide_among_measured, group: In living cells, phrase: inside a CAPRI RNA-bound peptide (among the arginines CAPRI measured)}
+          - {analysis: crosslink, category: pclap_peptide_among_measured, group: In living cells, phrase: inside a pCLAP RNA-binding peptide (among the arginines pCLAP measured)}
+          - {analysis: crosslink, category: rbdmap_peptide_among_measured, group: In living cells, phrase: inside an RBDmap RNA-bound peptide (among the arginines RBDmap measured)}
+          - {analysis: crosslink, category: rbrid_residue_among_measured, group: In living cells, phrase: an RNA-contact residue (RBR-ID) (among the arginines RBR-ID measured)}
+          - {analysis: crosslink, category: dna_crosslink_or_candidate, group: In living cells, phrase: at a DNA crosslink or one of its candidate residues}
           - {analysis: pdb_interface, category: protein, label: Protein interface (PDB), group: Protein contacts, phrase: at a protein interface in PDB structures}
           - {analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, group: Protein contacts, phrase: at the interface of a predicted complex}
       groups:
@@ -3364,37 +3364,37 @@ website:                  # the look and words of the website (ptmc web); layout
               blocks:
                 - kind: forest
                   rows:
-                    - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rna_crosslink_single_residue, label: … crosslink localized to it alone, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rna_crosslink_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rna_crosslink_within_3, label: Within 3 residues of an RNA crosslink, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbdmap_fragment, label: Inside an RNA-bound fragment (RBDmap), group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbdmap_fragment_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: … among arginines RBDmap measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_adj_peptide, label: Inside an RNA-bound peptide (CAPRI), group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_adj_peptide_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: … among arginines CAPRI measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_xl_peptide, label: Inside an RNA-crosslinked peptide (CAPRI XL), group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_xl_peptide_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: pclap_lysc_region, label: Inside an RNA-binding region (pCLAP), group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: pclap_lysc_region_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: pclap_peptide, label: Inside an RNA-binding peptide (pCLAP), group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: pclap_peptide_among_measured, label: … among arginines pCLAP measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_residue, label: An RNA-contact residue (RBR-ID), group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_residue_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_residue_among_measured, label: … among arginines RBR-ID measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_residue_published_rule, label: … by the published rule (sensitivity), group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_region, label: In an RBR-ID region (high score), group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: dna_crosslink, label: DNA crosslink localized to the residue, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: dna_crosslink_or_candidate, label: … or one of its candidate residues, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: dna_crosslinked_peptide, label: Inside a DNA-crosslinked peptide, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink_single_residue, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink_within_3, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbdmap_fragment, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbdmap_fragment_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbdmap_peptide_among_measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_adj_peptide, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_adj_peptide_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_adj_peptide_among_measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_xl_peptide, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_xl_peptide_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_lysc_region, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_lysc_region_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_peptide, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_peptide_among_measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue_among_measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue_published_rule, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_region, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: dna_crosslink, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: dna_crosslink_or_candidate, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: dna_crosslinked_peptide, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: pdb_interface, category: rna, label: At an RNA interface (PDBe-KB), group: "In structures: PDB"}
                     - {analysis: pdb_interface, category: dna, label: At a DNA interface (PDBe-KB), group: "In structures: PDB"}
                     - {analysis: nucleic_acid_distance, category: rna_within_4a, label: Side chain within 4 Å of RNA, group: "In structures: PDB"}
                     - {analysis: nucleic_acid_distance, category: rna_within_8a, label: … within 8 Å of RNA, group: "In structures: PDB"}
                     - {analysis: nucleic_acid_distance, category: dna_within_4a, label: Side chain within 4 Å of DNA, group: "In structures: PDB"}
                     - {analysis: nucleic_acid_distance, category: dna_within_8a, label: … within 8 Å of DNA, group: "In structures: PDB"}
-                    - {analysis: crosslink, category: dna_binding_region, label: Inside a UniProt DNA-binding region, group: Annotation}
+                    - {analysis: crosslink, category: dna_binding_region, group: Annotation}
             - id: ix-evmap
               title: How the evidence fits together
               question: How do crosslink, structure, prediction and IntAct evidence overlap on the sites?
@@ -3429,6 +3429,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {filter: "a:domain_context", value: in_domain, label: In a domain, group: Context}
                 - {kind: checker, title: Check one site, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], tables: [interactions]}
         - name: RNA and DNA
+          open: true        # the first group: the contact tests are in view
           sections:
             - id: ixs-cells
               title: Crosslinking in living cells
@@ -3439,18 +3440,19 @@ website:                  # the look and words of the website (ptmc web); layout
                 - kind: forest
                   title: The methylarginine against the other arginines of the same proteins
                   rows:
-                    - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: CAPRI}
-                    - {analysis: crosslink, category: pclap_peptide_among_measured, label: pCLAP}
-                    - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: RBDmap}
-                    - {analysis: crosslink, category: rbrid_residue_among_measured, label: RNA contact (RBR-ID)}
-                    - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue}
-                    - {analysis: crosslink, category: rna_crosslink_single_residue, label: … localized to it alone}
-                    - {analysis: crosslink, category: rbdmap_fragment, label: RBDmap fragment}
-                    - {analysis: crosslink, category: pclap_peptide, label: pCLAP peptide}
-                    - {analysis: crosslink, category: pclap_lysc_region, label: pCLAP region}
-                    - {analysis: crosslink, category: rbrid_residue, label: RNA-contact residue (RBR-ID)}
-                    - {analysis: crosslink, category: dna_crosslink_or_candidate, label: DNA crosslink or candidate}
-                    - {analysis: crosslink, category: dna_crosslinked_peptide, label: DNA-crosslinked peptide}
+                    # the first six are the rows of the page's answer line and its tiles (the card says its range over these)
+                    - {analysis: crosslink, category: capri_adj_peptide_among_measured}
+                    - {analysis: crosslink, category: pclap_peptide_among_measured}
+                    - {analysis: crosslink, category: rbdmap_peptide_among_measured}
+                    - {analysis: crosslink, category: rbrid_residue_among_measured}
+                    - {analysis: crosslink, category: dna_crosslink_or_candidate}
+                    - {analysis: crosslink, category: rna_crosslink}
+                    - {analysis: crosslink, category: rna_crosslink_single_residue}
+                    - {analysis: crosslink, category: rbdmap_fragment}
+                    - {analysis: crosslink, category: pclap_peptide}
+                    - {analysis: crosslink, category: pclap_lysc_region}
+                    - {analysis: crosslink, category: rbrid_residue}
+                    - {analysis: crosslink, category: dna_crosslinked_peptide}
                 - kind: lines            # the sequence-proximity chart, said as a sentence from its rows, the chart behind a toggle
                   analysis: sequence_proximity
                   title: How far along the sequence
@@ -3572,7 +3574,7 @@ website:                  # the look and words of the website (ptmc web); layout
             - id: ixs-complexes
               title: Protein complexes
               question: Which complexes have more methylated members than expected?
-              sub: complexes with a methylated member
+              sub: complexes with a methylated member (curated Complex Portal and predicted hu.MAP together)
               blocks:
                 - {kind: table, table: complexes, chips: curation, columns: [complex_id, complex_name, n_members, n_members_methylated, fold_enrichment, q, methylated_members], sort: q, descending: false, limit: 15, members: methylated_members}
             - id: ixs-intact

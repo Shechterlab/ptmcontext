@@ -337,8 +337,8 @@
           ) +
           (D.propensity
             ? term(
-                'Seen/expected',
-                `Changes seen over changes expected from the residue's codons and base-change rates (O/E in papers). 1 is as expected, above 1 more, below 1 fewer.`
+                'Observed/expected',
+                `Observed changes over changes expected from the residue's codons and base-change rates (O/E in papers). 1 is as expected, above 1 more, below 1 fewer.`
               )
             : '') +
           term(
@@ -374,12 +374,12 @@
         ? sec(
             'h-mutations',
             `<p>On a protein's cancer and germline cards, each source is drawn along the protein. ` +
-              `Stick height is the count: tumors, cell lines or variants at the residue. Circle size is seen/expected, the ` +
+              `Stick height is the count: tumors, cell lines or variants at the residue. Circle size is observed/expected, the ` +
               `changes seen over the changes the residue's codon predicts, among the protein's residues of the same type. A ring ` +
-              `means q is below 0.05. Hover or tap a circle for the numbers. ClinVar's seen/expected is descriptive, with no ring, because its ` +
+              `means q is below 0.05. Hover or tap a circle for the numbers. ClinVar's observed/expected is descriptive, with no ring, because its ` +
               `variants reflect clinical testing more than how often residues change. A protein with no matching coding sequence has no q, and ` +
-              `its seen/expected assumes every residue of the type is equally likely.</p>` +
-              `<p>The site card has one line with the site's seen/expected and q in each source. ` +
+              `its observed/expected assumes every residue of the type is equally likely.</p>` +
+              `<p>The site card has one line with the site's observed/expected and q in each source. ` +
               (K.views.mutations
                 ? `The <a href="${esc(K.link('mutations'))}">Disease variants</a> page shows the sites of your selection (every ${esc(W.mark)} when nothing is selected) in three views and one chart.</p><ul>` +
                   `<li><b>Ranked sites</b> lists the sites for tumors, cell lines and gnomAD, ranked by p. Tumors and cell lines rank sites with more changes than expected. gnomAD ranks sites with fewer inherited variants than expected. Each table shows the top 20 whether or not q is below 0.05, and its header counts the sites that are. A row at or above 0.05 is lighter and shows its q. Show opens the sites with q below 0.05 (at least 100 rows). The download has every tested site. A protein dominated by a few enriched residues (TP53 R273, R248 and R175, for example) carries a note, because the expected count at its other residues is inflated.</li>` +

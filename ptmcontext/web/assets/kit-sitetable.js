@@ -1,5 +1,5 @@
 /* The protein page's table of its sites and their variants (fold p-sitetab; website.protein.site_table): one row for each
-   site of the protein, with its state, the changes seen at it in each source of website.propensity (k, seen/expected, q), the ClinVar
+   site of the protein, with its state, the changes seen at it in each source of website.propensity (k, observed/expected, q), the ClinVar
    pathogenic and likely pathogenic variants with their conditions, the cell lines a map row names for its changes
    (website.protein.map.rows[].from.names), a hotspot flag and whether the site lies in a disordered region. It reads what the
    page already loads (the propensity shard data/m/NNN.json, the map's items, the protein's tables). A site's variants are one
@@ -15,7 +15,7 @@
   const CFG = D.protein_view?.site_table || {},
     TITLE = CFG.title || 'Sites and their variants',
     RING = K.prop.ring;
-  const SRC = PR.sources.filter((s) => !K.prop.desc(s.id)); // sources with a test: k, seen/expected and q
+  const SRC = PR.sources.filter((s) => !K.prop.desc(s.id)); // sources with a test: k, observed/expected and q
   const OPEN_MAX = 40; // up to this many sites the table is open
   const TOP = SRC.find((s) => s.kind === 'somatic') || SRC[0]; // the source the default sort and the summary read
   if (!SRC.length) return;
@@ -167,8 +167,8 @@
           id: `${s.id}:o`,
           tsvName: `${s.id}_oe`,
           grp: s.id,
-          label: `${s.label} seen/expected`,
-          sub: 'seen/expected',
+          label: `${s.label} observed/expected`,
+          sub: 'observed/expected',
           num: 1,
           help: `${s.long || s.label}: changes seen over the changes the residue's codon predicts`,
           val: (r) => src(r)?.o,
@@ -333,7 +333,7 @@
             parts: [],
             num: 1,
             label: s.label,
-            help: `${s.long || s.label}: k (${(s.unit || ['sample', 'samples'])[1]} with a change at the site), seen/expected (changes seen over the changes the residue's codon predicts) and q below them`,
+            help: `${s.long || s.label}: k (${(s.unit || ['sample', 'samples'])[1]} with a change at the site), observed/expected (changes seen over the changes the residue's codon predicts) and q below them`,
             cell: (r) => srcCell(s, r),
           })
         );
@@ -380,7 +380,7 @@
     const note =
       M.loaded === null
         ? `<p class="muted small">The changes seen at each site could not be read.</p>`
-        : `<p class="muted small st-note">k: ${esc(SRC.map((s) => `${s.label} ${(s.unit || ['sample', 'samples'])[1]}`).join(', '))} with a change at the site. seen/expected: changes seen over changes expected from the residue’s codon. ` +
+        : `<p class="muted small st-note">k: ${esc(SRC.map((s) => `${s.label} ${(s.unit || ['sample', 'samples'])[1]}`).join(', '))} with a change at the site. observed/expected: changes seen over changes expected from the residue’s codon. ` +
           `q: corrected for the sites tested; a ring is q below ${RING} with more than expected${
             SRC.some((s) => s.lower_tail) ? ', a dashed ring with fewer' : ''
           }. Click a column to sort.</p>`;
@@ -466,7 +466,7 @@
           )
           .join('')}</div><p class="muted small">k: ${esc(
           SRC.map((x) => `${x.label} ${(x.unit || ['sample', 'samples'])[1]}`).join(', ')
-        )} with a change at the site. seen/expected: changes seen over changes expected from the residue’s codon. A ring means q below ${RING}.</p>`;
+        )} with a change at the site. observed/expected: changes seen over changes expected from the residue’s codon. A ring means q below ${RING}.</p>`;
       return {
         key: `${pi}-${pos}`,
         head: `${K.few.siteLink(pi, pos)} <span class="muted">${esc(D.proteins[pi][2] || '')}</span>`,
@@ -477,7 +477,7 @@
             : [
                 {
                   id: 'changes',
-                  title: 'Changes seen at the site',
+                  title: 'Observed changes at the site',
                   sum: src ? src.map(({ x, c }) => `${x.label} ${c.k ?? 0}`).join(', ') : '',
                   body: changes || K.loading('Loading…'),
                 },
@@ -523,7 +523,7 @@
     const tsv =
       K.preamble(
         `${TITLE}, ${gene}`,
-        `one row for each ${W.mark} of ${gene} (${ps.p.acc}): its state, the changes seen at it in each source (k: samples or variants with a change; seen/expected: changes seen over expected; q: corrected binomial p, for fewer than expected where a source's column says so), its variants as the site card counts them (variants at the residue, and those classified pathogenic or likely pathogenic), the cell lines named for its changes, the hotspot flag, the disordered-region flag${K.prot.amReady?.(ps.p.acc) ? ' and the mean AlphaMissense score of its substitutions (less reliable in disordered regions)' : ''}. ${
+        `one row for each ${W.mark} of ${gene} (${ps.p.acc}): its state, the changes seen at it in each source (k: samples or variants with a change; observed/expected: changes seen over expected; q: corrected binomial p, for fewer than expected where a source's column says so), its variants as the site card counts them (variants at the residue, and those classified pathogenic or likely pathogenic), the cell lines named for its changes, the hotspot flag, the disordered-region flag${K.prot.amReady?.(ps.p.acc) ? ' and the mean AlphaMissense score of its substitutions (less reliable in disordered regions)' : ''}. ${
           K.prop.state.hyper ? 'With' : 'Without'
         } hypermutated samples; sorted as shown on the page`
       ) +

@@ -281,7 +281,7 @@ The kit draws the cell for other pages too: `K.cell.list()` (the drawings, their
 `{min_maps: 2, min_group: 20, min_set: 30}` are the defaults: `min_maps` and `min_group` as above for the maps of the
 cell; `min_set`, the fewest proteins a protein set needs to be ranked on an Overview tile or chosen as a finding (a set
 whose every member is marked is not ranked either: its fold is at the ceiling, the background over the marked, and ties
-every other such set). Such a set stays on its question's page. A tile row's number is the fold (the share of the marks
+every other such set). Such a set stays on its question's page. A set question whose highest fold is within 10% of that ceiling (three or more sets) opens its card with one sentence made from its own counts (the share of the background that is marked, the ceiling, the highest fold, how many sets are above 1× at q ≤ 0.05) and keeps the chart behind "Show the chart"; no statistic is added. A tile row's number is the fold (the share of the marks
 in the class over the share of the comparison residues, from the pooled counts; a set's fold enrichment), with its test
 beneath (the odds ratio, its interval and q; a set shows only its own hypergeometric q, not adjusted for protein
 abundance, and its test within abundance deciles, where there is one, is an estimate in the hover) and the counts
@@ -1591,6 +1591,7 @@ website:
       highlights: [<highlight>]          # cards under it
       overview: {section: <Overview section>, title: <tile>, bar: <category attribute>, rows: [<row refs>], findings: [<finding>], sub: <...>,
                  tiles: {section: <Overview section>, sections: [<section ids>]}}   # more of the page's sections as tiles of their own
+                 # `rows: []` with `findings`: a pointer tile with no tests of its own (it links the page; its findings come from the same rows as the page's tiles)
       aliases: {<old id>: <id now>}      # sections and folds that moved or went: an address or open= link with the old id opens the new one
       groups:
         - name: <group>
@@ -1625,7 +1626,7 @@ Blocks (`kind`):
 | `pairs` | `table` (key protein), `label`, `rows: {column, value}`, `cols: {column, value}` | a matrix: proteins that both a row label and a column label pair with |
 | `histogram` | `table` (key residue), `value` (a number column), `step`, `max` | the values of marks against the other residues, binned |
 | `tiles` | `tiles: [{label, tag?, row: {analysis, category}}]`, `sub`, `pooled` | a card for each test row, within each protein: its fold, q and the marks (and proteins) counted; `pooled` adds a line with the first tile's fold across all proteins against within each protein |
-| `contact_list` | `table` (a `bound_windows` table: columns `kind`, `type`, `name`, `entry`, `distance` named in `columns`), `limit` (default 25), `kinds`, `note`, `modeled: {table, entry, state, where: {column: value}, unmodified: [states], unknown: [states]}` | one row a site that has a contact: its closest contact (kind and type, distance, the PDB entry with an in-app "Show in 3D at site"), and whether that entry models the methyl group (the site's rows of the `modeled` records table for the entry: a state in `unmodified` says no, one in `unknown` or none says unknown, any other says yes); the first `limit` rows, "Show all", and a TSV. The card's line "RNA contact: PDB 5FWE, 3.1 Å" is the same closest contact, from `K.card.contact` |
+| `contact_list` | `table` (a `bound_windows` table: columns `kind`, `type`, `name`, `entry`, `distance` named in `columns`), `limit` (default 25), `kinds`, `note`, `modeled: {table, entry, state, where: {column: value}, unmodified: [states], unknown: [states]}` | one row a site that has a contact: its closest contact (kind and type, distance, the PDB entry with an in-app "Show in 3D at site"), and whether that entry models the methyl group (the site's rows of the `modeled` records table for the entry: a state in `unmodified` says no, one in `unknown` or none says unknown, any other says yes); the first `limit` rows, "Show all", and a TSV. The card's line "RNA contact: PDB 5FWE, 3.1 Å" is the same closest contact, from `K.card.contact`; a closest distance under 2.0 Å (heavy atoms closer than a hydrogen bond allows) is flagged "possible model clash" in the list, the card's line and the TSV, display only: no row is dropped and no test changes |
 | `pointer` | `text`, `protein` (a gene symbol) | one line: the text and a link to the protein's page |
 | `fold` | `label`, `blocks: [blocks]`, `caption` | blocks behind a toggle, with a caption under them |
 | `text` | `text` | a paragraph |
