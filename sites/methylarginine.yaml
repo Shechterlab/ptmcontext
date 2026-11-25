@@ -1281,7 +1281,7 @@ proteins:                  # the release's protein table: facts of each methylat
                    help: "Where a protein's clusters of 3 or more methylarginines within 20 residues, in disordered regions, lie: within 20 residues of a domain, farther than that, or both"}
     dense_q: {column: best_window_q, label: Dense patch of methylarginines, kind: number, levels: [0.05, 0.01], direction: max,
               level_labels: {"0.05": "Yes (q ≤ 0.05)", "0.01": "Strong (q ≤ 0.01)"},
-              help: "A protein has a dense patch when its methylarginines bunch together within a stretch of 5 to 100 residues more than its arginines would by chance (permutation test within the protein, Benjamini-Hochberg q)"}
+              help: "A protein has a dense patch when its methylarginines bunch together within a stretch of 5 to 100 residues more than its arginines would by chance (10,000 permutations within the protein, Benjamini-Hochberg q)"}
     string_partners: {column: n_string_partners, label: STRING physical partners, kind: number, help: "STRING physical associations at score 0.7 or more"}
     complexes: {column: n_complexes, label: Complexes with methylated members, kind: number}
     go_rna: {column: go_rna_binding, label: "Binds RNA (Gene Ontology)", kind: category, control: chips,
