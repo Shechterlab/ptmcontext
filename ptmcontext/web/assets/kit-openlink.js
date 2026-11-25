@@ -78,6 +78,19 @@
         K.folds[d.id] = d.open;
       }
     });
+    // a section opened by a link sits in groups that may be closed: open them too, so it is visible where the link lands
+    Object.keys(want).forEach((id) => {
+      if (!want[id]) return;
+      for (
+        let a = document.getElementById(id)?.parentElement?.closest('details');
+        a;
+        a = a.parentElement?.closest('details')
+      )
+        if (!a.open) {
+          a.open = true;
+          if (a.id) K.folds[a.id] = true;
+        }
+    });
     // arriving by a link that opens a section: the section is scrolled to, below the toolbar (as a section's own address is)
     if (land && document.getElementById(land)) {
       const id = land;

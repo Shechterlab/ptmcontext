@@ -556,6 +556,8 @@
     tables: (acc) => (PV.acc === acc ? PV.tb || null : null),
     // the mean AlphaMissense score of a site's substitutions: undefined until AlphaFold DB's file for the open protein is in (or
     // when it has none), else {sum, n} (read live for the open protein only)
+    // AlphaFold's confidence at a site, as the site card shows it (read live for the open protein; null until the file is in)
+    plddt: (acc, pos) => (PV.acc === acc ? plddtAt(byAcc[acc] || PV.lightP || { len: -1 }, pos) : null),
     am: (acc, pos) => (PV.acc === acc ? PV.af?.am?.get?.(pos) : undefined),
     amReady: (acc) => PV.acc === acc && !!PV.af?.am,
     // a mark's state as its colored pill and as text (the site's first colored category attribute); '' without one
@@ -2631,6 +2633,7 @@
       PV.af = af;
       if (first) drawMap();
       K.pfolds?.refresh();
+      K.s3d?.paintSide?.(); // the viewer's AlphaFold panel reads the site's confidence from the same array
       // AlphaMissense: each mark's substitutions (the file lists every residue's), their mean, read once for the site card
       if (af.amUrl && !af.am && !af.amAsked) {
         af.amAsked = true;

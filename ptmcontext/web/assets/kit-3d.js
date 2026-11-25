@@ -668,19 +668,73 @@
     ),
   ];
 
+  // one mark in a chain of an entry: [position, author residue | null, observed], or null where the chain's mapping misses it
+  function siteIn(e, det, pos) {
+    const m = e.maps.find((x) => x.chain === det.chain && pos >= x.unpStart && pos <= x.unpEnd);
+    if (!m) return null;
+    const rn = m.start + (pos - m.unpStart),
+      seg = det.coverage ? det.coverage.find(([a, b]) => rn >= a && rn <= b) : null;
+    return [pos, seg && seg[2] != null ? seg[2] + (rn - seg[0]) : null, !!seg];
+  }
   // the marks of the protein in a chain of an entry: [position, author residue | null, observed]
   function pdbSites(e, det) {
-    const maps = e.maps.filter((m) => m.chain === det.chain),
-      out = [];
-    for (const m0 of marks()) {
-      const pos = m0[0],
-        m = maps.find((x) => pos >= x.unpStart && pos <= x.unpEnd);
-      if (!m) continue;
-      const rn = m.start + (pos - m.unpStart),
-        seg = det.coverage ? det.coverage.find(([a, b]) => rn >= a && rn <= b) : null;
-      out.push([pos, seg && seg[2] != null ? seg[2] + (rn - seg[0]) : null, !!seg]);
-    }
-    return out;
+    return marks()
+      .map((m0) => siteIn(e, det, m0[0]))
+      .filter(Boolean);
+  }
+  // the site the viewer is read at: the one asked for, else the one selected on the page
+  const siteNow = () => (T.highlight != null ? T.highlight : (K.site?.state?.focus ?? null));
+  // which entries resolve a site (model its residue, PDBe's observed residues): `${acc}:${pos}:${id}` -> the chain that
+  // does, '' where none of the entry's chains does (absent: not read yet)
+  const SITE_AT = {};
+  const resolvesAt = (id, pos) => SITE_AT[`${T.acc}:${pos}:${id}`];
+  // read, for the entries whose construct holds the site (modified-residue entries and those with a contact there first,
+  // then the sharpest; up to 40), which chain of each resolves it. Resolves to the entries read, best first:
+  // the modified residue modeled, then a partner bound there, then any, each by resolution.
+  function scanSite(acc, pos) {
+    const key = `${acc}:${pos}`;
+    return ((scanSite.p ||= {})[key] ||= loadPdb(acc).then((res) => {
+      const te = tableEntries(),
+        chainsOf = (e) => [...new Set(e.maps.filter((m) => pos >= m.unpStart && pos <= m.unpEnd).map((m) => m.chain))],
+        pool = res.entries
+          .filter((e) => chainsOf(e).length)
+          .sort(
+            (a, b) =>
+              res.modified.has(b.id) - res.modified.has(a.id) ||
+              te.has(b.id) - te.has(a.id) ||
+              (a.resolution || 99) - (b.resolution || 99)
+          )
+          .slice(0, 40);
+      return withTimeout(
+        Promise.all(
+          pool.map(async (e) => {
+            let hit = '';
+            for (const ch of chainsOf(e).slice(0, 4)) {
+              const det = await loadDetail(e.id, ch, res.modified.has(e.id)).catch(() => null);
+              if (det?.coverage && siteIn(e, det, pos)?.[2]) {
+                hit = ch;
+                break;
+              }
+            }
+            SITE_AT[`${acc}:${pos}:${e.id}`] = hit;
+            if (hit) T.pick[e.id] ||= hit;
+          })
+        ),
+        10000
+      )
+        .catch(() => {})
+        .then(() => {
+          const yes = pool.filter((e) => SITE_AT[`${acc}:${pos}:${e.id}`]);
+          return meta(yes.map((e) => e.id))
+            .catch(() => [])
+            .then(() => {
+              const base = acc.split('-')[0],
+                tier = (e) =>
+                  res.modified.has(e.id) ? 0 : te.has(e.id) || partnersText(META[UP(e.id)], base).length ? 1 : 2;
+              return yes.sort((a, b) => tier(a) - tier(b) || (a.resolution || 99) - (b.resolution || 99));
+            });
+        });
+    }));
   }
   // the chain that models most of the protein: of the chains whose mapping spans most of it (8), the one PDBe says
   // observes most residues; ties to more marks resolved, then resolution. { failed } when PDBe answered for none.
@@ -1015,8 +1069,24 @@
   }
   function startPdbOrAf() {
     if (V.src === 'af') return showAf();
+    const acc = T.acc,
+      pos = siteNow();
+    if (pos != null && T.rec?.marks?.some((m) => m[0] === pos)) {
+      placeholder(`Finding the experimental entry that resolves ${esc(rl(pos))}…`);
+      return scanSite(acc, pos).then(
+        (list) => {
+          if (T.acc !== acc || (T.mol && T.mol.acc === acc)) return;
+          if (!list.length)
+            return showAf().then(() => {
+              if (!T.msg) message(`No PDB entry resolves ${rl(pos)}; the AlphaFold model is shown.`);
+            });
+          const e = list[0];
+          return showPdb(e, resolvesAt(e.id, pos), pos);
+        },
+        () => showAf()
+      );
+    }
     placeholder(`Finding the experimental chain that models most of ${esc(T.p.gene || T.acc)}…`);
-    const acc = T.acc;
     return bestPdb(acc).then(
       (b) => {
         if (T.acc !== acc || (T.mol && T.mol.acc === acc)) return;
@@ -1818,7 +1888,9 @@
     });
   }
   function pdbMenu(res) {
-    const inRange = (e) =>
+    const site = siteNow(),
+      at = (e) => (site != null && resolvesAt(e.id, site) ? 1 : 0),
+      inRange = (e) =>
         e.maps.length ? marks().filter((m) => e.maps.some((x) => m[0] >= x.unpStart && m[0] <= x.unpEnd)).length : 0,
       te = tableEntries();
     return res.entries
@@ -1826,6 +1898,7 @@
       .map((e) => ({ e, n: inRange(e), mod: res.modified.has(e.id), r: RESOLVED[e.id], at: te.get(e.id) || [] }))
       .sort(
         (a, b) =>
+          at(b.e) - at(a.e) ||
           b.mod - a.mod ||
           (b.r || 0) - (a.r || 0) ||
           b.at.length - a.at.length ||
@@ -1837,15 +1910,19 @@
     TRIED = new Set();
   function optLabel({ e, n, r, mod }) {
     const title = META[UP(e.id)]?.struct?.title;
-    const sites = mod
-      ? `models a ${NOUN}`
-      : r != null
-        ? r
-          ? `${r} site${r === 1 ? '' : 's'} resolved`
-          : 'no site resolved'
-        : n
-          ? `${n} site${n === 1 ? '' : 's'} in construct`
-          : 'no site in construct';
+    const site = siteNow(),
+      here = site != null && resolvesAt(e.id, site) ? `resolves ${rl(site)}` : '';
+    const sites = here
+      ? here + (mod ? ` · models a ${NOUN}` : '')
+      : mod
+        ? `models a ${NOUN}`
+        : r != null
+          ? r
+            ? `${r} site${r === 1 ? '' : 's'} resolved`
+            : 'no site resolved'
+          : n
+            ? `${n} site${n === 1 ? '' : 's'} in construct`
+            : 'no site in construct';
     return `${UP(e.id)} · ${methodShort(e.method)}${
       e.resolution ? ' ' + Number(e.resolution).toFixed(1) + ' Å' : ''
     } · ${sites}${title ? ' · ' + shorten(title, 52) : ''}`;
@@ -2081,6 +2158,7 @@
     }
     if (mol.mode === 'af') {
       const af = mol.af,
+        site = siteNow(),
         e = af.entry,
         inModel = [...siteColours(false).keys()];
       const counts = [0, 0, 0, 0];
@@ -2096,6 +2174,9 @@
         F +
         (`<dl class="kv"><dt>Model</dt><dd><a href="https://alphafold.ebi.ac.uk/entry/${esc(T.acc)}">${esc(e.entryId)} v${esc(e.latestVersion || '')}</a></dd>` +
           `<dt>Mean pLDDT</dt><dd>${e.globalMetricValue != null ? Number(e.globalMetricValue).toFixed(1) : '–'}</dd>`) +
+        (site != null && K.prot?.plddt?.(T.acc, site) != null
+          ? `<dt>pLDDT at ${esc(rl(site))}</dt><dd>${Number(K.prot.plddt(T.acc, site)).toFixed(0)}</dd>`
+          : '') +
         (e.paeImageUrl ? `<dt>PAE</dt><dd><a href="${esc(e.paeImageUrl)}">Predicted aligned error</a></dd>` : '') +
         '</dl>' +
         (n
@@ -2420,6 +2501,18 @@
           }
         });
     }
+    // the entries that resolve the selected site go first in the menu once they are read
+    const site = siteNow();
+    if (site != null && T.started && !scanSite.shown?.has(`${T.acc}:${site}`)) {
+      const acc = T.acc;
+      (scanSite.shown ||= new Set()).add(`${acc}:${site}`);
+      scanSite(acc, site).then(() => {
+        if (T.acc === acc) {
+          paintPdbList();
+          paintSrc();
+        }
+      });
+    }
     const shown = T.pdbAll ? list : list.slice(0, 10);
     const ids = shown.map((x) => x.e.id).filter((id) => !(UP(id) in META));
     if (ids.length)
@@ -2447,7 +2540,9 @@
             na = res.na.get(e.id);
           const r = RESOLVED[e.id];
           return (
-            `<tr class="${e.id === own ? 'on' : ''}"><td class="wrapok"><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}"><b>${esc(UP(e.id))}</b></a>${
+            `<tr class="${e.id === own ? 'on' : ''}"><td class="wrapok"><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}" title="The entry page at RCSB${
+              site != null && resolvesAt(e.id, site) ? `; View here shows ${esc(rl(site))} in it` : ''
+            }"><b>${esc(UP(e.id))}</b></a>${
               mod
                 ? ` <span class="s3d-tag ` +
                   `k-mark" title="A ${esc(NOUN)} is modeled in this protein’s chain">${esc(NOUN)} in model</span>`
@@ -2501,7 +2596,11 @@
                   .join(' ')}</div>`
               : '') +
             '</td>' +
-            `<td><button type="button" class="btn small" data-s3d-entry="${esc(e.id)}">${e.id === own ? 'Shown' : 'View'}</button></td></tr>`
+            `<td><button type="button" class="btn small" data-s3d-entry="${esc(e.id)}"${
+              site != null && resolvesAt(e.id, site)
+                ? ` data-s3d-at="${site}" title="Show PDB ${esc(UP(e.id))} at ${esc(rl(site))}"`
+                : ''
+            }>${e.id === own ? 'Shown' : 'View'}</button></td></tr>`
           );
         })
         .join('') +
@@ -4069,6 +4168,12 @@
     });
   }
   const foldOpen = () => !!document.getElementById('p-struct')?.open;
+  // the section and the group(s) it sits in, open (a closed group hides it)
+  function openFold() {
+    const d = document.getElementById('p-struct');
+    for (let a = d; a; a = a.parentElement?.closest('details')) if (!a.open) a.open = true;
+    return d;
+  }
   // the marks the view shows changed: draw them again, and the key, summary and buttons that name them
   function refreshMarks() {
     T.sig = marks()
@@ -4104,10 +4209,7 @@
         paintPdbList();
         paintSummary();
       });
-    if (T.want) {
-      const d = document.getElementById('p-struct');
-      if (d && !d.open) d.open = true;
-    }
+    if (T.want) openFold();
     if (
       T.mol &&
       T.mol.acc === acc &&
@@ -4160,33 +4262,11 @@
         }
       });
   }
-  // the viewer at the top of the window, kept there for a few seconds while the page above it is still filling in
-  // (the map's live rows), unless the reader scrolls first
+  // the viewer at the top of the window, held there by the shared landing (K.landOn) while the page above it fills in,
+  // unless the reader scrolls first; its group is opened first so the viewer has a place on the page
   function scrollToViewer() {
-    const place = () => {
-      const t = document.getElementById('s3d');
-      if (!t) return null;
-      const bar = document.querySelector('.toolbar')?.offsetHeight || 0;
-      return t.getBoundingClientRect().top - bar - 8;
-    };
-    const d = place();
-    if (d == null) return;
-    scrollTo({ top: scrollY + d });
-    const until = Date.now() + 4000,
-      stop = () => {
-        T.keep = 0;
-      };
-    T.keep = until;
-    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev0) =>
-      addEventListener(ev0, stop, { once: true, passive: true })
-    );
-    const hold = () => {
-      if (T.keep !== until || Date.now() > until) return;
-      const x = place();
-      if (x != null && Math.abs(x) > 4) scrollTo({ top: scrollY + x });
-      requestAnimationFrame(hold);
-    };
-    requestAnimationFrame(hold);
+    openFold();
+    K.landOn?.(() => document.getElementById('s3d'));
   }
   function apply(w) {
     T.want = null;
@@ -4226,11 +4306,21 @@
       chain: o.chain || null,
     };
     T.scrollTo = true;
+    // the reader acting first ends the landing, here and when the structure arrives
+    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev0) =>
+      addEventListener(
+        ev0,
+        () => {
+          T.scrollTo = false;
+        },
+        { once: true, passive: true }
+      )
+    );
     if (pageOpen(acc) && T.acc === acc) {
       const d = document.getElementById('p-struct');
       if (d && !d.open) {
         T.want = w;
-        d.open = true;
+        scrollToViewer(); // opens the section and its group, then lands on the viewer
         return true;
       } // the toggle starts it
       scrollToViewer();
@@ -4687,6 +4777,6 @@
 `;
   document.head.appendChild(css);
 
-  K.s3d = { html, after, summary: () => 'AlphaFold DB, PDBe and RCSB', show: show3d };
+  K.s3d = { html, after, summary: () => 'AlphaFold DB, PDBe and RCSB', show: show3d, paintSide };
   K.show3d = show3d;
 });

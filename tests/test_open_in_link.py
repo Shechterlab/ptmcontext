@@ -85,3 +85,37 @@ console.log(JSON.stringify({{ applied: dom.map(d => d.open), id: K.foldId('ixg-p
     out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
     assert out == {'applied': [True, False], 'id': 'ixg-binding-proteins', 'same': 'p-ix'}
     assert 'K.foldId?.(id)' in _src('kit.js')  # a saved selection's folds are read through the same table
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_a_link_to_a_fold_inside_a_closed_group_opens_the_group_too():
+    script = f"""
+global.window = {{}}; global.HTMLDetailsElement = class {{}};
+const mk = (id, open, parent) => {{
+  const d = Object.assign(new HTMLDetailsElement(), {{ id, open }});
+  d.parentElement = {{ closest: () => parent || null }};
+  return d;
+}};
+const outer = mk('g-outer', false), group = mk('g-structure', false, outer), fold = mk('p-struct', false, group), other = mk('p-cons', false, outer);
+const dom = [outer, group, fold, other];
+global.document = {{ addEventListener: () => {{}}, querySelectorAll: () => dom, getElementById: (id) => dom.find((d) => d.id === id) || null }};
+const K = {{ S: {{ view: 'protein', arg: 'P62805' }}, folds: {{}}, paramsIn: [], hashOut: [], afterRender: [], writeHash: () => {{}}, landOn: (f) => (K.landed = f().id) }};
+eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-openlink.js'))}, 'utf8')); window.PTMC_MODULES.forEach(m => m(K));
+K.paramsIn.forEach(f => f(new URLSearchParams('open=p-struct')));
+K.afterRender.forEach(f => f());
+console.log(JSON.stringify({{ open: dom.map(d => d.open), landed: K.landed, folds: K.folds }}));"""
+    out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
+    assert out['open'] == [True, True, True, False]  # the fold, its group and that group's group; not a sibling
+    assert out['landed'] == 'p-struct'
+    assert out['folds']['g-structure'] is True
+
+
+def test_show_in_3d_lands_through_the_shared_landing_and_reads_the_site_in_the_entry_it_picks():
+    js = _src('kit-3d.js')
+    assert "K.landOn?.(() => document.getElementById('s3d'))" in js  # one landing, not a second scroll routine
+    assert 'function openFold()' in js and "closest('details')" in js
+    # the default entry resolves the site; the menu marks and sorts those entries first; the AlphaFold model is the fallback
+    assert 'scanSite(acc, pos)' in js and 'resolves ${rl(site)}' in js and 'at(b.e) - at(a.e)' in js
+    assert 'No PDB entry resolves ${rl(pos)}; the AlphaFold model is shown.' in js
+    assert 'pLDDT at ${esc(rl(site))}' in js and 'K.prot?.plddt?.(T.acc, site)' in js
+    assert 'plddt: (acc, pos) =>' in _src('kit-proteins.js')  # the card's own array
