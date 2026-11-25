@@ -942,7 +942,20 @@
   }
   // a protein in a partner list: its name linked to its page here when the release has it, else to UniProt; the accession
   // is shown (`show`) or in the tooltip; the organism follows when it is not the site's own. The one drawing of a partner.
-  function protRef(acc, name, { listed = false, species = '', show = false, title = '' } = {}) {
+  // `byName`: the name is a bare gene symbol or alias (no accession): the explorer's own index resolves it (gene, previous
+  // names, aliases), and a name it does not know links to a UniProt search of human reviewed entries (never a guessed accession).
+  function protRef(acc, name, { listed = false, species = '', show = false, title = '', byName = false } = {}) {
+    if (byName && !acc && name && !species) {
+      acc = K.prot?.byName?.(name) || '';
+      listed = !!acc && !!K.prot?.isListed?.(acc);
+      if (!acc) {
+        const q = encodeURIComponent(`gene:${name} AND organism_id:9606 AND reviewed:true`).replace(/%20/g, '+');
+        return (
+          `<a href="https://www.uniprot.org/uniprotkb?query=${q}" target="_blank" rel="noopener" ` +
+          `title="${esc('Search UniProt (human, reviewed)')}"><b>${esc(name)}</b></a>`
+        );
+      }
+    }
     const label = name || acc || '',
       tip = [title, acc].filter(Boolean).join(' · ');
     let out;
@@ -961,7 +974,7 @@
     const one = (x) =>
       x.self
         ? `<b>${esc(x.name)}</b>`
-        : protRef(x.acc, x.name, { listed: !!(x.acc && isListed?.(x.acc)), species: x.species });
+        : protRef(x.acc, x.name, { listed: !!(x.acc && isListed?.(x.acc)), species: x.species, byName: !x.acc });
     return (
       xs.slice(0, max).map(one).join(', ') +
       (xs.length > max
@@ -1319,7 +1332,7 @@
           key = String(acc || n).toUpperCase();
         if (seen.has(key)) continue;
         seen.add(key);
-        uni.push(acc && c.isListed?.(acc) ? protRef(acc, n, { listed: true }) : esc(n));
+        uni.push(protRef(acc, n, { listed: !!(acc && c.isListed?.(acc)), byName: true }));
       }
     if (wx.size || uni.length) {
       const recs = wx.size ? namesHtml([...wx.values()], SUMMARY_MAX, c.isListed, href(open(wg).join(','))) : '';

@@ -66,5 +66,24 @@ console.log(JSON.stringify({ none: K.card.cardSummary(c, {}), uni: K.card.cardSu
     )
     assert out['none'] == ''  # no placeholder lines
     assert out['uni'].count('<div>') == 2  # writer, nearby marks: nothing else has content
-    assert '(UniProt)' in out['uni'] and 'IKKE, ' in out['uni'] and 'href="#protein/O15530"' in out['uni']
+    assert '(UniProt)' in out['uni'] and '>IKKE</b></a>, ' in out['uni'] and 'href="#protein/O15530"' in out['uni']
     assert 'sc-uniprot' in out['uni'] and 'Phosphosite S1' in out['uni']
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_every_writer_name_is_a_link():
+    """Listed protein -> its page here; alias -> the listed protein; unlisted or family name -> a UniProt search
+    (human, reviewed); never a guessed accession."""
+    out = _run(
+        """
+K.prot.byName = n => ({ PDPK1: 'O15530', IKKE: 'Q14164' })[n] || '';
+K.prot.isListed = () => true;
+const c = { acc: 'P1', pos: 15, label: 'S15', tb: {}, gene: 'TP53', isListed: K.prot.isListed };
+const uni = [{ type: 'Modified residue', description: 'Phosphoserine; by PDPK1, IKKE, PRMT5, AMPK and PRPK' }];
+console.log(JSON.stringify(K.card.cardSummary(c, { uni })));"""
+    )
+    assert 'href="#protein/O15530"' in out  # listed
+    assert 'href="#protein/Q14164"' in out and '>IKKE</b>' in out  # alias of a listed protein
+    assert 'uniprotkb/' not in out.replace('uniprotkb?', '')  # no guessed accession
+    for n in ('PRMT5', 'AMPK', 'PRPK'):  # unlisted or family names: a human reviewed gene search
+        assert f'query=gene%3A{n}+AND+organism_id%3A9606+AND+reviewed%3Atrue' in out
