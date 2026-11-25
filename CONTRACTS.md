@@ -46,7 +46,7 @@ Conventions:
   them all (`marks_alone: count`: a protein with marks only adds to `a` and `b` of both, and nothing to the
   within-protein odds ratio or test, its table not being informative). An analysis may count only the marks and
   candidate residues of the proteins a table lists (`proteins:`; its `label` is added to the pooled rows' background), or
-  set the proteins a table lists aside (`without_proteins: {input, column, include, exclude, label}`, the same reading:
+  set the proteins a table lists aside (`without_proteins: {input, column, include, exclude, label}`, the same reading, a condition also `{any_of: [conditions]}`:
   the histones, say): neither their marks nor their other residues count, and in a protein-set question they are neither
   marked proteins nor in the universe. run.json records `without_proteins: {input, column, listed, marked_proteins,
   marks}`, and the website skips their marks as a question's unlisted proteins'.
@@ -1587,7 +1587,9 @@ website:
       method: <how it was made: the Method page's section for the page>
       answer: {rows: [<row refs>], more: "<sentence with {list}>", none: "<sentence>"}   # the answer sentence
       highlights: [<highlight>]          # cards under it
-      overview: {section: <Overview section>, title: <tile>, bar: <category attribute>, rows: [<row refs>], findings: [<finding>], sub: <...>}
+      overview: {section: <Overview section>, title: <tile>, bar: <category attribute>, rows: [<row refs>], findings: [<finding>], sub: <...>,
+                 tiles: {section: <Overview section>, sections: [<section ids>]}}   # more of the page's sections as tiles of their own
+      aliases: {<old id>: <id now>}      # sections and folds that moved or went: an address or open= link with the old id opens the new one
       groups:
         - name: <group>
           sections:
@@ -1609,7 +1611,7 @@ Blocks (`kind`):
 | Kind | Reads | Draws |
 |---|---|---|
 | `forest` | `rows: [row refs]` (with `group` headings), `method` (default within each protein) | odds ratios with 95% CIs, counts, q (a list of more than ten rows shows the first eight and the rest behind "Show all tests"); with a selection, its rows tested again in the browser beside the whole dataset's |
-| `lines` | `analysis`, `series: [category]`, `x: {<stratum>: <number>}`, `x_label` | each series' odds ratio against x (a question's strata), with CI bands |
+| `lines` | `analysis`, `series: [category]`, `x: {<stratum>: <number>}`, `x_label`, `sentence: {residue: <the series that is the residue itself>, inside: <phrase>}`, `fold` | each series' odds ratio against x (a question's strata), with CI bands. With `sentence`, a sentence made from the same rows (the fold of the others at the first x, how far it lasts to the last x, the residue's own fold against it) and the chart behind a toggle named by `fold` (default "Show by distance") |
 | `sets` | `analysis` (a protein-set question) | each set: marked proteins in it against all, fold, q, and its reading within abundance deciles |
 | `shares` | `attribute` (a category attribute of the marks) | a stacked bar of its values among the (selected) marks |
 | `combinations` | `attribute` (a list attribute), `values` (columns, in order), `top` | an UpSet-style table: each value's marks, and the commonest combinations; a click selects them |
@@ -1620,6 +1622,10 @@ Blocks (`kind`):
 | `bars` | `table` (key protein), `label` (a column), `groups: {column, values: {code: title}}`, `top` | for each group value, the labels counted by distinct (selected) proteins |
 | `pairs` | `table` (key protein), `label`, `rows: {column, value}`, `cols: {column, value}` | a matrix: proteins that both a row label and a column label pair with |
 | `histogram` | `table` (key residue), `value` (a number column), `step`, `max` | the values of marks against the other residues, binned |
+| `tiles` | `tiles: [{label, tag?, row: {analysis, category}}]`, `sub`, `pooled` | a card for each test row, within each protein: its fold, q and the marks (and proteins) counted; `pooled` adds a line with the first tile's fold across all proteins against within each protein |
+| `contact_list` | `table` (a `bound_windows` table: columns `kind`, `type`, `name`, `entry`, `distance` named in `columns`), `limit` (default 25), `kinds`, `note`, `modeled: {table, entry, state, where: {column: value}, unmodified: [states], unknown: [states]}` | one row a site that has a contact: its closest contact (kind and type, distance, the PDB entry with an in-app "Show in 3D at site"), and whether that entry models the methyl group (the site's rows of the `modeled` records table for the entry: a state in `unmodified` says no, one in `unknown` or none says unknown, any other says yes); the first `limit` rows, "Show all", and a TSV. The card's line "RNA contact: PDB 5FWE, 3.1 Å" is the same closest contact, from `K.card.contact` |
+| `pointer` | `text`, `protein` (a gene symbol) | one line: the text and a link to the protein's page |
+| `fold` | `label`, `blocks: [blocks]`, `caption` | blocks behind a toggle, with a caption under them |
 | `text` | `text` | a paragraph |
 
 Every block offers PDF, SVG, PNG (figures) and TSV (its rows), each with the provenance block, and a Method link.

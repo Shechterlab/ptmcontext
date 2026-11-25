@@ -42,7 +42,12 @@
     'p-score': 'p-sitetab', // the list of counts was removed; its sentence sits under the Sites table
     'site-glance': 'p-sitetab', // the site table that briefly sat under the map is the Sites table
   };
-  K.foldId = (id) => ALIAS[id] || id;
+  // a page's own renamed sections and folds (website.pages[].aliases: {old id: current id}) say the same
+  const pageAlias = (id) => {
+    for (const pg of K.D?.pages || []) if (pg.aliases?.[id]) return pg.aliases[id];
+    return '';
+  };
+  K.foldId = (id) => ALIAS[id] || pageAlias(id) || id;
   const parse = (v) => {
     const o = {};
     String(v || '')

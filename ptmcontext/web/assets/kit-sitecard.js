@@ -238,13 +238,13 @@
         }</div>`
       : '';
   }
-  const entryBtn = (id, c) =>
+  const entryBtn = (id, c, text) =>
     `<a class="entry3d mono" href="${esc(
       (EV.entries?.url || '').replace('{id}', encodeURIComponent(id))
     )}" target="_blank" ` +
     `rel="noopener" data-entry3d="${esc(id)}" data-acc="${esc(c.acc)}" data-pos="${c.pos}" title="${esc(id.toUpperCase())}${
       K.show3d ? ': show it in 3D at ' + esc(c.label) : ''
-    }">${esc(id.toUpperCase())}</a>`;
+    }">${esc(text ?? id.toUpperCase())}</a>`;
   function entries(c, max = 6) {
     const e = EV.entries;
     if (!e || !has(e.table)) return '';
@@ -342,6 +342,33 @@
           `title="Contacted by residue ${esc(c.shown(c.pos + w.off))} (${rel(w.off)}), not by ${esc(c.label)} itself">via ${rel(w.off)}</span>`
         : ''
     }`;
+  // a site's closest RNA or DNA contact (a side-chain atom within 4 Å in a PDB entry): the one place that finds and words
+  // it, for the card's line and the Interactions page's list. rows: {kind, type, name, entry, distance, offset?}; a row
+  // that is another residue's contact (offset) or has no distance does not count
+  const KINDS = { rna: 'RNA', dna: 'DNA', hybrid: 'RNA-DNA hybrid' };
+  const contactBest = (rows) => {
+    let best = null;
+    for (const r of rows) {
+      if (+(r.offset || 0) !== 0 || r.distance === '' || r.distance == null || !Number.isFinite(+r.distance)) continue;
+      const id = list(r.entry)[0];
+      if (!id) continue;
+      if (!best || +r.distance < best.dist)
+        best = { kind: r.kind, type: r.type, name: r.name, entry: id, dist: +r.distance };
+    }
+    return best;
+  };
+  const contactWord = (b, kinds = KINDS) =>
+    (kinds && kinds[b.kind]) || KINDS[b.kind] || String(b.kind || '').toUpperCase();
+  const contactPhrase = (b, kinds) =>
+    `In contact with ${contactWord(b, kinds)} in PDB ${b.entry.toUpperCase()} (${b.dist.toFixed(1)} Å)`;
+  function contactLine(c) {
+    const b = contactBest((SQ.tables || []).filter(has).flatMap((name) => at(c.tb, name, c.pos)));
+    if (!b) return '';
+    return (
+      `<p class="sc-contact"><span class="flabel">${esc(contactWord(b, SQ.kinds))} contact:</span> ` +
+      `${entryBtn(b.entry, c, 'PDB ' + b.entry.toUpperCase())}, ${b.dist.toFixed(1)} Å</p>`
+    );
+  }
   function sequences(c, compact) {
     if (!(SQ.tables || []).some(has)) return '';
     const ws = windowsOf(c);
@@ -624,6 +651,7 @@
       (EV.status ? `<p class="sc-status">${badge(c)} ${sentence(c)}</p>` : '') +
       tags(c) +
       entries(c) +
+      contactLine(c) +
       sequences(c) +
       peptides(c) +
       around(c) +
@@ -2056,6 +2084,7 @@
     studyOf,
     studyHtml,
     dataHtml,
+    contact: { best: contactBest, phrase: contactPhrase, word: contactWord, line: contactLine },
     around,
     states,
     changes,

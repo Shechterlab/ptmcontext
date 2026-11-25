@@ -1321,6 +1321,10 @@ def page_problems(site: dict) -> list[str]:
     an analysis, a class, an attribute, a table or one of its columns, a section; and tables mapped wrongly."""
     web = site.get('website') or {}
     ids = {x['id']: x for x in site.get('analyses', [])}
+    for ctl in site.get('controls') or []:  # a control's copy of a question (<question>_<control>), where not yet made
+        for a in ctl.get('analyses') or []:
+            if a in ids:
+                ids.setdefault(f'{a}_{ctl["id"]}', ids[a])
     attrs = {**((site.get('marks') or {}).get('attributes') or {}), **CM.specs(site)[0]}
     tables = web.get('tables') or {}
     words = _analysis_words(site)
@@ -1387,14 +1391,38 @@ def page_problems(site: dict) -> list[str]:
                 table(f'{here}.highlights', h['share']['table'], [h['share']['of'], h['share']['flag']])
             if h.get('section') and h['section'] not in secs:
                 out.append(f'{here}.highlights: no section {h["section"]!r}')
+        groups_fold = {'ixg-' + re.sub(r'\W+', '-', g['name']).lower() for g in pg['groups']}
+        for old_id, now in (pg.get('aliases') or {}).items():
+            if now not in secs and now not in groups_fold:
+                out.append(
+                    f'{here}.aliases: {old_id!r} opens {now!r}, which is neither a section nor a group of the page'
+                )
+        for tid in (ov.get('tiles') or {}).get('sections') or []:
+            if tid not in secs:
+                out.append(f'{here}.overview.tiles: no section {tid!r}')
         for g in pg['groups']:
             for sec in g['sections']:
                 w = f'{here}.{sec["id"]}'
-                for b in sec['blocks']:
+                blocks = list(sec['blocks'])
+                while blocks:
+                    b = blocks.pop(0)
                     k = b['kind']
-                    if k == 'forest':
+                    if k == 'fold':
+                        blocks[:0] = b.get('blocks') or []
+                    elif k == 'tiles':
+                        rowrefs(w, [t['row'] for t in b.get('tiles') or []])
+                    elif k == 'contact_list':
+                        m = b.get('modeled') or {}
+                        table(w, b.get('table', ''), ['kind', 'type', 'name', 'entry', 'distance'])
+                        if m:
+                            table(w, m['table'], [m['entry'], m['state'], *(m.get('where') or {})])
+                    elif k == 'pointer':
+                        pass
+                    elif k == 'forest':
                         rowrefs(w, b.get('rows'))
                     elif k in ('lines', 'sets'):
+                        if b.get('sentence') and b['sentence']['residue'] not in (b.get('series') or []):
+                            out.append(f'{w}: lines sentence.residue is not one of its series')
                         if b.get('analysis') not in ids:
                             out.append(
                                 f"{w}: {k} needs analysis: one of the site's questions (not {b.get('analysis')!r})"

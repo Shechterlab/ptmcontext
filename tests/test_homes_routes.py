@@ -39,7 +39,7 @@ def test_section_links_scroll_through_the_one_landing_helper():
     prot, kit, ixn, opn = _src('kit-proteins.js'), _src('kit.js'), _src('kit-interactions.js'), _src('kit-openlink.js')
     assert 'K.landOn = landOn' in prot and 'const landOnCard = () =>' in prot
     assert 'K.landOn(find)' in kit  # the Methods page
-    assert 'K.landOn?.(() => document.getElementById(`ix-${arg}`))' in ixn
+    assert 'K.landOn?.(() => document.getElementById(`ix-${sid}`))' in ixn
     assert 'K.landOn?.(() => document.getElementById(id))' in opn
 
 
