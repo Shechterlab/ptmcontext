@@ -1081,6 +1081,9 @@
         k = name + '|' + sp,
         g = by.get(r.group);
       if (!g.has(k)) g.set(k, { name, acc: isSelf ? '' : r.partner_accession || '', species: sp, self: isSelf });
+      // the first structure entry that holds the partner (the one a line can name beside it: "KDM4A (5FWE)")
+      const x = g.get(k);
+      if (!x.pdb && r.id && r.source && r.source === Object.keys(RC.urls || {})[0]) x.pdb = r.id;
     }
     return by;
   }
@@ -1125,9 +1128,10 @@
   // names as a line: the first `max`, each linked (here or to UniProt), then how many more
   function namesHtml(xs, max, isListed, moreHref = '') {
     const one = (x) =>
-      x.self
+      (x.self
         ? `<b>${esc(x.name)}</b>`
-        : protRef(x.acc, x.name, { listed: !!(x.acc && isListed?.(x.acc)), species: x.species, byName: !x.acc });
+        : protRef(x.acc, x.name, { listed: !!(x.acc && isListed?.(x.acc)), species: x.species, byName: !x.acc })) +
+      (x.showPdb && x.pdb ? ` <span class="muted small">(${esc(String(x.pdb).toUpperCase())})</span>` : '');
     return (
       xs.slice(0, max).map(one).join(', ') +
       (xs.length > max
@@ -1234,6 +1238,13 @@
             : '')
       : '<span class="muted">–</span>';
   };
+  // a record's partner, once whatever the number of records, IDs or papers behind it: the one count of "partners"
+  const partnerKey = (r) =>
+    r.partner_kind === 'self'
+      ? 'self'
+      : [r.partner_kind || '', r.partner_accession || r.partner || r.partner_name || '', r.species || ''].join('|');
+  const nPartners = (rs) => new Set(rs.map(partnerKey)).size;
+  const nPartnersTxt = (k) => `${int(k)} partner${k === 1 ? '' : 's'}`;
   function recordsSummary(c, rs) {
     const n = new Map(),
       papers = new Set(),
@@ -1242,15 +1253,20 @@
       const roll = rollOf(r.group),
         k = roll ? roll.label : r.group;
       if (!n.has(k))
-        n.set(k, { label: roll ? roll.label : grpLabel(r.group), at: grpOrder(roll ? roll.groups[0] : r.group), k: 0 });
-      n.get(k).k++;
+        n.set(k, {
+          label: roll ? roll.label : grpLabel(r.group),
+          at: grpOrder(roll ? roll.groups[0] : r.group),
+          who: new Set(),
+        });
+      n.get(k).who.add(partnerKey(r));
       if (!quiet.has(r.group) && paperKey(r)) papers.add(paperKey(r));
     });
+    const all = nPartners(rs);
     return (
-      `${int(rs.length)} interaction record${rs.length === 1 ? '' : 's'} from ${int(papers.size)} paper${papers.size === 1 ? '' : 's'} and datasets: ` +
+      `${int(all)} distinct partner${all === 1 ? '' : 's'} from ${int(papers.size)} paper${papers.size === 1 ? '' : 's'} and datasets: ` +
       [...n.values()]
         .sort((a, b) => a.at - b.at)
-        .map((x) => `${x.label.replace(/^[A-Z](?=[a-z])/, (ch) => ch.toLowerCase())} ${int(x.k)}`)
+        .map((x) => `${x.label.replace(/^[A-Z](?=[a-z])/, (ch) => ch.toLowerCase())} ${int(x.who.size)}`)
         .join(' · ')
     );
   }
@@ -1312,26 +1328,22 @@
           .map(([g, m], _k, all) => {
             const roll = rollOf(g),
               first = roll && all.find(([x]) => roll.groups.includes(x))[0] === g,
-              rollRecs = roll
-                ? all
-                    .filter(([x]) => roll.groups.includes(x))
-                    .reduce((t, [, mm]) => t + [...mm.values()].reduce((u, x) => u + x.n, 0), 0)
-                : 0;
+              rollWho = roll ? nPartners(rs.filter((r) => roll.groups.includes(r.group))) : 0;
             const xs = [...m.values()],
-              n = xs.reduce((t, x) => t + x.n, 0),
-              who = new Set(xs.map((x) => x.partner || x.partner_name || x.partner_kind));
+              who = new Set(xs.map(partnerKey)),
+              span = RC.span?.group === g;
             const row = (x) =>
               `<tr><td data-label="Partner">${partnerHtml(x, c)}</td><td data-label="Evidence">${sourceCell(x, c)}</td><td ` +
               `data-label="Method">${methodCell(x)}</td><td data-label="Site in it">${stateCell(x)}</td><td ` +
               `data-label="Paper">${papersCell(x)}</td></tr>`;
             return (
               (first
-                ? `<h5 class="sp-roll">${esc(cap(roll.label))} <span class="muted small">${int(rollRecs)} record${rollRecs === 1 ? '' : 's'}</span></h5>`
+                ? `<h5 class="sp-roll">${esc(cap(roll.label))} <span class="muted small">${nPartnersTxt(rollWho)}</span></h5>`
                 : '') +
               `<details class="sp-group" id="${esc(recFold(g))}"${
-                (RC.open || []).includes(g) || all.length === 1 ? ' open' : ''
-              }><summary><b>${esc(cap(grpLabel(g)))}</b> <span ` +
-              `class="muted small">${int(who.size)} partner${who.size === 1 ? '' : 's'} · ${int(n)} record${n === 1 ? '' : 's'}${
+                !span && ((RC.open || []).includes(g) || all.length === 1) ? ' open' : ''
+              }><summary><b>${esc(cap(span ? (RC.span.label || '').replace('{site}', c.label) : grpLabel(g)))}</b> <span ` +
+              `class="muted small">${nPartnersTxt(who.size)}${
                 (RC.help || {})[g] ? ' — ' + esc(RC.help[g]) : ''
               }</span></summary>` +
               (`<div class="tbl-card"><table class="tbl compact sp-tbl stackable"><thead><tr><th>Partner</th><th>` +
@@ -1536,15 +1548,24 @@
         namesBySpecies([...ex.values()], SUMMARY_MAX, c.isListed, href(open(eg).join(',')), 'eraser').html,
       ]);
     // 3. readers and binders: a count and the first three names, "+N more" opens the table
+    // residue-specific binding leads: the roll's own words ("Binds it methylated"), the first structure beside each name
     const rg = roleGroups('reader'),
       rx = groupPartners(by, rg);
     if (rx.size) {
-      const r = namesBySpecies([...rx.values()], 3, c.isListed, href(open(rg).join(',')), 'binder');
+      const r = namesBySpecies(
+          [...rx.values()].map((x) => ({ ...x, showPdb: true })),
+          3,
+          c.isListed,
+          href(open(rg).join(',')),
+          'binder'
+        ),
+        roll = rollOf(rg[0]);
       lines.push([
-        lab('Binding proteins', open(rg).join(','), 'Open the records table'),
+        lab(roll ? cap(roll.label) : 'Binding proteins', open(rg).join(','), 'Open the records table'),
         r.n ? `${int(r.n)}: ${r.html}` : r.html,
       ]);
     }
+    // (the structure-contact line, "RNA contact: PDB 5FWE, 3.1 Å", goes here: after the binding proteins, before variants)
     // 4. variants: the variant counter's own line
     const vc = K.card.vc;
     if (vc.entries.length && vc.siteVariants(c.tb, c.pos).some((x) => x.n))

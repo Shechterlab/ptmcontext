@@ -989,12 +989,17 @@
     const restRows =
       rest.map((n) => kv(esc(SPECS[n].label), attrHtml(m, n, true), SPECS[n].help)).join('') +
       (K.shown?.on && K.shown.counted(m) ? kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, false))) : '');
+    // "Reported by" and the UniProt lines come first, then the site's own rows; the questions, the other questions and the
+    // other attributes are one closed list (below the card's records)
     const siteHtml =
-      group('site', 'Site', siteRows, true) +
-      group('questions', 'Questions', qrows.join(''), true) +
-      group('records', 'UniProt and sources', uniRow + citeRow, true) +
-      group('more-questions', `Other questions (${qmore.length})`, qmore.join(''), false) +
-      group('attributes', `Other attributes (${rest.length})`, restRows, false);
+      group('records', 'UniProt and sources', uniRow + citeRow, true) + group('site', 'Site', siteRows, true);
+    const nMore = qrows.length + qmore.length + rest.length + (K.shown?.on && K.shown.counted(m) ? 1 : 0),
+      moreHtml = group(
+        'questions',
+        `Questions and other attributes (${nMore})`,
+        qrows.join('') + qmore.join('') + restRows,
+        false
+      );
     const ev = ready ? K.card.evidenceBlock(c) : '',
       recs = ready ? K.card.recordsBlock(c) : '',
       wr = ready ? K.card.writerBlock(c) : '';
@@ -1004,7 +1009,7 @@
         (CC.tables || []).some((x) => K.card.has(x.table)) ||
         (CC.calls?.tables || []).some(K.card.has));
     const varBlock =
-      `<details class="sc-vars" id="sc-variants" data-sc-group="variants"${SC_OPEN.get('variants') === false ? '' : ' open'} aria-label="Variants at ${esc(siteOf(p, m[0]))}"><summary><h4>Variants at ${esc(siteOf(p, m[0]))}</h4></summary><dl ` +
+      `<details class="sc-vars" id="sc-variants" data-sc-group="variants"${SC_OPEN.get('variants') === true ? ' open' : ''} aria-label="Variants at ${esc(siteOf(p, m[0]))}"><summary><h4>Variants at ${esc(siteOf(p, m[0]))}</h4></summary><dl ` +
       `class="sc-kv">` +
       kv(
         'UniProt variants',
@@ -1057,8 +1062,9 @@
         )}<button type="button" ` +
         `class="btn small" data-site-close aria-label="Close">×</button></span></div>`) +
       sumHtml +
+      `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site">${siteHtml}</section>${recs}${wr}</div>` +
       varBlock +
-      `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site"><h4>Site</h4>${siteHtml}</section>${recs}${wr}</div>` +
+      `<section class="sc-more">${moreHtml}</section>` +
       (!ready && Object.keys(D.tables || {}).length ? K.loading('Loading tables…') : '') +
       '</section>'
     );

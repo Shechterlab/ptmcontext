@@ -2927,6 +2927,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {label: Writes, groups: [writes], role: writer}
           - {label: erases, groups: [removes], role: eraser}
           - {label: binds methylated, groups: [binds_methylated], role: reader}
+        span: {group: binds_unmodified, label: "In a structure whose peptide spans {site}"}   # a group drawn closed under this label (the site's own name)
         rollup:              # the groups under two headings: the residue in the site's state, against in any other
           - {label: Binds it methylated, groups: [binds_methylated]}
           - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
@@ -2936,7 +2937,7 @@ website:                  # the look and words of the website (ptmc web); layout
         urls: {PDB: "https://www.rcsb.org/structure/{id}", IntAct: "https://www.ebi.ac.uk/intact/details/interaction/{id}"}
         states: {arginine: R (unmodified), not_recorded: not recorded, not_read: not read, other_residue: variant, mutated: mutated}
       writer:              # writer and reader: who acts on it (site_records groups), a suggestion from the attributes, partners
-        title: Writer and reader
+        title: Other evidence for writer and reader
         who:
           - {label: Methylates it, groups: [writes], none: no methylation reaction recorded at this residue (IntAct)}
           - {label: Demethylates it, groups: [removes]}
