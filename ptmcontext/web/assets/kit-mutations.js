@@ -1634,7 +1634,7 @@
       n = int(rows.length);
     if (g)
       return `Tested: the ${n} ${esc(W.marks)} with a stored test for fewer ${esc(s.unit?.[1] || 'variants')} than expected.`;
-    return `Tested: the ${n} ${esc(W.marks)} with a change in at least one ${esc(s.unit?.[0] || 'sample')} (hypermutated samples included) and a test in this cohort. A site with no change cannot be above expectation and is not listed.`;
+    return `Tested: the ${n} ${esc(W.marks)} with a change in at least one ${esc(s.unit?.[0] || 'sample')} (hypermutated ${esc(s.unit?.[1] || 'samples')} count here) and a test in the chosen cohort. A site with no change cannot be above expectation and is not listed.`;
   }
   function rankSection(l) {
     const { s, rows, sig } = l,
