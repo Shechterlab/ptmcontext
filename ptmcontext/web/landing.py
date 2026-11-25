@@ -44,7 +44,7 @@ THEME_JS = """(function () {
 })();"""
 
 CSS = """
-.land-search { max-width: 46rem; padding-block: 1rem 0; display: grid; gap: 0.4rem; }
+.land-search { max-width: 46rem; padding-block: 1.1rem 0; display: grid; gap: 0.4rem; }
 .land-search label { font-weight: 600; }
 .land-search input { font: inherit; padding: 0.55rem 0.8rem; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); width: 100%; box-sizing: border-box; }
 .land-search .say { margin: 0; color: var(--muted); font-size: 0.88rem; min-height: 1.2em; }
@@ -55,6 +55,12 @@ CSS = """
 .land-search .ld-spin { display: inline-block; vertical-align: -0.15em; width: 0.9rem; height: 0.9rem; margin-right: 0.3rem; border-radius: 50%; border: 2px solid var(--line-strong); border-top-color: var(--accent-l, currentColor); animation: land-spin 0.8s linear infinite; }
 @keyframes land-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .land-search .ld-spin { animation: none; border-top-color: var(--line-strong); background: radial-gradient(circle, currentColor 35%, transparent 40%); } }
+.land-examples { max-width: 46rem; list-style: none; margin: 0; padding: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.2rem 1.1rem; font-size: 0.95rem; }
+.land-examples .muted { color: var(--muted); }
+.land-examples a { display: inline-block; min-height: 24px; }
+.land-fine { max-width: 62rem; padding: 1rem 0 2rem; display: grid; gap: 0.25rem; font-size: 0.82rem; color: var(--muted); }
+.land-fine .land-license { padding: 0; font-size: inherit; color: inherit; }
+.land-fine .land-refs { padding: 0; font-size: inherit; color: inherit; }
 .land-intro { max-width: 46rem; padding-block: 1.5rem 0.25rem; display: grid; gap: 0.5rem; color: var(--ink-2); font-size: 1.02rem; line-height: 1.55; }
 .land-intro p { margin: 0; }
 .land-refs { max-width: 46rem; list-style: none; margin: 0; padding: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.2rem 1.4rem; font-size: 0.9rem; color: var(--ink-2); }
@@ -74,8 +80,19 @@ CSS = """
 .land-group > h2 { margin: 0.5rem 0 0; font-size: 1.15rem; }
 .land-group > p { margin: 0.2rem 0 0; color: var(--ink-2); }
 .sites.compact { grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr)); }
-/* four cards: two rows of two rather than three and one alone */
+/* four cards: two rows of two rather than three and one alone; on a wide screen all four in one row, so none is below the fold */
 .sites:has(> li:nth-child(4):last-child) { grid-template-columns: repeat(auto-fill, minmax(min(32rem, 100%), 1fr)); }
+.hero .lede { max-width: 60rem; }
+@media (max-width: 700px) { body:not(.slim) .hero .lede { display: grid; } .land-search { padding-top: 0.75rem; } }
+@media (min-width: 1180px) {
+  .sites:has(> li:nth-child(4):last-child) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.9rem; padding-block: 0.75rem 1rem; }
+  .sites:not(.compact) .land-card .band { min-height: 0; padding: 0.7rem 0.9rem; gap: 0.25rem; }
+  .sites:not(.compact) .land-card .art { height: 4.6rem; }
+  .sites:not(.compact) .land-card h2 { font-size: 1.15rem; }
+  .sites:not(.compact) .land-card .body { gap: 0.55rem; padding: 0.8rem 0.9rem 0.9rem; }
+  .sites:not(.compact) .land-card .hook { font-size: 0.95rem; }
+  .sites:not(.compact) .land-card .nums dd { font-size: 1.25rem; }
+}
 .sites.compact .art { display: none; }
 .sites.compact .band { min-height: 5.5rem; }
 .sites.compact .land-card h2 { font-size: 1.1rem; }
@@ -297,6 +314,7 @@ def page(
     search: bool = False,
 ) -> str:
     title = html.escape(cfg.get('title') or 'ptmcontext')
+    page_title = html.escape(cfg.get('page_title') or cfg.get('title') or 'ptmcontext')
     desc = html.escape(cfg.get('description') or '')
     lede = html.escape(cfg.get('lede') or '')
     intro = ''.join(f'<p>{html.escape(p)}</p>' for p in cfg.get('intro') or [])
@@ -306,6 +324,12 @@ def page(
     )
     note = (cfg.get('footer') or {}).get('note')
     refs = ''.join(_ref(x) for x in cfg.get('references') or [])
+    ex = ''.join(
+        f'<li><a href="{html.escape(x["href"])}">{html.escape(x["label"])}</a></li>'
+        for x in cfg.get('examples') or []
+        if x.get('href') and x.get('label')
+    )
+    examples = f'<ul class="land-examples" aria-label="Examples"><li class="muted">Try:</li>{ex}</ul>' if ex else ''
     licence = f'<p class="land-license">{html.escape(cfg["license"])}</p>' if cfg.get('license') else ''
     wn = whats_new(cfg.get('whats_new'))
     # one entry per data release, newest first, inside one closed disclosure at the foot of the page
@@ -349,7 +373,7 @@ def page(
         )
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{title}</title>
+<title>{page_title}</title>
 <meta name="description" content="{desc}">
 {f'<link rel="icon" href="{html.escape(favicon or logo)}">' if favicon or logo else ''}
 {'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' if fonts_css.startswith('http') else ''}
@@ -362,12 +386,11 @@ def page(
 {f'<div class="lede"><p class="lede-what">{lede}</p></div>' if lede else ''}</div></header>
 <main class="wrap" id="sites">
 {f'<section class="land-intro" aria-label="About">{intro}</section>' if intro else ''}
-{f'<ul class="land-refs" aria-label="Paper and data">{refs}</ul>' if refs else ''}
-{licence}
-{SEARCH_HTML if search else ''}
+{SEARCH_HTML if search else ''}{examples if search else ''}
 <h2 class="vh">The explorers</h2>
 {sections}
-{new}</main>
+{new}
+{f'<div class="land-fine">{licence}<ul class="land-refs" aria-label="Paper and data">{refs}</ul></div>' if refs or licence else ''}</main>
 <footer class="wrap land-foot"><ul aria-label="Footer">{links}<li><a href="#privacy">Privacy</a></li></ul>
 <span class="theme-switch" role="group" aria-label="Color theme"><button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button></span>
 {f'<p>{html.escape(note)}</p>' if note else ''}
