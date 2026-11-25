@@ -703,7 +703,8 @@
   // the filters in use as chips, with Clear all; the counts are in the selection bar above the page
   function activeHtml() {
     if (!active()) return '';
-    if (!sd()) return `<p class="muted small">Loading the ${esc(W.marks)}…</p>`;
+    if (K.sel.loading?.()) return `<p class="muted small">${esc(K.sel.loadingText())}</p>`;
+    if (!sd()) return '';
     return (
       `<div class="rail-active"><div class="rail-sel">${chipsHtml()}</div>` +
       `<button class="linkish small" type="button" data-sel-clear-all>Clear all</button></div>`
