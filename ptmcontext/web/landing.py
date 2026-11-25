@@ -18,9 +18,9 @@ import yaml
 
 _COLOUR = re.compile(r'^#[0-9a-fA-F]{3,8}$')
 
-SEARCH_JS = (Path(__file__).parent / 'assets' / 'kit-names.js').read_text() + (
-    Path(__file__).parent / 'assets' / 'land-search.js'
-).read_text()
+SEARCH_JS = ''.join(
+    (Path(__file__).parent / 'assets' / f).read_text() for f in ('kit-names.js', 'land-match.js', 'land-search.js')
+)
 SEARCH_HTML = (
     '<section class="land-search" role="search" aria-label="Find a protein">'
     '<label for="land-q">Find a protein</label>'
