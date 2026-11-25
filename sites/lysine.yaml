@@ -1189,11 +1189,11 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     - category: rbrid_residue
       inside: rbrid_residues
       proteins_with: rbrid_residues
-      label: RNA-contact residue
+      label: RNA-contact residue (RBR-ID)
     - category: rbrid_residue_published_rule
       inside: rbrid_residues_published_rule
       proteins_with: rbrid_residues_published_rule
-      label: RNA-contact residue, published rule
+      label: RNA-contact residue (RBR-ID), published rule
     - category: rbrid_region
       inside: rbrid_regions
       proteins_with: rbrid_regions
@@ -1207,7 +1207,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       inside: rbrid_residues
       proteins_with: rbrid_residues
       covered_by: rbrid_quantified
-      label: RNA-contact residue, among measured
+      label: RNA-contact residue (RBR-ID), among measured
     new: true
   - id: sequence_proximity
     title: Distance along the chain to RNA evidence
@@ -1233,7 +1233,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     - category: rbrid_residue
       inside: rbrid_residues
       proteins_with: rbrid_residues
-      label: RNA-contact residue
+      label: RNA-contact residue (RBR-ID)
     strata:
     - stratum: within_0_residues
       within: 0
@@ -2320,7 +2320,7 @@ website:                  # the look and words of the website (ptmc web); layout
           background: clinvar_background
           count: clinvar_variants
           gene: gene       # the column naming the gene; the card shows it for a protein several genes encode
-          highlight: {column: germline_classification, matches: *plp, label: pathogenic, title: "Classified pathogenic or likely pathogenic by ClinVar"}
+          highlight: {column: germline_classification, matches: *plp, label: P/LP, title: "pathogenic or likely pathogenic (ClinVar)"}
           sort: [{column: review_stars, order: desc}]
           fields:
             - {column: germline_classification, label: Classification}
@@ -2372,7 +2372,7 @@ website:                  # the look and words of the website (ptmc web); layout
           span: 3
           labels: {rna_crosslink: UV-crosslinked to RNA in living cells, dna_crosslink: UV-crosslinked to DNA in living cells,
                    capri_xl_peptide: inside CAPRI RNA-crosslinked peptide,
-                   capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RNA-contact peptide, rbrid_region: inside an RBR-ID region,
+                   capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RNA-contact peptide (RBR-ID), rbrid_region: inside an RBR-ID region,
                    dna_binding_region: inside a UniProt DNA-binding region}
       records:             # a site_records table: who binds it, and how it was found
         title: Who binds it, and how it was found
@@ -2413,7 +2413,7 @@ website:                  # the look and words of the website (ptmc web); layout
 
         RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in these tables.
       columns:             # how the page shows the tables' columns (a table's own: <table>.<column>)
-        interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, capri_xl_peptide: RNA-crosslinked peptide (CAPRI), capri_adj_peptide: RNA-bound peptide (CAPRI), rbrid_residue: RNA-contact residue, dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy}}
+        interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, capri_xl_peptide: RNA-crosslinked peptide (CAPRI), capri_adj_peptide: RNA-bound peptide (CAPRI), rbrid_residue: RNA-contact residue (RBR-ID), dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy}}
         interactions.ids: {label: Structures}
         partner_accession: {label: Partner}
         partner: {label: Partner gene}

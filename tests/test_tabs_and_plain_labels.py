@@ -78,7 +78,11 @@ def test_jargon_has_a_plain_label_and_a_help_entry():
         assert f"'{term}'," in help_js
     for s in SITES:
         text = (ROOT / 'sites' / f'{s}.yaml').read_text()
-        for old in ('title: Other PTMs', 'label: P/LP', '"pDockQ ≥ 0.23"', 'CAPRI ADJ', 'RBR-ID+ residue'):
+        for old in ('title: Other PTMs', '"pDockQ ≥ 0.23"', 'CAPRI ADJ', 'RBR-ID+'):
             assert old not in text, (s, old)
+    assert all(
+        'title: "pathogenic or likely pathogenic (ClinVar)"' in (ROOT / 'sites' / f'{s}.yaml').read_text()
+        for s in SITES
+    )
     assert "return 'effect '" in _src('kit-cell.js')
     assert 'via the residue' in _src('kit-sitecard.js') and 'via the residue' in _src('kit-prna.js')

@@ -298,9 +298,9 @@
   // ---- the fold --------------------------------------------------------------------------------------------------------------------
   function summary(M) {
     const n = M.rows.length,
-      parts = [`${int(n)} ${n === 1 ? W.mark : W.marks}`];
+      parts = [esc(`${int(n)} ${n === 1 ? W.mark : W.marks}`)];
     if (M.loaded)
-      parts.push(`${int(M.rows.filter((r) => r.src[TOP.id]?.more).length)} with q < ${RING} in ${TOP.label}`);
+      parts.push(esc(`${int(M.rows.filter((r) => r.src[TOP.id]?.more).length)} with q < ${RING} in ${TOP.label}`));
     if (M.vtb)
       K.card.vc.entries
         .filter((x) => x.highlight?.label)
@@ -310,10 +310,12 @@
             x,
             M.rows.map((r) => r.pos)
           ).hot;
-          parts.push(`${int(n)} with ${x.label} ${x.highlight.label} variants`);
+          parts.push(
+            `${esc(`${int(n)} with ${x.label}`)} <abbr title="${esc(x.highlight.title || x.highlight.label)}">${esc(x.highlight.label)}</abbr> variants`
+          );
         });
     return (
-      esc(parts.join('; ')) +
+      parts.join('; ') +
       (n > OPEN_MAX ? `<span class="st-show"> · Show ${esc(int(n))} ${esc(n === 1 ? W.mark : W.marks)}</span>` : '')
     );
   }

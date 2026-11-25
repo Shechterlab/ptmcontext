@@ -1432,11 +1432,20 @@
       const m = K.sel?.nProteins?.();
       head = `${int(n)} of the ${m != null ? int(m) + ' ' : ''}selected ${plural(m, 'protein', 'proteins')} ${plural(n, 'is', 'are')} linked at ${how}`;
     } else
-      head = `${int(n)} of the ${int(UI.top)} ${plural(UI.top, 'protein', 'proteins')} with the most ${W.marks}${total ? ` (of ${int(total)})` : ''} ${plural(n, 'is', 'are')} linked at ${how}`;
-    const named = CL.nShown
-      ? `${int(CL.nShown)} named ${plural(CL.nShown, 'cluster', 'clusters')}${UI.clusters && UI.clusters !== CL.nShown ? ` (${int(UI.clusters)} asked for; closest is ${int(CL.nShown)})` : ''}`
-      : `no cluster of ${int(UI.minc)} or more proteins`;
-    return `${head} · ${int(M.edges.length)} ${plural(M.edges.length, 'link', 'links')} · ${named}${CL.nOther ? `, ${int(CL.nOther)} small (gray)` : ''}`;
+      // the sentence above says how many of the top proteins are drawn and how many groups they form; this line keeps the rest
+      head = `Linked at ${how}${total ? `; ${int(total)} proteins have ${W.marks} in all` : ''}`;
+    const asked =
+      CL.nShown && UI.clusters && UI.clusters !== CL.nShown
+        ? `${int(UI.clusters)} clusters asked for; closest is ${int(CL.nShown)}`
+        : '';
+    return [
+      head,
+      `${int(M.edges.length)} ${plural(M.edges.length, 'link', 'links')}`,
+      asked,
+      CL.nOther ? `${int(CL.nOther)} small ${plural(CL.nOther, 'cluster', 'clusters')} (gray)` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
   }
   // the answer in one sentence, from the clusters as drawn: how many proteins, how many groups, the largest two
   function answerText(M, CL, sel0) {

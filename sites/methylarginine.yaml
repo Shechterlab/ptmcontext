@@ -341,8 +341,8 @@ marks:
         capri_adj_peptide: CAPRI RNA-bound peptide (ADJ)
         pclap_peptide: pCLAP RNA-binding peptide
         pclap_lysc_region: pCLAP RNA-binding region
-        rbrid_residue: RNA-contact residue
-        rbrid_residue_published_rule: RNA-contact residue (published rule)
+        rbrid_residue: RNA-contact residue (RBR-ID)
+        rbrid_residue_published_rule: RNA-contact residue (RBR-ID) (published rule)
         rbrid_region: RBR-ID region
         dna_crosslink: DNA-crosslinked residue
         dna_binding_region: UniProt DNA-binding region (annotation)
@@ -1140,14 +1140,14 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: pclap_lysc_region, inside: pclap_lysc_regions, proteins_with: pclap_lysc_regions, label: pCLAP RNA-binding region}
       - {category: pclap_lysc_region_outside_rg, inside: pclap_lysc_regions, proteins_with: pclap_lysc_regions, unless: *rg, label: "pCLAP region, outside RG/GR"}
       - {category: pclap_peptide, inside: pclap_peptides, proteins_with: pclap_peptides, label: pCLAP RNA-binding peptide}
-      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RNA-contact residue}
-      - {category: rbrid_residue_outside_rg, inside: rbrid_residues, proteins_with: rbrid_residues, unless: *rg, label: "RNA-contact residue, outside RG/GR"}
-      - {category: rbrid_residue_published_rule, inside: rbrid_residues_published_rule, proteins_with: rbrid_residues_published_rule, label: "RNA-contact residue, published rule"}
+      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RNA-contact residue (RBR-ID)}
+      - {category: rbrid_residue_outside_rg, inside: rbrid_residues, proteins_with: rbrid_residues, unless: *rg, label: "RNA-contact residue (RBR-ID), outside RG/GR"}
+      - {category: rbrid_residue_published_rule, inside: rbrid_residues_published_rule, proteins_with: rbrid_residues_published_rule, label: "RNA-contact residue (RBR-ID), published rule"}
       - {category: rbrid_region, inside: rbrid_regions, proteins_with: rbrid_regions, label: RBR-ID region}
       - {category: pclap_peptide_among_measured, inside: pclap_peptides, proteins_with: pclap_peptides, covered_by: pclap_measured, label: "pCLAP peptide, among measured"}
       - {category: capri_adj_peptide_among_measured, inside: capri_measured_adjacent, proteins_with: capri_measured_adjacent, covered_by: capri_measured, label: "CAPRI adjacent peptide, among measured"}
       - {category: rbdmap_peptide_among_measured, inside: rbdmap_measured_bound, proteins_with: rbdmap_measured_bound, covered_by: rbdmap_measured, label: "RBDmap peptide, among measured"}
-      - {category: rbrid_residue_among_measured, inside: rbrid_residues, proteins_with: rbrid_residues, covered_by: rbrid_quantified, label: "RNA-contact residue, among measured"}
+      - {category: rbrid_residue_among_measured, inside: rbrid_residues, proteins_with: rbrid_residues, covered_by: rbrid_quantified, label: "RNA-contact residue (RBR-ID), among measured"}
   - id: sequence_proximity
     title: Distance along the chain to RNA evidence
     question: "Are methylarginines near RNA-crosslinked residues along the sequence?"
@@ -1162,7 +1162,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: capri_adj_peptide, inside: capri_adj, proteins_with: capri_adj, label: CAPRI adjacent peptide}
       - {category: capri_xl_peptide, inside: capri_xl, proteins_with: capri_xl, label: RNA-crosslinked peptide (CAPRI)}
       - {category: pclap_peptide, inside: pclap_peptides, proteins_with: pclap_peptides, label: pCLAP peptide}
-      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RNA-contact residue}
+      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RNA-contact residue (RBR-ID)}
     strata:
       - {stratum: within_0_residues, within: 0}
       - {stratum: within_3_residues, within: 3}
@@ -1983,7 +1983,7 @@ website:                  # the look and words of the website (ptmc web); layout
         label: Crosslinked residue at the site or nearby
         help: "A residue UV-crosslinked to RNA or DNA in living cells, or a bound region, at or near the site"
         kinds: {rna_crosslink: RNA-crosslinked residue, dna_crosslink: DNA-crosslinked residue,
-                capri_xl_peptide: RNA-crosslinked peptide (CAPRI), capri_adj_peptide: RNA-bound peptide (CAPRI), rbrid_residue: RNA-contact residue, rbrid_region: RNA-contact region,
+                capri_xl_peptide: RNA-crosslinked peptide (CAPRI), capri_adj_peptide: RNA-bound peptide (CAPRI), rbrid_residue: RNA-contact residue (RBR-ID), rbrid_region: RNA-contact region (RBR-ID),
                 dna_binding_region: UniProt DNA-binding region}
         within: [0, 3, 5]
     partners:                # the proteins' physical partners (a protein_partners table)
@@ -2775,7 +2775,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
       - {attribute: evidence, values: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, rbrid_residue_published_rule, rbrid_region],
          label: in RNA-bound fragments or peptides, kind: "Seen in cells, not a direct contact", glyph: squiggle, opens: p-sites,
-         tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RNA-contact peptide. This shows where RNA binds in cells, not a structural contact. The RNA and DNA interactions section counts sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
+         tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RNA-contact peptide (RBR-ID). This shows where RNA binds in cells, not a structural contact. The RNA and DNA interactions section counts sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
       - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
     card:                  # the site card: its blocks, each reading an attribute or a table above (a block without its data is absent)
@@ -2830,14 +2830,14 @@ website:                  # the look and words of the website (ptmc web); layout
             dna_crosslink: {label: DNA-crosslinked peptide, format: range, sources: [Trendel2025], mark: residue the crosslink may sit on}
             capri_xl_peptide: {label: RNA-crosslinked peptide (CAPRI), format: range, sources: [CAPRI]}
             capri_adj_peptide: {label: RNA-bound peptide (CAPRI), format: range, sources: [CAPRI]}
-            rbrid_residue: {label: RNA-contact peptide, format: range, sources: [RBR-ID]}
+            rbrid_residue: {label: RNA-contact peptide (RBR-ID), format: range, sources: [RBR-ID]}
           columns: {sequence: Sequence, study: Study, dataset: Dataset}
         around:                              # a residue_evidence table: crosslinks and RNA-bound stretches at or near the site
           table: residues
           span: 3
           labels: {rna_crosslink: UV-crosslinked to RNA in living cells, dna_crosslink: UV-crosslinked to DNA in living cells,
                    capri_xl_peptide: inside CAPRI RNA-crosslinked peptide,
-                   capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RNA-contact peptide, rbrid_region: inside an RBR-ID region,
+                   capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RNA-contact peptide (RBR-ID), rbrid_region: inside an RBR-ID region,
                    dna_binding_region: inside a UniProt DNA-binding region}
         protein:                             # the whole protein (proteins.attributes), labeled so it is not read as site evidence
           title: "Whole protein (not specific to {site})"
@@ -2867,7 +2867,7 @@ website:                  # the look and words of the website (ptmc web); layout
           background: clinvar_background
           count: clinvar_variants
           gene: gene       # the column naming the gene; the card shows it for a protein several genes encode
-          highlight: {column: germline_classification, matches: *plp, label: pathogenic, title: "Classified pathogenic or likely pathogenic by ClinVar"}
+          highlight: {column: germline_classification, matches: *plp, label: P/LP, title: "pathogenic or likely pathogenic (ClinVar)"}
           sort: [{column: review_stars, order: desc}]
           fields:
             - {column: germline_classification, label: Classification}
@@ -3165,7 +3165,7 @@ website:                  # the look and words of the website (ptmc web); layout
             include: [{column: evidence_type, in: [rbrid_region, rbrid_residue]}]
           classes:
             rbrid_region: {label: RBR-ID region, mark: box, opacity: 0.18}
-            rbrid_residue: {label: RNA-contact residues, mark: box, opacity: 0.55}
+            rbrid_residue: {label: RNA-contact residue (RBR-ID)s, mark: box, opacity: 0.55}
           colour: "#7B4FBF"
           colour_dark: "#A98BE0"
         - id: dna_cells
@@ -3246,7 +3246,7 @@ website:                  # the look and words of the website (ptmc web); layout
 
         CAPRI: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3. XL-peptides and ADJ-peptides from the paper's supplementary tables; the adjacent-peptide runs are in PRIDE PXD013338.
 
-        RBR-ID: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012. RNA-contact peptides called from the DIA-NN report of PRIDE PXD035484 (K562 nuclei).
+        RBR-ID: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012. RNA-contact peptide (RBR-ID)s called from the DIA-NN report of PRIDE PXD035484 (K562 nuclei).
 
         DNA-crosslinked peptides: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037. Tables S1 and S2 of the paper (MCF7); underlined letters are the residues the crosslink may sit on.
 
@@ -3254,7 +3254,7 @@ website:                  # the look and words of the website (ptmc web); layout
 
         RBDmap (Castello et al., Mol Cell 63:696 (2016), doi:10.1016/j.molcel.2016.06.029; PRIDE PXD000883) and pCLAP (Mullari et al., J Proteome Res 16:2762 (2017), doi:10.1021/acs.jproteome.7b00042; PRIDE PXD005739): shown as flags only. Their peptides, fragments and extents are not shown here.
       columns:             # how the page shows the tables' columns (a table's own: <table>.<column>)
-        interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, rbdmap_fragment: RBDmap RNA-bound fragment, capri_xl_peptide: RNA-crosslinked peptide (CAPRI), capri_adj_peptide: RNA-bound peptide (CAPRI), pclap_peptide: pCLAP peptide, pclap_lysc_region: pCLAP region, rbrid_residue: RNA-contact residue, dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy, predicted_interface: Predicted interface (ProtVar), predicted_contact: Contact in a predicted model, intact_mutation: IntAct mutation, intact_binding_region: IntAct binding region, intact_methylated: IntAct records it methylated}}
+        interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, rbdmap_fragment: RBDmap RNA-bound fragment, capri_xl_peptide: RNA-crosslinked peptide (CAPRI), capri_adj_peptide: RNA-bound peptide (CAPRI), pclap_peptide: pCLAP peptide, pclap_lysc_region: pCLAP region, rbrid_residue: RNA-contact residue (RBR-ID), dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy, predicted_interface: Predicted interface (ProtVar), predicted_contact: Contact in a predicted model, intact_mutation: IntAct mutation, intact_binding_region: IntAct binding region, intact_methylated: IntAct records it methylated}}
         interactions.ids: {label: Structures or models}
         interactions.score: {label: Interface confidence (pDockQ), help: "pDockQ of a predicted model"}
         partner_accession: {label: Partner}
@@ -3330,7 +3330,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: "CAPRI peptide (measured)", group: In living cells, phrase: inside a CAPRI RNA-bound peptide (among the arginines CAPRI measured)}
           - {analysis: crosslink, category: pclap_peptide_among_measured, label: "pCLAP peptide (measured)", group: In living cells, phrase: inside a pCLAP RNA-binding peptide (among the arginines pCLAP measured)}
           - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: "RBDmap peptide (measured)", group: In living cells, phrase: inside an RBDmap RNA-bound peptide (among the arginines RBDmap measured)}
-          - {analysis: crosslink, category: rbrid_residue_among_measured, label: "RNA-contact residue (measured)", group: In living cells, phrase: an RNA-contact residue (among the arginines RBR-ID measured)}
+          - {analysis: crosslink, category: rbrid_residue_among_measured, label: "RNA-contact residue (RBR-ID) (measured)", group: In living cells, phrase: an RNA-contact residue (RBR-ID) (among the arginines RBR-ID measured)}
           - {analysis: crosslink, category: dna_crosslink_or_candidate, label: DNA-crosslinked residue, group: In living cells, phrase: at a DNA crosslink or one of its candidate residues}
           - {analysis: pdb_interface, category: protein, label: Protein interface (PDB), group: Protein contacts, phrase: at a protein interface in PDB structures}
           - {analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, group: Protein contacts, phrase: at the interface of a predicted complex}
@@ -3360,7 +3360,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: crosslink, category: pclap_lysc_region_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: pclap_peptide, label: Inside an RNA-binding peptide (pCLAP), group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: pclap_peptide_among_measured, label: … among arginines pCLAP measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_residue, label: An RNA-contact residue, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue, label: An RNA-contact residue (RBR-ID), group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbrid_residue_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbrid_residue_among_measured, label: … among arginines RBR-ID measured, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbrid_residue_published_rule, label: … by the published rule (sensitivity), group: "In cells: crosslinking mass spectrometry"}
@@ -3428,13 +3428,13 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: CAPRI}
                     - {analysis: crosslink, category: pclap_peptide_among_measured, label: pCLAP}
                     - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: RBDmap}
-                    - {analysis: crosslink, category: rbrid_residue_among_measured, label: RNA-contact}
+                    - {analysis: crosslink, category: rbrid_residue_among_measured, label: RNA contact (RBR-ID)}
                     - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue}
                     - {analysis: crosslink, category: rna_crosslink_single_residue, label: … localized to it alone}
                     - {analysis: crosslink, category: rbdmap_fragment, label: RBDmap fragment}
                     - {analysis: crosslink, category: pclap_peptide, label: pCLAP peptide}
                     - {analysis: crosslink, category: pclap_lysc_region, label: pCLAP region}
-                    - {analysis: crosslink, category: rbrid_residue, label: RNA-contact residue}
+                    - {analysis: crosslink, category: rbrid_residue, label: RNA-contact residue (RBR-ID)}
                     - {analysis: crosslink, category: dna_crosslink_or_candidate, label: DNA crosslink or candidate}
                     - {analysis: crosslink, category: dna_crosslinked_peptide, label: DNA-crosslinked peptide}
                 - {kind: table, table: interactions, title: The crosslinks and RNA-bound peptides at each site, chips: kind, columns: [accession, kind, sequence, study, dataset], limit: 25,
