@@ -96,7 +96,7 @@ def test_the_schema_takes_the_blocks_and_the_bundled_sites_pass():
         jsonschema.validate(site, schema)
         assert pcards.problems(site) == [], name
     ma = yaml.safe_load((ROOT / 'sites' / 'methylarginine.yaml').read_text())['website']['protein']
-    assert set(ma['cards']) == set(pcards.CARDS) and ma['order'][0] == 'p-map' and ma['open'] == ['p-map', 'p-cell']
+    assert set(ma['cards']) == set(pcards.CARDS) and ma['order'][0] == 'p-map' and ma['open'] == ['p-map']
     assert not pcards.config(yaml.safe_load((ROOT / 'sites' / 'yeast_phospho.yaml').read_text())).get(
         'cards'
     )  # no data, no card
@@ -198,12 +198,13 @@ console.log(JSON.stringify(out));"""
         and '<span class="tag">plain</span>' not in loc['html']
     )
     assert (
-        'median spacing 4 aa' in out['cl']['sum']
-        and 'top window 6 sites in 30 aa' in out['cl']['sum']
+        out['cl']['sum'] == '6 within 30 aa (q 3.0e-3)'
+        and '6 sites within 30 aa (A10–39), more than the spacing' in out['cl']['html']
+        and 'median spacing' not in out['cl']['sum']
         and '10–14 (3)' in out['cl']['html']
         and 'A10–39' in out['cl']['html']
     )
-    assert out['ptm']['sum'] == 'Phospho 2 · 1 within 5 aa of a site'
+    assert out['ptm']['sum'] == 'Phospho 2 · 1 residue within ±5 aa of a site'
     assert out['dep']['sum'] == '7 of 100 lines depend on it'
     assert 'Lung' in out['dep']['html'] and '<svg' in out['dep']['html']
     assert out['ex'] == {'hide': True, 'html': '', 'sum': ''}  # no rows, no card

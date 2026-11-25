@@ -22,7 +22,7 @@ def test_the_landing_search_opens_the_site_of_a_gene_and_residue_in_the_explorer
 
 def test_every_link_to_a_protein_in_the_network_is_built_by_one_function():
     net = _src('kit-network.js')
-    assert "K.net = { link: (acc) => K.link('network', '', { p: acc }) }" in net
+    assert "K.net = { link: (acc) => K.link('network', '', { p: acc })" in net
     assert net.count("K.link('network', '', {") == 1  # only inside K.net.link
     assert 'K.net.link(p.acc)' in net and "K.link('protein', pageArg(nd.acc))" in net
     assert '${acc}/${st[1]}' in net  # a selection naming one site keeps it on "Open protein page"

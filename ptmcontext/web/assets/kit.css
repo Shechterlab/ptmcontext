@@ -2796,6 +2796,29 @@ html[data-density='compact'] .stbl .state-pill .sp-x {
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   gap: 0.6rem 1.2rem;
 }
+.kinds.kinds-chips {
+  display: block;
+}
+.kind-set {
+  margin: 0.4rem 0;
+  line-height: 2;
+}
+a.chip {
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.85rem;
+}
+a.chip:hover {
+  border-color: var(--accent, currentColor);
+}
+.pc-verdict {
+  margin: 0.2rem 0 0.5rem;
+}
+.pc-more > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
 .kind h4 {
   margin: 0.2rem 0 0.3rem;
   font-size: 0.9rem;

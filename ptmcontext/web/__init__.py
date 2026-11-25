@@ -22,6 +22,7 @@ from pathlib import Path
 import ptmstats
 
 from .. import __version__
+from .. import context_marks
 from .. import layers as L
 from .. import statistics as ST
 from ..changelog import releases as app_releases
@@ -688,6 +689,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'proteins_view': web.get('proteins'),
         'selection_cards': web.get('selection_cards') or {},
         'protein_view': _protein_view(web.get('protein')),
+        # how many residues either side count as near another modification: the one window the page's counts share
+        **({'context_window': context_marks.window(site)} if context_marks.entries(site) else {}),
         'compare': web.get('compare'),
         **({'reading': web['reading']} if web.get('reading') else {}),
         'legacy_links': web.get('legacy_links') or {},

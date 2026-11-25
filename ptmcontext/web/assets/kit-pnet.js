@@ -701,6 +701,7 @@
       const s3 = rec?.s3d,
         hasIface = !!((s3?.c || []).some((r) => r[1] === 'protein' || r[1] === 'self') || (s3?.p || []).length);
       const net =
+        (K.net?.previewSlot?.(p) || '') + // the protein in its cluster, drawn small (kit-network.js)
         `<div class="card-head">` +
         `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network').replace(
           /<\/div>$/,
