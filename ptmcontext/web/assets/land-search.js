@@ -10,6 +10,7 @@
   if (!box || !out) return;
   let idx = null,
     pending = null,
+    sidx = null, // proteins-sites.json: per listed explorer, accession -> its marked sites ('R3 R15 K120'), read when a site is typed
     cmp = null; // compare/compare.json, read once beside the proteins (none: a site without a Compare page)
   const esc = (s) =>
     String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -18,6 +19,20 @@
   const spin = () => {
     wait = 0;
     if (!idx && say) say.innerHTML = '<span class="ld-spin" aria-hidden="true"></span> Loading proteins…';
+  };
+  const loadSites = () => {
+    if (sidx === null) {
+      sidx = false;
+      sidx = fetch('proteins-sites.json')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => {
+          sidx = j || false;
+          draw();
+          return sidx;
+        })
+        .catch(() => (sidx = false));
+    }
+    return Promise.resolve(sidx);
   };
   const load = () => {
     if (!pending) {
@@ -91,15 +106,26 @@
   };
   // the sites' own addresses: a protein's page (at its site when one is typed), or the gene-list test
   const listAddress = (s, names) => `${encodeURIComponent(s.id)}/#list?${new URLSearchParams({ q: names.join(' ') })}`;
-  // the explorers to offer for a hit: with a residue typed, the ones whose marks sit on that residue (their own residues,
-  // from the site file) open the site; the others open the protein only
+  // does explorer k hold this site (the exact residue and position) on the protein? Before the index of sites is read, or
+  // for a site with none, the explorer's residues stand in (its marks sit on that residue)
+  const holds = (row, k, site) => {
+    const s = idx.sites[k],
+      letter = site.replace(/\d/g, ''),
+      by = Array.isArray(sidx) && sidx[k];
+    if (by) {
+      const have = (by[row.acc] || '').split(' ');
+      return letter ? have.includes(site) : have.some((x) => x.slice(1) === site);
+    }
+    return !letter || !s.residues?.length || s.residues.includes(letter);
+  };
+  // the explorers to offer for a hit: with a site typed, the ones that hold that exact site open it; the others that have
+  // the protein open the protein only
   const links = (row, site, q) => {
-    const letter = site.replace(/\d/g, ''),
-      all = row.ids.map((k) => idx.sites[k]).filter(Boolean),
-      fits = (s) => !letter || !s.residues?.length || s.residues.includes(letter),
-      one = (s, at) =>
-        `<a href="${esc(encodeURIComponent(s.id))}/${esc(address(row, at, q))}">${esc(s.label)}${at || !site ? '' : ' (protein only)'}</a>`;
-    return [...all.filter(fits).map((s) => one(s, site)), ...all.filter((s) => !fits(s)).map((s) => one(s, ''))];
+    const all = row.ids.filter((k) => idx.sites[k]),
+      one = (k, at) =>
+        `<a href="${esc(encodeURIComponent(idx.sites[k].id))}/${esc(address(row, at, q))}">${esc(idx.sites[k].label)}${at || !site ? '' : ' (protein only)'}</a>`,
+      fit = (k) => !site || holds(row, k, site);
+    return [...all.filter(fit).map((k) => one(k, site)), ...all.filter((k) => !fit(k)).map((k) => one(k, ''))];
   };
   // the exact current symbols and the explorers' shorthand first; a protein found only by an old or alternative symbol is
   // folded under one muted line (when nothing else is found they are shown as they are)
@@ -138,21 +164,31 @@
       return;
     }
     const { rows, site, list } = read(q);
+    if (site && sidx === null) loadSites();
     // a category: the Compare page's classes or questions that the same words match (land-match.js, as that page filters)
     const cat = !list && !site && cmp ? window.PTMMatch.count(cmp, q) : { classes: 0 },
       catLine = cat.classes
         ? `<li class="hit-cmp"><a href="compare/#${esc(new URLSearchParams({ q }))}">Compare ‘${esc(q)}’ across explorers: ${cat.classes} ${cat.classes === 1 ? 'class' : 'classes'} ›</a></li>`
         : '';
+    // Enter's target: a protein whose current symbol (or the explorers' shorthand) is exactly the text first; else a category that the words match (ALS is the
+    // Compare class, not ALS2, which only starts with it); else the first protein
+    const go = {
+      cat: !!catLine && !site && !rows.some((h) => h.tier === 0 && (!h.via || h.row.short.includes(h.via))),
+    };
     out.innerHTML = list
       ? `<li><span class="hit-name"><b>${esc(list.join(', '))}</b></span><span class="hit-sites">Open this list in: ${idx.sites
           .map((s) => `<a href="${listAddress(s, list)}">${esc(s.label)}</a>`)
           .join(' ')}</span></li>`
-      : hitsHtml(rows, site, q) + catLine;
+      : go.cat
+        ? catLine + hitsHtml(rows, site, q)
+        : hitsHtml(rows, site, q) + catLine;
     if (say)
       say.textContent = list
         ? `${list.length} names: test them as a gene list.`
         : rows.length
-          ? `${main(rows).length} protein${main(rows).length === 1 ? '' : 's'}; open ${main(rows).length === 1 ? 'it' : 'one'} in an explorer.`
+          ? site && !links(main(rows)[0].row, site, q).some((l) => !l.includes('(protein only)'))
+            ? `No explorer lists ${site} on ${main(rows)[0].label}; Enter opens the protein.`
+            : `${main(rows).length} protein${main(rows).length === 1 ? '' : 's'}; open ${main(rows).length === 1 ? 'it' : 'one'} in an explorer.`
           : cat.classes
             ? 'No protein with that name; it matches a category in Compare.'
             : 'No protein with that name or accession in these sites.';
@@ -176,8 +212,9 @@
   box.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (idx) open();
-      else load().then(() => (draw(), open()));
+      const go = () => (read(box.value.trim()).site ? loadSites() : Promise.resolve()).then(open);
+      if (idx) go();
+      else load().then(() => (draw(), go()));
     } else if (e.key === 'Escape' && box.value) {
       box.value = '';
       draw();

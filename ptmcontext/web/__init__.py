@@ -2242,6 +2242,24 @@ def _licence_words(spdx: str) -> str:
     )
 
 
+def _marked_sites(folder: Path, ptab, rules: list[dict] | None) -> dict[str, str]:
+    """accession -> the protein's marked sites as its page numbers them ('R3 R15 K120'), from the site's marks.tsv, for the
+    landing page's search to route a typed site to an explorer that holds that exact residue. Empty with no marks.tsv."""
+    import pandas as pd
+
+    f = folder / 'marks.tsv'
+    if not f.exists():
+        return {}
+    mk = pd.read_csv(f, sep='\t', dtype=str, keep_default_na=False, usecols=['accession', 'position', 'residue'])
+    rules = numbering.rules_for_page(rules)
+    who = {a: (g, n) for a, g, n in zip(ptab['accession'], ptab['gene'], ptab['name'])}
+    out: dict[str, list[tuple[int, str]]] = {}
+    for a, pos, res in zip(mk['accession'], mk['position'], mk['residue']):
+        g, n = who.get(a, ('', ''))
+        out.setdefault(a, []).append((int(pos) + numbering.offset(a, g, n, rules), res))
+    return {a: ' '.join(f'{r}{p}' for p, r in sorted(set(v))) for a, v in out.items()}
+
+
 def pages(
     site_paths: list,
     out: str | Path,
@@ -2266,6 +2284,7 @@ def pages(
         str, list
     ] = {}  # accession -> [gene, name, indexes of the listed sites that have it, genes, symbols], for the landing search
     listed_ids: list[dict] = []
+    marked: list[dict[str, str]] = []  # per listed site: accession -> its marked positions as the page numbers them
     # the explorers' own names for proteins (website.search.shorthand: H4), for the landing search
     shorthand: dict[str, str] = {}
     for_compare: list[tuple] = []  # the listed sites built: what the Compare marks page reads (compare.py)
@@ -2333,6 +2352,7 @@ def pages(
                 row = found.setdefault(acc, [m['short'] if m else gene, name, [], m['genes'] if m else [], []])
                 row[2].append(k)
                 row[4] = list(dict.fromkeys(row[4] + other.get(acc, [])))
+            marked.append(_marked_sites(src.parent, ptab, (web.get('protein') or {}).get('numbering')))
 
         # the numbers and the striking result are the site's own build; a build without them gives a card without them
         def _read(name):
@@ -2410,6 +2430,10 @@ def pages(
                 separators=(',', ':'),
             )
         )
+    if any(
+        marked
+    ):  # where each explorer has marks, so a typed site opens one that holds it (land-search.js, only then)
+        (out / 'proteins-sites.json').write_text(json.dumps(marked, separators=(',', ':')))
     kit = kit_citation()
     lab_html = (
         (

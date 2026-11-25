@@ -467,8 +467,7 @@
   // the search read is kept for the line under it: names matched by another name (via), sites with no mark
   // (missing), positions read in a protein's own numbering (numbered), and symbols one edit from a word (typos).
   const RESIDUES = new Set((D.residues || []).map((r) => String(r).toUpperCase()));
-  const POS_RE = /^[A-Z]?\d+$/i,
-    VAR_RE = /^([A-Z])(\d+)([A-Z*])$/i; // a position (R216) or a variant (R216C, R216*)
+  const VAR_RE = /^([A-Z])(\d+)([A-Z*])$/i; // a variant (R216C, R216*); a position (R216, K4me3) is PTMNames.pos
   const isTermKey = (k) => {
     const key = String(k).toLowerCase();
     return !!(
@@ -552,11 +551,11 @@
       if (m && !isTermKey(m[1])) {
         // GENE:R216 is a site, not a term
         const l = lookup(m[1]),
-          s = /^([A-Z]?)(\d+)$/i.exec(m[2]);
-        if (l && s && (!s[1] || AA.includes(s[1].toUpperCase()))) {
+          s = window.PTMNames.pos(m[2]); // GENE:K4me3 too (the mark code is read and dropped)
+        if (l && s) {
           out.nWords++;
           named(m[1], l);
-          addSite(l.ps, +s[2], s[1].toUpperCase());
+          addSite(l.ps, s.pos, s.letter);
           continue;
         }
       }
@@ -591,11 +590,11 @@
         // TP53) is that protein, unless it is a mark of the one before it
         while (
           j < toks.length &&
-          ((POS_RE.test(toks[j]) && (!/^[A-Z]/i.test(toks[j]) || AA.includes(toks[j][0].toUpperCase()))) ||
+          (window.PTMNames.pos(toks[j]) || // K4, K4me3, 216
             (VAR_RE.test(toks[j]) && RESIDUES.has(toks[j][0].toUpperCase())))
         ) {
           const tok = toks[j],
-            pos = +tok.replace(/\D/g, ''),
+            pos = (window.PTMNames.pos(tok) || { pos: +tok.replace(/\D/g, '') }).pos,
             other = lookup(tok),
             vm = VAR_RE.exec(tok);
           if (vm) out.variants.push([nameOf(l.ps[0]), vm[1].toUpperCase(), pos, vm[3].toUpperCase()]);
