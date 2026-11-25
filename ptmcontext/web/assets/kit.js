@@ -604,9 +604,9 @@
     }
   }
   // the selection's part of a link: search, filters, the test shown and the baseline
-  function selParams() {
+  function selParams(q = S.q) {
     const p = new Query();
-    if (S.q) p.set('q', S.q);
+    if (q) p.set('q', q);
     const f = K.sel?.encode();
     if (f) p.set('f', f);
     if (S.m !== 'mantel_haenszel') p.set('m', S.m);
@@ -623,7 +623,13 @@
     const [path, qs] = String(href).replace(/^#/, '').split('?'),
       own = new URLSearchParams(qs || '');
     if (own.has('q') || own.has('f')) return '#' + path + (qs ? '?' + qs : '');
-    const p = selParams();
+    // a search naming a site is dropped by a link to another protein (K.sel.qFor)
+    const [view, ...segs] = path.split('/'),
+      p = selParams(
+        view === 'protein' && segs.length && K.sel?.qFor
+          ? K.sel.qFor(S.q, { segs: segs.map((x) => decodeURIComponent(x)) })
+          : S.q
+      );
     own.forEach((v, k) => p.set(k, v));
     return '#' + path + (p.toString() ? '?' + p : '');
   }

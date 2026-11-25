@@ -59,9 +59,14 @@
       }
     })());
   // the address on another site: the protein open now when that site has it, the tab open now when that site has it (else its Overview)
+  const marksOn = {}; // site id -> the residues its marks sit on (sites.json residues), when the registry says
+  // the search to carry: not a site on a residue the other explorer does not hold (it keeps the protein), nor one on another protein
+  const qTo = (site, segs) =>
+    S.q && K.sel?.qFor ? K.sel.qFor(S.q, { segs, residues: marksOn[site]?.length ? marksOn[site] : null }) : S.q;
   const target = (site, name, withProtein) => {
-    const p = [];
-    if (S.q) p.push('q=' + encodeURIComponent(S.q));
+    const p = [],
+      q = qTo(site, acc() && withProtein ? [acc()] : null);
+    if (q) p.push('q=' + encodeURIComponent(q));
     if (S.hl) p.push('hl=' + encodeURIComponent(S.hl));
     const f = K.sel?.encode?.();
     if (f) p.push('f=' + f.replace(/[&#+\s]/g, (c) => encodeURIComponent(c)));
@@ -184,7 +189,7 @@
       ? others
           .map(
             (s) =>
-              `<a class="btn small" href="../${encodeURIComponent(s.id)}/#overview?q=${encodeURIComponent(S.q)}" ` +
+              `<a class="btn small" href="../${encodeURIComponent(s.id)}/#overview?q=${encodeURIComponent(qTo(s.id, null))}" ` +
               `data-same-genes="${esc(s.id)}">Same genes in ${esc(s.label)}</a>`
           )
           .join('')
@@ -245,6 +250,7 @@
         mine = all.find((s) => s.id === here),
         // unlisted sites are in the menu of an unlisted site, and where their own file says so
         list = all.filter((s) => s.listed || s.in_switcher || s.id === here || (mine && !mine.listed));
+      all.forEach((s) => (marksOn[s.id] = (s.residues || []).map((x) => String(x).toUpperCase())));
       others = list.filter((s) => s.id !== here);
       if (others.length && S.q) K.render?.();
       build(list, reg.switcher_label || 'Explorer', reg.brand || '', reg.pages || []);

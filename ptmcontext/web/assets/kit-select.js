@@ -647,7 +647,11 @@
       else out.unmatched.push(t);
     }
     // a list that names proteins: its other plain words are names with no marked protein, not filters on the names
-    if (out.genes.length || out.sites.length) {
+    if (out.sites.length && !out.genes.length) {
+      // a name and its site (TP53 R213 mutation): the site, the other words ignored without a list's "left out" note
+      out.words = [];
+      out.unmatched = [];
+    } else if (out.genes.length || out.sites.length) {
       const orig = (w) => toks.find((t) => t.toLowerCase() === w) || w;
       out.ignored = out.words.map(orig);
       out.absent = out.unmatched;
@@ -659,6 +663,19 @@
       if (n.length) out.typos[w] = n.map((p) => [p.i, nameOf(p)]);
     });
     return out;
+  }
+  // the search text to carry to another page or explorer, so a site search does not follow the reader where it means
+  // nothing: `segs` (the protein a link opens, as the address names it) drops a q whose sites are on another protein;
+  // `residues` (the residues the other explorer's marks sit on) reduces a q naming a residue it does not hold to the protein
+  function qFor(q, { segs = null, residues = null } = {}) {
+    const sites = q ? parse(q).sites : [];
+    if (!sites.length) return q;
+    if (segs) {
+      const here = new Set(segs.flatMap((s) => (lookup(s)?.ps || []).map((p) => p.i)));
+      if (!sites.some(([pi]) => here.has(pi))) return '';
+    }
+    const bad = residues && sites.find(([, , l]) => l && !residues.includes(l));
+    return bad ? nameOf(P[bad[0]]) : q;
   }
   // a chosen site as written in an address: accession:S15 (the UniProt position), accession:15 or accession:15:S (older
   // links), or GENE:S15 (the position as the protein's page shows it) -> { key: accession:position, res } or null
@@ -1899,6 +1916,7 @@
       notesOf,
       leftOut,
       siteKey,
+      qFor,
       nMarks,
       nProteins,
       loading: isLoading,

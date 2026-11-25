@@ -1,7 +1,7 @@
 /* How a protein is named and found in a search box: one function for a site's search and the landing page's, so both
    give the same hits in the same order. A row is { acc, gene (the short name shown), genes (every gene), aliases (previous
    and alternative symbols), name, entry, w (weight: marks, or sites, most first) }. Plain script (the landing page inlines
-   it); it puts window.PTMNames = { rank, text, exact, pos, siteOf } and reads nothing else. The notations of a site typed in a
+   it); it puts window.PTMNames = { rank, text, exact, pos, siteOf, read } and reads nothing else. The notations of a site typed in a
    search are read here too (pos, siteOf), for the explorers' search (kit-select.js) and the landing page's. */
 (() => {
   'use strict';
@@ -60,6 +60,20 @@
     }
     return null;
   };
+  // what a phrase of several words asks for, by one rule for the landing page and the explorers: a name and a site token
+  // (TP53 R213 mutation methylation) is that site, the other words ignored; with no site token, the words that name
+  // proteins are a gene list when two or more do (an ordinary word that names nothing never makes one), else the one
+  // protein. known(word) gives what a word names (or nothing). -> { site: { name, hit, letter, pos } } | { list: [words] }
+  // | { one: { name, hit } } | null
+  const read = (words, known) => {
+    const hits = words.map((w) => known(w) || null),
+      at = words.findIndex((w, i) => !hits[i] && pos(w)),
+      first = hits.findIndex(Boolean);
+    if (at >= 0 && first >= 0) return { site: { name: words[first], hit: hits[first], ...pos(words[at]) } };
+    const named = words.filter((w, i) => hits[i]);
+    if (at < 0 && named.length > 1) return { list: named };
+    return at < 0 && first >= 0 ? { one: { name: words[first], hit: hits[first] } } : null;
+  };
   // the readable name: the short name, then the protein's name and, for a protein several genes encode, how many
   const text = (r, via) => {
     const n = r.genes?.length > 1 ? `${r.genes.length} genes` : '';
@@ -69,5 +83,5 @@
       sub: [via, [r.name, n].filter(Boolean).join(', ')].filter(Boolean).join(' · '),
     };
   };
-  window.PTMNames = { rank, text, exact, pos, siteOf };
+  window.PTMNames = { rank, text, exact, pos, siteOf, read };
 })();

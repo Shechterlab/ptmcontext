@@ -45,12 +45,15 @@
   // the same ranking and names as a site's search (kit-names.js, inlined before this script)
   const find = (q) => {
     if (!q.trim() || !idx) return [];
+    const short = {}; // the explorers' shorthand (website.search.shorthand: H4 is the histone): accession -> names
+    Object.entries(idx.shorthand || {}).forEach(([n, acc]) => (short[acc] ||= []).push(n));
     idx.rows ||= idx.p.map(([acc, gene, name, ids, genes, aliases]) => ({
       acc,
       gene,
       name,
       genes: genes || [],
-      aliases: aliases || [],
+      short: short[acc] || [],
+      aliases: [...(aliases || []), ...(short[acc] || [])],
       w: ids.length,
       ids,
     }));
@@ -77,13 +80,12 @@
     const so = names.length === 1 && !known(q) && N.siteOf(q, known);
     if (so) return { rows: so.hit, site: `${so.letter}${so.pos}` };
     if (!rows.length && names.length > 1) {
-      // a gene and a residue with its position (TP53 S15, H4 R3, AKT1 T308): the hits open that site; only a protein that has
-      // the typed name gets the site, not a near match
-      const p = names.length === 2 && N.pos(names[1]),
-        hits = p && known(names[0]);
-      if (hits) return { rows: hits, site: `${p.letter}${p.pos}` };
-      // a gene list, when some of its names are proteins here
-      return names.some(known) ? { rows: [], list: names } : { rows: [], site: '' };
+      // a name and a site (TP53 S15, H4 R3, TP53 R213 mutation methylation): that site, the other words ignored; two or more
+      // names and no site: a gene list; one name: that protein (kit-names.js read)
+      const r = N.read(names, known) || {};
+      if (r.site) return { rows: r.site.hit, site: `${r.site.letter}${r.site.pos}` };
+      if (r.list) return { rows: [], list: r.list };
+      return { rows: r.one ? r.one.hit : [], site: '' };
     }
     return { rows, site: '' };
   };
@@ -98,6 +100,31 @@
       one = (s, at) =>
         `<a href="${esc(encodeURIComponent(s.id))}/${esc(address(row, at, q))}">${esc(s.label)}${at || !site ? '' : ' (protein only)'}</a>`;
     return [...all.filter(fits).map((s) => one(s, site)), ...all.filter((s) => !fits(s)).map((s) => one(s, ''))];
+  };
+  // the exact current symbols and the explorers' shorthand first; a protein found only by an old or alternative symbol is
+  // folded under one muted line (when nothing else is found they are shown as they are)
+  const main = (rows) => {
+    const m = rows.filter((h) => !h.via || h.row.short.includes(h.via) || h.tier > 0);
+    return m.length ? m : rows;
+  };
+  const hitsHtml = (rows, site, q) => {
+    const one = (h) => {
+      const { acc, ids } = h.row,
+        via = h.row.short.includes(h.via) ? '' : h.via;
+      return (
+        `<li><span class="hit-name" style="cursor:pointer" title="Open in ${esc(idx.sites[ids[0]]?.label || '')}"><b>${esc(h.label)}</b>${h.desc ? ` · ${esc(h.desc)}` : ''} ` +
+        `<span class="muted">${esc(acc)}${site ? ` · ${esc(site)}` : ''}${via ? ` · also ${esc(via)}` : ''}</span></span>` +
+        `<span class="hit-sites">Open in ${links(h.row, site, q).join(' ')}</span></li>`
+      );
+    };
+    const first = main(rows),
+      rest = rows.filter((h) => !first.includes(h));
+    return (
+      first.map(one).join('') +
+      (rest.length
+        ? `<li class="hit-alias muted"><details><summary>${rest.length} other${rest.length === 1 ? '' : 's'} also ${rest.length === 1 ? 'uses' : 'use'} the name ${esc(rest[0].via)} ›</summary><ul>${rest.map(one).join('')}</ul></details></li>`
+        : '')
+    );
   };
   const draw = () => {
     const q = box.value.trim();
@@ -120,21 +147,12 @@
       ? `<li><span class="hit-name"><b>${esc(list.join(', '))}</b></span><span class="hit-sites">Open this list in: ${idx.sites
           .map((s) => `<a href="${listAddress(s, list)}">${esc(s.label)}</a>`)
           .join(' ')}</span></li>`
-      : rows
-          .map((h) => {
-            const { acc, ids } = h.row;
-            return (
-              `<li><span class="hit-name" style="cursor:pointer" title="Open in ${esc(idx.sites[ids[0]]?.label || '')}"><b>${esc(h.label)}</b>${h.desc ? ` · ${esc(h.desc)}` : ''} ` +
-              `<span class="muted">${esc(acc)}${site ? ` · ${esc(site)}` : ''}${h.via ? ` · also ${esc(h.via)}` : ''}</span></span>` +
-              `<span class="hit-sites">Open in ${links(h.row, site, q).join(' ')}</span></li>`
-            );
-          })
-          .join('') + catLine;
+      : hitsHtml(rows, site, q) + catLine;
     if (say)
       say.textContent = list
         ? `${list.length} names: test them as a gene list.`
         : rows.length
-          ? `${rows.length} protein${rows.length === 1 ? '' : 's'}; open it in an explorer.`
+          ? `${main(rows).length} protein${main(rows).length === 1 ? '' : 's'}; open ${main(rows).length === 1 ? 'it' : 'one'} in an explorer.`
           : cat.classes
             ? 'No protein with that name; it matches a category in Compare.'
             : 'No protein with that name or accession in these sites.';
