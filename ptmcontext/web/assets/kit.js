@@ -1321,6 +1321,7 @@
         about: x.about,
         show: x.show,
         more: x.more,
+        links: x.links,
         cards: x.cards
           .map((c) => (typeof c === 'string' ? { analysis: c } : c.rows_from ? { ...c, analysis: c.rows_from[0] } : c))
           .filter((c) => A[c.analysis]),
@@ -1336,10 +1337,11 @@
     }
     // one vocabulary and order for every explorer: the shared groups, then the site's own, then the closing ones
     const G = D.overview_groups || { shared: [], last: [] },
+      star = G.shared.indexOf('*'), // where the site's own sections (the mark-specific ones) go
       rank = (x) => {
         const i = G.shared.indexOf(x.name),
           j = G.last.indexOf(x.name);
-        return i >= 0 ? i : j >= 0 ? 2e6 + j : 1e6;
+        return i >= 0 ? i : j >= 0 ? 2e6 + j : star >= 0 ? star : 1e6;
       };
     out = out
       .map((x, i) => [x, i])
@@ -1347,7 +1349,7 @@
       .map((u) => u[0]);
     // the cell and the nucleus, drawn (a card with drawing: true), open the Overview
     const first = out.filter((x) => x.cards.some((c) => c.drawing === true && c.analysis === D.cell?.id));
-    if (D.overview?.cell_first === false) return out; // website.overview.cell_first: false: the section stays where the site file puts it, under its heading
+    if (D.overview?.cell_first !== true) return out; // website.overview.cell_first: true opens the Overview with the cell; otherwise the section stays in the shared order, under its heading
     return first.length ? [...first.map((x) => ({ ...x, cell: true })), ...out.filter((x) => !first.includes(x))] : out;
   }
   // against other marks the attributes are questions too: about the sites, and (last, as a caveat) how they were found
@@ -1716,7 +1718,6 @@
   }
   // a question's title on its tile, and in the sidebar: one name from the site file
   // the questions the Test switch changes: where the marks lie, not the protein-class questions (one test each)
-  const followsTest = (a) => a.kind !== 'protein_sets' && a.kind !== 'module' && !a.tile && !K.questions[a.id]?.tile;
   const tileTitle = (c) => c.title || FR.short?.[c.analysis] || A[c.analysis]?.title || '';
   K.tileTitle = tileTitle;
   // where a question's tile leads: its question page, or, for a question about one protein's own facts asked of a selection
@@ -1779,11 +1780,7 @@
       ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
     const ans = fr && !made && !card.rows_from && shown.length > 1 ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
     return (
-      `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${esc(title)}${
-        followsTest(a)
-          ? ` <span class="tsw" title="This tile changes with the Test switch"><span aria-hidden="true">⇄</span><span class="vh"> changes with the Test switch</span></span>`
-          : ''
-      }</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
+      `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${esc(title)}</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
       (ans ? `<p class="tans">${ans}</p>` : '') +
       (shown.length
         ? `<div class="trows${fr ? ' fr-rows' : ''}">${
@@ -2134,9 +2131,13 @@
           }>${esc(BTN[m][0])}</button>`
       )
       .join('')}</span></span>`;
+    // one note beside the switch: which tiles it changes (the protein-set tiles do not follow it)
+    const tnote = `<span class="tnote muted small">Changes the residue questions below; protein-set questions do not follow it.</span>`;
     // the marks the site shows and counts nowhere (kit-shown.js): the note says how many, beside how many are counted
     if (!selOn())
-      return `<div class="page-head"><h2>${esc(q)}</h2>${tools}</div>` + (K.shown?.note ? K.shown.note() : '') + key;
+      return (
+        `<div class="page-head"><h2>${esc(q)}</h2>${tools}${tnote}</div>` + (K.shown?.note ? K.shown.note() : '') + key
+      );
     const c = K.sel.compute(),
       n = (c.marks || []).length,
       np = c.proteins ? c.proteins.size : 0;
@@ -2445,13 +2446,13 @@
     els.forEach((el) => io.observe(el));
   });
   // ---- Key findings: the strongest results that hold their controls, in one plain line each, at the top of the Overview.
-  // Chosen from the tiles' rows by the smallest q among those at or above 1.1× that fail no control, at most one per section
+  // Chosen from the tiles' rows: among those with q ≤ 0.05 at or above 1.25× that fail no control, the largest effect, at most one per section
   // (website.overview.key_findings: count, min_fold, pin and exclude, each a question id or "id/class"; false leaves it out)
   function keyFindings() {
     const KF = OV.key_findings;
     if (KF === false || selOn() || vsOn() || S.arg) return '';
-    const n = KF?.count ?? 3,
-      minFold = KF?.min_fold ?? MIN_EFFECT;
+    const n = KF?.count ?? 4,
+      minFold = KF?.min_fold ?? 1.25; // a tiny effect with a huge n (a tiny q) is not a finding
     const named = (list, a, c) =>
       (list || []).findIndex((x) =>
         typeof x === 'string'
@@ -2488,7 +2489,7 @@
       });
     });
     pins.sort((x, y) => x.at - y.at);
-    cands.sort((x, y) => x.q - y.q || y.v - x.v);
+    cands.sort((x, y) => y.v - x.v || x.q - y.q); // among q ≤ 0.05, by the size of the effect
     const pick = pins.slice(0, n),
       used = new Set(pick.map((e) => e.sec));
     for (const e of cands) {
@@ -2578,11 +2579,38 @@
     // a tile of a selection too small to test that fell back to the whole dataset: the question's own tile (tileState), not
     // a module's tile (the cell's drawing of the selection, the counts) which has something of the selection to show
     const unchanged = (c) => small && tileH(c).startsWith('<article class="tile" id="tile-');
+    const emptyLine = (list) => {
+      const why = [...new Set(list.map((e) => e[1]))];
+      return why
+        .map(
+          (w) =>
+            `<p class="ov-empty muted">${w}: ${list
+              .filter((e) => e[1] === w)
+              .map(
+                ([c]) =>
+                  `<a id="tile-${esc(c.analysis)}" href="${esc(link('overview', c.analysis))}">${esc(tileTitle(c))}</a>`
+              )
+              .join(', ')}.</p>`
+        )
+        .join('');
+    };
     const secBody = (x, bare) => {
       const cs = x.cards,
         k = x.show > 0 && !selOn() && cs.length > x.show ? x.show : cs.length;
+      // a tile with no row to show (none differs, none reaches q ≤ 0.05) is a name in one line under the section, not a tile
+      const empty = [],
+        shown = cs.slice(0, k).filter((c) => {
+          const h = tileH(c),
+            m =
+              !selOn() && !c.rows_from && h.startsWith('<article class="tile" id="tile-') && !h.includes('class="trows')
+                ? h.match(/<p class="muted tnone">([^<]*)<\/p>/)
+                : null;
+          if (m) empty.push([c, m[1]]);
+          return !m;
+        });
       return {
-        main: cs.slice(0, k).map(tileH).join('') + (bare ? '' : more(x.name)),
+        empty: emptyLine(empty),
+        main: shown.map(tileH).join('') + (bare ? '' : more(x.name)),
         rest: cs.slice(k).map(tileH).join(''),
         n: cs.length - k,
       };
@@ -2603,19 +2631,29 @@
           `</p></header></section>`)
       );
     };
+    // website.overview.sections[].links: the pages that hold more of a section, as one line of links (no copy of their content)
+    const pointer = (x) => {
+      const ls = selOn() ? [] : (x.links || []).filter((v) => K.views[v]);
+      return ls.length
+        ? `<p class="ov-pointer">More on ${ls
+            .map((v) => `<a href="${esc(link(v))}">${esc(K.tabName(v, v).toLowerCase())}</a>`)
+            .join(' and ')}.</p>`
+        : '';
+    };
     const sectionHtml = (x, i, bare) => {
       if (lazyOn && i >= FIRST && !K.ovOpen.has(x.name)) return lazyHtml(x);
       const b = secBody(x, bare);
-      if (!b.main && !b.rest) return '';
+      if (!b.main && !b.rest && !b.empty) return '';
       const id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
       return (
         `<section class="ov-sec${x.caveat ? ' caveat' : ''}" aria-labelledby="sec-${id}"><header ` +
         `class="ov-sec-head${x.cell ? ' vh' : ''}"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3></header>` +
-        `<div class="tiles">${b.main}</div>` +
+        `<div class="tiles">${b.main}</div>${b.empty}` +
         (b.n
           ? `<details class="sec-more"><summary>${esc(x.more || 'More in ' + x.name)} (${b.n})</summary>` +
             `<div class="tiles">${b.rest}</div></details>`
           : '') +
+        pointer(x) +
         '</section>'
       );
     };
@@ -2782,6 +2820,7 @@
     const t = document.getElementById('q-controls'),
       seen = t && t.getBoundingClientRect().top < innerHeight * 0.6 && t.getBoundingClientRect().bottom > 0;
     if (seen && still >= 2) return t.focus({ preventScroll: true });
+    if (t?.tagName === 'DETAILS') t.open = true; // closed by default: a badge or link to it opens it
     if (t && !seen) t.scrollIntoView({ block: 'start' });
     if (tries) setTimeout(() => toControls(tries - 1, seen ? still + 1 : 0), 100);
   }
@@ -2855,9 +2894,9 @@
     };
     const whole = selOn() || vsOn();
     return (
-      `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls${
+      `<details class="pcard controls" id="q-controls" tabindex="-1"><summary><h3>Controls${
         whole ? ' <span class="muted">(whole dataset)</span>' : ''
-      }</h3><details class="page-note"><summary>How to read this</summary>${
+      }</h3>${pageFails(a)}</summary><details class="page-note"><summary>How to read this</summary>${
         whole ? 'These describe the whole dataset; your selection is not tested again here. ' : ''
       }The same test again with one change each (${esc(METHOD[m] || 'proteins, hypergeometric')}), read on the fold the ` +
       `tiles show; each cell's odds ratio, interval and q are in its tooltip. ${CTL_KEY}</details>` +
@@ -2877,7 +2916,7 @@
               .join('')}</tr>`
         )
         .join('') +
-      `</tbody></table></div>${fewNotes}</section>`
+      `</tbody></table></div>${fewNotes}</details>`
     );
   }
   // a selection too small to test: where each selected site (or, for a set question, its protein) falls in the question's
@@ -2935,7 +2974,26 @@
     });
   }
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
+  // the question's strongest rows as 2-3 tiles above its table: up to two more often and one less often (effect, q, n)
+  function qTiles(a, rows, card) {
+    const ok = rows.filter((r) => r.eff != null && !r.vs && !EXCL.test(r.label || '') && rankable(r)),
+      up = ok
+        .filter((r) => r.dir === 'more')
+        .sort(byOrder(card))
+        .slice(0, 2),
+      dn = ok
+        .filter((r) => r.dir === 'less')
+        .sort((x, y) => valOf(x) - valOf(y))
+        .slice(0, 1);
+    if (!up.length && !dn.length) return '';
+    const one = (r, d) =>
+      `<article class="tile qtile ${d}"><h4>${d === 'more' ? 'More often' : 'Less often'}: <b>${esc(afterIn(r.label))}</b></h4>` +
+      `<p class="qt-fold">${esc(fx(valOf(r)))}</p>` +
+      `<p class="muted small">q ${esc(fq(r.q))} · n = ${int(r.a)}</p></article>`;
+    return `<div class="tiles q-tiles">${up.map((r) => one(r, 'more')).join('')}${dn.map((r) => one(r, 'less')).join('')}</div>`;
+  }
   function focus(aid) {
+    inFocus = false;
     // a question that is one of a card's views (website.overview cards: views) opens that card
     const cards = allCards(),
       own = cards.findIndex((c) => c.analysis === aid),
@@ -2964,13 +3022,16 @@
             )} · Next ›</a>`
           : ''
       }</span></div>`;
-    if (a.page) return bar + a.page(card); // a question a module draws (kit-counts.js)
+    if (a.page) return a.page(card) + bar; // a question a module draws (kit-counts.js)
     // a selection too small to test: its own sites first, then every site, labeled as such (nothing here is tested)
     const small = smallSel() && !mod,
-      rows = mod ? [] : chartRows(a, S.m, card, small);
-    return (
-      bar +
-      `<div class="page-head"><h2>${esc(card.title || a.title)}</h2>${pageFails(a)}<span class="tools">${
+      rows = mod ? [] : chartRows(a, S.m, card, small),
+      ctl = mod
+        ? ''
+        : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m === 'fisher' ? 'fisher' : 'mantel_haenszel');
+    inFocus = true; // the card under the heading does not repeat the title
+    const page =
+      `<div class="page-head"><h2>${esc(card.title || a.title)}</h2>${ctl ? '' : pageFails(a)}<span class="tools">${
         a.kind === 'protein_sets' || mod
           ? ''
           : `<span class="flabel">Test:</span> <span class="seg" ` +
@@ -3027,7 +3088,7 @@
               .join('')}</${tag}>`;
           })()
         : '') +
-      familyLine(a) +
+      (small || mod || selOn() ? '' : qTiles(a, rows, card)) +
       (a.control_too_few != null
         ? `<section class="pcard"><p class="note too-few">${esc(tooFewText(a))}</p></section>`
         : (small ? fewHtml(a) : '') +
@@ -3040,10 +3101,11 @@
               ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
               : ''
           }</section>`) +
-      (mod
-        ? ''
-        : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m === 'fisher' ? 'fisher' : 'mantel_haenszel'))
-    );
+      ctl +
+      familyLine(a) +
+      bar;
+    inFocus = false;
+    return page;
   }
   // what the site keeps, what it asks other services for, and under which licenses everything is
   // the data a reader can download (website.downloads), under its terms, and the site's own tables
@@ -3277,6 +3339,7 @@
     }),
     ...(selOn() || S.arg ? [] : (K.overviewSections || []).flatMap((f) => f())),
   ];
+  let inFocus = false; // a question's own page: the heading above holds its title
   function cardBody(a, rows) {
     // a residue question shows every class, and so does a set question with 12 sets or fewer (a partition)
     const mark = moreMarks(a, rows),
@@ -3292,7 +3355,7 @@
           }</button>`
         : '';
     return (
-      `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3>` +
+      `<div class="card-body"><div class="card-head"><div>${inFocus ? '' : `<h3>${esc(a.title)}</h3>`}` +
       (`<p class="sub">${
         vsOn()
           ? `Your selection (filled) against ${esc(vsName())} (hollow)${

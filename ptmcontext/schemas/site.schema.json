@@ -3062,15 +3062,15 @@
               ]
             },
             "key_findings": {
-              "description": "the strip at the top of the Overview: the strongest results that hold their controls, one plain line each, linked to their tile. Chosen by the smallest q among rows at or above min_fold that fail no control badge, at most one per section; false leaves the strip out",
+              "description": "the strip at the top of the Overview: the strongest results that hold their controls, one tile each, linked to their question. Chosen by the largest effect among rows with q ≤ 0.05 at or above min_fold that fail no control badge, at most one per section; false leaves the strip out",
               "oneOf": [
                 {"const": false},
                 {
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
-                    "count": {"type": "integer", "minimum": 1, "maximum": 5, "default": 3, "description": "how many results (default 3)"},
-                    "min_fold": {"type": "number", "minimum": 1, "default": 1.1, "description": "the smallest fold a result needs (default 1.1)"},
+                    "count": {"type": "integer", "minimum": 1, "maximum": 6, "default": 4, "description": "how many results (default 4)"},
+                    "min_fold": {"type": "number", "minimum": 1, "default": 1.25, "description": "the smallest fold a result needs (default 1.25)"},
                     "pin": {
                       "type": "array",
                       "items": {
@@ -3104,8 +3104,8 @@
             },
             "cell_first": {
               "type": "boolean",
-              "default": true,
-              "description": "the section whose card draws the cell (drawing: true) opens the Overview; false keeps it where the site file lists it"
+              "default": false,
+              "description": "true: the section whose card draws the cell (drawing: true) opens the Overview; false (default) keeps it in the shared section order, under its heading"
             },
             "draw_first": {
               "type": "integer",
@@ -3143,6 +3143,11 @@
                   "more": {
                     "type": "string",
                     "description": "the expander's words when show is set (the count follows), default 'More in <name>'"
+                  },
+                  "links": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "pages (tab ids, such as network or interactions) that answer more of this section: one line of links under its tiles, not a copy of their content"
                   },
                   "cards": {
                     "type": "array",
@@ -3552,6 +3557,11 @@
               "additionalProperties": false,
               "description": "the Overview's Starting points: proteins ranked by a count or a protein attribute, and ready-made selections",
               "properties": {
+                "on_overview": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "true draws the block on the Overview; by default the Overview leaves it out (the Proteins tab holds the ranked lists)"
+                },
                 "open": {
                   "type": "boolean",
                   "default": false,
@@ -5794,6 +5804,11 @@
               "two_or_more": {
                 "type": "string",
                 "description": "values: what a mark with two or more values is, in running text (default: with two or more <unit>)"
+              },
+              "inline": {
+                "type": "boolean",
+                "default": false,
+                "description": "values: the count is one sentence in its Methods section (each value's share), not a tile; list it in no Overview section"
               },
               "group": {
                 "type": "string",

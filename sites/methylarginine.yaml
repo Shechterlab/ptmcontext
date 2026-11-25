@@ -425,7 +425,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     universe: snapshot
     whole_universe: true
     background: other reviewed human proteins
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: panther_class
     test: protein_sets
     title: Protein classes (PANTHER)
@@ -442,7 +442,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     universe: snapshot
     whole_universe: true
     background: other reviewed human proteins
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: panther_subclass
     test: protein_sets
     title: Protein subclasses (PANTHER)
@@ -459,7 +459,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 10
     background: other reviewed human proteins
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   # Disease families (scripts/14_disease_enrichment.py): DisGeNET terms (as DOSE 4.4.0 ships them) gathered into
   # families by name (the release's rules, sites/data/methylarginine_disease_families.yaml); the sets are Entrez genes,
   # each protein's through its UniProt primary gene name (the first of several) and org.Hs.eg.db's symbols. Every
@@ -485,7 +485,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [audited]}
     universe: snapshot
     background: other reviewed human genes (Entrez) with a DisGeNET term
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile analyzed separately"}
   - id: disease_family_additional
     test: protein_sets
     title: Disease families, additional
@@ -506,7 +506,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       families: {rules: sites/data/methylarginine_disease_families.yaml, by: term_name, lists: [additional]}
     universe: snapshot
     background: other reviewed human genes (Entrez) with a DisGeNET term
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, combine: max, label: ", each PaxDb abundance decile analyzed separately"}
   # Disease Ontology (scripts/14_disease_enrichment.py): the gene sets DOSE enrichDO tests (each term holds the genes of
   # the terms under it; Human Disease Ontology 2026-09-30), on the genes of the disease families: every reviewed
   # protein's genes are the universe, those with a Disease Ontology term the background, and every term of 10 genes or
@@ -583,7 +583,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 5
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
     background: other reviewed human proteins
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
     scores: {input: cdcode_members, set: condensate_uid, protein: uniprot_accession, value: confidence_score, label: Membership confidence (CD-CODE),
              help: "CD-CODE's 0-5 confidence that the protein belongs to the condensate (CD-CODE 2.3)", levels: [2, 3, 4, 5], max: 5}
     filter: {label: CD-CODE condensate (methylated members), any: In any CD-CODE condensate, sets: all}   # every condensate with a methylated member, as the original
@@ -606,7 +606,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 5
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
     background: other human proteins in CD-CODE condensates (export of 2026-03-18)
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   # Driver or client in condensates: CD-CODE 2.3 gives each membership its roles (driver, client, regulator, member, or unknown; a
   # membership may have several). A protein is in a role's set when it has that role in any human condensate; each set is
   # tested against the other proteins of the human condensates. Not in the release
@@ -641,7 +641,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       member: "Proteins that CD-CODE lists as a member of at least one human condensate, with no further role stated"
       unknown: "Proteins whose role CD-CODE does not state"
     background: other human proteins in CD-CODE 2.3 condensates (export of 2026-10-16)
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   # Proteins that bind RNA or DNA (scripts/37_export_interaction_data.py): GO annotations, against every reviewed protein;
   # and the proteins each in-cell experiment found binding, each against the proteins that experiment measured where it
   # lists them (else every reviewed protein): one test per set, BH over the sets, again within PaxDb abundance deciles
@@ -662,7 +662,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     universe: snapshot
     whole_universe: true
     background: all reviewed human proteins
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: binding_protein
     test: protein_sets
     title: Proteins found binding RNA or DNA in cells
@@ -687,7 +687,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            background: other reviewed human proteins}
     universe: snapshot
     whole_universe: true
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: reactome_top_level
     test: protein_sets
     title: Reactome pathways, top level
@@ -697,7 +697,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sets: {input: reactome, set: pathway_id, protein: canonical_UniProtAC}
     names: {input: reactome_names, set: pathway_id, name: name, include: [{column: depth, equals: "0"}]}
     background: other reviewed human proteins with at least one Reactome 97 pathway
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: reactome_pathway
     test: protein_sets
     title: Reactome pathways
@@ -709,17 +709,17 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     min_size: 10
     max_size: 500
     background: other reviewed human proteins with at least one Reactome 97 pathway
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: hpa_location
     test: protein_sets
-    title: Where in the cell
-    question: "Where in the cell are methylated proteins found more often than other proteins?"
+    title: Human Protein Atlas locations
+    question: "Which Human Protein Atlas locations hold more methylated proteins than other proteins?"
     sub: "Methylated proteins against the other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
     section: Localization
     sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
     whole_universe: true
     background: other proteins with an HPA 25.1 location (Approved or better)
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   # Where in the cell, beyond the Human Protein Atlas (scripts/cell_maps.py): each map tested against the proteins it
   # places, compartment by compartment (compartments of at least 5 proteins), and again within PaxDb abundance deciles.
   # The regions of the cell: each map's compartments gathered into the nucleus, the cytoplasm and the organelles and
@@ -739,7 +739,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "other proteins with an HPA 25.1 location (Approved or better). A region is the Human Protein Atlas locations it holds (scripts/cell_maps.py, REGION_OF)"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: cell_region_hcm
     test: protein_sets
     title: Regions of the cell (Human Cell Map)
@@ -754,7 +754,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments). A region is the Human Cell Map compartments it holds (scripts/cell_maps.py, REGION_OF)"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: cell_region_organelle_ip
     test: protein_sets
     title: Regions of the cell (organelle IP)
@@ -770,7 +770,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "the other proteins organelle IP classifies (HEK293T). A region is the Organelle IP it holds (scripts/cell_maps.py, REGION_OF)"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: cell_hcm_compartment
     test: protein_sets
     title: Human Cell Map compartments
@@ -781,7 +781,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments)
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: cell_hcm_domain
     test: protein_sets
     title: Human Cell Map domains
@@ -792,7 +792,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: the other proteins the Human Cell Map places in a SAFE domain
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: cell_organelle_ip
     test: protein_sets
     title: Organelle IP
@@ -808,7 +808,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
              14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
              early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,
              mitochondrion: Mitochondrion, peroxisome: Peroxisome, plasma_membrane: Plasma membrane}
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   - id: cell_chromatin
     test: protein_sets
     title: Chromatin probability
@@ -828,7 +828,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     background: the other proteins with an interphase chromatin probability
     labels: {"ICP >= 0.8 (chromatin)": "Chromatin (probability ≥ 0.8)", "ICP 0.5-0.8": "Chromatin probability 0.5–0.8", "ICP 0.2-0.5": "Chromatin probability 0.2–0.5",
              "ICP < 0.2 (not chromatin)": "Not chromatin (probability < 0.2)"}
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
   # Where the RNAs bound by proteins with eCLIP data gather (scripts/cell_maps.py, GENE_MAPS): the release's calls per
   # protein and map (supporting/eclip_rna_compartments). The nuclear-body map (Barutcu et al. 2022) stays out
   - id: eclip_rna_apexseq
@@ -842,7 +842,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "the other proteins with eCLIP data that APEX-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein APEX-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   - id: eclip_gene_tsaseq
     test: protein_sets
@@ -855,7 +855,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "the other proteins with eCLIP data that TSA-seq tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein TSA-seq tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   - id: eclip_gene_hic
     test: protein_sets
@@ -868,7 +868,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: "the other proteins with eCLIP data that Hi-C subcompartments tests (at least 20 bound RNAs placed). A set is the proteins whose bound RNAs gather in the compartment"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
     sizes: {value: odds_ratio, log2: true, background: "the log2 odds ratio of the bound RNAs of each other protein Hi-C subcompartments tests gathering in the compartment, called or not (supporting/eclip_rna_compartments). a and c count the proteins compared"}
   # Cancer cell lines (scripts/release_layers.py, CANCER): cancer cell genetics beside the sites, not evidence about
   # methylation. The dependency classes partition the entries whose gene DepMap 24Q4 screened (gene_effect)
@@ -895,7 +895,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       most_lines: "not commonly essential, and at least 50% of the screened lines depend on it"
       some_lines: "not commonly essential, and 5% to under 50% of the lines depend on it (selective dependencies)"
       few_or_none: "fewer than 5% of the lines depend on it"
-    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
+    abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile analyzed separately"}
     values:                        # each screened protein's numbers, for the website (website.set_views); no test reads them
       columns:
         - {name: median, label: median gene effect, background: true}
@@ -1596,7 +1596,6 @@ website:                  # the look and words of the website (ptmc web); layout
       sequence_proximity: "Distance to RNA evidence"
       nucleic_acid_distance: "Distance to RNA/DNA (PDB)"
       intact: "IntAct mutations and regions"
-      reader_classes: "Enzymes and readers"
       perturbations: "PRMT perturbations"
       provenance: "Studies and databases"
     row_labels:                 # a code is unique only within its question; the two stress-granule sets are told apart by source
@@ -1641,9 +1640,9 @@ website:                  # the look and words of the website (ptmc web); layout
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
-    question: "Which proteins are methylated?"
+    question: "Which proteins have methylarginine, where in the protein is it, and which other modifications are nearby?"
     rows: 5
-    random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end (open: true opens it; enabled: false leaves it out)
+    random_maps: {n: 3, title: Example proteins, enabled: false}   # off: the Overview points to other pages instead of repeating them (open: true opens it; enabled: false leaves it out)
     starting_points:       # under the sections: proteins to start from, and ready-made selections (the explorer's)
       open: true
       lists:
@@ -1658,19 +1657,6 @@ website:                  # the look and words of the website (ptmc web); layout
         - {label: proteins in condensates, query: "f=p:condensate_proteome~*", view: proteins}
         - {label: proteins with dense clusters, query: "f=r:dense_q~0.05", view: proteins}
     sections:
-      - name: Localization
-        about: "Where in the cell the methylated proteins localize."
-        #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
-        cards:
-          - {analysis: where_in_the_cell, title: Localization, drawing: true, wide: true}
-      - name: Classes and pathways
-        about: "Protein classes, pathways and condensates of the methylated proteins."
-        cards:
-          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
-          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
-          - {analysis: panther_subclass, title: Protein subclasses}
-          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
-          - {analysis: condensate_role, title: Driver or client in condensates}
       - name: Position in the protein
         about: "Where in the protein the methylated arginines are: motifs, folded or disordered parts, domains."
         cards:
@@ -1683,10 +1669,6 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: sticker_context_3_idr}
           - {analysis: sticker_context_5_idr}
           - {analysis: which_factor, wide: true}
-      - name: RNA and DNA binding
-        about: "Whether methylated arginines touch RNA, DNA or other proteins. The Interactions page has the tests."
-        #  the Interactions page's tile (website.pages[].overview)
-        cards: []
       - name: Other modifications
         about: "Whether methylated arginines are near other modifications (phosphosites and methyllysines), within 10 residues."
         cards:
@@ -1694,11 +1676,25 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: near_phospho_high}
           - {analysis: near_methyllysine}
       - name: Interactions and enzymes
-        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked. Protein partners are with the RNA and DNA tile above."
+        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked."
         #  counted from the partner classes (website.search.partners), not tested
+        links: [interactions, network]
         cards:
           - reader_classes
           - {analysis: perturbations, wide: true}
+      - name: Classes and pathways
+        about: "Protein classes, pathways and condensates of the methylated proteins."
+        cards:
+          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
+          - {analysis: panther_subclass, title: Protein subclasses}
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
+          - {analysis: condensate_role, title: Driver or client in condensates}
+      - name: Localization
+        about: "Where in the cell the methylated proteins localize."
+        #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
+        cards:
+          - {analysis: where_in_the_cell, title: Localization, drawing: true, wide: true}
       - name: Disease and cancer
         about: "Diseases linked to the methylated proteins."
         show: 1
@@ -1743,22 +1739,22 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: cancer_change, title: Changes in tumors and cell lines}
           - {analysis: clinvar_plp, title: ClinVar pathogenic variants}
           - {analysis: gnomad_variant, title: gnomAD variants}
-      - name: Evidence and studies
-        about: "Which studies and databases reported the sites."
-        #  counted, not tested (website.counts)
-        cards: [provenance]
       - name: More questions
         about: "Further protein classes, pathways, cell maps and maps of bound RNAs, one question each."
         cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)},
                 {analysis: hpa_location, title: Human Protein Atlas locations}, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin,
                 eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, disorder, domain_context]
+      - name: Evidence and studies
+        about: "Which studies and databases reported the sites."
+        #  counted, not tested (website.counts)
+        cards: [provenance]
   cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
     id: where_in_the_cell
     default_view: average        # what the maps color by on opening: percent (share of proteins with a mark), average (each share against the share among all mapped proteins) or fold
     dispersion: false        # the average view: no overdispersion adjustment across compartments (they are not expected to be alike)
     abundance: true          # its test is within abundance deciles (Mantel-Haenszel), Fisher's exact test where a map has none
     min_h: 0.2               # filled only where the effect is at least small (Cohen's h); significant but smaller is outlined
-    title: Where in the cell
+    title: Localization
     question: "Where do methylated proteins localize in the cell?"
     intro: "Five maps from four studies locate proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
     note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq), and where the genes of those RNAs lie in the nucleus (TSA-seq, Hi-C subcompartments), is under More questions."
@@ -1834,7 +1830,7 @@ website:                  # the look and words of the website (ptmc web); layout
     reader_classes:
       kind: values
       attribute: bound_by
-      title: Methylation enzymes and readers
+      title: Methylarginines on proteins whose STRING partners include writers, readers or cofactors
       question: "Which methylarginines are on proteins with a STRING partner that is a writer, a reader or a cofactor?"
       sub: "Methylarginines on proteins with a STRING physical partner (score 0.7 or more) in each writer, reader or cofactor class"
       distribution: "Classes of partner of each protein carrying a {mark}"
@@ -1865,26 +1861,26 @@ website:                  # the look and words of the website (ptmc web); layout
       title: PRMT inhibitors, knockouts and knockdowns
       question: "Which methylarginines have a peptide that decreases when PRMTs are inhibited or knocked out?"
       sub: "Methylarginines that change when a PRMT is inhibited, knocked out or knocked down (Maron et al. 2021; Shishkova et al. 2017; Szewczyk et al. 2020; Hartel et al. 2019; Lu et al. 2024; Li et al. 2021)"
-      head: "Methylarginines with a peptide that decreased with each PRMT inhibitor, knockout or knockdown"
+      head: "Methylarginines that decreased, of those quantified, with each PRMT inhibitor, knockout or knockdown"
       first: Perturbation
       group: Methyl-IP
       calls: {down: decreased, up: increased}
       note: "Rows count the methylarginines an experiment measured and those that changed. A site is decreased when a peptide containing it went down and none went up, and increased for the reverse. A peptide with several methylarginines gives each the same change. Maron rows: sites measured in that methyl-IP, with a peptide changing at adjusted p ≤ 0.05. CARM1 knockout rows: sites measured in that cell line, with a peptide changing at least twofold at BH q < 0.05. Other rows: sites quantified, called at twofold and q < 0.05, or by the published call where the row says so (the PRMT1 knockdown, 2 against 2 samples, and the Li et al. 2021 arms, one SILAC experiment each, untested). The Li et al. PRMT5 knockdown lists only decreased sites. Median change is the median over sites of each site's median log2 change (inhibitor minus DMSO for Maron rows, perturbed over control for the rest)."
       method: "The release's supporting tables give each site's call and change per experiment: maron2021_inhibitors (Maron et al. 2021 Table S3), carm1_ko (Shishkova et al. 2017) and writer_perturbations. The calls of the last two are the site table's perturbation_calls (the perturbation filter). Counts and medians are descriptive. No test is run here."
       rows:
-        - {name: GSK591, note: PRMT5 inhibitor, group: Rme1, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: MMA}, change: log2_diff_median}
-        - {name: GSK591, note: PRMT5 inhibitor, group: Rme2a, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: ADMA}, change: log2_diff_median}
-        - {name: GSK591, note: PRMT5 inhibitor, group: Rme2s, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: SDMA}, change: log2_diff_median}
-        - {name: MS023, note: type I PRMT inhibitor, group: Rme1, table: maron_inhibitors, where: {inhibitor: MS023, antibody: MMA}, change: log2_diff_median}
-        - {name: MS023, note: type I PRMT inhibitor, group: Rme2a, table: maron_inhibitors, where: {inhibitor: MS023, antibody: ADMA}, change: log2_diff_median}
-        - {name: MS023, note: type I PRMT inhibitor, group: Rme2s, table: maron_inhibitors, where: {inhibitor: MS023, antibody: SDMA}, change: log2_diff_median}
+        - {name: GSK591, note: PRMT5 inhibitor, short: "GSK591 (PRMT5 inhibitor), Rme1", group: Rme1, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: MMA}, change: log2_diff_median}
+        - {name: GSK591, note: PRMT5 inhibitor, short: "GSK591 (PRMT5 inhibitor), Rme2a", group: Rme2a, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: ADMA}, change: log2_diff_median}
+        - {name: GSK591, note: PRMT5 inhibitor, short: "GSK591 (PRMT5 inhibitor), Rme2s", group: Rme2s, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: SDMA}, change: log2_diff_median}
+        - {name: MS023, note: type I PRMT inhibitor, short: "MS023 (type I PRMT inhibitor), Rme1", group: Rme1, table: maron_inhibitors, where: {inhibitor: MS023, antibody: MMA}, change: log2_diff_median}
+        - {name: MS023, note: type I PRMT inhibitor, short: "MS023 (type I PRMT inhibitor), Rme2a", group: Rme2a, table: maron_inhibitors, where: {inhibitor: MS023, antibody: ADMA}, change: log2_diff_median}
+        - {name: MS023, note: type I PRMT inhibitor, short: "MS023 (type I PRMT inhibitor), Rme2s", group: Rme2s, table: maron_inhibitors, where: {inhibitor: MS023, antibody: SDMA}, change: log2_diff_median}
         - {name: CARM1 KO, note: MCF7 cells, short: CARM1 KO MCF7, group: Rme2a, attribute: perturbation, value: carm1_ko_mcf7, table: carm1_ko, where: {cell_line: MCF7}, change: log2_ko_over_wt}
         - {name: CARM1 KO, note: MDA-MB-231 cells, short: CARM1 KO MDA-MB-231, group: Rme2a, attribute: perturbation, value: carm1_ko_mdamb231, table: carm1_ko, where: {cell_line: MDA-MB-231}, change: log2_ko_over_wt}
         - {name: "PRMT7 KO, HCT116", note: "Szewczyk et al. 2020 · twofold, q < 0.05", kind: knockout, attribute: perturbation, value: prmt7_ko_hct116, table: writer_perturbations, where: {perturbation: prmt7_ko_hct116}, change: log2_treated_over_control}
         - {name: "PRMT1 knockdown, HEK293T", note: "Hartel et al. 2019 · published call", kind: knockdown, attribute: perturbation, value: prmt1_kd_hek293t, table: writer_perturbations, where: {perturbation: prmt1_kd_hek293t}, change: log2_treated_over_control}
-        - {name: "PRMT5i EPZ015666, HeLa", note: "Lu et al. 2024 · twofold, q < 0.05", kind: inhibitor, attribute: perturbation, value: prmt5i_epz015666_hela, table: writer_perturbations, where: {perturbation: prmt5i_epz015666_hela}, change: log2_treated_over_control}
+        - {name: "PRMT5i EPZ015666, HeLa", short: "EPZ015666 (PRMT5 inhibitor), HeLa", note: "Lu et al. 2024 · twofold, q < 0.05", kind: inhibitor, attribute: perturbation, value: prmt5i_epz015666_hela, table: writer_perturbations, where: {perturbation: prmt5i_epz015666_hela}, change: log2_treated_over_control}
         - {name: "PRMT7 knockdown, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: prmt7_kd_hek293, table: writer_perturbations, where: {perturbation: prmt7_kd_hek293}, change: log2_treated_over_control}
-        - {name: "PRMT7i SGC3027, HEK293", note: "Li WJ et al. 2021 · published call", kind: inhibitor, attribute: perturbation, value: prmt7i_sgc3027_hek293, table: writer_perturbations, where: {perturbation: prmt7i_sgc3027_hek293}, change: log2_treated_over_control}
+        - {name: "PRMT7i SGC3027, HEK293", short: "SGC3027 (PRMT7 inhibitor), HEK293", note: "Li WJ et al. 2021 · published call", kind: inhibitor, attribute: perturbation, value: prmt7i_sgc3027_hek293, table: writer_perturbations, where: {perturbation: prmt7i_sgc3027_hek293}, change: log2_treated_over_control}
         - {name: "CARM1 knockdown, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: carm1_kd_hek293, table: writer_perturbations, where: {perturbation: carm1_kd_hek293}, change: log2_treated_over_control}
         - {name: "PRMT5 knockdown, HEK293", note: "Li WJ et al. 2021 · published call; decreased sites only", kind: knockdown, listed: true, attribute: perturbation, value: prmt5_kd_hek293, table: writer_perturbations, where: {perturbation: prmt5_kd_hek293}, change: log2_treated_over_control}
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
@@ -2151,7 +2147,6 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: binding_protein, set: dna_xl}
           - {analysis: binding_protein, set: dna_interactome}
     outline: {id: enzyme_role, name: Enzyme role, kind: role, none: "No enzyme or reader role"}   # a ring on the writers, erasers and readers (website.search.partners classes), with any color
-    tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites, linked by physical interactions and complexes and clustered by GO biological process."}
   # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, go_binding, binding_protein]

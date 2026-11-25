@@ -78,6 +78,7 @@ def values_count(c: dict, marks: pd.DataFrame, attrs: dict) -> dict:
         'distribution': c.get('distribution', ''),
         'total': int(len(marks)),
         'two_or_more': c.get('two_or_more', f'with two or more {c.get("unit", ["value", "values"])[1]}'),
+        'inline': bool(c.get('inline')),
         'values': [
             [v, labels.get(v, v), count[v], only.get(v, 0) if is_list else None, links.get(v, '')] for v in rows
         ],

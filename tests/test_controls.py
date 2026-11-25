@@ -380,7 +380,7 @@ const { chromium } = require('playwright');
   out.part = await p.evaluate(() => document.querySelector('.msub [aria-current]').textContent);
   // the question's own page still holds its Controls table: each cell shows the fold, its test in the tooltip
   await p.goto(process.argv[2] + '/index.html#overview/motif');
-  await p.waitForSelector('#q-controls tbody td span[title]', { timeout: 20000 });
+  await p.waitForSelector('#q-controls tbody td span[title]', { state: 'attached', timeout: 20000 });
   out.cells = await p.evaluate(() => [...document.querySelectorAll('#q-controls tbody td span[title]')].map((x) => [x.textContent, x.title]));
   console.log(JSON.stringify({ ...out, tip, errs }));
   await b.close();

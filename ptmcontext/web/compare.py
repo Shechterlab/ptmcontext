@@ -289,11 +289,13 @@ def build_data(cfg: dict, built: list[dict], log=print) -> dict | None:
                         if a is not None
                         else None
                     )
+                # one label source: the name the explorers give the class (when they agree), else the page file's
+                own = {x['label'] for x in cells.values() if x and x.get('label')} - {c['class'].replace('_', ' ')}
                 rows.append(
                     {
                         'id': f'{q["id"]}:{c["class"]}',
                         'class': c['class'],
-                        'label': c.get('label') or c['class'],
+                        'label': next(iter(own)) if len(own) == 1 else c.get('label') or c['class'],
                         'cells': cells,
                     }
                 )

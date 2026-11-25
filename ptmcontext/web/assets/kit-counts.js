@@ -220,8 +220,18 @@
             r.up ? `; ${int(r.up)} ${esc(c.calls.up)}` : ''
           }`);
     const body = rows.length
-      ? `<div class="cmeters">${rows
-          .map((r) => meter(r.short, r.down / mx, int(r.down), tip(r), 'down', rowFilter(id, r)))
+      ? `<div class="cmeters resp">${rows
+          .map((r) =>
+            meter(
+              r.short,
+              r.down / mx,
+              // how many of those quantified: "560 of 2,431 (23%)"; an experiment that lists only the decreased has no base
+              r.listed ? `${int(r.down)} listed` : `${int(r.down)} of ${int(r.n)} (${pc(r.down, r.n)}%)`,
+              tip(r),
+              'down',
+              rowFilter(id, r)
+            )
+          )
           .join('')}</div>`
       : `<p class="muted ` + `tnone">None of these ${esc(W.marks)} was measured</p>`;
     const most = (rs) => {
@@ -712,6 +722,14 @@
     );
   }
 
+  // a count of a few values that is a sentence, not a chart (counts[].inline): each value's share of the marks
+  const inlineLine = (c) =>
+    c.inline && c.kind === 'values' && c.total
+      ? `<p class="qm-inline">${c.values
+          .filter((v) => v[2] > 0)
+          .map((v) => `${int(v[2])} ${esc(v[1].toLowerCase())} (${pc(v[2], c.total)}%)`)
+          .join(', ')} of ${int(c.total)} ${esc(W.marks)}.</p>`
+      : '';
   // ---- Method: each count's own section, after the questions' --------------------------------------------------------
   (K.methodParts ||= []).push(() =>
     IDS.map((id) => {
@@ -751,6 +769,7 @@
         `<section id="m-q-${esc(id)}" class="qm"><h3>${esc(c.title)}</h3>${
           c.question ? `<p class="qm-q">${esc(c.question)}</p>` : ''
         }${c.sub ? `<p>${esc(c.sub)}.</p>` : ''}` +
+        inlineLine(c) +
         `<p>Counted, not tested: ${how}. A selection is counted again in the browser.${c.method ? ' ' + esc(c.method) : ''}</p>` +
         (`<p>Reads:</p><ul class="qm-reads">${reads.join('')}</ul><p class="qm-links"><a href="${esc(K.link('overview', id))}">Its figure</a>` +
           `</p></section>`)

@@ -3585,6 +3585,10 @@ a.exp-btn {
 .tile.wide .cm {
   grid-template-columns: minmax(7rem, 30%) minmax(0, 1fr) 3rem;
 }
+.cmeters.resp .cm,
+.tile.wide .cmeters.resp .cm {
+  grid-template-columns: minmax(6.5rem, 34%) minmax(0, 1fr) minmax(5.5rem, auto);
+}
 .cm-l {
   overflow: hidden;
   line-height: 1.2;
@@ -11591,13 +11595,20 @@ body.slim .brand-line {
 }
 .keyfind ol {
   display: grid;
-  gap: 0.35rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.6rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .keyfind li {
-  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  font-size: 0.92rem;
   line-height: 1.4;
 }
 .keyfind li a {
@@ -11619,12 +11630,9 @@ a.ctl-badge {
   margin: 0.2rem 0 0;
   font-size: 0.85rem;
 }
-.tsw {
-  margin-left: 0.25rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--muted);
-  cursor: help;
+.page-head .tnote {
+  flex-basis: 100%;
+  text-align: right;
 }
 
 /* ---- Controls, chips and the drawer: borders at 3:1, chip counts at 4.5:1, a drawer that holds the page still, tap targets ---- */
@@ -12068,4 +12076,49 @@ summary {
 /* the Sites table under the tiles: "Show N sites" in its summary only while it is closed */
 .pfold[open] > summary .st-show {
   display: none;
+}
+
+.ov-pointer,
+.ov-empty {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.q-tiles {
+  margin: 0 0 1rem;
+}
+.qtile h4 {
+  font-size: 0.9rem;
+  margin: 0 0 0.2rem;
+}
+.qtile .qt-fold {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.qtile.more .qt-fold {
+  color: var(--more);
+}
+.qtile.less .qt-fold {
+  color: var(--less);
+}
+details.controls > summary {
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.8rem;
+}
+details.controls > summary h3 {
+  display: inline;
+  margin: 0;
+}
+details.controls > summary::before {
+  content: '\25B8';
+  color: var(--muted);
+}
+details.controls[open] > summary::before {
+  content: '\25BE';
 }

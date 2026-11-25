@@ -492,8 +492,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     family_label: All types
     new: true
     test: protein_sets
-    title: Where in the cell
-    question: "Where in the cell are proteins with modified lysines found more often than other proteins?"
+    title: Human Protein Atlas locations
+    question: "Which Human Protein Atlas locations hold more proteins with modified lysines than other proteins?"
     sub: "Proteins with modified lysines against the other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
     sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
@@ -1589,30 +1589,10 @@ website:                  # the look and words of the website (ptmc web); layout
   stats: [marks, proteins, {attribute: sources, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
-    question: "Which proteins have modified lysines?"
+    question: "Which proteins have modified lysines, and how do modified lysines differ from the other lysines of their protein?"
     rows: 5
-    random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end
+    random_maps: {n: 3, title: Example proteins, enabled: false}   # off: the Overview points to other pages instead of repeating them
     sections:
-      - name: Localization
-        about: "Where in the cell the proteins with modified lysines localize."
-        #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
-        cards:
-          - {analysis: where_in_the_cell, title: Localization, drawing: true, wide: true}
-          - {analysis: cell_chromatin, title: Chromatin probability}
-      - name: Same lysine, different modifications
-        about: "Whether a lysine with one modification is also reported with another more often than the other lysines of its protein: acetylation, ubiquitination, SUMOylation and methylation. Mass spectrometry finds some lysines far more often than others, so each tile also gives the result among lysines with another modification."
-        cards:                                  # one tile, a row per pair; each question's page shows its controls beside its result
-          - rows_from: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]
-            title: Same lysine, different modifications
-      - name: Classes and pathways
-        about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types together. Each question's page links to the same question for each type with at least 200 lysines."
-        cards:
-          - {analysis: histone, title: Histones and other proteins}
-          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
-          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
-          - {analysis: panther_subclass, title: Protein subclasses}
-          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
-          - {analysis: condensate_role, title: Driver or client in condensates}
       - name: Position in the protein
         about: "Where in the protein the modified lysines are: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
         cards:
@@ -1622,6 +1602,11 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: domain_class, title: Nearest domain class}
           - {analysis: motif, title: Sequence motifs}
           - {analysis: which_factor, wide: true}
+      - name: Same lysine, different modifications
+        about: "Whether a lysine with one modification is also reported with another more often than the other lysines of its protein: acetylation, ubiquitination, SUMOylation and methylation. Mass spectrometry finds some lysines far more often than others, so each tile also gives the result among lysines with another modification."
+        cards:                                  # one tile, a row per pair; each question's page shows its controls beside its result
+          - rows_from: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]
+            title: Same lysine, different modifications
       - name: Modification type
         about: "How many lysines have each modification: acetylation, ubiquitination, SUMOylation and the other acylations, each its own type."
         #  counted, not tested (website.counts)
@@ -1635,12 +1620,28 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: near_phospho_high}
       - name: Interactions and enzymes
         about: "Whether modified lysines are where a protein touches another or at an RNA or DNA interface, and the complexes their proteins are in."
+        links: [interactions, network]
         cards:
           - {analysis: pdb_interface, title: Interfaces in PDB structures}
           - {analysis: predicted_interface, title: Predicted interfaces}
           - {analysis: intact, title: IntAct binding regions and mutations}
           - {analysis: complex, title: Protein complexes}
           - {analysis: pdb_interface_na, title: RNA and DNA interfaces in PDB structures}
+      - name: Classes and pathways
+        about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types together. Each question's page links to the same question for each type with at least 200 lysines."
+        cards:
+          - {analysis: histone, title: Histones and other proteins}
+          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
+          - {analysis: panther_subclass, title: Protein subclasses}
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
+          - {analysis: condensate_role, title: Driver or client in condensates}
+      - name: Localization
+        about: "Where in the cell the proteins with modified lysines localize."
+        #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
+        cards:
+          - {analysis: where_in_the_cell, title: Localization, drawing: true, wide: true}
+          - {analysis: cell_chromatin, title: Chromatin probability}
       - name: Disease and cancer
         about: "Diseases linked to the proteins with modified lysines, and cancer cell dependency."
         show: 1
@@ -1669,22 +1670,22 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: cancer_change, title: Changes in tumors and cell lines}
           - {analysis: clinvar_plp, title: ClinVar pathogenic variants}
           - {analysis: gnomad_variant, title: gnomAD variants}
-      - name: Evidence and studies
-        about: "How well supported the modification sites are, and which databases they come from. Nearly all ubiquitination sites are from Akimov et al. 2018 and most SUMOylation sites from Hendriks et al. 2017. The data sources tile shows how many sites each reports."
-        #  counted, not tested (website.counts)
-        cards: [provenance, evidence]
       - name: More questions
         about: "Further pathways, cell maps, protein classes and complexes, one question each."
         cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, {analysis: hpa_location, title: Human Protein Atlas locations},
                 cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q},
                 domain_context]
+      - name: Evidence and studies
+        about: "How well supported the modification sites are, and which databases they come from. Nearly all ubiquitination sites are from Akimov et al. 2018 and most SUMOylation sites from Hendriks et al. 2017. The data sources tile shows how many sites each reports; the Methods give the evidence classes."
+        #  counted, not tested (website.counts)
+        cards: [provenance]
   cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
     id: where_in_the_cell
     default_view: average        # what the maps color by on opening: percent (share of proteins with a mark), average (each share against the share among all mapped proteins) or fold
     dispersion: false        # the average view: no overdispersion adjustment across compartments (they are not expected to be alike)
     abundance: true          # its test is within abundance deciles (Mantel-Haenszel), Fisher's exact test where a map has none
     min_h: 0.2               # filled only where the effect is at least small (Cohen's h); significant but smaller is outlined
-    title: Where in the cell
+    title: Localization
     question: "Where do proteins with modified lysines localize in the cell?"
     intro: "Five maps from four studies locate proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
     note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. The nuclear position of the genes of RNAs bound by proteins with eCLIP data (APEX-seq, TSA-seq, Hi-C subcompartments) is not shown."
@@ -1770,6 +1771,7 @@ website:                  # the look and words of the website (ptmc web); layout
       method: "Each lysine lists the modifications its records give (the release tables' type: acyl_type for acetylation and the acylations, one table each for ubiquitination and SUMOylation). A type's count is the lysines with a record of it, by-similarity records left out."
     evidence:
       kind: values
+      inline: true   # one sentence in the Methods, not a tile
       attribute: evidence_class
       title: Evidence
       question: "How well supported are the modified lysines?"
@@ -1892,7 +1894,6 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: disordered, name: Share of sites in disordered regions, kind: sequential, column: disorder, values: [disordered]}
       - {id: domain, name: Domain class most sites are in, kind: categorical, column: domain_class}
       - {id: abundance, name: PaxDb abundance decile, kind: decile, analysis: panther_group}   # the decile the statistics use as strata
-    tile: {section: "Interactions", title: Protein network, text: "The proteins with most modified lysines, linked by physical interactions and complexes and clustered by GO biological process."}
   # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, histone, complex, condensate_proteome]

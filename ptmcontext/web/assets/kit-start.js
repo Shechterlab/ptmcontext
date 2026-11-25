@@ -47,6 +47,8 @@
     const r = K.sel.select(st.q, st.f);
     return (q.view === 'proteins' ? r.proteins?.size : r.marks?.length) ?? null;
   };
+  // the Overview points to the Proteins tab for these (website.overview.starting_points.on_overview: true draws them here too)
+  if (SP.on_overview !== true) return;
   (K.overviewBlocks ||= []).push(() => {
     const lists = (SP.lists || []).map((l) => [l, ranked(l)]).filter(([, ps]) => ps.length);
     const quick = SP.quick || [];
