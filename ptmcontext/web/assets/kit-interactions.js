@@ -1958,7 +1958,7 @@
     );
   }
 
-  // ---- the methylarginines in contact with RNA or DNA in a structure: one row a site, its closest contact ------------
+  // ---- the marks in contact with RNA or DNA in a structure: one row a site, its closest contact -----------------------
   // the records' state of a site in an entry (records table: entry id and state, on the rows its where keeps)
   function modeledIndex(b) {
     const m = b.modeled,
@@ -2040,7 +2040,7 @@
     return (
       `${b.sub ? `<p class="muted small">${esc(b.sub)}</p>` : ''}` +
       `<div class="tbl-card"><table class="tbl ix-tbl"><thead><tr><th>Protein</th><th>Site</th><th>RNA or DNA</th><th class="num">Closest (Å)</th>` +
-      `<th>PDB entry</th><th title="Whether that structure has the methyl group modeled on the arginine">Methyl group modeled</th></tr></thead><tbody>` +
+      `<th>PDB entry</th><th title="Whether that structure has the methyl group modeled on the residue">Methyl group modeled</th></tr></thead><tbody>` +
       shownRows
         .map((x) => {
           const acc = prot(x.p)[0],

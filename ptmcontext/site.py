@@ -1319,6 +1319,10 @@ def page_problems(site: dict) -> list[str]:
     an analysis, a class, an attribute, a table or one of its columns, a section; and tables mapped wrongly."""
     web = site.get('website') or {}
     ids = {x['id']: x for x in site.get('analyses', [])}
+    for ctl in site.get('controls') or []:  # a control's copy of a question (<question>_<control>), where not yet made
+        for a in ctl.get('analyses') or []:
+            if a in ids:
+                ids.setdefault(f'{a}_{ctl["id"]}', ids[a])
     attrs = {**((site.get('marks') or {}).get('attributes') or {}), **CM.specs(site)[0]}
     tables = web.get('tables') or {}
     words = _analysis_words(site)
