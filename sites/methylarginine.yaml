@@ -1796,7 +1796,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - group: Cytoplasm
         rows:
           - {label: "RNA granules (stress granules, P-bodies)", name: "Stress granules (cell map)", part: granules, sets: {cell_hcm_compartment: cytoplasmic ribonucleoprotein granule, cell_hcm_domain: cytoplasmic ribonucleoprotein granule, cell_organelle_ip: stress_granule}}
-          - {label: P-bodies, part: pbodies, in_text: P-bodies, sets: {cell_organelle_ip: p-body, cell_hcm_domain: "centrosome enriched, P-body enriched"}}
+          - {label: P-bodies, name: "P-bodies (cell map)", part: pbodies, in_text: P-bodies, sets: {cell_organelle_ip: p-body, cell_hcm_domain: "centrosome enriched, P-body enriched"}}
           - {label: Translation, name: Ribosomes and translation, part: ribosomes, sets: {cell_organelle_ip: translation}}
           - {label: Cytosol, part: cytosol, sets: {cell_hcm_compartment: "actin cytoskeleton, cytosol", cell_organelle_ip: cytosol, hpa_location: Cytosol}}
           - {label: Actin cytoskeleton, name: Actin cortex, part: actin, sets: {cell_organelle_ip: actin_cytoskeleton, cell_hcm_domain: actin cytoskeleton, hpa_location: Actin filaments}}

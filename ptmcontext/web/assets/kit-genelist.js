@@ -55,6 +55,13 @@
   const LABELS = {};
   const setLabel = (aid, c) =>
     F.row_labels?.[aid]?.[c] || (LABELS[aid] ||= labelsOf(aid))[c] || K.sel.classLabel(aid, c);
+  // a set named like a set of another source (a condensate "P-body" and the cell map's P-bodies) carries its source: the one the
+  // question's title names in closing parentheses, "(CD-CODE)", unless the set's own name already holds it
+  const srcOf = (aid) => /\(([A-Za-z][\w-]*)\)\??$/.exec(A[aid]?.question || '')?.[1] || '';
+  const withSrc = (aid, label) => {
+    const src = srcOf(aid);
+    return src && !label.includes(src) ? `${label} (${src})` : label;
+  };
   const kindOf = (aid, ps) => short(aid) + (ps.of ? ' (genes)' : '');
   // the test: kit-stats.js listTest over the questions this site has data for
   function test(prots) {
@@ -173,7 +180,7 @@
       (shown
         .map(
           (r) =>
-            `<tr><td class="wrapok"><a href="${esc(K.link('overview', r.question))}">${esc(r.label)}</a></td>` +
+            `<tr><td class="wrapok"><a href="${esc(K.link('overview', r.question))}">${esc(withSrc(r.question, r.label))}</a></td>` +
             `<td class="wrapok">${esc(r.kind)}</td><td class="num">${int(r.k)} of ${int(r.n)}</td>` +
             (`<td class="num">${int(r.M)} / ${int(r.N)}</td><td class="num">${fx(r.fold)}</td><td class="num">${fq(r.p)}</td><td ` +
               `class="num">${fq(r.q)}</td></tr>`)
@@ -194,16 +201,14 @@
       (n ? sitesBlock(L) : '') +
       `<h3>What they share</h3>` +
       (n
-        ? `<p class="gl-new" role="note">One-sided hypergeometric test of your proteins against each of the ${int(nT)} sets, ` +
-          `with q over all of them. Your list was chosen, not drawn at random, so p and q describe the overlap, not ` +
-          `${esc(W.marks)}. <a href="${esc(K.link('method', 'list'))}">Method</a></p>`
-        : '') +
-      (n
         ? `<p class="muted small gl-vs"><b>Compared with:</b> the ${int(D.counts.proteins)} ${esc(W.marked)} proteins ` +
           `(each set’s source may annotate fewer: its background is in the table). Not the ${esc(W.residues)} ` +
           `of those proteins, which the Overview tests.</p>` +
           table +
           more +
+          `<p class="muted small gl-foot">One-sided hypergeometric test of your proteins against each of the ${int(nT)} sets, ` +
+          `with q over all of them. Your list was chosen, not drawn at random, so p and q describe the overlap, not ` +
+          `${esc(W.marks)}. <a href="${esc(K.link('method', 'list'))}">Method</a></p>` +
           `<p class="actions"><button type="button" class="btn small" data-gl-tsv>${esc(K.exp.label('tsv'))}</button></p>`
         : `<p>None of ` + `the names is a ${esc(W.marked)} protein here, so there is nothing to test.</p>`)
     );

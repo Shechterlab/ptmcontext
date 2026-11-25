@@ -33,3 +33,25 @@ def test_overlap_reason_for_a_list_is_not_circular():
     assert "can't be tested; the overlap test below can." in OV
     assert "t.id.startsWith('g:')" in OV
     assert 'defined by having sites' in OV
+
+
+def test_summary_line_has_no_doubled_in_and_shows_counts_for_huge_folds():
+    assert 'const afterIn = ' in KIT and 'afterIn(top.label)' in KIT and 'afterIn(low.label)' in KIT
+    assert 'const foldOrCounts = ' in KIT and 'foldOrCounts(top)' in KIT
+    assert '${fx(valOf(top))}' not in KIT
+
+
+def test_list_sets_carry_their_source_and_the_cell_map_names_its_own():
+    assert 'withSrc(r.question, r.label)' in GL
+    assert 'class="muted small gl-foot"' in GL and 'class="gl-new"' not in GL
+    for site in ('methylarginine', 'lysine', 'methyllysine', 'phospho'):
+        y = (A.parent.parent.parent / 'sites' / f'{site}.yaml').read_text()
+        assert 'name: "P-bodies (cell map)"' in y
+
+
+def test_overlap_reason_covers_every_user_selection_and_is_shown_once():
+    assert "['g', 'sel', 'sv'].includes(t.id.split(':')[0])" in OV
+    assert 'proteins in your ${what} carry' in OV
+    assert 'The first question' not in OV
+    assert "? 'Counts only.'" in OV
+    assert 'const once = (t) =>' in OV
