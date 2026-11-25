@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* The whole site in one run: the four explorers, the landing page and Compare, then every external link once.
    node tools/audit/all.js <site-base-url> [--out-dir dir] [--concurrency N] [--budget MINUTES] [--page-seconds S] [--parallel N]
-     [--no-external] [--cache file] [--only lysine,compare] [--no-selection]
+     [--no-external] [--reuse] [--cache file] [--only lysine,compare] [--no-selection]
    Each target runs tools/audit/links.js (explorers: the full page and control audit; the landing page and Compare: --simple), up to
    --parallel of them at a time (default 2), each with its own JSON report and log in the out dir. The external addresses of all of them are
    deduped and checked once by tools/audit/external.js. Writes summary.tsv (one row per finding) and summary.md to the out dir.
@@ -42,6 +42,11 @@ if (flag('no-selection')) passthrough.push('--no-selection');
 const runTarget = (t) =>
   new Promise((resolve) => {
     const t0 = Date.now();
+    if (flag('reuse') && fs.existsSync(path.join(outDir, `${t.name}.json`))) {
+      // --reuse: the report of an earlier run in this out dir stands (the summary and the external check are redone)
+      const report = JSON.parse(fs.readFileSync(path.join(outDir, `${t.name}.json`), 'utf8'));
+      return resolve({ ...t, seconds: 0, code: 0, report });
+    }
     const log = fs.createWriteStream(path.join(outDir, `${t.name}.log`));
     const a = [path.join(__dirname, 'links.js'), t.url, '--out', path.join(outDir, `${t.name}.json`), ...passthrough];
     if (t.kind === 'page') a.push('--simple');

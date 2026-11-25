@@ -19,7 +19,7 @@ node = pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
 @node
 def test_the_audit_script_parses_and_the_workflows_run_it():
     script = ROOT / 'tools' / 'audit' / 'links.js'
-    assert subprocess.run(['node', '--check', str(script)], capture_output=True).returncode == 0
+    assert subprocess.run(['node', '--check', str(script)], capture_output=True, check=False).returncode == 0
     tests = (ROOT / '.github' / 'workflows' / 'tests.yml').read_text()
     weekly = (ROOT / '.github' / 'workflows' / 'links.yml').read_text()
     assert 'tools/audit/links.js' in tests and '--external' not in tests
@@ -42,7 +42,7 @@ const before = K.views.figures.render();
 loaded = true;
 console.log(JSON.stringify({{ before: before.includes('Loading'), asked, after: K.views.figures.render().includes('Alignment and sequence logo') }}));
 """
-    run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
+    run = subprocess.run(['node', '-e', script], capture_output=True, text=True, check=False)
     assert run.returncode == 0, run.stderr[-600:]
     assert json.loads(run.stdout) == {'before': True, 'asked': 0, 'after': True}
 
@@ -54,7 +54,7 @@ def test_the_figure_panels_use_the_whole_dataset_when_nothing_is_selected():
 @node
 def test_the_content_audit_parses_and_is_not_a_ci_job():
     script = ROOT / 'tools' / 'audit' / 'content.js'
-    assert subprocess.run(['node', '--check', str(script)], capture_output=True).returncode == 0
+    assert subprocess.run(['node', '--check', str(script)], capture_output=True, check=False).returncode == 0
     for wf in (ROOT / '.github' / 'workflows').glob('*.yml'):
         assert 'audit/content.js' not in wf.read_text(), wf.name  # optional: run by hand
 
@@ -99,3 +99,13 @@ srv.listen(0, '127.0.0.1', async () => {{
     got = json.loads(run.stdout)
     # the 404 is broken; the two good ones are cached, so the rerun asks only for the broken one (HEAD + GET)
     assert got == {'ok': 2, 'broken': [404], 'cached': 2, 'again': 2, 'bot': [True, False]}
+
+
+@node
+def test_bot_hosts_incl_405_and_reuse_and_selection_wait_are_in_the_audit():
+    audit = ROOT / 'tools' / 'audit'
+    ext = (audit / 'external.js').read_text()
+    assert 'r.status === 403 || r.status === 405' in ext
+    assert all(f"'{h}'" in ext for h in ('encodeproject.org', 'ensembl.org', 'string-db.org', 'omim.org'))
+    assert "flag('reuse')" in (audit / 'all.js').read_text()
+    assert 'Loading' in (audit / 'links.js').read_text()

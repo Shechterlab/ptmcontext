@@ -175,6 +175,16 @@ async function checkHash(pg, url, href, state) {
   pg.on('pageerror', onerr);
   await pg.evaluate((h) => (location.hash = h), href);
   await pg.waitForTimeout(350);
+  // with a selection the view first says "Loading the selection…": the check reads the page once that is gone
+  await pg
+    .waitForFunction(
+      () => !/Loading/.test((document.getElementById('view') || document.body).innerText.slice(0, 400)),
+      null,
+      {
+        timeout: 8000,
+      }
+    )
+    .catch(() => {});
   const got = await pg.evaluate(
     ([key, seg]) => ({
       hash: location.hash.split('?')[0],

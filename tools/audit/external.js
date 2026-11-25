@@ -36,6 +36,10 @@ const BOT_HOSTS = [
   'facebook.com',
   'reddit.com',
   'ncbi.nlm.nih.gov',
+  'encodeproject.org', // "confirm you are human" page, HTTP 405
+  'ensembl.org', // CloudFront 403
+  'string-db.org',
+  'omim.org',
 ];
 const PER_HOST = 2; // requests at a time to one host
 const TOTAL = 12; // requests at a time
@@ -108,7 +112,7 @@ async function checkExternal(urls, o = {}) {
     if (r.status != null && r.status < 400) {
       res.ok++;
       cache[url] = { ok: true, t: Date.now(), status: r.status };
-    } else if (r.status != null && !r.challenge && r.status !== 429 && !(bot && r.status === 403))
+    } else if (r.status != null && !r.challenge && r.status !== 429 && !(bot && (r.status === 403 || r.status === 405)))
       res.broken.push({ url, status: r.status, host: h, ...src });
     else
       res.unverified.push({
