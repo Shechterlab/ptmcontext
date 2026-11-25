@@ -101,8 +101,8 @@ def test_an_rna_test_is_named_by_its_denominator_in_one_place():
     assert not re.search(r'\{analysis: crosslink, category: \w+, label:', page)
     tests = yaml.safe_load(text)['analyses']
     labels = {t['category']: t['label'] for a in tests if a['id'] == 'crosslink' for t in a['tests']}
-    assert labels['rbrid_residue_among_measured'] == 'RBR-ID+ residue, among arginines RBR-ID measured'
-    assert labels['rbrid_residue'] == 'RBR-ID+ residue, among all arginines of proteins with one'
+    assert labels['rbrid_residue_among_measured'] == 'RNA-contact residue (RBR-ID), among arginines RBR-ID measured'
+    assert labels['rbrid_residue'] == 'RNA-contact residue (RBR-ID), among all arginines of proteins with one'
     assert len(set(labels.values())) == len(labels)
 
 

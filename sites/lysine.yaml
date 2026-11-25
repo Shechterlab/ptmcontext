@@ -2479,17 +2479,17 @@ website:                  # the look and words of the website (ptmc web); layout
               blocks:
                 - kind: forest
                   rows:
-                    - {analysis: predicted_interface, category: pdockq_0.23, label: "pDockQ ≥ 0.23", group: All lysines}
-                    - {analysis: predicted_interface, category: pdockq_0.5, label: "pDockQ ≥ 0.5", group: All lysines}
+                    - {analysis: predicted_interface, category: pdockq_0.23, label: "Likely interface", group: All lysines}
+                    - {analysis: predicted_interface, category: pdockq_0.5, label: "Strong interface", group: All lysines}
                 - kind: fold
                   label: Show ordered and disordered regions
                   blocks:
                     - kind: forest
                       rows:
-                        - {analysis: predicted_interface, category: pdockq_0.23_ordered, label: "pDockQ ≥ 0.23", group: Ordered}
-                        - {analysis: predicted_interface, category: pdockq_0.5_ordered, label: "pDockQ ≥ 0.5", group: Ordered}
-                        - {analysis: predicted_interface, category: pdockq_0.23_disordered, label: "pDockQ ≥ 0.23", group: Disordered}
-                        - {analysis: predicted_interface, category: pdockq_0.5_disordered, label: "pDockQ ≥ 0.5", group: Disordered}
+                        - {analysis: predicted_interface, category: pdockq_0.23_ordered, label: "Likely interface", group: Ordered}
+                        - {analysis: predicted_interface, category: pdockq_0.5_ordered, label: "Strong interface", group: Ordered}
+                        - {analysis: predicted_interface, category: pdockq_0.23_disordered, label: "Likely interface", group: Disordered}
+                        - {analysis: predicted_interface, category: pdockq_0.5_disordered, label: "Strong interface", group: Disordered}
             - id: ixs-intact
               title: Curated interaction features (IntAct)
               question: Are modified lysines at curated mutation sites and short binding regions more often?
