@@ -643,12 +643,20 @@
           ];
         for (const [bx, by, al] of cands) {
           const box = [bx, by, bx + w, by + h];
-          if (placed.some((q) => boxesHit(box, q, 1))) continue;
+          if (placed.some((q) => boxesHit(box, q, 3))) continue;
           if (obstacles.some(([ox_, oy_, or_], j) => j !== i && circleBox(ox_, oy_, or_ - 1.5, box))) continue;
           placed.push(box);
           glabels.push({ i, t, box, align: al });
           break;
         }
+      }
+      // the caption of the small gray clusters goes under them: every link ends at a node, so nothing is drawn below the lowest
+      let shelfAt = null;
+      if (other.length) {
+        const sw = phone ? 190 : 250,
+          sy = Math.max(...other.map((i) => xy[i][1] + r[i])) + 6 * k + fs;
+        shelfAt = [pos.x0 + 4, sy];
+        placed.push([pos.x0 + 4, sy - fs, pos.x0 + 4 + sw * k, sy + 4]);
       }
       const allb = placed.concat(xy.map((p, i) => [p[0] - r[i], p[1] - r[i], p[0] + r[i], p[1] + r[i]]));
       for (const c of shown) {
@@ -686,7 +694,7 @@
         glabels: glabels.map((l) => ({ ...l, box: B(l.box) })),
         bundles: bundles.map((b) => ({ a: b.a, b: b.b, n: b.n, p: b.p.map((q) => T(q[0], q[1])) })),
         small: pos.small,
-        shelf: other.length ? T(pos.x0 + 4, yTop) : null,
+        shelf: shelfAt ? T(shelfAt[0], shelfAt[1]) : null,
       };
     }
     // the smallest window that holds every protein in nodeSet, every protein and the whole outline of each cluster in

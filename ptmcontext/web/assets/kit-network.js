@@ -819,7 +819,7 @@
           );
         const free = (bx, by) => {
           const b = [bx, by, bx + w, by + h];
-          if (taken.some((q) => !(b[2] + 1 < q[0] || q[2] + 1 < b[0] || b[3] + 1 < q[1] || q[3] + 1 < b[1])))
+          if (taken.some((q) => !(b[2] + 3 < q[0] || q[2] + 3 < b[0] || b[3] + 3 < q[1] || q[3] + 3 < b[1])))
             return false;
           return !P.some((p, j) => {
             if (j === i) return false;
@@ -860,7 +860,7 @@
       out.push(
         text(
           L.shelf[0],
-          L.shelf[1] + 2,
+          L.shelf[1],
           phone ? L.fs : L.fs - 1.5,
           600,
           muted,
@@ -949,7 +949,11 @@
           )
           .join('')}</span>`
       );
-    return `<div class="nw-key" aria-label="Key"><span class="nw-sum" role="status">${sum}</span>${topSelect()}${bits.join('')}</div>`;
+    // the count line and its number box stay above the figure; the key (sizes, links, colors, outline) is one block under it
+    return {
+      head: `<div class="nw-head"><span class="nw-sum" role="status">${sum}</span>${topSelect()}</div>`,
+      key: `<div class="nw-key" role="group" aria-label="Key">${bits.join('')}</div>`,
+    };
   }
   // a phone names the clusters in a list under the figure: badge, short name, proteins; a tap lights the cluster, a second zooms
   function listHtml(CL) {
@@ -1068,6 +1072,8 @@
     'sources',
     'claim',
   ];
+  // the controls a reader uses less often are always under "More options", whatever the site file lists
+  const LESS_USED = new Set(['size', 'outline']);
   const controls = (CL) => {
     const counts = [];
     for (let v = CR[0]; v <= CR[1]; v += Math.max(1, CR[2])) counts.push([v, v]);
@@ -1149,23 +1155,28 @@
         ...(NC.controls?.includes('find') || !NC.controls ? ['term'] : []),
       ]),
       phone = phoneNow(),
-      main = phone ? [] : CONTROL_ORDER.filter((id) => want.has(id)),
+      main = phone ? [] : CONTROL_ORDER.filter((id) => want.has(id) && !LESS_USED.has(id)),
       rest = CONTROL_ORDER.filter((id) => !main.includes(id));
     const html = (ids) => ids.map((id) => built[id]()).join('');
+    // zoom, fit and the download: under "More options" with the other less-used controls
+    const extra =
+      (UI.mode === 'network'
+        ? `<span class="nw-zb" role="group" aria-label="Zoom"><button type="button" class="btn small" data-nw-zoom="-1" aria-label="Zoom out" title="Zoom out (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">−</button><button type="button" class="btn small" data-nw-zoom="1" aria-label="Zoom in" title="Zoom in (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">+</button>` +
+          `<button type="button" class="btn small" data-nw-fitpin title="Zoom to the pinned proteins and the clusters they touch">Fit pinned</button></span>`
+        : '') +
+      `<label class="nw-inl nw-xf"><span>Export</span><select data-nw="xf" aria-label="What the download frames"><option value="fit"${UI.xf === 'fit' ? ' selected' : ''}>Fit pinned</option><option value="view"${UI.xf === 'view' ? ' selected' : ''}>What you see</option><option value="whole"${UI.xf === 'whole' ? ' selected' : ''}>Whole network</option></select></label>` +
+      K.expBar(['svg', 'png', 'pdf', 'tsv'], 'nwexp', 'the network').replace(
+        '<div class="xm-items" role="menu">',
+        '$&<button type="button" class="exp-btn xm-item" role="menuitem" data-nw-copy title="Copy a link that opens this network with these settings">Copy link</button>'
+      );
     return (
       `<div class="nw-bar nw-row" role="group" aria-label="Network options">${html(main)}` +
       `<div class="nw-btns"><button type="button" class="btn small" data-nw-view="${UI.mode === 'network' ? 'table' : 'network'}">${UI.mode === 'network' ? 'Table view' : 'Network view'}</button>` +
       (UI.mode === 'network'
-        ? `<span class="nw-zb" role="group" aria-label="Zoom"><button type="button" class="btn small" data-nw-zoom="-1" aria-label="Zoom out" title="Zoom out (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">−</button><button type="button" class="btn small" data-nw-zoom="1" aria-label="Zoom in" title="Zoom in (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">+</button>` +
-          `<button type="button" class="btn small" data-nw-fitpin title="Zoom to the pinned proteins and the clusters they touch">Fit pinned</button>` +
-          `<button type="button" class="btn small" data-nw-vreset title="Show the whole drawing">${K.ACT.resetView}</button></span>`
+        ? `<button type="button" class="btn small" data-nw-vreset title="Show the whole drawing">${K.ACT.resetView}</button>`
         : '') +
-      `<label class="nw-inl nw-xf"><span>Export</span><select data-nw="xf" aria-label="What the download frames"><option value="fit"${UI.xf === 'fit' ? ' selected' : ''}>Fit pinned</option><option value="view"${UI.xf === 'view' ? ' selected' : ''}>What you see</option><option value="whole"${UI.xf === 'whole' ? ' selected' : ''}>Whole network</option></select></label>` +
-      `${K.expBar(['svg', 'png', 'pdf', 'tsv'], 'nwexp', 'the network').replace(
-        '<div class="xm-items" role="menu">',
-        '$&<button type="button" class="exp-btn xm-item" role="menuitem" data-nw-copy title="Copy a link that opens this network with these settings">Copy link</button>'
-      )}</div></div>` +
-      `<details class="nw-more"${UI.more ? ' open' : ''}><summary>More options</summary><div class="nw-bar" role="group" aria-label="More network options">${html(rest)}<button type="button" class="btn small" data-nw-reset>Reset all settings</button></div></details>`
+      `</div></div>` +
+      `<details class="nw-more"${UI.more ? ' open' : ''}><summary>More options</summary><div class="nw-bar" role="group" aria-label="More network options">${html(rest)}${extra}<button type="button" class="btn small" data-nw-reset>Reset all settings</button></div></details>`
     );
   };
   let curL = null;
@@ -1237,8 +1248,8 @@
     // it has partners: say why it was not drawn (by the numbers), then draw more, or only it and its partners
     UI.nbWhy =
       plan.rank < UI.top
-        ? `none of its ${int(plan.partners.length)} ${plural(plan.partners.length, 'partner', 'partners')} is among the ${int(UI.top)} proteins with most ${W.marks}`
-        : `it ranks ${int(plan.rank + 1)} by ${W.marks}, outside the ${int(UI.top)} drawn`;
+        ? `None of ${esc(geneOf(missing[0], M.full || FILE.full))}’s ${int(plan.partners.length)} ${plural(plan.partners.length, 'partner is', 'partners is')} among the top ${int(UI.top)} by ${W.marks}`
+        : `${esc(geneOf(missing[0], M.full || FILE.full))} ranks ${int(plan.rank + 1)} by ${W.marks}, outside the top ${int(UI.top)}`;
     const top = TOPS.find((v) => v >= plan.need);
     if (!top) {
       UI.nb = true;
@@ -1462,14 +1473,18 @@
     const slot = [];
     if (fi?.wait) slot.push('Looking for the protein in the network…');
     else if (fi?.note) slot.push(`${fi.note} <button type="button" class="btn small" data-nw-fclear>Dismiss</button>`);
+    let pinShown = false;
     if (FOC >= 0 && !fi && (UI.fz || UI.nb || UI.topWas)) {
-      const c = CL.list[M.nodes[FOC].c];
+      const c = CL.list[M.nodes[FOC].c],
+        np = M.nodes.length - 1,
+        where = c.other ? 'a smaller cluster' : 'cluster ' + (c.rank + 1) + ': ' + esc(c.label);
+      pinShown = true;
       slot.push(
-        `Showing <b>${esc(M.nodes[FOC].gene)}</b> (${c.other ? 'a smaller cluster' : 'cluster ' + (c.rank + 1) + ': ' + esc(c.label)}).` +
-          (UI.nb
-            ? ` ${UI.nbWhy ? UI.nbWhy[0].toUpperCase() + UI.nbWhy.slice(1) + ', so' : 'So'} the network drawn is it and its ${int(M.nodes.length - 1)} ${plural(M.nodes.length - 1, 'partner', 'partners')}.`
+        `Showing <b>${esc(M.nodes[FOC].gene)}</b>${UI.nb ? ` and its ${int(np)} ${plural(np, 'partner', 'partners')}` : ''} (${where}).` +
+          (UI.nb && UI.nbWhy
+            ? ` ${UI.nbWhy}.`
             : UI.topWas
-              ? ` ${UI.nbWhy ? UI.nbWhy[0].toUpperCase() + UI.nbWhy.slice(1) + ', so' : 'So'} the ${int(UI.top)} proteins with most ${esc(W.marks)} are drawn.`
+              ? ` ${UI.nbWhy ? UI.nbWhy + ', so' : 'So'} the ${int(UI.top)} proteins with most ${esc(W.marks)} are drawn.`
               : '') +
           ` <button type="button" class="btn small" data-nw-fclear>Show the whole network</button>`
       );
@@ -1484,7 +1499,7 @@
             ? ` <a href="${esc(K.link('protein', `${one.acc}/interactions`))}">${esc(one.gene)}’s protein partners (STRING) are on its protein page</a>`
             : '')
       );
-    } else if (sel0 && M.picked != null && M.nodes.length)
+    } else if (sel0 && M.picked != null && M.nodes.length && !pinShown && M.picked !== M.nodes.length)
       slot.push(
         `Your selection: ${int(M.picked)} of its proteins have a link in these sources; ${int(M.nodes.length)} are drawn.`
       );
@@ -1494,14 +1509,17 @@
     if (fn) slot.push(fn);
     // one slot above the figure for every note, so that the figure moves only when a note first appears
     const note = slot.length
-      ? `<div class="filter-note nw-fnote nw-slot on" role="status">${slot.join('<br>')}</div>`
+      ? `<div class="filter-note nw-fnote nw-slot on" role="status">${slot.map((t) => `<p>${t}</p>`).join('')}</div>`
       : '<div class="nw-slot" role="status"></div>';
     const sum = summaryText(M, CL, sel0);
     const body = !M.nodes.length
       ? `<p class="muted">${sel0 ? 'No protein of the selection has a link in the chosen sources, so there is nothing to draw. Choose more sources or a lower score, or widen the selection.' : 'No protein has a link in the chosen sources.'}</p>`
       : UI.mode === 'table'
         ? `<p class="nw-count" role="status">${sum} ${topSelect()}</p>${tableHtml(M, CL)}`
-        : `<div class="nw-main">${keyHtml(M, CL, { variant: phoneNow() ? 'phone' : 'desktop' }, sum)}<div class="nw-row2">${figureBox(M, CL)}${pinHtml(M, CL)}</div>${phoneNow() ? listHtml(CL) : ''}</div>`;
+        : (({ head: kh, key }) =>
+            `<div class="nw-main">${kh}<div class="nw-row2">${figureBox(M, CL)}${pinHtml(M, CL)}</div>${phoneNow() ? listHtml(CL) : ''}${key}</div>`)(
+            keyHtml(M, CL, { variant: phoneNow() ? 'phone' : 'desktop' }, sum)
+          );
     const names = `<datalist id="nw-genes">${M.nodes.map((n) => `<option value="${esc(n.gene)}"></option>`).join('')}</datalist>`;
     return head + controls(CL) + note + body + names + K.fold('nw-how', 'Methods', '', methodHtml(), false);
   }

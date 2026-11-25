@@ -9969,10 +9969,17 @@ html[data-density] .sites-tbl .cv {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 18px;
-  font-size: var(--fig-fs-key);
+  gap: 4px 16px;
+  font-size: 12px;
   color: var(--fig-muted);
-  padding: 4px 2px 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.nw-key .nw-kg {
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .nw-kg {
   display: inline-flex;
@@ -10212,17 +10219,22 @@ html[data-density] .sites-tbl .cv {
 .nw-prev-no {
   font-size: 12px;
 }
-.nw-fnote {
+.nw-fnote p {
+  margin: 2px 0;
+}
+.nw-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
+  gap: 4px 14px;
+  font-size: var(--fig-fs-key);
+  padding: 4px 2px 6px;
 }
 .nw-sum {
   font-weight: 600;
   color: var(--ink-2);
 }
-.nw-row .exp {
+.nw-bar .exp {
   display: inline-flex;
 }
 @media (max-width: 760px) {
