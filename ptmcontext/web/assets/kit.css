@@ -1625,11 +1625,9 @@ body.rail-open .rail-scrim {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 0;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  padding: 0.55rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
   color: var(--ink-2);
 }
 .fgroup > summary::-webkit-details-marker {
@@ -6954,7 +6952,41 @@ a[href^='http']:hover::after {
 .fgroup .gcount {
   margin-left: auto;
   font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--accent-dark);
   font-variant-numeric: tabular-nums;
+}
+.rail-find {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0.6rem 0 0.3rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.4rem;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+.rail-active {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+.rail-active .rail-sel {
+  flex: 1;
+}
+.rail-active .linkish {
+  white-space: nowrap;
+}
+.fgroups [hidden] {
+  display: none !important;
+}
+.fchips:not(.all) > .fmore {
+  display: none;
+}
+.fchips .fshow {
+  align-self: center;
 }
 /* STRING network: more options, zoom, who binds the marks */
 .pn-opts2 {
@@ -11942,5 +11974,53 @@ summary {
   }
   body.compact-phone:not(.has-selection) .toolbar .scope {
     display: none;
+  }
+}
+
+/* A wide screen, on every page but the Overview: one compact header row. The site name on the left, the four counts as small links
+   on the right (they keep their targets); the lede, the art and the lab and link menu are on the Overview and in the footer.
+   The search, the selection line and the tabs follow in the toolbar. website.header.compact: true still gives the 56 px band. */
+@media (min-width: 701px) {
+  body.compact-phone:not(.slim) .hero {
+    border-bottom-width: 3px;
+  }
+  body.compact-phone:not(.slim) .hero .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    padding-block: 0.5rem;
+  }
+  body.compact-phone:not(.slim) .hero .lede,
+  body.compact-phone:not(.slim) .hero-art,
+  body.compact-phone:not(.slim) .hero-intro,
+  body.compact-phone:not(.slim) .brand-side {
+    display: none;
+  }
+  body.compact-phone:not(.slim) .brand h1 {
+    font-size: 1.3rem;
+  }
+  body.compact-phone:not(.slim) .site-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+  body.compact-phone:not(.slim) .hero-stats {
+    margin: 0;
+    min-height: 0;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: flex-end;
+  }
+  body.compact-phone:not(.slim) .stat {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+  }
+  body.compact-phone:not(.slim) .stat b {
+    font-size: 0.95rem;
   }
 }
