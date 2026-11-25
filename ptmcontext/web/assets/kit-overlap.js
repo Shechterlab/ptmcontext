@@ -426,7 +426,17 @@
       return { ts, unit, nT: ids.length, missing: ids.filter((_, i) => !got[i]), rows: [], totals: [], pairs: {} };
     const fams = await DATA.families();
     const circ = ts.filter((t) => t.markedOnly).map((t) => t.label),
-      res = { ts, unit, nT, partial: U.partial, circ, rows: [], totals: [], note: '' };
+      res = {
+        ts,
+        unit,
+        nT,
+        partial: U.partial,
+        circ,
+        lists: ts.filter((t) => t.id.startsWith('g:')).map((t) => ({ label: t.label, n: t.n })), // a pasted list: not chosen for having sites
+        rows: [],
+        totals: [],
+        note: '',
+      };
     if (nT < 2) return res;
     const SD = ts.some((t) => t.mark) || unit === 'sites' ? (await DATA.sdReady(), DATA.sd()) : null;
     let mask, marked, weight, elems;
@@ -1508,7 +1518,7 @@
         else
           o.push(
             res.circ?.length
-              ? `Not tested: ${joinNames(res.circ)} ${res.circ.length === 1 ? 'is' : 'are'} defined by having sites, so testing it for having sites would be circular. Counts only; the first question has no such problem.`
+              ? `${noTestWhy(res)} Counts only.`
               : res.partial
                 ? 'Not tested here: only the proteins with sites are known for these sets.'
                 : 'No test: a set describes sites, and the comparison residues are not known for several features at once. Counts only.'
@@ -2278,6 +2288,21 @@
   }
   // the answer in a sentence, from the terms and the result
   const joinNames = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a.at(-1)}`);
+  // why the share with sites is not tested: a pasted list holds only proteins that carry sites here (it was not chosen for having
+  // them); a set defined by having sites would make the test circular. Both are counts only; the overlap test is not affected.
+  const noTestWhy = (res) => {
+    const lists = res.lists || [],
+      defined = res.circ.filter((l) => !lists.some((x) => x.label === l)),
+      out = lists.map(
+        (x) =>
+          `All ${fmtInt(x.n)} proteins in your list carry ${W.marks} here, so the share with sites can't be tested; the overlap test below can.`
+      );
+    if (defined.length)
+      out.push(
+        `${joinNames(defined)} ${defined.length === 1 ? 'is' : 'are'} defined by having sites, so the regions are not tested for it (that would be circular). The first question can still be asked.`
+      );
+    return out.join(' ');
+  };
   // "Proteins in both sets", "Proteins only in B", "Proteins in A and B but not C"
   const regionPhrase = (res, m, noun) => {
     const inn = res.ts.filter((_, i) => m & (1 << i)).map((t) => t.label),
@@ -2318,7 +2343,7 @@
     const fd = figData(res),
       full = (1 << res.nT) - 1;
     if (!res.test)
-      return `${pre}${res.circ?.length ? `${joinNames(res.circ)} ${res.circ.length === 1 ? 'is' : 'are'} defined by having sites, so the regions are not tested for it (that would be circular). The first question can still be asked.` : res.partial ? 'only the proteins with sites are known for these sets, so no test is made.' : 'the regions can only be counted here, not tested.'}`;
+      return `${pre}${res.circ?.length ? noTestWhy(res) : res.partial ? 'only the proteins with sites are known for these sets, so no test is made.' : 'the regions can only be counted here, not tested.'}`;
     const pick =
       fd.regs.find((r) => r.m === full && isTested(r)) || fd.regs.filter(isTested).sort((x, y) => x.q - y.q)[0];
     if (!pick) return `${pre}no region has enough ${uw} to test.`;

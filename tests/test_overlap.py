@@ -264,10 +264,10 @@ def test_overlap_numbers_equal_the_python_engine(tmp_path):
     assert 'in both' in j['answers'][0] and 'of 3 pairs' in j['answers'][1] and 'alone' not in j['answers'][0]
     # a saved selection a link cannot carry is reported, and the others keep their letters
     assert j['missing'] == ['sv:nope']
-    # a set defined by having sites is not tested for having sites; the pairs are still tested
-    assert (
-        j['circ']['names'] and j['circ']['test'] is None and j['circ']['pairs'] == 1 and 'circular' in j['circ']['ans']
-    )
+    # a pasted list holds only proteins with sites, so the share with sites is not tested (and is not called circular);
+    # the pairs are still tested
+    assert j['circ']['names'] and j['circ']['test'] is None and j['circ']['pairs'] == 1
+    assert 'carry' in j['circ']['ans'] and 'circular' not in j['circ']['ans']
     # the sites unit shows one odds ratio, in the chart's number and the table's
     assert j['sitesOR'] and all(v in j['tables'][1] for v in j['sitesOR'])
     # a glyph taller than wide is turned: the three circles of a tall layout use the width, and nothing in it overlaps

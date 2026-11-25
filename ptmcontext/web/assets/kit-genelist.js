@@ -77,6 +77,35 @@
   const TEST =
     'one-sided hypergeometric test of the listed proteins within the marked proteins each source annotates (its background, per row), fold (k/n)/(M/N), Benjamini–Hochberg q over every set tested';
 
+  // ---- the sites of the list's proteins: the Overview's residue questions, asked of this list --------------------------------
+  // The same retest the Overview runs for a selection (K.sel.rows through K.selAnswer): the list's methylated residues
+  // against the other candidate residues of the same proteins. Not recomputed here.
+  const SITE_Q = ['disorder', 'motif', 'sticker_context_5_idr', 'idr_charge'];
+  function sitesBlock(L) {
+    const n = L.prots.length,
+      open = `<p class="actions"><a class="btn small" href="${esc(K.link('overview'))}">Open these ${int(n)} proteins in the Overview ›</a></p>`;
+    const head = `<h3>At the sites</h3>`;
+    if (!K.sel.active()) return '';
+    if (!K.sel.testable())
+      return (
+        head +
+        `<p class="muted">Too few to test: the ${esc(W.marks)} of the list are shown, not tested, below ` +
+        `${int(K.sel.MIN.proteins)} proteins or ${int(K.sel.MIN.marks)} ${esc(W.marks)}.</p>` +
+        open
+      );
+    const ans = SITE_Q.map((id) => K.selAnswer?.(id)).filter(Boolean);
+    return (
+      head +
+      `<p class="muted small">Each ${esc(W.mark)} of these proteins against the other ${esc(W.residues)} of the same proteins.</p>` +
+      (ans.length
+        ? `<ul class="gl-sites">${ans
+            .map((x) => `<li><a href="${esc(K.link('overview', x.id))}">${esc(x.title)}</a>: ${x.line}</li>`)
+            .join('')}</ul>`
+        : '') +
+      open
+    );
+  }
+
   // ---- the page -----------------------------------------------------------------------------------------------------------
   let last = null;
   function view() {
@@ -162,14 +191,13 @@
       `<p class="page-sub">${int(n)} ${esc(W.marked)} protein${n === 1 ? '' : 's'} from ${int(L.q.nWords)} name${L.q.nWords === 1 ? '' : 's'}.</p>` +
       (chips ? `<p class="gl-chips">${chips}</p>` : '') +
       notes +
+      (n ? sitesBlock(L) : '') +
       `<h3>What they share</h3>` +
-      (`<p class="gl-new" role="note"><b>A new test, not in the release statistics.</b> For each of the ${int(nT)} sets of the ${int(QS.length)} protein-set ` +
-        `questions: a one-sided hypergeometric test of your proteins within the ${esc(W.marked)} proteins that ` +
-        `the set’s source annotates (its background, shown per row; genes for a gene-based source), fold = ` +
-        `(k/n)/(M/N), and q is Benjamini–Hochberg over all ${int(nT)} sets, small sets included. Computed in ` +
-        `your browser. `) +
-      (`Your list was chosen, not drawn at random: p and q say how unusual this overlap would be for the same ` +
-        `number of ${esc(W.marked)} proteins taken at random; they say nothing about ${esc(W.marks)} themselves.</p>`) +
+      (n
+        ? `<p class="gl-new" role="note">One-sided hypergeometric test of your proteins against each of the ${int(nT)} sets, ` +
+          `with q over all of them. Your list was chosen, not drawn at random, so p and q describe the overlap, not ` +
+          `${esc(W.marks)}. <a href="${esc(K.link('method', 'list'))}">Method</a></p>`
+        : '') +
       (n
         ? `<p class="muted small gl-vs"><b>Compared with:</b> the ${int(D.counts.proteins)} ${esc(W.marked)} proteins ` +
           `(each set’s source may annotate fewer: its background is in the table). Not the ${esc(W.residues)} ` +
@@ -227,7 +255,7 @@
     if (e.target.closest?.('[data-gl-tsv]') && last)
       K.download(`${D.site.id || 'site'}_gene_list_test.tsv`, tsv(), 'text/tab-separated-values');
   });
-  K.views.list = { render: view, title: () => 'Your gene list' };
+  K.views.list = { render: view, title: () => 'Your gene list', offNote: '' }; // the selection is the list itself
   K.geneList = { questions: QS, read: readList, test, tsv: () => (last ? tsv() : '') };
   // the search box: Enter on a list of two or more names (and nothing else) opens this page
   K.openList = () => {
@@ -262,6 +290,8 @@
         `Benjamini–Hochberg over every set tested, small sets included. `) +
       (`Names are read as the search reads them; a name matched by another name, or not found, is listed above the ` +
         `table. This is a new test, computed in your browser and not part of the release statistics. A list is ` +
-        `chosen, not drawn at random, so p and q describe the overlap, not ${esc(W.marks)}.</p></section>`)
+        `chosen, not drawn at random, so p and q describe the overlap, not ${esc(W.marks)}. “At the sites” asks the Overview’s ` +
+        `residue questions of the list: its ${esc(W.marks)} against the other ${esc(W.residues)} of the same proteins, within each ` +
+        `protein, with the same tests and the same minimum size as the Overview.</p></section>`)
   );
 });

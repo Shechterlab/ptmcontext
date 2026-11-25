@@ -775,7 +775,8 @@
     if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return ''; // a protein of the selection: its page fades the sites outside it, and says so
     if (follows(v)) return ''; // the bar above says what is selected and how many; its Clear all removes it
     const n = K.views[v]?.offNote;
-    const note = typeof n === 'function' ? n() : n || 'Not filtered by your selection.'; // a page may say nothing: its sets already include the selection
+    // a page may say nothing (offNote '' or a function returning ''): its sets already include the selection, or it is the selection
+    const note = typeof n === 'function' ? n() : n === undefined ? 'Not filtered by your selection.' : n;
     return note ? `<p class="sel-line off" role="status">${esc(note)}</p>` : '';
   }
   // the tabs, the same on every explorer and in this order. A tab whose data a site lacks is greyed out with its reason on
@@ -1273,6 +1274,28 @@
     return 'None differs (q ≤ 0.05 and at least 1.1×)';
   }
   const EXCL = /^(no |not |unknown|unassigned|other\b)/i;
+  // One residue question's answer for the active selection, tested within each protein (the methylated residues of the
+  // selection's proteins against their other candidates), as the Overview's tile reads it: the same rows (K.sel.rows) and
+  // the same one-line summary. Null when the question is not a residue question here or nothing is selected.
+  K.selAnswer = (aid) => {
+    const a = A[aid];
+    if (
+      !a ||
+      !K.sel?.active() ||
+      ['protein_sets', 'module', 'attribute'].includes(a.kind) ||
+      a.tile ||
+      K.questions[aid]?.tile
+    )
+      return null;
+    const rows = K.sel.rows(aid, 'mantel_haenszel');
+    if (!rows?.length) return null;
+    const card = allCards().find((c) => c.analysis === aid) || { analysis: aid };
+    return {
+      id: aid,
+      title: tileTitle(card),
+      line: rows.some((r) => r.descriptive) ? whyShown(a, rows) : summaryLine(rows, card.summary, card),
+    };
+  };
   const OV = D.overview || {},
     FR = D.front || {};
   function ovSections() {
