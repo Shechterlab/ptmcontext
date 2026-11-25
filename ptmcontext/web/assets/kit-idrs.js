@@ -41,7 +41,12 @@
   // the diagram of states (Das & Pappu 2013): each region, its name, the shapes it predicts, its rule, a short name
   const DP = {
     1: ['Weak polyampholytes and polyelectrolytes', 'globules and tadpoles', 'FCR < 0.25', 'weakly charged'],
-    2: ['Janus sequences', 'collapsed or expanded, depending on context', 'FCR 0.25 to 0.35', 'Janus (in between)'],
+    2: [
+      'Janus sequences',
+      'collapsed or expanded, depending on context',
+      'FCR 0.25 to 0.35',
+      'moderately charged, mixed',
+    ],
     3: [
       'Strong polyampholytes',
       'coils, hairpins and chimeras, depending on how their charges are mixed (κ)',

@@ -793,12 +793,19 @@ def website_problems(site: dict) -> list[str]:
             )
     set_ids = {a['id'] for a in site.get('analyses', []) if a.get('test') == 'protein_sets'}
     pattrs = {**((site.get('proteins') or {}).get('attributes') or {}), **CM.specs(site)[1]}
-    for lst in ((web.get('overview') or {}).get('starting_points') or {}).get('lists', []):
-        for n in [lst['by'], (lst.get('where') or {}).get('attribute')]:
-            if n and n != 'marks' and (n not in pattrs or pattrs[n].get('kind') != 'number'):
-                out.append(
-                    f'website.overview.starting_points: {lst["title"]!r} reads {n!r}, which is not a number attribute of proteins (proteins.attributes)'
-                )
+    for where, lists in (
+        (
+            'website.overview.starting_points',
+            ((web.get('overview') or {}).get('starting_points') or {}).get('lists', []),
+        ),
+        ('website.proteins.presets', (web.get('proteins') or {}).get('presets', [])),
+    ):
+        for lst in lists:
+            for n in [lst['by'], (lst.get('where') or {}).get('attribute')]:
+                if n and n != 'marks' and (n not in pattrs or pattrs[n].get('kind') != 'number'):
+                    out.append(
+                        f'{where}: {lst["title"]!r} reads {n!r}, which is not a number attribute of proteins (proteins.attributes)'
+                    )
     for g in web.get('filters') or []:
         for n in g.get('proteins', []):
             if n != 'marks' and n not in pattrs:

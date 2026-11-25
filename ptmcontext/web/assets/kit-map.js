@@ -361,7 +361,7 @@
     ],
     [
       'ptm',
-      'Other PTMs',
+      'Other modifications',
       'live',
       'Modified residues, cross-links, glycosylation and lipidation of the UniProt entry, retrieved when the page opens, one row per kind',
     ],

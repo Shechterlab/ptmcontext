@@ -18,33 +18,33 @@ from . import Context, Track, register
 from .context import IDR_MIN_LENGTH, idr_units
 
 LABELS = {
-    'r1': 'Weakly charged IDR',
-    'r2': 'Janus IDR',
-    'r3': 'Strong polyampholyte IDR',
-    'r4': 'Negatively charged IDR',
-    'r5': 'Positively charged IDR',
-    'outside_idr': 'Not in an IDR',
-    'no_idr': 'No IDR of <min_length> aa or more',
+    'r1': 'Weakly charged disordered region',
+    'r2': 'Moderately charged, mixed disordered region',
+    'r3': 'Strongly charged, balanced disordered region',
+    'r4': 'Negatively charged disordered region',
+    'r5': 'Positively charged disordered region',
+    'outside_idr': 'Not in a disordered region',
+    'no_idr': 'No disordered region of <min_length> aa or more',
 }
 HELP = {
-    'r1': 'In an IDR with fewer than a quarter of its residues charged (FCR < 0.25): weak polyampholytes and polyelectrolytes',
-    'r2': 'In an IDR with a quarter to a third of its residues charged (FCR 0.25 to 0.35): Janus sequences',
-    'r3': 'In an IDR with more than a third charged and the charges balanced (FCR > 0.35, |NCPR| < 0.35): strong polyampholytes',
-    'r4': 'In an IDR with more than a third of its residues negative (D, E) and the rest not balancing them: strong polyelectrolytes',
-    'r5': 'In an IDR with more than a third of its residues positive (K, R) and the rest not balancing them: strong polyelectrolytes',
-    'outside_idr': 'Not inside an IDR of <min_length> or more residues',
+    'r1': 'In a disordered region with fewer than a quarter of its residues charged (FCR < 0.25)',
+    'r2': 'In a disordered region with a quarter to a third of its residues charged (FCR 0.25 to 0.35), positive and negative mixed',
+    'r3': 'In a disordered region with more than a third charged and the charges balanced (FCR > 0.35, |NCPR| < 0.35)',
+    'r4': 'In a disordered region with more than a third of its residues negative (D, E) and the rest not balancing them',
+    'r5': 'In a disordered region with more than a third of its residues positive (K, R) and the rest not balancing them',
+    'outside_idr': 'Not inside a disordered region of <min_length> or more residues',
     'no_idr': 'Protein has no disordered region of <min_length> or more residues',
 }
 # each IDR's parameters, written with it (Track.values): (column, label, definition)
 VALUES = (
-    ('f_plus', 'f+', 'Fraction of the IDR’s residues that are positive (K, R)'),
-    ('f_minus', 'f−', 'Fraction of the IDR’s residues that are negative (D, E)'),
+    ('f_plus', 'f+', 'Fraction of the disordered region’s residues that are positive (K, R)'),
+    ('f_minus', 'f−', 'Fraction of the disordered region’s residues that are negative (D, E)'),
     ('fcr', 'FCR', 'Fraction of charged residues: f+ + f−'),
     ('ncpr', 'NCPR', 'Net charge per residue: f+ − f−'),
     (
         'kappa',
         'κ',
-        'How far the IDR’s charges are segregated from each other: 0 well mixed, 1 fully segregated (Das & Pappu 2013); '
+        'How far the disordered region’s charges are segregated from each other: 0 well mixed, 1 fully segregated (Das & Pappu 2013); '
         'none without charged residues',
     ),
     ('region', 'Das–Pappu region', 'Its region of the diagram of states, 1 to 5 (the class r1 to r5)'),
@@ -120,19 +120,19 @@ def idr_charge_units(ctx: Context, accessions: set, min_length: int = IDR_MIN_LE
     'The Das-Pappu region of the IDR (the disorder input’s regions merged, <min_length> residues or more) a residue sits '
     'in, from its fractions of positive (K, R) and negative (D, E) residues; outside_idr; no_idr',
     needs=('disorder',),
-    title='Charge of the IDR',
+    title='Charge of the disordered region',
     labels=LABELS,
     help=HELP,
-    question='Do {marks} sit in IDRs of a particular charge, against the other {residues} of the same proteins?',
-    sub='{Marks} against the other {residues} of the same proteins, by the charge class of the IDR they sit in (Das–Pappu diagram of states). The other residues include those outside IDRs, so each IDR class partly restates whether {marks} favor disorder; compare the classes with each other',
+    question='Do {marks} sit in disordered regions of a particular charge, against the other {residues} of the same proteins?',
+    sub='{Marks} against the other {residues} of the same proteins, by the charge class of the disordered region they sit in (Das–Pappu diagram of states). The other residues include those outside disordered regions, so each class partly restates whether {marks} favor disorder; compare the classes with each other',
     tracks=(
         lambda values: Track(
             'idr',
-            'IDR charge',
+            'Disordered-region charge',
             'segments',
             lambda ctx, accs: idr_charge_units(ctx, accs, values['min_length']),
             roles=('disorder',),
-            help=f'IDRs (disordered regions merged, {values["min_length"]} residues or more), each in its region of the Das–Pappu diagram of states (from its FCR and NCPR)',
+            help=f'Disordered regions (merged, {values["min_length"]} residues or more), each in its region of the Das–Pappu diagram of states (from its FCR and NCPR)',
             # negative polyelectrolytes red and positive blue, as the map's charge row
             colours=(('r1', '#9DB8C7'), ('r2', '#E2B44C'), ('r3', '#8E7CC3'), ('r4', '#D64545'), ('r5', '#2F6FD6')),
             values=VALUES,

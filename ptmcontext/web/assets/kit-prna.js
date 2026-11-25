@@ -181,7 +181,6 @@
           ? `<b class="nt hit">${esc(hit)}</b>`
           : `<span class="nt">${esc(ch)}</span>`
     )}</span>`;
-  const rel = (d) => `i${d > 0 ? '+' : '−'}${Math.abs(d)}`;
   const link = (url, text, title) =>
     url
       ? `<a href="${esc(url)}" target="_blank" rel="noopener"${title ? ` title="${esc(title)}"` : ''}>${text}</a>`
@@ -234,7 +233,7 @@
       return (
         `<li>${siteLink(p, rec, q)} <span class="tag" title="${esc(
           `Touched by residue ${resName(p, rec, q + top.off)}, not by ${resName(p, rec, q)} itself`
-        )}">via ${rel(top.off)}</span> ${win(top.win)} <span class="muted ` +
+        )}">via the residue ${Math.abs(top.off)} ${top.off > 0 ? 'after' : 'before'} it</span> ${win(top.win)} <span class="muted ` +
         `small" title="${esc(top.name || '')}">${top.type ? esc(top.type) + ' · ' : ''}${plural(top.n, 'entry', 'entries')}</span></li>`
       );
     };
@@ -334,7 +333,7 @@
               String(NC.rbns.url || '').replace('{id}', encodeURIComponent(get(r, 'rbns', 'id'))),
               esc(get(r, 'rbns', 'id'))
             )} <span class="muted ` +
-            `small">${esc(get(r, 'rbns', 'conc'))}</span> ${kmers(
+            `small">${esc(/^[\d.]+$/.test(String(get(r, 'rbns', 'conc'))) ? `${get(r, 'rbns', 'conc')} nM protein` : get(r, 'rbns', 'conc'))}</span> ${kmers(
               get(r, 'rbns', 'kmers'),
               get(r, 'rbns', 'scores')
             )}</li>`

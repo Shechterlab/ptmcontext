@@ -1674,6 +1674,10 @@ body.rail-open .rail-scrim {
   flex-wrap: wrap;
   gap: 0.3rem;
 }
+.preset-chips {
+  align-items: center;
+  margin: 0 0 0.6rem;
+}
 .fchip {
   border: 1px solid var(--line-strong);
   background: var(--surface);
@@ -10190,6 +10194,17 @@ html[data-density] .sites-tbl .cv {
 .nw-phint {
   margin-top: 8px;
   font-size: 12px;
+}
+.nw-answer {
+  margin: 0.2rem 0 0.8rem;
+}
+.nw-ctable {
+  margin-top: 1rem;
+}
+.nw-ctable .nw-bdg {
+  display: inline-grid;
+  vertical-align: middle;
+  margin-right: 6px;
 }
 .nw-table th[scope='row'] {
   text-align: left;
