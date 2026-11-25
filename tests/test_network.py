@@ -943,3 +943,22 @@ def test_a_cluster_keeps_its_three_best_terms_for_the_tooltip_and_the_page_can_h
     assert [x[3] for x in lab[0]['top']] == sorted(x[3] for x in lab[0]['top'])
     js = (ASSETS / 'kit-network.js').read_text()
     assert 'data-nw-term' in js and 'data-nw-termclear' in js and 'termHits(M)' in js and 'const topTerms' in js
+
+
+def test_the_page_says_the_pinned_protein_in_one_status_block_and_keeps_the_less_used_controls_under_more_options():
+    js = (ASSETS / 'kit-network.js').read_text()
+    css = (ASSETS / 'kit.css').read_text()
+    # one sentence: who is shown, with how many partners, why it was not in the top, and one way back
+    assert 'UI.nb ? ` and its ${int(np)}' in js and 'outside the top ${int(UI.top)}' in js
+    assert 'the network drawn is it and its' not in js
+    # every note is its own block, so that a line is not split into flex items
+    assert 'slot.map((t) => `<p>${t}</p>`)' in js and re.search(r'\.nw-fnote p\s*\{', css)
+    # the first row holds only the common controls; zoom, export and download are under More options
+    assert "LESS_USED = new Set(['size', 'outline'])" in js
+    first, more = js.split('<details class="nw-more"', 1)
+    row = first[first.rindex('aria-label="Network options"') :]
+    assert 'data-nw-vreset' in row and 'data-nw-zoom' not in row and 'xf' not in row and 'expBar' not in row
+    assert '${extra}' in more
+    # the key (sizes, links, colors, outline) is one block under the figure; the count line stays above it
+    assert 'key: `<div class="nw-key"' in js
+    assert js.index('listHtml(CL) :') < js.index('${key}')
