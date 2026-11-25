@@ -94,7 +94,8 @@ def test_compare_json_holds_each_sites_own_statistics_rows(tmp_path):
             assert cell['or'] == (None if float(r.odds_ratio) == float('inf') else float(r.odds_ratio))
             assert cell['q'] == float(r.q) and cell['n'] == int(r.a)
             checked += 1
-            assert cell['group'] == r.background and cell['test'] == 'within each protein'
+            assert cell['group'] == r.background.replace('a stratum', 'analyzed separately')  # one wording on the page
+            assert cell['test'] == 'within each protein'
     assert checked, 'at least one cell was compared with its statistics row'
     # a class no explorer tests is "not tested" (null), never 0
     assert all(c is None for c in rows['no_such_class']['cells'].values())

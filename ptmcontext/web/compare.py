@@ -213,10 +213,18 @@ def cell(rows: dict, analysis: dict, aid: str, cat: str) -> dict | None:
             'q': est['q'],
             'test': SET_TEST_NAMES['mantel_haenszel'],
         },
-        'group': r['background'],
+        'group': _one_wording(r['background']),
         'label': (analysis.get('labels') or {}).get(cat) or cat.replace('_', ' '),
     }
     return out
+
+
+def _one_wording(text: str) -> str:
+    """One phrase for 'each protein is analyzed on its own' on the page: a site that keeps its release's older wording
+    ('a stratum') in its own rows reads like the others ('analyzed separately')."""
+    return text.replace('each protein a stratum', 'each protein analyzed separately').replace(
+        'decile a stratum', 'decile analyzed separately'
+    )
 
 
 def explorer_entry(site: dict, folder: Path, web_cfg: dict, label: str, short: str | None, href: str) -> dict:
@@ -289,11 +297,13 @@ def build_data(cfg: dict, built: list[dict], log=print) -> dict | None:
                         if a is not None
                         else None
                     )
+                # one label source: the name the explorers give the class (when they agree), else the page file's
+                own = {x['label'] for x in cells.values() if x and x.get('label')} - {c['class'].replace('_', ' ')}
                 rows.append(
                     {
                         'id': f'{q["id"]}:{c["class"]}',
                         'class': c['class'],
-                        'label': c.get('label') or c['class'],
+                        'label': next(iter(own)) if len(own) == 1 else c.get('label') or c['class'],
                         'cells': cells,
                     }
                 )

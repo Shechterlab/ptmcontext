@@ -712,8 +712,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: hpa_location
     test: protein_sets
-    title: Where in the cell
-    question: "Where in the cell are methylated proteins found more often than other proteins?"
+    title: Human Protein Atlas locations
+    question: "Which Human Protein Atlas locations hold more methylated proteins than other proteins?"
     sub: "Methylated proteins against the other proteins with a Human Protein Atlas location scored Approved or better (one-sided hypergeometric test)"
     section: Localization
     sets: {input: hpa, set: location, protein: canonical_UniProtAC, exclude: [{column: reliability, equals: Uncertain}]}
@@ -1611,7 +1611,6 @@ website:                  # the look and words of the website (ptmc web); layout
       sequence_proximity: "Distance to RNA evidence"
       nucleic_acid_distance: "Distance to RNA/DNA (PDB)"
       intact: "IntAct mutations and regions"
-      reader_classes: "Enzymes and readers"
       perturbations: "PRMT perturbations"
       provenance: "Studies and databases"
     row_labels:                 # a code is unique only within its question; the two stress-granule sets are told apart by source
@@ -1656,9 +1655,9 @@ website:                  # the look and words of the website (ptmc web); layout
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
     statistic_label: true  # each tile names its statistic
-    question: "Which proteins are methylated?"
+    question: "Which proteins have methylarginine, where in the protein is it, and which other modifications are nearby?"
     rows: 5
-    random_maps: {n: 3, title: Example proteins}   # a closed fold at the end of the Overview: proteins drawn at random, each end to end (open: true opens it; enabled: false leaves it out)
+    random_maps: {n: 3, title: Example proteins, enabled: false}   # off: the Overview points to other pages instead of repeating them (open: true opens it; enabled: false leaves it out)
     starting_points:       # under the sections: proteins to start from, and ready-made selections (the explorer's)
       open: true
       lists:
@@ -1673,19 +1672,6 @@ website:                  # the look and words of the website (ptmc web); layout
         - {label: proteins in condensates, query: "f=p:condensate_proteome~*", view: proteins}
         - {label: proteins with dense clusters, query: "f=r:dense_q~0.05", view: proteins}
     sections:
-      - name: Localization
-        about: "Where in the cell the methylated proteins localize."
-        #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
-        cards:
-          - {analysis: where_in_the_cell, title: Localization, drawing: true, wide: true}
-      - name: Classes and pathways
-        about: "Protein classes, pathways and condensates of the methylated proteins."
-        cards:
-          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
-          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
-          - {analysis: panther_subclass, title: Protein subclasses}
-          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
-          - {analysis: condensate_role, title: Driver or client in condensates}
       - name: Position in the protein
         about: "Where in the protein the methylated arginines are: motifs, folded or disordered parts, domains."
         cards:
@@ -1698,10 +1684,6 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: sticker_context_3_idr}
           - {analysis: sticker_context_5_idr}
           - {analysis: which_factor, wide: true}
-      - name: RNA and DNA binding
-        about: "Whether methylated arginines touch RNA, DNA or other proteins. The Interactions page has the tests."
-        #  the Interactions page's tile (website.pages[].overview)
-        cards: []
       - name: Other modifications
         about: "Whether methylated arginines are near other modifications (phosphosites and methyllysines), within 10 residues."
         cards:
@@ -1709,11 +1691,25 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: near_phospho_high}
           - {analysis: near_methyllysine}
       - name: Interactions and enzymes
-        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked. Protein partners are with the RNA and DNA tile above."
+        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked."
         #  counted from the partner classes (website.search.partners), not tested
+        links: [interactions, network]
         cards:
           - reader_classes
           - {analysis: perturbations, wide: true}
+      - name: Classes and pathways
+        about: "Protein classes, pathways and condensates of the methylated proteins."
+        cards:
+          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
+          - {analysis: panther_subclass, title: Protein subclasses}
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
+          - {analysis: condensate_role, title: Driver or client in condensates}
+      - name: Localization
+        about: "Where in the cell the methylated proteins localize."
+        #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
+        cards:
+          - {analysis: where_in_the_cell, title: Localization, drawing: true, wide: true}
       - name: Disease and cancer
         about: "Diseases linked to the methylated proteins."
         show: 1
@@ -1758,22 +1754,22 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: cancer_change, title: Changes in tumors and cell lines}
           - {analysis: clinvar_plp, title: ClinVar pathogenic variants}
           - {analysis: gnomad_variant, title: gnomAD variants}
-      - name: Evidence and studies
-        about: "Which studies and databases reported the sites."
-        #  counted, not tested (website.counts)
-        cards: [provenance]
       - name: More questions
         about: "Further protein classes, pathways, cell maps and maps of bound RNAs, one question each."
         cards: [panther_class, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)},
                 {analysis: hpa_location, title: Human Protein Atlas locations}, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin,
                 eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, disorder, domain_context]
+      - name: Evidence and studies
+        about: "Which studies and databases reported the sites."
+        #  counted, not tested (website.counts)
+        cards: [provenance]
   cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
     id: where_in_the_cell
     default_view: average        # what the maps color by on opening: percent (share of proteins with a mark), average (each share against the share among all mapped proteins) or fold
     dispersion: false        # the average view: no overdispersion adjustment across compartments (they are not expected to be alike)
     abundance: true          # its test is within abundance deciles (Mantel-Haenszel), Fisher's exact test where a map has none
     min_h: 0.2               # filled only where the effect is at least small (Cohen's h); significant but smaller is outlined
-    title: Where in the cell
+    title: Localization
     question: "Where do methylated proteins localize in the cell?"
     intro: "Five maps from four studies locate proteins in the cell, by imaging, proximity labeling, organelle pull-down and chromatin fractionation."
     note: "Not shown: the nuclear-body map of Dyakov et al. (bioRxiv 2024), whose license (CC BY-NC-ND) does not allow derived works, and the speckle, lamina and PML-body proteomes of Barutcu et al. 2022 and its nuclear-body RNA map. Where the RNAs bound by proteins with eCLIP data gather (APEX-seq), and where the genes of those RNAs lie in the nucleus (TSA-seq, Hi-C subcompartments), is under More questions."
@@ -1849,7 +1845,7 @@ website:                  # the look and words of the website (ptmc web); layout
     reader_classes:
       kind: values
       attribute: bound_by
-      title: Methylation enzymes and readers
+      title: Methylarginines on proteins whose STRING partners include writers, readers or cofactors
       question: "Which methylarginines are on proteins with a STRING partner that is a writer, a reader or a cofactor?"
       sub: "Methylarginines on proteins with a STRING physical partner (score 0.7 or more) in each writer, reader or cofactor class"
       distribution: "Classes of partner of each protein carrying a {mark}"
@@ -1880,26 +1876,26 @@ website:                  # the look and words of the website (ptmc web); layout
       title: PRMT inhibitors, knockouts and knockdowns
       question: "Which methylarginines have a peptide that decreases when PRMTs are inhibited or knocked out?"
       sub: "Methylarginines that change when a PRMT is inhibited, knocked out or knocked down (Maron et al. 2021; Shishkova et al. 2017; Szewczyk et al. 2020; Hartel et al. 2019; Lu et al. 2024; Li et al. 2021)"
-      head: "Methylarginines with a peptide that decreased with each PRMT inhibitor, knockout or knockdown"
+      head: "Methylarginines that decreased, of those quantified, with each PRMT inhibitor, knockout or knockdown"
       first: Perturbation
       group: Methyl-IP
       calls: {down: decreased, up: increased}
       note: "Rows count the methylarginines an experiment measured and those that changed. A site is decreased when a peptide containing it went down and none went up, and increased for the reverse. A peptide with several methylarginines gives each the same change. Maron rows: sites measured in that methyl-IP, with a peptide changing at adjusted p ≤ 0.05. CARM1 knockout rows: sites measured in that cell line, with a peptide changing at least twofold at BH q < 0.05. Other rows: sites quantified, called at twofold and q < 0.05, or by the published call where the row says so (the PRMT1 knockdown, 2 against 2 samples, and the Li et al. 2021 arms, one SILAC experiment each, untested). The Li et al. PRMT5 knockdown lists only decreased sites. Median change is the median over sites of each site's median log2 change (inhibitor minus DMSO for Maron rows, perturbed over control for the rest)."
       method: "The release's supporting tables give each site's call and change per experiment: maron2021_inhibitors (Maron et al. 2021 Table S3), carm1_ko (Shishkova et al. 2017) and writer_perturbations. The calls of the last two are the site table's perturbation_calls (the perturbation filter). Counts and medians are descriptive. No test is run here."
       rows:
-        - {name: GSK591, note: PRMT5 inhibitor, group: Rme1, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: MMA}, change: log2_diff_median}
-        - {name: GSK591, note: PRMT5 inhibitor, group: Rme2a, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: ADMA}, change: log2_diff_median}
-        - {name: GSK591, note: PRMT5 inhibitor, group: Rme2s, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: SDMA}, change: log2_diff_median}
-        - {name: MS023, note: type I PRMT inhibitor, group: Rme1, table: maron_inhibitors, where: {inhibitor: MS023, antibody: MMA}, change: log2_diff_median}
-        - {name: MS023, note: type I PRMT inhibitor, group: Rme2a, table: maron_inhibitors, where: {inhibitor: MS023, antibody: ADMA}, change: log2_diff_median}
-        - {name: MS023, note: type I PRMT inhibitor, group: Rme2s, table: maron_inhibitors, where: {inhibitor: MS023, antibody: SDMA}, change: log2_diff_median}
+        - {name: GSK591, note: PRMT5 inhibitor, short: "GSK591 (PRMT5 inhibitor), Rme1", group: Rme1, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: MMA}, change: log2_diff_median}
+        - {name: GSK591, note: PRMT5 inhibitor, short: "GSK591 (PRMT5 inhibitor), Rme2a", group: Rme2a, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: ADMA}, change: log2_diff_median}
+        - {name: GSK591, note: PRMT5 inhibitor, short: "GSK591 (PRMT5 inhibitor), Rme2s", group: Rme2s, table: maron_inhibitors, where: {inhibitor: GSK591, antibody: SDMA}, change: log2_diff_median}
+        - {name: MS023, note: type I PRMT inhibitor, short: "MS023 (type I PRMT inhibitor), Rme1", group: Rme1, table: maron_inhibitors, where: {inhibitor: MS023, antibody: MMA}, change: log2_diff_median}
+        - {name: MS023, note: type I PRMT inhibitor, short: "MS023 (type I PRMT inhibitor), Rme2a", group: Rme2a, table: maron_inhibitors, where: {inhibitor: MS023, antibody: ADMA}, change: log2_diff_median}
+        - {name: MS023, note: type I PRMT inhibitor, short: "MS023 (type I PRMT inhibitor), Rme2s", group: Rme2s, table: maron_inhibitors, where: {inhibitor: MS023, antibody: SDMA}, change: log2_diff_median}
         - {name: CARM1 KO, note: MCF7 cells, short: CARM1 KO MCF7, group: Rme2a, attribute: perturbation, value: carm1_ko_mcf7, table: carm1_ko, where: {cell_line: MCF7}, change: log2_ko_over_wt}
         - {name: CARM1 KO, note: MDA-MB-231 cells, short: CARM1 KO MDA-MB-231, group: Rme2a, attribute: perturbation, value: carm1_ko_mdamb231, table: carm1_ko, where: {cell_line: MDA-MB-231}, change: log2_ko_over_wt}
         - {name: "PRMT7 KO, HCT116", note: "Szewczyk et al. 2020 · twofold, q < 0.05", kind: knockout, attribute: perturbation, value: prmt7_ko_hct116, table: writer_perturbations, where: {perturbation: prmt7_ko_hct116}, change: log2_treated_over_control}
         - {name: "PRMT1 knockdown, HEK293T", note: "Hartel et al. 2019 · published call", kind: knockdown, attribute: perturbation, value: prmt1_kd_hek293t, table: writer_perturbations, where: {perturbation: prmt1_kd_hek293t}, change: log2_treated_over_control}
-        - {name: "PRMT5i EPZ015666, HeLa", note: "Lu et al. 2024 · twofold, q < 0.05", kind: inhibitor, attribute: perturbation, value: prmt5i_epz015666_hela, table: writer_perturbations, where: {perturbation: prmt5i_epz015666_hela}, change: log2_treated_over_control}
+        - {name: "PRMT5i EPZ015666, HeLa", short: "EPZ015666 (PRMT5 inhibitor), HeLa", note: "Lu et al. 2024 · twofold, q < 0.05", kind: inhibitor, attribute: perturbation, value: prmt5i_epz015666_hela, table: writer_perturbations, where: {perturbation: prmt5i_epz015666_hela}, change: log2_treated_over_control}
         - {name: "PRMT7 knockdown, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: prmt7_kd_hek293, table: writer_perturbations, where: {perturbation: prmt7_kd_hek293}, change: log2_treated_over_control}
-        - {name: "PRMT7i SGC3027, HEK293", note: "Li WJ et al. 2021 · published call", kind: inhibitor, attribute: perturbation, value: prmt7i_sgc3027_hek293, table: writer_perturbations, where: {perturbation: prmt7i_sgc3027_hek293}, change: log2_treated_over_control}
+        - {name: "PRMT7i SGC3027, HEK293", short: "SGC3027 (PRMT7 inhibitor), HEK293", note: "Li WJ et al. 2021 · published call", kind: inhibitor, attribute: perturbation, value: prmt7i_sgc3027_hek293, table: writer_perturbations, where: {perturbation: prmt7i_sgc3027_hek293}, change: log2_treated_over_control}
         - {name: "CARM1 knockdown, HEK293", note: "Li WJ et al. 2021 · published call", kind: knockdown, attribute: perturbation, value: carm1_kd_hek293, table: writer_perturbations, where: {perturbation: carm1_kd_hek293}, change: log2_treated_over_control}
         - {name: "PRMT5 knockdown, HEK293", note: "Li WJ et al. 2021 · published call; decreased sites only", kind: knockdown, listed: true, attribute: perturbation, value: prmt5_kd_hek293, table: writer_perturbations, where: {perturbation: prmt5_kd_hek293}, change: log2_treated_over_control}
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
@@ -2166,7 +2162,6 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: binding_protein, set: dna_xl}
           - {analysis: binding_protein, set: dna_interactome}
     outline: {id: enzyme_role, name: Enzyme role, kind: role, none: "No enzyme or reader role"}   # a ring on the writers, erasers and readers (website.search.partners classes), with any color
-    tile: {section: "Interactions and enzymes", title: Protein network, text: "The methylated proteins with most sites, linked by physical interactions and complexes and clustered by GO biological process."}
   # The Compare sets page (#overlap): 2 to 4 terms (protein sets, classes, the selection, readers) and how their proteins and sites overlap
   overlap:
     terms_from: [panther_group, panther_class, panther_subclass, disease_family, disease_ontology, disease_term, reactome_top_level, reactome_pathway, hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate, condensate_role, depmap_dependency, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic, go_binding, binding_protein]
