@@ -174,7 +174,7 @@ const els = {}; const mk = id => (els[id] = { id, value: '', innerHTML: '', text
 global.document = { getElementById: id => mk(id) };
 global.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ sites: [{ id: 'a', label: 'A' }],
   p: [['P04637', 'TP53', 'Cellular tumor antigen p53', [0], ['TP53'], []], ['P00533', 'EGFR', 'Epidermal growth factor receptor', [0], ['EGFR'], []]] }) });
-eval(fs.readFileSync(ASSETS + '/kit-names.js', 'utf8')); eval(fs.readFileSync(ASSETS + '/land-search.js', 'utf8'));
+eval(fs.readFileSync(ASSETS + '/kit-names.js', 'utf8')); eval(fs.readFileSync(ASSETS + '/land-match.js', 'utf8')); eval(fs.readFileSync(ASSETS + '/land-search.js', 'utf8'));
 (async () => {
   const out = {};
   for (const q of ['TP53 S15', 'EGFR,TP53', 'TP53', 'FOO BAR', 'TP53R213']) {
