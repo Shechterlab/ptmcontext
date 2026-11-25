@@ -9,7 +9,8 @@
     say = document.getElementById('land-say');
   if (!box || !out) return;
   let idx = null,
-    pending = null;
+    pending = null,
+    cmp = null; // compare/compare.json, read once beside the proteins (none: a site without a Compare page)
   const esc = (s) =>
     String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   // the index still coming after 300 ms: a small spinner and short text in the status line (still under reduced motion)
@@ -19,7 +20,16 @@
     if (!idx && say) say.innerHTML = '<span class="ld-spin" aria-hidden="true"></span> Loading proteins…';
   };
   const load = () => {
-    if (!pending) wait = setTimeout(spin, 300);
+    if (!pending) {
+      wait = setTimeout(spin, 300);
+      fetch('compare/compare.json')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => {
+          cmp = j;
+          if (j && idx) draw();
+        })
+        .catch(() => {});
+    }
     return (pending ||= fetch('proteins.json')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('missing'))))
       .then((j) => (idx = j))
@@ -101,6 +111,11 @@
       return;
     }
     const { rows, site, list } = read(q);
+    // a category: the Compare page's classes or questions that the same words match (land-match.js, as that page filters)
+    const cat = !list && !site && cmp ? window.PTMMatch.count(cmp, q) : { classes: 0 },
+      catLine = cat.classes
+        ? `<li class="hit-cmp"><a href="compare/#${esc(new URLSearchParams({ q }))}">Compare ‘${esc(q)}’ across explorers: ${cat.classes} ${cat.classes === 1 ? 'class' : 'classes'} ›</a></li>`
+        : '';
     out.innerHTML = list
       ? `<li><span class="hit-name"><b>${esc(list.join(', '))}</b></span><span class="hit-sites">Open this list in: ${idx.sites
           .map((s) => `<a href="${listAddress(s, list)}">${esc(s.label)}</a>`)
@@ -114,13 +129,15 @@
               `<span class="hit-sites">Open in ${links(h.row, site, q).join(' ')}</span></li>`
             );
           })
-          .join('');
+          .join('') + catLine;
     if (say)
       say.textContent = list
         ? `${list.length} names: test them as a gene list.`
         : rows.length
           ? `${rows.length} protein${rows.length === 1 ? '' : 's'}; open it in an explorer.`
-          : 'No protein with that name or accession in these sites.';
+          : cat.classes
+            ? 'No protein with that name; it matches a category in Compare.'
+            : 'No protein with that name or accession in these sites.';
   };
   // a click on a hit's name (not on one of its site links) opens the protein in the first site that has it
   out.addEventListener('click', (e) => {

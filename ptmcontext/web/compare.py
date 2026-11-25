@@ -32,6 +32,7 @@ SET_TEST_NAMES = {
 }
 SET_NOTE = 'Not adjusted for protein abundance; abundant proteins have more detected sites.'
 
+MATCH = Path(__file__).parent / 'assets' / 'land-match.js'  # the search's matching, shared with the landing page
 ASSET = Path(__file__).parent / 'assets' / 'land-compare.js'
 
 CSS = """
@@ -386,7 +387,7 @@ def page(
 <p>{built_with}</p>
 <p id="privacy">No cookies, no tracking. The numbers are copied from each explorer's own build; this page asks no other site for data. A PDF download loads one script from cdnjs.cloudflare.com.</p></footer>
 <script id="cmp-data" type="application/json">{blob}</script>
-<script>{LP.THEME_JS}</script><script>{ASSET.read_text()}</script></body></html>
+<script>{LP.THEME_JS}</script><script>{MATCH.read_text()}</script><script>{ASSET.read_text()}</script></body></html>
 """
 
 

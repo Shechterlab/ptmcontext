@@ -60,26 +60,15 @@
   }
 
   // ---- what is shown: the chosen group, its rows in the chosen order -----------------------------------------------------
-  // the search: every word typed must start a word of the row's class name or its question's name ("stress gran" finds
-  // "Stress granules"; "idr" finds "(IDR)"); a matching question name keeps all the question's classes
-  const words = (t) =>
-    String(t)
-      .toLowerCase()
-      .match(/[a-z0-9]+/g) || [];
-  const matcher = () => {
-    const need = words(state.q);
-    return (label, title) => {
-      const have = words(label + ' ' + title);
-      return need.every((w) => have.some((h) => h.startsWith(w)));
-    };
-  };
+  // the search (land-match.js, shared with the landing page): every word typed must start a word of the class name or its
+  // question's name; a matching question name keeps all the question's classes
   const key = (row) => {
     const c = row.cells[state.sort];
     return ok(c) ? (c.big ? 1e300 : c.v) : null;
   };
   function view() {
-    const hit = matcher(),
-      searching = words(state.q).length > 0;
+    const hit = window.PTMMatch.matcher(state.q),
+      searching = window.PTMMatch.words(state.q).length > 0;
     return D.groups
       .filter((g) => !state.group || g.id === state.group)
       .map((g) => ({
@@ -241,7 +230,7 @@
     document.getElementById('cmp-table').innerHTML = table();
     const n = document.getElementById('cmp-n');
     if (n) {
-      const rows = words(state.q).length
+      const rows = window.PTMMatch.words(state.q).length
         ? view().reduce((s, g) => s + g.questions.reduce((t, q) => t + q.rows.length, 0), 0)
         : -1;
       n.innerHTML =
