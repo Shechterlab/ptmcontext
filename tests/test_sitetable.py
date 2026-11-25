@@ -62,7 +62,7 @@ Promise.resolve(K.clicks.find(c => c[0] === '[data-stexp]')[1]({{ dataset: {{ st
     out = json.loads(run.stdout)
     assert out['id'] == 'p-sitetab' and out['title'] == 'My table'
     assert out['rows'] == ['X2', 'X1', 'X3']  # the strongest first: q 0.01, 0.2, 1
-    assert out['sum'] == '3 sites; 1 with q < 0.05 in Alpha; 1 with Clin P/LP variants'  # the site card's counter
+    assert out['sum'] == '3 sites; 1 with q < 0.05 in Alpha; 1 with Clin <abbr title="P/LP">P/LP</abbr> variants'  # the site card's counter
     lines = out['tsv'].splitlines()
     head = next(i for i, ln in enumerate(lines) if not ln.startswith('#'))
     assert lines[head].split('\t') == [

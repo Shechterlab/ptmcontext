@@ -553,7 +553,7 @@
     );
     if (m.germ && r.af) L[1] += `; summed allele frequency ${afText(r.af)}`;
     if (!m.germ && !hyper() && r.kAll > r.k) L[1] += ` (without hypermutated; ${int(r.kAll)} in all)`;
-    if (r.o != null) L.push(`O/E ${K.prop.fo(r.o)}`);
+    if (r.o != null) L.push(`seen/expected ${K.prop.fo(r.o)}`);
     if (r.y == null)
       L.push(
         r.o == null
@@ -889,11 +889,11 @@
     return (
       `<details class="mu-set"><summary>Whole list against expectation (the release's site set test)</summary>` +
       `<p class="small muted">${esc(PR.summary.set_label || '')}: changes (k) at the ${esc(W.marks)} against the expected count summed over their proteins. p comes from ${int(PR.summary.iterations || 10000)} permutation draws, so the smallest possible p is about 1e−4. The table does not change with your selection.</p>` +
-      `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Source</th><th>Residue</th><th>Samples</th><th>${esc(cap1(W.marks))}</th><th title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th>Expected</th><th>O/E</th><th>p (more)</th><th>p (fewer)</th></tr></thead><tbody>` +
+      `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Source</th><th>Residue</th><th>Samples</th><th>${esc(cap1(W.marks))}</th><th title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes seen</th><th>Expected</th><th>seen/expected</th><th>p (more)</th><th>p (fewer)</th></tr></thead><tbody>` +
       pick
         .map(
           (r) =>
-            `<tr><td>${esc(lab[r.source] || r.source)}${r.oe_status === 'descriptive' ? ' <span class="muted">(descriptive)</span>' : ''}</td><td>${esc(resLabel(r.residue))}</td><td>${r.cohort === 'no_hypermutated' ? 'without hypermutated' : 'all'}</td><td>${int(r.sites)}</td><td>${int(r.observed)}</td><td>${fo(r.expected)}</td><td>${fo(r.oe)}</td><td>${r.oe_status === 'descriptive' ? '–' : fp(r.p_upper)}</td><td>${r.oe_status === 'descriptive' ? '–' : fp(r.p_lower)}</td></tr>`
+            `<tr><td>${esc(lab[r.source] || r.source)}${r.oe_status === 'descriptive' ? ' <span class="muted">(count only, no test)</span>' : ''}</td><td>${esc(resLabel(r.residue))}</td><td>${r.cohort === 'no_hypermutated' ? 'without hypermutated' : 'all'}</td><td>${int(r.sites)}</td><td>${int(r.observed)}</td><td>${fo(r.expected)}</td><td>${fo(r.oe)}</td><td>${r.oe_status === 'descriptive' ? '–' : fp(r.p_upper)}</td><td>${r.oe_status === 'descriptive' ? '–' : fp(r.p_lower)}</td></tr>`
         )
         .join('') +
       `</tbody></table></div></details>`
@@ -1240,12 +1240,12 @@
       `<section class="mu-listres"><div class="mu-top"><h4>Your list</h4>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mulist', 'sites of a pasted list', 'propensity')}</div>` +
       listVerdict(res) +
       `<p class="small muted">${hyper() ? 'With' : 'Without'} hypermutated samples. Per source, the changes (k) at the listed sites against the expected count, summed over their proteins: the release's site-set test, with your sites in place of a site set (both tails). p is the ${esc(LIST_TEST)}. ClinVar is descriptive.</p>` +
-      `<div class="tbl-wrap"><table class="tbl mu-lt"><thead><tr><th>Source</th><th class="num">Sites tested</th><th class="num" title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th class="num">Expected</th><th class="num">O/E</th><th class="num">p (more)</th><th class="num">p (fewer)</th></tr></thead><tbody>${pool}</tbody></table></div>` +
+      `<div class="tbl-wrap"><table class="tbl mu-lt"><thead><tr><th>Source</th><th class="num">Sites tested</th><th class="num" title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes seen</th><th class="num">Expected</th><th class="num">seen/expected</th><th class="num">p (more)</th><th class="num">p (fewer)</th></tr></thead><tbody>${pool}</tbody></table></div>` +
       (flagged
         ? `<p class="small muted">${int(flagged)} of the proteins in your list ${flagged === 1 ? 'is' : 'are'} flagged as dominated by a few enriched residues. The expected count at their other residues is inflated, so a list of those sites can look depleted.</p>`
         : '') +
       `<div class="mu-top">${tabs}</div>` +
-      `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Site</th><th class="num" title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th class="num">Expected</th><th class="num">O/E</th>` +
+      `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Site</th><th class="num" title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes seen</th><th class="num">Expected</th><th class="num">seen/expected</th>` +
       (cur.s.descriptive
         ? `<th colspan="2"></th>`
         : `<th class="num">p (more)</th><th class="num" title="${qTip}">q across your list (more)</th>` +
@@ -1268,9 +1268,9 @@
           `${x.s.label}: ${
             x.pool.expected == null
               ? 'no sites'
-              : `k ${x.pool.observed}, expected ${x.pool.expected.toFixed(2)}, O/E ${x.pool.oe == null ? '-' : x.pool.oe.toFixed(3)}${
+              : `k ${x.pool.observed}, expected ${x.pool.expected.toFixed(2)}, seen/expected ${x.pool.oe == null ? '-' : x.pool.oe.toFixed(3)}${
                   x.s.descriptive
-                    ? ' (descriptive)'
+                    ? ' (count only, no test)'
                     : `, p more ${x.pool.pu == null ? '-' : x.pool.pu.toExponential(2)}, p fewer ${x.pool.pl == null ? '-' : x.pool.pl.toExponential(2)}`
                 }`
           }`
@@ -1279,7 +1279,7 @@
     return (
       K.preamble(
         'Sites of a pasted list',
-        `k, expected and O/E from the release's propensity tables; p = the release's raw binomial p (more: upper tail; fewer: lower tail, gnomAD); q across your list = Benjamini-Hochberg across the listed sites of a source, not across the release; ${hyper() ? 'with' : 'without'} hypermutated samples; whole list per source (${LIST_TEST}): ${pools}`
+        `k, expected and seen/expected from the release's propensity tables; p = the release's raw binomial p (more: upper tail; fewer: lower tail, gnomAD); q across your list = Benjamini-Hochberg across the listed sites of a source, not across the release; ${hyper() ? 'with' : 'without'} hypermutated samples; whole list per source (${LIST_TEST}): ${pools}`
       ) +
       'site\tgene\taccession\tuniprot_position\tsource\tchanges_k\texpected\tobserved_over_expected\tp_more\tq_across_list_more\tp_fewer\tq_across_list_fewer\thotspot_note\tdisordered\tdisorder_class\n' +
       res
@@ -1406,7 +1406,7 @@
                 `<span class="mu-chip">${esc(chosenName(k))} <button type="button" data-mu-del="${esc(k)}" aria-label="Remove ${esc(chosenName(k))}">×</button></span>`
             )
             .join(' ')}</p>` +
-          `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Source</th><th title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes (k)</th><th>Expected</th><th>O/E</th><th>Raw p (more)</th><th>Raw p (fewer)</th><th>Adjusted p (more)</th><th>Adjusted p (fewer)</th></tr></thead><tbody>${body}</tbody></table></div>` +
+          `<div class="mu-top"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Site</th><th>Source</th><th title="k is the count of changes seen at the site (variants, for the inherited sources)">Changes seen</th><th>Expected</th><th>seen/expected</th><th>Raw p (more)</th><th>Raw p (fewer)</th><th>Adjusted p (more)</th><th>Adjusted p (fewer)</th></tr></thead><tbody>${body}</tbody></table></div>` +
           `${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muchosen', 'tested sites', 'propensity')}</div>`
         : '') +
       listSection() +
@@ -1419,7 +1419,7 @@
     return (
       K.preamble(
         'Sites chosen for a test',
-        `k, expected and O/E from the release's propensity tables; p = the release's raw binomial p (more: upper tail; fewer: lower tail, gnomAD); adjusted p = Holm over the p values listed, which corrects only for the sites chosen`
+        `k, expected and seen/expected from the release's propensity tables; p = the release's raw binomial p (more: upper tail; fewer: lower tail, gnomAD); adjusted p = Holm over the p values listed, which corrects only for the sites chosen`
       ) +
       'site\taccession\tposition\tsource\tk\texpected\toe\tp_more\tp_fewer\tadjusted_p_more\tadjusted_p_fewer\n' +
       rows
@@ -1670,7 +1670,7 @@
     return (
       `<section class="mu-rank" data-mu-rank="${esc(s.id)}">${head}` +
       (shown.length
-        ? `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Gene</th><th>Site</th><th class="num" title="k is the count of ${s.kind === 'germline' ? 'variants' : 'changes'} seen at the site">${s.kind === 'germline' ? 'Variants' : 'Changes'} (k)</th><th class="num" title="Observed over expected">O/E</th><th class="num" title="p and q pool all cancer types">q</th><th class="num mu-ex" title="The count the residue's codon predicts, from the protein's own changes">Expected</th></tr></thead><tbody>${body}</tbody></table></div>`
+        ? `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Gene</th><th>Site</th><th class="num" title="k is the count of ${s.kind === 'germline' ? 'variants' : 'changes'} seen at the site">${s.kind === 'germline' ? 'Variants' : 'Changes'} (k)</th><th class="num" title="Observed over expected">seen/expected</th><th class="num" title="p and q pool all cancer types">q</th><th class="num mu-ex" title="The count the residue's codon predicts, from the protein's own changes">Expected</th></tr></thead><tbody>${body}</tbody></table></div>`
         : '') +
       (canTop || all
         ? `<p class="small"><button type="button" class="btn small" data-mu-all="${esc(s.id)}" aria-expanded="${all}">${all ? 'Show only q &lt; 0.05' : `Show the top ${RANK_N} by p`}</button>${
@@ -1928,7 +1928,7 @@
     return { svg: s, H };
   }
   const cvNote = () =>
-    `ClinVar pathogenic and likely pathogenic variants (the cards' P/LP rule: conflicting classifications are not counted) at the ${W.marks} of the selection, by disease family; ${
+    `ClinVar pathogenic and likely pathogenic variants (the same rule as the site cards: conflicting classifications are not counted) at the ${W.marks} of the selection, by disease family; ${
       M.stars ? `${M.stars}+ review stars; ` : ''
     }a variant counts once in each of its families. The families are the release's rules applied to each condition name. A variant is named as ClinVar writes it (the protein change at the UniProt position, with the initiator methionine counted), so on a protein the page numbers without that methionine the site name carries the UniProt position too. ClinVar reflects clinical testing, so these counts are not tested.`;
   function clinvarFigure() {
@@ -2094,7 +2094,7 @@
         labelForm() +
         geneForm(m) +
         `<p class="pr-key small muted"><span class="pr-k"><svg width="26" height="10" aria-hidden="true"><path d="M0 5H26" stroke="var(--muted)" stroke-width="1.4" stroke-opacity="0.8"/></svg>${esc(W.residues)} that are not ${esc(W.marks)}, ranks scaled to the number of ${esc(W.marks)}</span>` +
-        `<span class="pr-k"><span class="mu-grad" aria-hidden="true"></span>point color: O/E, from 1/8 (blue) through 1 (gray) to 8 (red)</span>` +
+        `<span class="pr-k"><span class="mu-grad" aria-hidden="true"></span>point color: seen/expected, from 1/8 (blue) through 1 (gray) to 8 (red)</span>` +
         `<span class="pr-k"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/><circle cx="9" cy="9" r="4" fill="var(--wf-hot)" stroke="var(--ink)" stroke-width="0.8"/></svg>ring: q &lt; 0.05, more than expected</span>` +
         (M.genes.length
           ? `<span class="pr-k"><svg width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="9.5" fill="none" stroke="var(--accent)" stroke-width="2.2"/><circle cx="11" cy="11" r="3.4" fill="var(--wf-mid)" stroke="var(--ink)" stroke-width="0.8"/></svg>outline: a site of a listed gene</span>`
@@ -2140,7 +2140,7 @@
     return (
       `<p class="small mu-why"><b>Expected</b> is the protein's own changes at its ${esc(W.residues)}, shared among them by each codon's mutation rate. ` +
       `${esc(nm)} tops this list because ${esc(geneOf(r.acc))} has many changes overall. Against what the protein's own ${esc(W.residues)} predict it does not stand out: ` +
-      `${int(row.k)} changes, ${K.prop.fe(row.e)} expected (O/E ${K.prop.fo(row.o)}, q ${fpv(row.q)}).</p>`
+      `${int(row.k)} changes, ${K.prop.fe(row.e)} expected (seen/expected ${K.prop.fo(row.o)}, q ${fpv(row.q)}).</p>`
     );
   }
   const ONC_THEME = {
@@ -2239,7 +2239,7 @@
     const m = model(),
       f = waterfallSvg(m, LIGHT, 720);
     return K.figureFrame({
-      title: 'Mutation propensity of the sites',
+      title: 'Changes vs expected of the sites',
       sub: `${K.sel.describe() || 'every ' + W.mark}: ${int(m.n)} ${W.marks}, ${m.s.long || m.s.label}`,
       body: `<g transform="translate(20,0)">${f.body}${f.labels}</g>`,
       bodyH: f.H,
@@ -2252,8 +2252,8 @@
       g = (v) => v ?? '';
     return (
       K.preamble(
-        'Mutation propensity of the sites',
-        `${m.s.long || m.s.label}${m.germ ? '' : `; ${hyper() ? 'with' : 'without'} hypermutated samples, all cancer types`}; signed_score = -log10 of the upper-tail p when O/E > 1, log10 of the lower-tail p when O/E < 1, 0 at O/E 1 (empty: no test); ` +
+        'Changes vs expected of the sites',
+        `${m.s.long || m.s.label}${m.germ ? '' : `; ${hyper() ? 'with' : 'without'} hypermutated samples, all cancer types`}; signed_score = -log10 of the upper-tail p when seen/expected > 1, log10 of the lower-tail p when seen/expected < 1, 0 at seen/expected 1 (empty: no test); ` +
           (m.germ
             ? "p and q from the release; summed_allele_frequency = the sum of the variants' allele frequencies (ac / an)"
             : `p_more and q_more from the release; p_fewer ${m.lowerOk ? "computed by this explorer with the release's binomial (Binomial(n, expected / n), P(X <= k))" : 'not available'}`)
@@ -2347,23 +2347,23 @@
     const lab = { tcga_mc3: 'TCGA', depmap_24q4: 'DepMap' };
     const val = (PR.summary?.validation || []).filter((v) => v.cohort === 'all');
     return (
-      `<section id="m-propensity"><h3>Mutation propensity</h3>` +
+      `<section id="m-propensity"><h3>Changes vs expected</h3>` +
       `<p>For each candidate residue (every known ${esc(W.mark)}, and every other residue of the same type with a change), the release counts the tumor samples and cell lines with a missense or stop change there, and the ClinVar and gnomAD variants that cause one (k). It compares k with the count the residue's codon predicts. ` +
       `The expected count is n × w / Σw. Here n is the number of changes or variants at the protein's residues of the same type, w is the residue's expected rate of change (the rate of each base change that alters the residue, summed over its codon, each in its trinucleotide context), and Σw is the sum of w over those residues. ` +
-      `k is tested against Binomial(n, w / Σw). O/E is k over the expected count. q is the Benjamini–Hochberg value over every residue tested for the source and residue type. ` +
-      `The weights need a coding sequence that translates to the UniProt sequence (18,717 of 20,416 reviewed entries). For any other entry, O/E treats every residue of the type as equally likely and there is no q. ` +
+      `k is tested against Binomial(n, w / Σw). seen/expected is k over the expected count. q is the Benjamini–Hochberg value over every residue tested for the source and residue type. ` +
+      `The weights need a coding sequence that translates to the UniProt sequence (18,717 of 20,416 reviewed entries). For any other entry, seen/expected treats every residue of the type as equally likely and there is no q. ` +
       `The release's data dictionary defines every column (<a href="https://github.com/Shechterlab/PTM_Pipeline/blob/v1.7.0/releases/v1.7.0/README.md" target="_blank" rel="noopener">PTM_Pipeline v1.7.0, README</a>). The only calculation the site adds is the lower tail for TCGA and DepMap, below.</p>` +
       `<p>TCGA and DepMap use each source's own spectrum: the residue-changing single-base changes in the coding sequences, per trinucleotide class. ClinVar and gnomAD use gnomAD's germline rates (mutation_rate_methylation_bins, from <a href="https://doi.org/10.1038/s41586-020-2308-7" target="_blank" rel="noopener">Karczewski et al., Nature 581:434 (2020)</a>, gnomAD v2.1.1).</p>` +
       `<p>Hypermutated samples have more than ${PR.hypermutated.per_mb} coding calls per Mb (<a href="https://pubmed.ncbi.nlm.nih.gov/29056344/" target="_blank" rel="noopener">Campbell et al., Cell 171:1042 (2017)</a>). The cards and pages leave them out by default. The release repeats the test without them, using the spectrum of the remaining samples. A switch puts them back.</p>` +
       `<p>For a site you picked beforehand, read the raw p. q corrects across every residue of that type tested in that source, which such a site does not need. The Holm p corrects only for the sites you chose, over their tails and sources. Choose the sites before you look at the results.</p>` +
-      `<p>ClinVar variants reflect clinical testing and submission more than how often residues change, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
-      `<p>On the cancer and germline cards, stick height is the count in the card's table, circle size grows with O/E, and a ring marks q &lt; 0.05.</p>` +
-      `<p>Expected counts are within a protein. Where the residues of a type that are themselves enriched (q &lt; 0.05) carry ${Math.round((PR.hotspot?.min_share ?? 0.3) * 100)}% or more of a protein's changes or variants (and the protein has at least ${PR.hotspot?.min_changes ?? 20}), such as TP53 R273, R248 and R175, the expected count at its other residues is inflated and they look depleted. The explorer flags such a protein per source and cohort, names up to three of those residues on the waterfall tooltip, the site card and the tested-sites table, and leaves its ${esc(W.marks)} out of the default waterfall labels. You can still label them. The flag changes no count, expected value, O/E, p or q.</p>` +
+      `<p>ClinVar variants reflect clinical testing and submission more than how often residues change, so its seen/expected is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
+      `<p>On the cancer and germline cards, stick height is the count in the card's table, circle size grows with seen/expected, and a ring marks q &lt; 0.05.</p>` +
+      `<p>Expected counts are within a protein. Where the residues of a type that are themselves enriched (q &lt; 0.05) carry ${Math.round((PR.hotspot?.min_share ?? 0.3) * 100)}% or more of a protein's changes or variants (and the protein has at least ${PR.hotspot?.min_changes ?? 20}), such as TP53 R273, R248 and R175, the expected count at its other residues is inflated and they look depleted. The explorer flags such a protein per source and cohort, names up to three of those residues on the waterfall tooltip, the site card and the tested-sites table, and leaves its ${esc(W.marks)} out of the default waterfall labels. You can still label them. The flag changes no count, expected value, seen/expected, p or q.</p>` +
       `<p><b>Disease variants page.</b> The tiles at the top are the Overview's tests of changes in tumors and cell lines, ClinVar pathogenic variants and gnomAD variants against the other ${esc(W.residues)} of the same proteins. Below them are three views of the sites of your selection, or of every ${esc(W.mark)} when nothing is selected, and a chart of all sites. Hypermutated tumors are left out unless you choose With hypermutated. Cancer types are pooled, so p and q do not change with them.</p>` +
-      `<p><b>Ranked sites.</b> Each table lists the sites of one source with q &lt; 0.05, ranked by p (at most 100; the download has every tested site). The header gives how many of the tested sites that is. For TCGA and DepMap, tested means the ${esc(W.marks)} with a change in at least one sample that the release gives a test; a site with no change cannot be above expectation and is not listed. Show the top 20 by p adds the next rows, lighter, with their q. The first two (tumors, cell lines) hold sites with more changes than expected (q is the release's, for the upper tail). The third holds sites with fewer inherited gnomAD variants than expected (q for the lower tail, the dashed-ring sites of the chart). k is the count, expected the count the residue's codon predicts, and O/E their ratio. A protein flagged as dominated by a few enriched residues (see above) says so in its row. A row opens the site's card.</p>` +
+      `<p><b>Ranked sites.</b> Each table lists the sites of one source with q &lt; 0.05, ranked by p (at most 100; the download has every tested site). The header gives how many of the tested sites that is. For TCGA and DepMap, tested means the ${esc(W.marks)} with a change in at least one sample that the release gives a test; a site with no change cannot be above expectation and is not listed. Show the top 20 by p adds the next rows, lighter, with their q. The first two (tumors, cell lines) hold sites with more changes than expected (q is the release's, for the upper tail). The third holds sites with fewer inherited gnomAD variants than expected (q for the lower tail, the dashed-ring sites of the chart). k is the count, expected the count the residue's codon predicts, and seen/expected their ratio. A protein flagged as dominated by a few enriched residues (see above) says so in its row. A row opens the site's card.</p>` +
       `<p><b>Cancer: tumors.</b> This is an oncoprint. The ${esc(W.marks)} with the most changed TCGA tumors are the rows, the tumors that carry them are the columns, and the bar above each tumor is its coding calls per Mb from the release's sample_burden (capped at 40; the dashed line is the hypermutated threshold). A tumor with two changes at one site counts once, so a table that counts changes can show a higher number. The oncoprint counts the sites changed in at least one tumor of the chosen cohort, which is not the tested set of the ranked table (it leaves out sites changed only in hypermutated tumors, and includes a few changed sites the release has no test for).</p>` +
-      `<p><b>Inherited disease.</b> Each row is a ${esc(W.mark)} with at least one ClinVar variant classified pathogenic or likely pathogenic in the release's ClinVar change tables (the same P/LP rule as the site card; conflicting classifications are not counted). A chip is a disease family, with its number of variants. Each condition name of a variant (split at | and ;; "not specified", "not provided" and "see cases" dropped) gets the family of the first rule it matches in the release's name rules for its DisGeNET disease families (PTM_Pipeline scripts/disease_families.py), applied here to ClinVar condition names and read as text when the explorer is built, so a few conditions can land in a broader family than a specialist would choose; the detail of a cell always lists ClinVar's own condition names; a name no rule matches goes to Other / unassigned, which is listed first, right after All. A variant counts once in each of its families, so a row's chips can add up to more than its All count. A chip is shaded from light (one variant) to full (the most in any chip); click it to list the variants, their conditions and review stars, with links to ClinVar. The review filter keeps variants with at least that many ClinVar review stars. A variant that names no condition is not shown. These counts come from clinical testing and submission, not from a test against expectation, so they carry no p or q.</p>` +
-      `<p><b>All sites as a chart.</b> The chart ranks the sites from most above to most below the expected count. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side; one with a small expected count has no stored test and is drawn at 0. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The top and bottom sites are labeled, except those of a flagged protein; click a point to label it too (up to 20, saved in the link). Highlight genes outlines every site of the genes you paste and labels each one's most extreme site; it changes no statistic. The header counts the sites with a score and, of them, the sites with a q (the tested sites of the ranked tables). Under the chart, a table lists the ${esc(W.marks)} with no change, most expected first, with the raw lower-tail p. Whole list against expectation is the release's own test for the site set.</p>` +
+      `<p><b>Inherited disease.</b> Each row is a ${esc(W.mark)} with at least one ClinVar variant classified pathogenic or likely pathogenic in the release's ClinVar change tables (the same rule as the site card; conflicting classifications are not counted). A chip is a disease family, with its number of variants. Each condition name of a variant (split at | and ;; "not specified", "not provided" and "see cases" dropped) gets the family of the first rule it matches in the release's name rules for its DisGeNET disease families (PTM_Pipeline scripts/disease_families.py), applied here to ClinVar condition names and read as text when the explorer is built, so a few conditions can land in a broader family than a specialist would choose; the detail of a cell always lists ClinVar's own condition names; a name no rule matches goes to Other / unassigned, which is listed first, right after All. A variant counts once in each of its families, so a row's chips can add up to more than its All count. A chip is shaded from light (one variant) to full (the most in any chip); click it to list the variants, their conditions and review stars, with links to ClinVar. The review filter keeps variants with at least that many ClinVar review stars. A variant that names no condition is not shown. These counts come from clinical testing and submission, not from a test against expectation, so they carry no p or q.</p>` +
+      `<p><b>All sites as a chart.</b> The chart ranks the sites from most above to most below the expected count. Height is the signed −log10 p: −log10 of the upper-tail p for a site with seen/expected above 1, log10 of the lower-tail p for a site with seen/expected below 1. A site with no change has seen/expected 0 and sits on the lower side; one with a small expected count has no stored test and is drawn at 0. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by seen/expected and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The top and bottom sites are labeled, except those of a flagged protein; click a point to label it too (up to 20, saved in the link). Highlight genes outlines every site of the genes you paste and labels each one's most extreme site; it changes no statistic. The header counts the sites with a score and, of them, the sites with a q (the tested sites of the ranked tables). Under the chart, a table lists the ${esc(W.marks)} with no change, most expected first, with the raw lower-tail p. Whole list against expectation is the release's own test for the site set.</p>` +
       `<p>The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example).</p>` +
       (ctl.length
         ? `<p>Positive controls (H3 oncohistone residues and recurrent cancer hotspots; <a href="https://doi.org/10.1038/nbt.3391" target="_blank" rel="noopener">Chang et al., Nat Biotechnol 34:155 (2016)</a>). A control passes when q &lt; 0.05. A failed control is reported here and does not block the release.</p>` +

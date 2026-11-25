@@ -1012,7 +1012,7 @@ formats, gets the same pages with no code (`kit-tables.js`, `kit-sites.js`; `ptm
 `site.table_view_problems`; `tests/test_tables_pages.py`). A block a site does not write is replaced by a default; a
 column whose data a site lacks is left out.
 
-**`website.proteins`** (the Proteins page). `columns`: the table's columns after the protein and its count of marks (of
+**`website.proteins`** (the Proteins page). `presets`: sort chips above the table, `[{title, by: marks | <number attribute>, order: desc | asc, where: {attribute, max, min}, show, n, help}]`, with the fields and the rule of an Overview starting-points list (a protein passes `where`, ties go to the protein with more marks); a chip whose attribute the site lacks is left out, and a click on the chip again, or on a column heading, returns to the default order. `columns`: the table's columns after the protein and its count of marks (of
 the selection, "/ total" when that differs), offered in the Columns menu (`default: true` shows at first; the reader's
 choice is kept in the browser). Each `{id, label, menu?, default?, fixed? (always shown, not in the menu), help? (the header's hover), hide? (xs: dropped below
 36rem; sm: below 56rem)}` and one of:
@@ -1031,7 +1031,7 @@ a list joined with `;`), `classes` (the count of the protein's marks in them), `
 
 **`website.sites`** (the Sites page; `quick: [attribute, ...]` names the colored attributes that get a quick filter above the table, default all; rows are wrapped by default, with a Compact rows button). Fixed columns: the protein, the site (numbered as `website.protein.numbering` says,
 "UniProt R3" below; tags for the values of a list attribute, `site_tags: {attribute, values: {code: tag}}`), the color
-attribute (a dot and `short` labels: `{attribute: {code: label}}`, heading `state_label`) and the window ±7 (the site
+attribute (a dot and `short` labels: `{attribute: {code: label}}`, heading `state_label`; `state` names the attribute the column shows, default the first colored attribute with one value per mark, and it may hold several values per mark, all shown; `quick` may name such an attribute too) and the window ±7 (the site
 boxed, the profile's residues bold, `window.colours: {letter: colour}`, `·` past the ends) with the tags of each flags
 question (`tags: {analysis: {order?, hide?}}`; when given, only those questions). `table`: the optional columns, in the
 protein page's column format (`website.protein.table.columns`, which is the default): `attribute`, `analyses`, or

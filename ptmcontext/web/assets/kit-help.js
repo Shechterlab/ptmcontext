@@ -197,14 +197,30 @@
     ['IDR', /\bIDRs?\b/, 'an intrinsically disordered region, a stretch of protein with no fixed fold.'],
     ['aa', /\baa\b/, 'amino acids (residues), as in "within 20 aa".'],
     [
-      'Janus',
-      /\bJanus\b/,
-      'an IDR with a quarter to a third of its residues charged (FCR 0.25 to 0.35), positive and negative mixed so that it is neither clearly acidic nor basic (a Janus sequence in the Das–Pappu diagram of states).',
+      'Moderately charged, mixed',
+      /moderately charged, mixed/i,
+      'a disordered region with a quarter to a third of its residues charged (FCR 0.25 to 0.35), positive and negative mixed, so that it is neither clearly acidic nor basic. The literature calls these Janus sequences (Das–Pappu diagram of states).',
     ],
     [
-      'polyampholyte',
-      /polyampholyte/i,
-      'a region carrying both positive and negative charges. Strong polyampholytes have more than a third of their residues charged, with the charges balanced (FCR > 0.35, |NCPR| < 0.35).',
+      'Strongly charged, balanced',
+      /strongly charged, balanced/i,
+      'a region carrying both positive and negative charges: more than a third of its residues charged, the charges balanced (FCR > 0.35, |NCPR| < 0.35). The literature calls these strong polyampholytes.',
+    ],
+    [
+      'Likely interface',
+      /Likely interface/,
+      'a protein-protein interface predicted by AlphaFold-Multimer with a pDockQ (confidence score) of 0.23 or more, the usual cutoff for a model that is likely real.',
+    ],
+    ['Strong interface', /Strong interface/, 'a predicted interface with a pDockQ (confidence score) of 0.5 or more.'],
+    [
+      'RNA-contact',
+      /RNA-contact/,
+      'a residue or peptide whose signal drops after UV crosslinking to RNA in cells (RBR-ID; Oksuz et al. 2023), a sign that it touches RNA.',
+    ],
+    [
+      'CAPRI',
+      /\bCAPRI\b/,
+      'an RNA crosslinking method (Panhale et al. 2019): peptides crosslinked to RNA in living cells, found by UV crosslinking and mass spectrometry.',
     ],
     ['FCR', /\bFCR\b/, 'fraction of charged residues: positive plus negative.'],
     ['NCPR', /\bNCPR\b/, 'net charge per residue: positive minus negative.'],
@@ -316,13 +332,13 @@
             'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and an odds ratio (or fold, where the test gives one) of at least 1.1×.'
           ) +
           term(
-            'h',
-            'The size of a difference between two shares, used on the cell maps: 0.2 is small, 0.5 medium and 0.8 large (Cohen’s h). Unlike a fold, it does not grow just because a share is small.'
+            'Effect',
+            'The size of a difference between two shares, used on the cell maps and written effect +0.6: 0.2 is small, 0.5 medium and 0.8 large (Cohen’s h). Unlike a fold, it does not grow just because a share is small.'
           ) +
           (D.propensity
             ? term(
-                'O/E',
-                `Changes seen over changes expected from the residue's codons and base-change rates. 1 is as expected, above 1 more, below 1 fewer.`
+                'Seen/expected',
+                `Changes seen over changes expected from the residue's codons and base-change rates (O/E in papers). 1 is as expected, above 1 more, below 1 fewer.`
               )
             : '') +
           term(
@@ -358,12 +374,12 @@
         ? sec(
             'h-mutations',
             `<p>On a protein's cancer and germline cards, each source is drawn along the protein. ` +
-              `Stick height is the count: tumors, cell lines or variants at the residue. Circle size is O/E, the ` +
+              `Stick height is the count: tumors, cell lines or variants at the residue. Circle size is seen/expected, the ` +
               `changes seen over the changes the residue's codon predicts, among the protein's residues of the same type. A ring ` +
-              `means q is below 0.05. Hover or tap a circle for the numbers. ClinVar's O/E is descriptive, with no ring, because its ` +
+              `means q is below 0.05. Hover or tap a circle for the numbers. ClinVar's seen/expected is descriptive, with no ring, because its ` +
               `variants reflect clinical testing more than how often residues change. A protein with no matching coding sequence has no q, and ` +
-              `its O/E assumes every residue of the type is equally likely.</p>` +
-              `<p>The site card has one line with the site's O/E and q in each source. ` +
+              `its seen/expected assumes every residue of the type is equally likely.</p>` +
+              `<p>The site card has one line with the site's seen/expected and q in each source. ` +
               (K.views.mutations
                 ? `The <a href="${esc(K.link('mutations'))}">Disease variants</a> page shows the sites of your selection (every ${esc(W.mark)} when nothing is selected) in three views and one chart.</p><ul>` +
                   `<li><b>Ranked sites</b> lists the sites for tumors, cell lines and gnomAD, ranked by p. Tumors and cell lines rank sites with more changes than expected. gnomAD ranks sites with fewer inherited variants than expected. Each table shows the top 20 whether or not q is below 0.05, and its header counts the sites that are. A row at or above 0.05 is lighter and shows its q. Show opens the sites with q below 0.05 (at least 100 rows). The download has every tested site. A protein dominated by a few enriched residues (TP53 R273, R248 and R175, for example) carries a note, because the expected count at its other residues is inflated.</li>` +
@@ -376,7 +392,7 @@
                 : '') +
               `Hypermutated tumors (more than ${D.propensity.hypermutated.per_mb} coding calls per Mb) are left out unless you choose ` +
               `With hypermutated. ` +
-              `${mlink('propensity', 'Methods › Mutation propensity')} has the test and its sources.</p>`
+              `${mlink('propensity', 'Methods › Changes vs expected')} has the test and its sources.</p>`
           )
         : '') +
       '</div>'

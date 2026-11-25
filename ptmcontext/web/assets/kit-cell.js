@@ -59,7 +59,7 @@
   const hText = (h) => {
     if (h == null) return '–';
     const r = Math.abs(h).toFixed(1); // round first: a value that rounds to 0.0 carries no sign
-    return 'h ' + (Number(r) === 0 ? '' : h > 0 ? '+' : '−') + r;
+    return 'effect ' + (Number(r) === 0 ? '' : h > 0 ? '+' : '−') + r;
   };
   const hStep = (h) => H_BANDS.filter((b) => Math.abs(h) >= b).length;
   const hBand = (h) =>

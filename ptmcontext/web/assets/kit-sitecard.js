@@ -155,6 +155,7 @@
   };
   // a residue i + d named as the page numbers it, with its offset from the site
   const rel = (d) => (d === 0 ? 'i' : `i${d > 0 ? '+' : '−'}${Math.abs(d)}`);
+  const relWords = (d) => `${Math.abs(d)} ${d > 0 ? 'after' : 'before'} it`; // "via the residue 4 after it" for i+4
 
   // ---- interaction evidence ----------------------------------------------------------------------------------------
   const EV = C.evidence || {};
@@ -339,7 +340,7 @@
     `${w.designed && SQ.designed ? `<span class="tag na-type">${esc(SQ.designed.label)}</span>` : ''}${
       w.off
         ? `<span class="tag" ` +
-          `title="Contacted by residue ${esc(c.shown(c.pos + w.off))} (${rel(w.off)}), not by ${esc(c.label)} itself">via ${rel(w.off)}</span>`
+          `title="Contacted by residue ${esc(c.shown(c.pos + w.off))} (${rel(w.off)}), not by ${esc(c.label)} itself">via the residue ${relWords(w.off)}</span>`
         : ''
     }`;
   // a site's closest RNA or DNA contact (a side-chain atom within 4 Å in a PDB entry): the one place that finds and words

@@ -339,7 +339,9 @@
   };
   const topText = (l, n) =>
     topTerms(l)
-      .map((r) => `${r.chosen ? '\u2713 ' : ''}${r.name} \u00b7 ${int(r.k)} of ${int(n)} \u00b7 q ${K.fq(r.q)}`)
+      .map(
+        (r) => `${r.chosen ? '\u2713 ' : ''}${r.name} \u00b7 ${int(r.k)} of ${int(n)} carry it \u00b7 q ${K.fq(r.q)}`
+      )
       .join('\n');
   function clusters(M) {
     const shown = M.labels
@@ -969,7 +971,7 @@
                 ? `<ul class="nw-top small muted">${topTerms(x.l)
                     .map(
                       (r) =>
-                        `<li>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} · ${int(r.k)} of ${int(x.n)} · q ${esc(K.fq(r.q))}</li>`
+                        `<li>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} · ${int(r.k)} of ${int(x.n)} carry it · q ${esc(K.fq(r.q))}</li>`
                     )
                     .join('')}</ul>`
                 : ''
@@ -993,12 +995,12 @@
           .slice()
           .sort((a, b) => M.nodes[b].sites - M.nodes[a].sites || (M.nodes[a].gene < M.nodes[b].gene ? -1 : 1));
         return (
-          `<tr><th scope="row">${x.other ? 'Smaller cluster: ' : ''}${esc(x.name)}${x.l.q != null ? ` <span class="muted">· ${int(x.l.k)} of ${int(x.n)}</span>` : ''}${
+          `<tr><th scope="row">${x.other ? 'Smaller cluster: ' : ''}${esc(x.name)}${x.l.q != null ? ` <span class="muted">· ${int(x.l.k)} of ${int(x.n)} carry this term</span>` : ''}${
             topTerms(x.l).length
               ? `<ul class="nw-top small muted">${topTerms(x.l)
                   .map(
                     (r) =>
-                      `<li>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} · ${int(r.k)} of ${int(x.n)} · q ${esc(K.fq(r.q))}</li>`
+                      `<li>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} · ${int(r.k)} of ${int(x.n)} carry it · q ${esc(K.fq(r.q))}</li>`
                   )
                   .join('')}</ul>`
               : ''
@@ -1310,7 +1312,7 @@
     if (c.l.q != null) {
       lines.push({ t: `Cluster term: ${c.name}` });
       lines.push({
-        t: `${NC.labels[c.l.source]?.label || 'Term'}: ${int(c.l.k)} of ${int(c.n)} cluster proteins, ${int(c.l.M)} of ${int(c.l.N)} in the network · q ${K.fq(c.l.q)}`,
+        t: `${int(c.l.k)} of ${int(c.n)} cluster proteins carry this ${NC.labels[c.l.source]?.label || 'term'} term (${int(c.l.M)} of ${int(c.l.N)} in the network) · q ${K.fq(c.l.q)}`,
       });
     }
     factsOf(M, i).forEach((t) => lines.push({ t }));
@@ -1376,14 +1378,14 @@
       `<b>${esc(x.name)}</b> · cluster ${x.other ? 'among the smaller ones' : x.rank + 1}<br>` +
       `<b>${int(x.n)}</b> proteins<br>${int(within)} links inside, ${int(between)} to other clusters` +
       (x.l.q != null
-        ? `<br>${esc(NC.labels[x.l.source]?.label || 'Term')}: ${int(x.l.k)} of ${int(x.n)} cluster proteins, ${int(x.l.M)} of ${int(x.l.N)} in the network · q ${esc(K.fq(x.l.q))}`
+        ? `<br>${int(x.l.k)} of ${int(x.n)} cluster proteins carry this ${esc(NC.labels[x.l.source]?.label || 'term')} term (${int(x.l.M)} of ${int(x.l.N)} in the network) · q ${esc(K.fq(x.l.q))}`
         : '') +
       (topTerms(x.l).length
-        ? `<br><span class="muted">Best terms (cluster proteins with the term, q):</span>` +
+        ? `<br><span class="muted">Best terms (how many cluster proteins carry each, q):</span>` +
           topTerms(x.l)
             .map(
               (r) =>
-                `<br>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} <span class="muted">· ${int(r.k)} of ${int(x.n)} · q ${esc(K.fq(r.q))}</span>`
+                `<br>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} <span class="muted">· ${int(r.k)} of ${int(x.n)} carry it · q ${esc(K.fq(r.q))}</span>`
             )
             .join('')
         : '') +
@@ -1430,11 +1432,64 @@
       const m = K.sel?.nProteins?.();
       head = `${int(n)} of the ${m != null ? int(m) + ' ' : ''}selected ${plural(m, 'protein', 'proteins')} ${plural(n, 'is', 'are')} linked at ${how}`;
     } else
-      head = `${int(n)} of the ${int(UI.top)} ${plural(UI.top, 'protein', 'proteins')} with the most ${W.marks}${total ? ` (of ${int(total)})` : ''} ${plural(n, 'is', 'are')} linked at ${how}`;
-    const named = CL.nShown
-      ? `${int(CL.nShown)} named ${plural(CL.nShown, 'cluster', 'clusters')}${UI.clusters && UI.clusters !== CL.nShown ? ` (${int(UI.clusters)} asked for; closest is ${int(CL.nShown)})` : ''}`
-      : `no cluster of ${int(UI.minc)} or more proteins`;
-    return `${head} · ${int(M.edges.length)} ${plural(M.edges.length, 'link', 'links')} · ${named}${CL.nOther ? `, ${int(CL.nOther)} small (gray)` : ''}`;
+      // the sentence above says how many of the top proteins are drawn and how many groups they form; this line keeps the rest
+      head = `Linked at ${how}${total ? `; ${int(total)} proteins have ${W.marks} in all` : ''}`;
+    const asked =
+      CL.nShown && UI.clusters && UI.clusters !== CL.nShown
+        ? `${int(UI.clusters)} clusters asked for; closest is ${int(CL.nShown)}`
+        : '';
+    return [
+      head,
+      `${int(M.edges.length)} ${plural(M.edges.length, 'link', 'links')}`,
+      asked,
+      CL.nOther ? `${int(CL.nOther)} small ${plural(CL.nOther, 'cluster', 'clusters')} (gray)` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  }
+  // the answer in one sentence, from the clusters as drawn: how many proteins, how many groups, the largest two
+  function answerText(M, CL, sel0) {
+    const n = M.nodes.length,
+      big = CL.shown
+        .map((c) => CL.list[c])
+        .sort((a, b) => b.n - a.n)
+        .slice(0, 2),
+      drawn = M.seeds || UI.nb || sel0,
+      groups = `${int(CL.nShown)} ${plural(CL.nShown, 'group', 'groups')}`;
+    // the top proteins that have a link are the ones drawn: say so when some of them have none
+    const who = drawn
+      ? `The ${int(n)} proteins drawn`
+      : n < UI.top
+        ? `Of the ${int(UI.top)} proteins with the most ${W.marks}, ${int(n)} are linked and`
+        : `The ${int(UI.top)} proteins with the most ${W.marks}`;
+    if (!CL.nShown) return `${who} do not form a cluster of ${int(UI.minc)} or more proteins.`;
+    return `${who} form ${groups}; largest: ${big.map((x) => `${x.label} (${int(x.n)})`).join(', ')}.`;
+  }
+  // the cluster table under the figure: name, size, how many members carry the naming term, the busiest genes
+  function clusterTableHtml(M, CL) {
+    const by = M.labels.map(() => []);
+    M.nodes.forEach((nd, i) => by[nd.c].push(i));
+    const rows = CL.shown
+      .map((c) => {
+        const x = CL.list[c],
+          top = by[c]
+            .slice()
+            .sort((a, b) => M.nodes[b].sites - M.nodes[a].sites || (M.nodes[a].gene < M.nodes[b].gene ? -1 : 1))
+            .slice(0, 5)
+            .map((i) => `<a href="${esc(K.link('protein', M.nodes[i].acc))}">${esc(M.nodes[i].gene)}</a>`);
+        return (
+          `<tr><th scope="row"><span class="nw-bdg" style="background:${catVar(x.slot)};color:var(--nw-on-${x.slot + 1})">${x.rank + 1}</span> ${esc(x.name)}</th><td class="num">${int(x.n)}</td>` +
+          `<td>${x.l.q != null ? `${int(x.l.k)} of ${int(x.n)} carry ${x.term ? 'this term' : 'its best term'}` : '–'}</td><td>${top.join(', ')}</td></tr>`
+        );
+      })
+      .join('');
+    return (
+      `<div class="table-wrap nw-ctable"><table class="nw-table"><caption class="sr-only">The clusters of the network</caption>` +
+      `<thead><tr><th>Cluster</th><th class="num">Proteins</th><th>Members with the term</th><th>Top genes (most ${esc(W.marks)})</th></tr></thead><tbody>${rows}</tbody></table></div>` +
+      (CL.nOther
+        ? `<p class="muted small">${int(CL.nOther)} smaller ${plural(CL.nOther, 'cluster', 'clusters')} (${int(CL.protsOther)} proteins) are listed in the table view.</p>`
+        : '')
+    );
   }
   function view() {
     K.noNw = true; // the links this page draws are not given the network's own address parameters
@@ -1517,11 +1572,12 @@
       : UI.mode === 'table'
         ? `<p class="nw-count" role="status">${sum} ${topSelect()}</p>${tableHtml(M, CL)}`
         : (({ head: kh, key }) =>
-            `<div class="nw-main">${kh}<div class="nw-row2">${figureBox(M, CL)}${pinHtml(M, CL)}</div>${phoneNow() ? listHtml(CL) : ''}${key}</div>`)(
+            `<div class="nw-main">${kh}<div class="nw-row2">${figureBox(M, CL)}${pinHtml(M, CL)}</div>${phoneNow() ? listHtml(CL) : ''}${key}</div>${CL.nShown ? clusterTableHtml(M, CL) : ''}`)(
             keyHtml(M, CL, { variant: phoneNow() ? 'phone' : 'desktop' }, sum)
           );
     const names = `<datalist id="nw-genes">${M.nodes.map((n) => `<option value="${esc(n.gene)}"></option>`).join('')}</datalist>`;
-    return head + controls(CL) + note + body + names + K.fold('nw-how', 'Methods', '', methodHtml(), false);
+    const ans = M.nodes.length ? `<p class="nw-answer"><b>${esc(answerText(M, CL, sel0))}</b></p>` : '';
+    return head + ans + controls(CL) + note + body + names + K.fold('nw-how', 'Methods', '', methodHtml(), false);
   }
   // ---- exports ----------------------------------------------------------------------------------------------------------------
   // the figure in the style guide's frame: a title that is a claim, one sentence, a key, the drawing, a caption and the credit.

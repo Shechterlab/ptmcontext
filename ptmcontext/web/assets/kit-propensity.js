@@ -3,13 +3,13 @@
    ptmcontext/web/propensity.py writes it) and gives the rest of the kit:
      K.prop.load(acc)            a protein's rows, by source, once the file is in (a promise; null when it cannot be read)
      K.prop.at(acc, src, pos)    {k, e, o, q, u, ...} at a residue in the chosen cohort, from what load() has read
-     K.prop.lollipop(opts)       a protein's residues as lollipops: stick = count, circle size = O/E, ring = q < 0.05
-     K.prop.siteLine(c)          the site card's one line: O/E and q of the site in each source
+     K.prop.lollipop(opts)       a protein's residues as lollipops: stick = count, circle size = seen/expected, ring = q < 0.05
+     K.prop.siteLine(c)          the site card's one line: seen/expected and q of the site in each source
      K.prop.hyperSwitch()        the switch between "without hypermutated" (the default) and "with" samples
    The numbers are the release's own (the data dictionary defines them): expected = n x the residue's share of the protein's
    mutability over its residues of the same type; q = Benjamini-Hochberg over every residue tested of the source and residue
-   type, from a binomial test of k against that share. ClinVar's O/E is descriptive: no ring, no q. A residue of a protein with
-   no coding sequence that matches UniProt's has no weights: its O/E is against every residue of the type equally likely,
+   type, from a binomial test of k against that share. ClinVar's seen/expected is descriptive: no ring, no q. A residue of a protein with
+   no coding sequence that matches UniProt's has no weights: its seen/expected is against every residue of the type equally likely,
    and it has no q. A module of the site kit. */
 (window.PTMC_MODULES ||= []).push((K) => {
   'use strict';
@@ -232,15 +232,16 @@
   function words(id, v, unit) {
     const s = SRC[id];
     if (!v || v.o == null)
-      return { head: 'no O/E', note: `${s.label}: this protein has no change at its residues of this type` };
-    const parts = [`O/E ${fo(v.o)}`, `expected ${fe(v.e)}`];
+      return { head: 'no seen/expected', note: `${s.label}: this protein has no change at its residues of this type` };
+    const parts = [`seen/expected ${fo(v.o)}`, `expected ${fe(v.e)}`];
     let status = '',
       note = '';
     if (desc(id))
       status =
         'descriptive: ClinVar reflects clinical testing more than how often residues change, so there is no test';
     else if (v.q == null)
-      status = 'no test: no coding sequence matches UniProt, so O/E treats every residue of the type as equally likely';
+      status =
+        'no test: no coding sequence matches UniProt, so seen/expected treats every residue of the type as equally likely';
     else {
       if (v.p != null) parts.push(`p ${fq(v.p)}`);
       parts.push(`q ${fq(v.q)}`);
@@ -367,8 +368,8 @@
       `<span class="pr-k"><svg width="${2 * r + 4}" height="${2 * r + 4}" aria-hidden="true"><circle class="pr-head known" cx="${r + 2}" cy="${r + 2}" r="${r}"/></svg>${label}</span>`;
     const legend =
       `<p class="pr-key small muted"><span class="pr-k"><svg width="10" height="22" aria-hidden="true"><line class="pr-stick" x1="5" x2="5" y1="20" y2="2"/></svg>stick height: ${esc(u[1])} with the change</span>` +
-      key(headR(1), 'circle size: O/E 1') +
-      key(headR(10), 'O/E 10') +
+      key(headR(1), 'circle size: seen/expected 1') +
+      key(headR(10), 'seen/expected 10') +
       (desc(o.id)
         ? `<span class="pr-k">ClinVar is descriptive: no ring, no q</span>`
         : `<span class="pr-k"><svg width="30" height="30" aria-hidden="true"><circle class="pr-ring" cx="15" cy="15" r="12"/><circle class="pr-head known" cx="15" cy="15" r="7"/></svg>ring: q &lt; ${RING}, more than expected</span>`) +
@@ -379,21 +380,21 @@
       `<span class="pr-k"><svg width="14" height="14" aria-hidden="true"><circle class="pr-head other" cx="7" cy="7" r="5"/></svg>other residue</span></p>`;
     return (
       `<figure class="pr-lol"><svg viewBox="0 0 ${Wd} ${H}" role="group" aria-label="${esc(s.label)}: stick height is the count, ` +
-      `circle size is O/E${desc(o.id) ? ', descriptive' : ', a ring means q below ' + RING}">${axis}${pts}</svg>${legend}</figure>`
+      `circle size is seen/expected${desc(o.id) ? ', count only' : ', a ring means q below ' + RING}">${axis}${pts}</svg>${legend}</figure>`
     );
   }
 
   // k and O/E in words, for a row of sites: "3 changes (k) · O/E 22". One change says little (O/E is the count over a small
   // expectation), so a single change reads "1 change" with its O/E muted; none reads "none seen". Plain HTML, escaped.
   const KTIP =
-    'k: the count of changes seen at this residue (samples with a change, or variants). O/E: that count over the count its codon predicts';
+    'k: the count of changes seen at this residue (samples with a change, or variants). seen/expected: that count over the count its codon predicts';
   function kOE(id, v) {
     if (!v || v.k == null) return '–';
     if (v.k === 0) return `<span title="${esc(KTIP)}">none seen</span>`;
     const o =
       v.o == null
         ? ''
-        : ` · <span${v.k <= 1 ? ' class="muted"' : ''} title="${esc(v.k <= 1 ? 'One change only, so O/E tells little' : KTIP)}">O/E ${fo(v.o)}</span>`;
+        : ` · <span${v.k <= 1 ? ' class="muted"' : ''} title="${esc(v.k <= 1 ? 'One change only, so seen/expected tells little' : KTIP)}">seen/expected ${fo(v.o)}</span>`;
     const noun = SRC[id]?.kind === 'germline' ? 'variant' : 'change';
     return `<span title="${esc(KTIP)}">${int(v.k)} ${noun}${v.k === 1 ? '' : 's'} (k)</span>${o}`;
   }

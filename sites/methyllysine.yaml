@@ -186,9 +186,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     background: other lysines of the same proteins
     tests:
       - {category: pdockq_0.23, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}]},
-         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}], on_candidates: true}, label: "pDockQ ≥ 0.23"}
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}], on_candidates: true}, label: Likely interface}
       - {category: pdockq_0.5, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}]},
-         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: "pDockQ ≥ 0.5"}
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: Strong interface}
     strata:
       - {stratum: all}
       - {stratum: ordered, outside_of: uniprot_disorder, suffix: ", ordered regions"}
@@ -870,7 +870,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sub: "One model: each methyllysine against the other lysines of its protein, all four factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
     section: Motif, disorder and structure
     covariates:
-      - {name: in_idr, label: In a disordered region, help: "Inside an IDR of 20 or more residues", layer: idr, is: [idr]}
+      - {name: in_idr, label: In a disordered region, help: "Inside a disordered region of 20 or more residues", layer: idr, is: [idr]}
       - {name: arks_motif, label: In an R-K-S/T sequence, help: "Arg right before the lysine and Ser or Thr right after it", layer: motif, flags: [ARKS]}
       - {name: net_charge, label: "Local net charge (per +1)", help: "Lys and Arg minus Asp and Glu within 7 residues on either side, the lysine itself left out; the odds ratio is for each extra +1", window_sum: {window: 7, weights: {K: 1, R: 1, D: -1, E: -1}}}
       - {name: domain_distal, label: Far from any domain, help: "More than 20 residues from a domain, and not between two domains", layer: domain_context, is: [distal]}
@@ -993,7 +993,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
         universe_units: capri_measured
         background: other reviewed human proteins the experiment measured
       - set: rna_rbrid
-        name: RBR-ID+ residue (RBR-ID)
+        name: RNA-contact residue (RBR-ID)
         units: rbrid_residues
         universe_units: rbrid_quantified
         background: other reviewed human proteins the experiment measured
@@ -1058,7 +1058,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     - category: capri_xl_peptide
       inside: capri_xl
       proteins_with: capri_xl
-      label: CAPRI XL-peptide
+      label: RNA-crosslinked peptide (CAPRI)
     - category: capri_adj_peptide
       inside: capri_adj
       proteins_with: capri_adj
@@ -1066,11 +1066,11 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     - category: rbrid_residue
       inside: rbrid_residues
       proteins_with: rbrid_residues
-      label: RBR-ID+ residue
+      label: RNA-contact residue (RBR-ID)
     - category: rbrid_residue_published_rule
       inside: rbrid_residues_published_rule
       proteins_with: rbrid_residues_published_rule
-      label: RBR-ID+ residue, published rule
+      label: RNA-contact residue (RBR-ID), published rule
     - category: rbrid_region
       inside: rbrid_regions
       proteins_with: rbrid_regions
@@ -1084,7 +1084,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       inside: rbrid_residues
       proteins_with: rbrid_residues
       covered_by: rbrid_quantified
-      label: RBR-ID+ residue, among measured
+      label: RNA-contact residue (RBR-ID), among measured
     new: true
   - id: sequence_proximity
     title: Distance along the chain to RNA evidence
@@ -1106,11 +1106,11 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     - category: capri_xl_peptide
       inside: capri_xl
       proteins_with: capri_xl
-      label: CAPRI XL-peptide
+      label: RNA-crosslinked peptide (CAPRI)
     - category: rbrid_residue
       inside: rbrid_residues
       proteins_with: rbrid_residues
-      label: RBR-ID+ residue
+      label: RNA-contact residue (RBR-ID)
     strata:
     - stratum: within_0_residues
       within: 0
@@ -1156,9 +1156,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       residues: [Y, F, W]
     only_in: idr
     new: true
-    title: Next to aromatic residues, in IDRs (within 3)
+    title: Next to aromatic residues, in disordered regions (within 3)
     question: Inside disordered regions, are methyllysines more often next to aromatic residues than the other lysines there?
-    sub: 'Only lysines inside IDRs of 20 or more residues: methyllysines against the other lysines of the same proteins in IDRs, by how many aromatic residues are within 3 residues on either side'
+    sub: 'Only lysines inside disordered regions of 20 or more residues: methyllysines against the other lysines of the same proteins in disordered regions, by how many aromatic residues are within 3 residues on either side'
     section: Position in the protein
   - id: sticker_context_5_idr
     family: Next to aromatic residues
@@ -1169,9 +1169,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       residues: [Y, F, W]
     only_in: idr
     new: true
-    title: Next to aromatic residues, in IDRs (within 5)
+    title: Next to aromatic residues, in disordered regions (within 5)
     question: Inside disordered regions, are methyllysines more often next to aromatic residues than the other lysines there?
-    sub: 'Only lysines inside IDRs of 20 or more residues: methyllysines against the other lysines of the same proteins in IDRs, by how many aromatic residues are within 5 residues on either side'
+    sub: 'Only lysines inside disordered regions of 20 or more residues: methyllysines against the other lysines of the same proteins in disordered regions, by how many aromatic residues are within 5 residues on either side'
     section: Position in the protein
   - id: eclip_rna_apexseq
     test: protein_sets
@@ -1303,7 +1303,7 @@ controls:
       include: [{column: family_name, in: [HISTONE H1, HISTONE H2A, HISTONE H2B, HISTONE H3, HISTONE H4]}]
       label: histones
   - id: inidr
-    label: inside IDRs
+    label: inside disordered regions
     when: "only lysines inside disordered regions are compared"
     note: "Only the lysines inside intrinsically disordered regions (MobiDB) count, methyllysines and other lysines alike, so the comparison shows whether the result holds inside disordered regions"
     analyses: [near_phospho, near_phospho_high, near_methylarginine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
@@ -2073,7 +2073,14 @@ website:                  # the look and words of the website (ptmc web); layout
                 partner_kind: partner_kind, species: partner_species, source: source, id: source_id, method: method, context: context,
                 state: site_state, state_detail: state_detail, other_marks: other_marks, pubmed: pubmed, doi: doi, citation: citation,
                 title: paper_title}
+  proteins:                # the Proteins page: the preset sorts above its table (chips)
+    presets:
+      - {title: Most sites, by: marks, n: 6, help: Proteins with the most methyllysine sites}
   sites:                   # the Sites tab
+    state: state
+    state_label: State
+    quick: [state]                         # the quick filters above the table: Kme1, Kme2, Kme3
+    short: {state: {me1: Kme1, me2: Kme2, me3: Kme3, me: Methylated}}   # short labels in the table
     table:                 # the optional columns (the Columns menu): the same set on every site, where the data has it
       - {id: na, label: RNA/DNA contacts, menu: "RNA/DNA contacts (structures) and crosslinks (cells)", show: [sequences, around], default: true}
       - {id: src, label: Reported by, attribute: sources, default: true, hide: sm}
@@ -2271,7 +2278,7 @@ website:                  # the look and words of the website (ptmc web); layout
         url: "https://depmap.org/portal/gene/{gene}?tab=overview"
         note: "Data: DepMap Public 24Q4 (CRISPR, Chronos; CC BY 4.0) and TCGA tumors (MC3 somatic calls from the GDC, open access; based on data generated by the TCGA Research Network). A change counts only at a lysine of the canonical UniProt sequence."
       other_ptms:
-        title: Other PTMs
+        title: Other modifications
         sub: "Other modifications recorded on this protein, as in the map legend."
         near: 10
       germline:
@@ -2307,7 +2314,7 @@ website:                  # the look and words of the website (ptmc web); layout
           background: clinvar_background
           count: clinvar_variants
           gene: gene       # the column naming the gene; the card shows it for a protein several genes encode
-          highlight: {column: germline_classification, matches: *plp, label: P/LP, title: "Classified pathogenic or likely pathogenic by ClinVar"}
+          highlight: {column: germline_classification, matches: *plp, label: P/LP, title: "pathogenic or likely pathogenic (ClinVar)"}
           sort: [{column: review_stars, order: desc}]
           fields:
             - {column: germline_classification, label: Classification}
@@ -2359,7 +2366,7 @@ website:                  # the look and words of the website (ptmc web); layout
           span: 3
           labels: {rna_crosslink: UV-crosslinked to RNA in living cells, dna_crosslink: UV-crosslinked to DNA in living cells,
                    capri_xl_peptide: inside CAPRI RNA-crosslinked peptide,
-                   capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RBR-ID+ peptide, rbrid_region: inside an RBR-ID region,
+                   capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RNA-contact peptide (RBR-ID), rbrid_region: inside an RBR-ID region,
                    dna_binding_region: inside a UniProt DNA-binding region}
       records:             # a site_records table: who binds it, and how it was found
         title: Who binds it, and how it was found
@@ -2401,7 +2408,7 @@ website:                  # the look and words of the website (ptmc web); layout
 
         RBDmap and pCLAP evidence, predicted complexes and IntAct records are not in these tables.
       columns:             # how the page shows the tables' columns (a table's own: <table>.<column>)
-        interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, capri_xl_peptide: CAPRI XL-peptide, capri_adj_peptide: CAPRI ADJ-peptide, rbrid_residue: RBR-ID+ residue, dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy}}
+        interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, capri_xl_peptide: RNA-crosslinked peptide (CAPRI), capri_adj_peptide: RNA-bound peptide (CAPRI), rbrid_residue: RNA-contact residue (RBR-ID), dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy}}
         interactions.ids: {label: Structures}
         partner_accession: {label: Partner}
         partner: {label: Partner gene}

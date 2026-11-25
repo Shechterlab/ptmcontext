@@ -153,11 +153,11 @@ marks:
     localised_by:
       column: localised_by
       provenance: true                       # how the site was found, not what it is
-      label: Localized by
+      label: How the site was placed
       kind: list
       separator: "; "
       values:
-        localisation_score: a localization score
+        localisation_score: a mass-spectrometry localization score
         one_methylatable_residue: one methylatable residue on the peptide
         every_arginine_dimethylated: every arginine on the peptide dimethylated
         curated_experimental: UniProt, experimental evidence (curated)
@@ -341,8 +341,8 @@ marks:
         capri_adj_peptide: CAPRI RNA-bound peptide (ADJ)
         pclap_peptide: pCLAP RNA-binding peptide
         pclap_lysc_region: pCLAP RNA-binding region
-        rbrid_residue: RBR-ID+ residue
-        rbrid_residue_published_rule: RBR-ID+ residue (published rule)
+        rbrid_residue: RNA-contact residue (RBR-ID)
+        rbrid_residue_published_rule: RNA-contact residue (RBR-ID) (published rule)
         rbrid_region: RBR-ID region
         dna_crosslink: DNA-crosslinked residue
         dna_binding_region: UniProt DNA-binding region (annotation)
@@ -679,7 +679,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
            background: other reviewed human proteins the experiment measured}
         - {set: rna_pclap, name: RNA-binding peptide (pCLAP), units: pclap_peptides, universe_units: [pclap_measured, pclap_peptides],
            background: other reviewed human proteins the experiment measured}
-        - {set: rna_rbrid, name: RBR-ID+ residue (RBR-ID), units: rbrid_residues, universe_units: rbrid_quantified,
+        - {set: rna_rbrid, name: RNA-contact residue (RBR-ID), units: rbrid_residues, universe_units: rbrid_quantified,
            background: other reviewed human proteins the experiment measured}
         - {set: dna_xl, name: DNA-crosslinked residue or peptide (Trendel 2025), units: [dna_crosslink_candidates, dna_crosslinked_peptides],
            background: other reviewed human proteins}
@@ -987,9 +987,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     with: {window: 3, noun: aromatic residue}
     only_in: idr
     new: true
-    title: Next to aromatic residues, in IDRs (within 3)
+    title: Next to aromatic residues, in disordered regions (within 3)
     question: "Inside disordered regions, are methylarginines more often next to aromatic residues than the other arginines there?"
-    sub: "Only arginines inside IDRs of 20 or more residues: methylarginines against the other arginines of the same proteins in IDRs, by how many aromatic residues are within 3 residues on either side"
+    sub: "Only arginines inside disordered regions of 20 or more residues: methylarginines against the other arginines of the same proteins in disordered regions, by how many aromatic residues are within 3 residues on either side"
     section: Position in the protein
   - id: sticker_context_5_idr
     family: Next to aromatic residues
@@ -997,9 +997,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     with: {window: 5, noun: aromatic residue}
     only_in: idr
     new: true
-    title: Next to aromatic residues, in IDRs (within 5)
+    title: Next to aromatic residues, in disordered regions (within 5)
     question: "Inside disordered regions, are methylarginines more often next to aromatic residues than the other arginines there?"
-    sub: "Only arginines inside IDRs of 20 or more residues: methylarginines against the other arginines of the same proteins in IDRs, by how many aromatic residues are within 5 residues on either side"
+    sub: "Only arginines inside disordered regions of 20 or more residues: methylarginines against the other arginines of the same proteins in disordered regions, by how many aromatic residues are within 5 residues on either side"
     section: Position in the protein
   # Near other marks: are methylarginines more often within 10 residues of another modification than the other
   # arginines of their proteins? Context marks (context_marks above), not part of the release's analyses
@@ -1069,7 +1069,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     sub: "One model: each methylarginine against the other arginines of its protein, all five factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
     section: Position in the protein
     covariates:
-      - {name: in_idr, label: In a disordered region, help: "Inside an IDR of 20 or more residues", layer: idr, is: [idr]}
+      - {name: in_idr, label: In a disordered region, help: "Inside a disordered region of 20 or more residues", layer: idr, is: [idr]}
       - {name: aromatic_within_5, label: Aromatic residue within 5, help: "At least one Tyr, Phe or Trp within 5 residues on either side", layer: neighbours, with: {window: 5, noun: aromatic residue}, is: [one, two_plus]}
       - {name: rg_motif, label: In an RG or RGG motif, help: "Gly right after the arginine (RG), alone or as RGG", layer: motif, flags: [RG, RGG]}
       - {name: net_charge, label: "Local net charge (per +1)", help: "Lys and Arg minus Asp and Glu within 7 residues on either side, the arginine itself left out; the odds ratio is for each extra +1", window_sum: {window: 7, weights: {K: 1, R: 1, D: -1, E: -1}}}
@@ -1107,9 +1107,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     background: other arginines of the same proteins
     tests:
       - {category: pdockq_0.23, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}]},
-         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}], on_candidates: true}, label: "pDockQ ≥ 0.23"}
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.23}], on_candidates: true}, label: Likely interface}
       - {category: pdockq_0.5, inside: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}]},
-         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: "pDockQ ≥ 0.5"}
+         proteins_with: {role: predicted_interfaces, where: [{column: class, at_least: 0.5}], on_candidates: true}, label: Strong interface}
     strata:
       - {stratum: all}
       - {stratum: ordered, outside_of: uniprot_disorder}
@@ -1133,21 +1133,21 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: dna_binding_region, inside: uniprot_dna_binding, proteins_with: uniprot_dna_binding, label: DNA-binding region (UniProt)}
       - {category: rna_crosslink_outside_rg, inside: rna_crosslinks, proteins_with: rna_crosslinks, unless: &rg {any: [{at: 1, in: G}, {at: -1, in: G}]}, label: "RNA crosslink, outside RG/GR"}
       - {category: rbdmap_fragment_outside_rg, inside: rbdmap_fragments, proteins_with: rbdmap_fragments, unless: *rg, label: "RBDmap fragment, outside RG/GR"}
-      - {category: capri_xl_peptide, inside: capri_xl, proteins_with: capri_xl, label: CAPRI XL-peptide}
+      - {category: capri_xl_peptide, inside: capri_xl, proteins_with: capri_xl, label: RNA-crosslinked peptide (CAPRI)}
       - {category: capri_adj_peptide, inside: capri_adj, proteins_with: capri_adj, label: CAPRI adjacent peptide}
-      - {category: capri_xl_peptide_outside_rg, inside: capri_xl, proteins_with: capri_xl, unless: *rg, label: "CAPRI XL-peptide, outside RG/GR"}
+      - {category: capri_xl_peptide_outside_rg, inside: capri_xl, proteins_with: capri_xl, unless: *rg, label: "RNA-crosslinked peptide (CAPRI), outside RG/GR"}
       - {category: capri_adj_peptide_outside_rg, inside: capri_adj, proteins_with: capri_adj, unless: *rg, label: "CAPRI adjacent peptide, outside RG/GR"}
       - {category: pclap_lysc_region, inside: pclap_lysc_regions, proteins_with: pclap_lysc_regions, label: pCLAP RNA-binding region}
       - {category: pclap_lysc_region_outside_rg, inside: pclap_lysc_regions, proteins_with: pclap_lysc_regions, unless: *rg, label: "pCLAP region, outside RG/GR"}
       - {category: pclap_peptide, inside: pclap_peptides, proteins_with: pclap_peptides, label: pCLAP RNA-binding peptide}
-      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RBR-ID+ residue}
-      - {category: rbrid_residue_outside_rg, inside: rbrid_residues, proteins_with: rbrid_residues, unless: *rg, label: "RBR-ID+ residue, outside RG/GR"}
-      - {category: rbrid_residue_published_rule, inside: rbrid_residues_published_rule, proteins_with: rbrid_residues_published_rule, label: "RBR-ID+ residue, published rule"}
+      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RNA-contact residue (RBR-ID)}
+      - {category: rbrid_residue_outside_rg, inside: rbrid_residues, proteins_with: rbrid_residues, unless: *rg, label: "RNA-contact residue (RBR-ID), outside RG/GR"}
+      - {category: rbrid_residue_published_rule, inside: rbrid_residues_published_rule, proteins_with: rbrid_residues_published_rule, label: "RNA-contact residue (RBR-ID), published rule"}
       - {category: rbrid_region, inside: rbrid_regions, proteins_with: rbrid_regions, label: RBR-ID region}
       - {category: pclap_peptide_among_measured, inside: pclap_peptides, proteins_with: pclap_peptides, covered_by: pclap_measured, label: "pCLAP peptide, among measured"}
       - {category: capri_adj_peptide_among_measured, inside: capri_measured_adjacent, proteins_with: capri_measured_adjacent, covered_by: capri_measured, label: "CAPRI adjacent peptide, among measured"}
       - {category: rbdmap_peptide_among_measured, inside: rbdmap_measured_bound, proteins_with: rbdmap_measured_bound, covered_by: rbdmap_measured, label: "RBDmap peptide, among measured"}
-      - {category: rbrid_residue_among_measured, inside: rbrid_residues, proteins_with: rbrid_residues, covered_by: rbrid_quantified, label: "RBR-ID+ residue, among measured"}
+      - {category: rbrid_residue_among_measured, inside: rbrid_residues, proteins_with: rbrid_residues, covered_by: rbrid_quantified, label: "RNA-contact residue (RBR-ID), among measured"}
   - id: sequence_proximity
     title: Distance along the chain to RNA evidence
     question: "Are methylarginines near RNA-crosslinked residues along the sequence?"
@@ -1160,9 +1160,9 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {category: rna_crosslink, inside: rna_crosslinks, proteins_with: rna_crosslinks, label: RNA-crosslinked residue}
       - {category: rbdmap_fragment, inside: rbdmap_fragments, proteins_with: rbdmap_fragments, label: RBDmap fragment}
       - {category: capri_adj_peptide, inside: capri_adj, proteins_with: capri_adj, label: CAPRI adjacent peptide}
-      - {category: capri_xl_peptide, inside: capri_xl, proteins_with: capri_xl, label: CAPRI XL-peptide}
+      - {category: capri_xl_peptide, inside: capri_xl, proteins_with: capri_xl, label: RNA-crosslinked peptide (CAPRI)}
       - {category: pclap_peptide, inside: pclap_peptides, proteins_with: pclap_peptides, label: pCLAP peptide}
-      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RBR-ID+ residue}
+      - {category: rbrid_residue, inside: rbrid_residues, proteins_with: rbrid_residues, label: RNA-contact residue (RBR-ID)}
     strata:
       - {stratum: within_0_residues, within: 0}
       - {stratum: within_3_residues, within: 3}
@@ -1245,7 +1245,7 @@ controls:
     marks_outside: left_out
 
   - id: inidr
-    label: inside IDRs
+    label: inside disordered regions
     when: "only arginines inside disordered regions are compared"
     note: "Only the arginines inside intrinsically disordered regions (MobiDB) count, methylarginines and other arginines alike, so the comparison shows whether the result holds inside disordered regions"
     analyses: [near_phospho, near_phospho_high, near_methyllysine, near_acetylation, near_other_acylation, near_ubiquitination, near_sumoylation, idr_charge]
@@ -1536,7 +1536,7 @@ website:                  # the look and words of the website (ptmc web); layout
         title: "Position"
         short: "Position"
         chip: "Position"
-        note: "IDR counts differ between questions on purpose: \"In an IDR\" uses MobiDB disorder calls, the structure and interface questions use UniProt disordered regions, and the IDR charge and aromatic questions use IDRs of 20 or more residues. Each question says which."
+        note: "IDR counts differ between questions on purpose: \"In a disordered region\" uses MobiDB disorder calls, the structure and interface questions use UniProt disordered regions, and the IDR charge and aromatic questions use IDRs of 20 or more residues. Each question says which."
         analyses: ["disorder", "motif", "domain_context", "domain_class", "structure_context", "idr_charge", "sticker_context_3", "sticker_context_5", "sticker_context_3_idr", "sticker_context_5_idr", "which_factor"]
         facets: [{analysis: disorder, label: "Disorder"}, {analysis: motif, label: "Motifs"}, {analysis: domain_context, label: "Domains"}, {analysis: structure_context, label: "Structure"}]
         home: {analysis: "motif", classes: ["RGG", "RG", "RE"]}
@@ -1596,11 +1596,11 @@ website:                  # the look and words of the website (ptmc web); layout
       domain_context: "Domain context"
       domain_class: "Nearest domain class"
       structure_context: "Structural context"
-      idr_charge: "IDR charge"
+      idr_charge: "Charge of disordered regions"
       sticker_context_3: "Aromatics within 3"
       sticker_context_5: "Aromatics within 5"
-      sticker_context_3_idr: "Aromatics within 3, IDRs"
-      sticker_context_5_idr: "Aromatics within 5, IDRs"
+      sticker_context_3_idr: "Aromatics within 3, disordered regions"
+      sticker_context_5_idr: "Aromatics within 5, disordered regions"
       near_phospho: "Near phosphosites"
       near_phospho_high: "Near high-score phosphosites"
       near_methyllysine: "Near methyllysines"
@@ -1617,7 +1617,7 @@ website:                  # the look and words of the website (ptmc web); layout
       condensate: {DEE660B4: "Stress granule proteome (CD-CODE list)"}
       condensate_proteome: {DEE660B4: "Stress granule proteome (CD-CODE list)"}
       panther_group: {"RNA processing and translation": "RNA processing", "Scaffolds, adaptors and chaperones": "Scaffolds", "Transcription, chromatin and DNA": "Transcription", "Protein-modifying enzymes": "Modifying enzymes", "Cytoskeleton, adhesion and matrix": "Cytoskeleton"}
-      disorder: {"disordered": "In an IDR", "ordered": "Ordered"}
+      disorder: {"disordered": "In a disordered region", "ordered": "Ordered"}
       crosslink: {"capri_adj_peptide": "Next to RNA (CAPRI)", "rbrid_residue": "RNA contact (RBR-ID)", "rna_crosslink": "RNA crosslink", "dna_binding_region": "DNA-binding region"}
       pdb_interface: {"protein": "Protein interface (PDB)"}
       reactome_top_level: {"R-HSA-8953854": "RNA metabolism", "R-HSA-4839726": "Chromatin", "R-HSA-74160": "Transcription", "R-HSA-1640170": "Cell cycle"}
@@ -1641,10 +1641,10 @@ website:                  # the look and words of the website (ptmc web); layout
       - {label: "FUS R216", query: "FUS R216"}
       - {label: "ALS", query: "disease_family:ALS"}
       - {label: "Stress granules", query: "cell_organelle_ip:stress_granule"}
-      - {label: "Rme2 in IDRs", query: "state:Rme2 disorder:IDR"}
+      - {label: "Rme2 in disordered regions", query: "state:Rme2 disorder:IDR"}
       - {label: "FUS TAF15 EWSR1 HNRNPA1", query: "FUS TAF15 EWSR1 HNRNPA1"}
   start:                   # the Overview's start panel for a first visit, and the Help page's starts (kit-help.js)
-    share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in disordered regions (IDRs), disorder_boundary: next to an IDR, ordered: in ordered regions}}
+    share: {analysis: disorder, classes: [disordered, disorder_boundary, ordered], labels: {disordered: in disordered regions, disorder_boundary: next to a disordered region, ordered: in ordered regions}}
     findings: [{analysis: motif, class: RGG}, {analysis: panther_group, class: RNA processing and translation}, {analysis: disorder, class: ordered}]
     protein: FUS
     text: "Human arginine methylation sites from studies and databases. Each tile compares the methylarginines with the other arginines of the same proteins. Search a protein, gene list or disease to test your own selection."
@@ -1994,7 +1994,7 @@ website:                  # the look and words of the website (ptmc web); layout
         label: Crosslinked residue at the site or nearby
         help: "A residue UV-crosslinked to RNA or DNA in living cells, or a bound region, at or near the site"
         kinds: {rna_crosslink: RNA-crosslinked residue, dna_crosslink: DNA-crosslinked residue,
-                capri_xl_peptide: CAPRI XL peptide, capri_adj_peptide: CAPRI ADJ peptide, rbrid_residue: RBR-ID+ residue, rbrid_region: RBR-ID+ region,
+                capri_xl_peptide: RNA-crosslinked peptide (CAPRI), capri_adj_peptide: RNA-bound peptide (CAPRI), rbrid_residue: RNA-contact residue (RBR-ID), rbrid_region: RNA-contact region (RBR-ID),
                 dna_binding_region: UniProt DNA-binding region}
         within: [0, 3, 5]
     partners:                # the proteins' physical partners (a protein_partners table)
@@ -2196,12 +2196,18 @@ website:                  # the look and words of the website (ptmc web); layout
   compare: {stratify: studies, min_proteins: 10, min_marks: 30}      # "compared with other methylarginines, within studies": the same reporting sources
   proteins:                # the Proteins page (kit-tables.js): its table's columns after the protein and its sites, in the Columns
                            # menu (default: true shows at first), and its download's columns; the explorer's
+    presets:               # the preset sorts above the table (chips): the same definitions as the Overview's starting points
+      - {title: Most sites, by: marks, n: 6, help: Proteins with the most methylarginine sites}
+      - {title: Most methylated for their arginine count, by: arg_enrichment, where: {attribute: arg_enrichment_q, max: 0.05}, show: "log2 {arg_enrichment}", n: 6,
+         help: "Highest enrichment: log2 of the methylated share of the protein's arginines over the proteome-wide rate (3 is 8 times), more than its length and arginine count predict"}
+      - {title: Dense stretch, by: dense_q, order: asc, where: {attribute: dense_q, max: 0.05}, show: "{dense_sites}/{dense_window} aa", n: 6,
+         help: "Most significant clustering of methylarginines (permutation test): sites in the window"}
     columns:
       - {id: map, label: Site map, show: map, fixed: true, hide: xs}
       - {id: ix, label: Interaction evidence, menu: Interaction evidence (sites), default: true,
          counts: {attribute: interaction, values: {experimental: experimental, predicted_only: predicted only}, dashed: [predicted_only]},
          help: "Sites in this selection with experimental interaction evidence, and with predicted evidence only"}
-      - {id: idr, label: In IDR, classes: {analysis: disorder, classes: [disordered]}, default: true, hide: xs, help: "The share of the protein's sites in an IDR"}
+      - {id: idr, label: In IDR, classes: {analysis: disorder, classes: [disordered]}, default: true, hide: xs, help: "The share of the protein's sites in an intrinsically disordered region (IDR)"}
       - {id: cond, label: Condensates, attribute: condensates, format: count, default: true, hide: sm, help: "CD-CODE condensates (human, not synthetic) the protein is a member of"}
       - {id: loc, label: Location (HPA), attribute: hpa, hide: sm,
          help: "Subcellular locations in the Human Protein Atlas (reliability Approved or better)"}
@@ -2637,7 +2643,7 @@ website:                  # the look and words of the website (ptmc web); layout
         sub: Spacing of methylarginines, and windows denser than chance.
         windows: [3, 5, 10, 20, 50]
       other_ptms:
-        title: Other PTMs
+        title: Other modifications
         table: other_ptms
         sub: "Other modifications recorded on this protein, as in the map legend."
         kinds: {lys_acyl: Lysine acylation, ub_sumo: Ubiquitin and SUMO}
@@ -2781,7 +2787,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
       - {attribute: evidence, values: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, rbrid_residue_published_rule, rbrid_region],
          label: in RNA-bound fragments or peptides, kind: "Seen in cells, not a direct contact", glyph: squiggle, opens: p-sites,
-         tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RBR-ID+ peptide. This shows where RNA binds in cells, not a structural contact. The RNA and DNA interactions section counts sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
+         tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RNA-contact peptide (RBR-ID). This shows where RNA binds in cells, not a structural contact. The RNA and DNA interactions section counts sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
       - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
     card:                  # the site card: its blocks, each reading an attribute or a table above (a block without its data is absent)
@@ -2834,16 +2840,16 @@ website:                  # the look and words of the website (ptmc web); layout
           kinds:                             # RBDmap and pCLAP are left out: their peptides, fragments and extents may not be republished (presence_only)
             rna_crosslink: {label: RNA-crosslinked peptide, format: crosslink, mark: crosslinked residue}
             dna_crosslink: {label: DNA-crosslinked peptide, format: range, sources: [Trendel2025], mark: residue the crosslink may sit on}
-            capri_xl_peptide: {label: CAPRI XL-peptide, format: range, sources: [CAPRI]}
-            capri_adj_peptide: {label: CAPRI ADJ-peptide, format: range, sources: [CAPRI]}
-            rbrid_residue: {label: RBR-ID+ peptide, format: range, sources: [RBR-ID]}
+            capri_xl_peptide: {label: RNA-crosslinked peptide (CAPRI), format: range, sources: [CAPRI]}
+            capri_adj_peptide: {label: RNA-bound peptide (CAPRI), format: range, sources: [CAPRI]}
+            rbrid_residue: {label: RNA-contact peptide (RBR-ID), format: range, sources: [RBR-ID]}
           columns: {sequence: Sequence, study: Study, dataset: Dataset}
         around:                              # a residue_evidence table: crosslinks and RNA-bound stretches at or near the site
           table: residues
           span: 3
           labels: {rna_crosslink: UV-crosslinked to RNA in living cells, dna_crosslink: UV-crosslinked to DNA in living cells,
                    capri_xl_peptide: inside CAPRI RNA-crosslinked peptide,
-                   capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RBR-ID+ peptide, rbrid_region: inside an RBR-ID region,
+                   capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RNA-contact peptide (RBR-ID), rbrid_region: inside an RBR-ID region,
                    dna_binding_region: inside a UniProt DNA-binding region}
         protein:                             # the whole protein (proteins.attributes), labeled so it is not read as site evidence
           title: "Whole protein (not specific to {site})"
@@ -2873,7 +2879,7 @@ website:                  # the look and words of the website (ptmc web); layout
           background: clinvar_background
           count: clinvar_variants
           gene: gene       # the column naming the gene; the card shows it for a protein several genes encode
-          highlight: {column: germline_classification, matches: *plp, label: P/LP, title: "Classified pathogenic or likely pathogenic by ClinVar"}
+          highlight: {column: germline_classification, matches: *plp, label: P/LP, title: "pathogenic or likely pathogenic (ClinVar)"}
           sort: [{column: review_stars, order: desc}]
           fields:
             - {column: germline_classification, label: Classification}
@@ -3172,7 +3178,7 @@ website:                  # the look and words of the website (ptmc web); layout
             include: [{column: evidence_type, in: [rbrid_region, rbrid_residue]}]
           classes:
             rbrid_region: {label: RBR-ID region, mark: box, opacity: 0.18}
-            rbrid_residue: {label: RBR-ID+ residues, mark: box, opacity: 0.55}
+            rbrid_residue: {label: RNA-contact residue (RBR-ID)s, mark: box, opacity: 0.55}
           colour: "#7B4FBF"
           colour_dark: "#A98BE0"
         - id: dna_cells
@@ -3212,7 +3218,7 @@ website:                  # the look and words of the website (ptmc web); layout
           after: intact
           from:
             role: residue_evidence
-            columns: {accession: uniprot_accession, start: start, end: end, value: n_partners, label: "best pDockQ {best_score}", sources: sources}
+            columns: {accession: uniprot_accession, start: start, end: end, value: n_partners, label: "best interface confidence {best_score}", sources: sources}
             include: [{column: evidence_type, equals: predicted_interface}]
           mark: pred
           value: {one: "with up to {n} partner", many: "with up to {n} partners", opacity: [1, 5]}
@@ -3257,7 +3263,7 @@ website:                  # the look and words of the website (ptmc web); layout
 
         CAPRI: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3. XL-peptides and ADJ-peptides from the paper's supplementary tables; the adjacent-peptide runs are in PRIDE PXD013338.
 
-        RBR-ID: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012. RBR-ID+ peptides called from the DIA-NN report of PRIDE PXD035484 (K562 nuclei).
+        RBR-ID: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012. RNA-contact peptide (RBR-ID)s called from the DIA-NN report of PRIDE PXD035484 (K562 nuclei).
 
         DNA-crosslinked peptides: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037. Tables S1 and S2 of the paper (MCF7); underlined letters are the residues the crosslink may sit on.
 
@@ -3265,9 +3271,9 @@ website:                  # the look and words of the website (ptmc web); layout
 
         RBDmap (Castello et al., Mol Cell 63:696 (2016), doi:10.1016/j.molcel.2016.06.029; PRIDE PXD000883) and pCLAP (Mullari et al., J Proteome Res 16:2762 (2017), doi:10.1021/acs.jproteome.7b00042; PRIDE PXD005739): shown as flags only. Their peptides, fragments and extents are not shown here.
       columns:             # how the page shows the tables' columns (a table's own: <table>.<column>)
-        interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, rbdmap_fragment: RBDmap RNA-bound fragment, capri_xl_peptide: CAPRI XL-peptide, capri_adj_peptide: CAPRI ADJ-peptide, pclap_peptide: pCLAP peptide, pclap_lysc_region: pCLAP region, rbrid_residue: RBR-ID+ residue, dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy, predicted_interface: Predicted interface (ProtVar), predicted_contact: Contact in a predicted model, intact_mutation: IntAct mutation, intact_binding_region: IntAct binding region, intact_methylated: IntAct records it methylated}}
+        interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, rbdmap_fragment: RBDmap RNA-bound fragment, capri_xl_peptide: RNA-crosslinked peptide (CAPRI), capri_adj_peptide: RNA-bound peptide (CAPRI), pclap_peptide: pCLAP peptide, pclap_lysc_region: pCLAP region, rbrid_residue: RNA-contact residue (RBR-ID), dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy, predicted_interface: Predicted interface (ProtVar), predicted_contact: Contact in a predicted model, intact_mutation: IntAct mutation, intact_binding_region: IntAct binding region, intact_methylated: IntAct records it methylated}}
         interactions.ids: {label: Structures or models}
-        interactions.score: {label: pDockQ, help: "pDockQ of a predicted model"}
+        interactions.score: {label: Interface confidence (pDockQ), help: "pDockQ of a predicted model"}
         partner_accession: {label: Partner}
         partner: {label: Partner gene}
         records.group: {label: Record, values: {writes: Methylates it, removes: Demethylates it, binds_methylated: Binds it methylated, mutation_changes_binding: Mutating it changes the binding}}
@@ -3344,7 +3350,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: "CAPRI peptide (measured)", group: In living cells, phrase: inside a CAPRI RNA-bound peptide (among the arginines CAPRI measured)}
           - {analysis: crosslink, category: pclap_peptide_among_measured, label: "pCLAP peptide (measured)", group: In living cells, phrase: inside a pCLAP RNA-binding peptide (among the arginines pCLAP measured)}
           - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: "RBDmap peptide (measured)", group: In living cells, phrase: inside an RBDmap RNA-bound peptide (among the arginines RBDmap measured)}
-          - {analysis: crosslink, category: rbrid_residue_among_measured, label: "RBR-ID+ residue (measured)", group: In living cells, phrase: an RBR-ID+ residue (among the arginines RBR-ID measured)}
+          - {analysis: crosslink, category: rbrid_residue_among_measured, label: "RNA-contact residue (RBR-ID) (measured)", group: In living cells, phrase: an RNA-contact residue (RBR-ID) (among the arginines RBR-ID measured)}
           - {analysis: crosslink, category: dna_crosslink_or_candidate, label: DNA-crosslinked residue, group: In living cells, phrase: at a DNA crosslink or one of its candidate residues}
           - {analysis: pdb_interface, category: protein, label: Protein interface (PDB), group: Protein contacts, phrase: at a protein interface in PDB structures}
           - {analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, group: Protein contacts, phrase: at the interface of a predicted complex}
@@ -3365,7 +3371,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: crosslink, category: rbdmap_fragment, label: Inside an RNA-bound fragment (RBDmap), group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbdmap_fragment_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: … among arginines RBDmap measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_adj_peptide, label: Inside an RNA-bound peptide (CAPRI ADJ), group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_adj_peptide, label: Inside an RNA-bound peptide (CAPRI), group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: capri_adj_peptide_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: … among arginines CAPRI measured, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: capri_xl_peptide, label: Inside an RNA-crosslinked peptide (CAPRI XL), group: "In cells: crosslinking mass spectrometry"}
@@ -3374,7 +3380,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: crosslink, category: pclap_lysc_region_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: pclap_peptide, label: Inside an RNA-binding peptide (pCLAP), group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: pclap_peptide_among_measured, label: … among arginines pCLAP measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_residue, label: An RBR-ID+ residue, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue, label: An RNA-contact residue (RBR-ID), group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbrid_residue_outside_rg, label: … outside RG/GR dipeptides, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbrid_residue_among_measured, label: … among arginines RBR-ID measured, group: "In cells: crosslinking mass spectrometry"}
                     - {analysis: crosslink, category: rbrid_residue_published_rule, label: … by the published rule (sensitivity), group: "In cells: crosslinking mass spectrometry"}
@@ -3419,7 +3425,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {filter: "a:motif", value: GAR, label: GAR, group: Motif}
                     - {filter: "a:motif", value: RXR, label: RXR, group: Motif}
                     - {filter: "a:motif", value: CARM1_proline_rich, label: Pro ±5, group: Motif}
-                    - {filter: "a:disorder", value: disordered, label: In an IDR, group: Context}
+                    - {filter: "a:disorder", value: disordered, label: In a disordered region, group: Context}
                     - {filter: "a:domain_context", value: in_domain, label: In a domain, group: Context}
                 - {kind: checker, title: Check one site, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], tables: [interactions]}
         - name: RNA and DNA
@@ -3436,13 +3442,13 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: crosslink, category: capri_adj_peptide_among_measured, label: CAPRI}
                     - {analysis: crosslink, category: pclap_peptide_among_measured, label: pCLAP}
                     - {analysis: crosslink, category: rbdmap_peptide_among_measured, label: RBDmap}
-                    - {analysis: crosslink, category: rbrid_residue_among_measured, label: RBR-ID+}
+                    - {analysis: crosslink, category: rbrid_residue_among_measured, label: RNA contact (RBR-ID)}
                     - {analysis: crosslink, category: rna_crosslink, label: RNA-crosslinked residue}
                     - {analysis: crosslink, category: rna_crosslink_single_residue, label: … localized to it alone}
                     - {analysis: crosslink, category: rbdmap_fragment, label: RBDmap fragment}
                     - {analysis: crosslink, category: pclap_peptide, label: pCLAP peptide}
                     - {analysis: crosslink, category: pclap_lysc_region, label: pCLAP region}
-                    - {analysis: crosslink, category: rbrid_residue, label: RBR-ID+ residue}
+                    - {analysis: crosslink, category: rbrid_residue, label: RNA-contact residue (RBR-ID)}
                     - {analysis: crosslink, category: dna_crosslink_or_candidate, label: DNA crosslink or candidate}
                     - {analysis: crosslink, category: dna_crosslinked_peptide, label: DNA-crosslinked peptide}
                 - kind: lines            # the sequence-proximity chart, said as a sentence from its rows, the chart behind a toggle
@@ -3536,12 +3542,12 @@ website:                  # the look and words of the website (ptmc web); layout
               blocks:
                 - kind: forest
                   rows:
-                    - {analysis: predicted_interface, category: pdockq_0.23, label: "pDockQ ≥ 0.23", group: All arginines}
-                    - {analysis: predicted_interface, category: pdockq_0.5, label: "pDockQ ≥ 0.5", group: All arginines}
-                    - {analysis: predicted_interface, category: pdockq_0.23_ordered, label: "pDockQ ≥ 0.23", group: Ordered}
-                    - {analysis: predicted_interface, category: pdockq_0.5_ordered, label: "pDockQ ≥ 0.5", group: Ordered}
-                    - {analysis: predicted_interface, category: pdockq_0.23_disordered, label: "pDockQ ≥ 0.23", group: Disordered}
-                    - {analysis: predicted_interface, category: pdockq_0.5_disordered, label: "pDockQ ≥ 0.5", group: Disordered}
+                    - {analysis: predicted_interface, category: pdockq_0.23, label: Likely interface, group: All arginines}
+                    - {analysis: predicted_interface, category: pdockq_0.5, label: Strong interface, group: All arginines}
+                    - {analysis: predicted_interface, category: pdockq_0.23_ordered, label: Likely interface, group: Ordered}
+                    - {analysis: predicted_interface, category: pdockq_0.5_ordered, label: Strong interface, group: Ordered}
+                    - {analysis: predicted_interface, category: pdockq_0.23_disordered, label: Likely interface, group: Disordered}
+                    - {analysis: predicted_interface, category: pdockq_0.5_disordered, label: Strong interface, group: Disordered}
                 - {kind: table, table: interactions, title: Contacts in predicted models, sub: "Each site’s contacts in a predicted complex, with the model's pDockQ, the closest distance and the contact (salt bridge, hydrogen bond) with pLDDT.", columns: [accession, partner_accession, score, detail, ids], sort: score, limit: 25,
                    where: [{column: kind, in: [predicted_contact]}], partner: partner_accession, label: partner}
         - name: Protein partners and complexes

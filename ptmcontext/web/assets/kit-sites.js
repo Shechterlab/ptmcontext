@@ -24,9 +24,23 @@
   K.density.defaults.sites = 'comfortable'; // wrapped rows, as the explorer's table; a reader's choice wins
   const quickAttrs = () =>
     Object.keys(SPECS).filter(
-      (n) => SPECS[n].colour && SPECS[n].kind === 'category' && (!SV.quick || SV.quick.includes(n))
-    ); // website.sites.quick, else every colored attribute
-  const colourAttr = Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category') || null;
+      (n) =>
+        SPECS[n].colour &&
+        (SV.quick ? SV.quick.includes(n) && ['category', 'list'].includes(SPECS[n].kind) : SPECS[n].kind === 'category')
+    ); // website.sites.quick (a colored attribute of one value or of several per site), else every colored one-value attribute
+  // the attribute the State column shows and the map colors by: website.sites.state, else the first colored one-value attribute
+  const colourAttr =
+    (SV.state && SPECS[SV.state] ? SV.state : null) ||
+    Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category') ||
+    null;
+  // the State cell: a dot and the short label of each value the site has (a site can carry several states)
+  const stateCell = (vs) =>
+    (vs.length ? vs : [''])
+      .map(
+        (v) =>
+          `<span class="sdot" title="${esc(K.sel.valueLabel(colourAttr, v))}"><i style="--c:${K.map.attrColour(colourAttr, v)}"></i>${esc(short(colourAttr, v))}</span>`
+      )
+      .join(' ');
   const short = (n, v) => (SV.short?.[n] || {})[v] ?? K.sel.valueLabel(n, v);
   const tagAids = () => AN().filter((a) => A[a]?.shape === 'flags' && (!SV.tags || SV.tags[a])); // the site file's, else every flags question
   const siteName = (p, pos, m) => (K.prot?.siteLabel ? K.prot.siteLabel(p.acc, pos) : `${m ? K.markRes(m) : ''}${pos}`);
@@ -188,10 +202,7 @@
               const k = o.indexOf(v);
               return v === '' ? null : k < 0 ? 0 : o.length - k;
             },
-            cell: (m) => {
-              const v = vals(m, colourAttr)[0] ?? '';
-              return `<span class="sdot" title="${esc(K.sel.valueLabel(colourAttr, v))}"><i style="--c:${K.map.attrColour(colourAttr, v)}"></i>${esc(short(colourAttr, v))}</span>`;
-            },
+            cell: (m) => stateCell(vals(m, colourAttr)),
           },
         ]
       : []),
@@ -562,8 +573,7 @@
         `class="tags">${K.shown.tag(m.lc.mk, true)}</div><span class="acc">${esc(K.shown.row())}</span>`
       );
     if (c.id === 'state') {
-      const v = lcVals(m, colourAttr)[0] ?? '';
-      return `<span class="sdot" title="${esc(K.sel.valueLabel(colourAttr, v))}"><i style="--c:${K.map.attrColour(colourAttr, v)}"></i>${esc(short(colourAttr, v))}</span>`;
+      return stateCell(lcVals(m, colourAttr));
     }
     if (c.id === 'window') {
       const w = m[4] || '',
