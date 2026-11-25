@@ -2348,7 +2348,7 @@ website:                  # the look and words of the website (ptmc web); layout
     interactions:
       input: methylarginine_site_interactions_v1_5_1
       format: site_evidence
-      columns: {site: site_id, kind: evidence_type, partner: partner_gene, partner_accession: partner_accession, ids: structures, score: score, detail: detail}
+      columns: {site: site_id, kind: evidence_type, partner: partner_gene, partner_accession: partner_accession, ids: structures, score: score, detail: detail, source: source}
     contacts:
       input: methylarginine_nucleic_acid_contacts_v1_5_1
       format: bound_windows
@@ -2815,6 +2815,16 @@ website:                  # the look and words of the website (ptmc web); layout
           designed: {preparation: Synthetically obtained, label: oligo}
           ends: ["5′", "3′"]
           max: 5
+        peptides:                            # the peptides at the site, with their sequence, extent, study and dataset (the table's `detail` and `source`)
+          table: interactions                # the Interactions page's table shows the same cells (its block's `peptides: true`)
+          title: "RNA- and DNA-bound peptides at {site}"
+          kinds:                             # RBDmap and pCLAP are left out: their peptides, fragments and extents may not be republished (presence_only)
+            rna_crosslink: {label: RNA-crosslinked peptide, format: crosslink, mark: crosslinked residue}
+            dna_crosslink: {label: DNA-crosslinked peptide, format: range, sources: [Trendel2025], mark: residue the crosslink may sit on}
+            capri_xl_peptide: {label: CAPRI XL-peptide, format: range, sources: [CAPRI]}
+            capri_adj_peptide: {label: CAPRI ADJ-peptide, format: range, sources: [CAPRI]}
+            rbrid_residue: {label: RBR-ID+ peptide, format: range, sources: [RBR-ID]}
+          columns: {sequence: Sequence, study: Study, dataset: Dataset}
         around:                              # a residue_evidence table: crosslinks and RNA-bound stretches at or near the site
           table: residues
           span: 3
@@ -3038,9 +3048,9 @@ website:                  # the look and words of the website (ptmc web); layout
         RBS-ID: {cite: "Bae et al., Nat Struct Mol Biol 27:678 (2020), re-analyzed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/s41594-020-0436-2}
         pRBS-ID: {cite: "Bae et al., Nat Commun 12:6026 (2021), re-analyzed by Sha, Kuster & Trendel, bioRxiv (2025)", doi: 10.1038/s41467-021-26317-5}
         RBDmap: {cite: "Castello et al., Mol Cell 63:696 (2016)", doi: 10.1016/j.molcel.2016.06.029}
-        CAPRI: {cite: "Panhale et al., Nat Commun 10:2682 (2019)", doi: 10.1038/s41467-019-10585-3}
+        CAPRI: {cite: "Panhale et al., Nat Commun 10:2682 (2019)", doi: 10.1038/s41467-019-10585-3, data: {label: "PRIDE PXD013338", url: "https://www.ebi.ac.uk/pride/archive/projects/PXD013338"}}
         pCLAP: {cite: "Mullari et al., J Proteome Res 16:2762 (2017)", doi: 10.1021/acs.jproteome.7b00042}
-        RBR-ID: {cite: "Oksuz et al., Mol Cell 83:2449 (2023)", doi: 10.1016/j.molcel.2023.06.012}
+        RBR-ID: {cite: "Oksuz et al., Mol Cell 83:2449 (2023)", doi: 10.1016/j.molcel.2023.06.012, data: {label: "PRIDE PXD035484", url: "https://www.ebi.ac.uk/pride/archive/projects/PXD035484"}}
         Trendel2025: {label: Trendel 2025, cite: "Trendel et al., Cell 188:4424 (2025)", doi: 10.1016/j.cell.2025.04.037}
         UniProt: {cite: "UniProt Consortium, Nucleic Acids Res 53:D609 (2025)", doi: 10.1093/nar/gkae1010}
         ProtVar: {cite: "Burke et al., Nat Struct Mol Biol 30:216 (2023); Stephenson et al., Nucleic Acids Res 52:W140 (2024)", doi: 10.1038/s41594-022-00910-8}
@@ -3224,6 +3234,18 @@ website:                  # the look and words of the website (ptmc web); layout
         The protein-set tests (proteins found binding RNA or DNA in cells; Gene Ontology RNA and DNA binding) count proteins: the methylated proteins in each set against the other proteins each experiment measured, or every reviewed human protein (one-sided hypergeometric test), again within PaxDb abundance deciles.
 
         pCLAP's and RBDmap's measured peptides may not be republished: the tests that need them run only where the build's root holds those files (otherwise they are left out, and the Method page's parity section says so); pCLAP's RNA-binding peptides and regions are read from the release's own per-residue runs. The tables of this page (who acts, partners, complexes, bound RNA and DNA, binding profiles) are the release's supporting tables, read through the site file's mapping; no test reads them.
+
+        The studies behind the rows of the table of crosslinks and RNA-bound peptides, one line each. Sequences and ends are as the release prints them, and the release checks each against the UniProt reviewed sequence.
+
+        CAPRI: Panhale et al., Nat Commun 10:2682 (2019), doi:10.1038/s41467-019-10585-3. XL-peptides and ADJ-peptides from the paper's supplementary tables; the adjacent-peptide runs are in PRIDE PXD013338.
+
+        RBR-ID: Oksuz et al., Mol Cell 83:2449 (2023), doi:10.1016/j.molcel.2023.06.012. RBR-ID+ peptides called from the DIA-NN report of PRIDE PXD035484 (K562 nuclei).
+
+        DNA-crosslinked peptides: Trendel et al., Cell 188:4424 (2025), doi:10.1016/j.cell.2025.04.037. Tables S1 and S2 of the paper (MCF7); underlined letters are the residues the crosslink may sit on.
+
+        RNA-crosslinked residues: the pepR-MS compendium, Sha, Kuster & Trendel, bioRxiv (2025), doi:10.1101/2025.09.05.674461, tables S2 and S3 of version 2. It re-analyzes Kramer et al. 2014, XRNAX (Trendel et al. 2019), RBS-ID (Bae et al. 2020) and pRBS-ID (Bae et al. 2021); each row names its study.
+
+        RBDmap (Castello et al., Mol Cell 63:696 (2016), doi:10.1016/j.molcel.2016.06.029; PRIDE PXD000883) and pCLAP (Mullari et al., J Proteome Res 16:2762 (2017), doi:10.1021/acs.jproteome.7b00042; PRIDE PXD005739): shown as flags only. Their peptides, fragments and extents are not shown here.
       columns:             # how the page shows the tables' columns (a table's own: <table>.<column>)
         interactions.kind: {label: Evidence, values: {rna_crosslink: RNA-crosslinked residue, rbdmap_fragment: RBDmap RNA-bound fragment, capri_xl_peptide: CAPRI XL-peptide, capri_adj_peptide: CAPRI ADJ-peptide, pclap_peptide: pCLAP peptide, pclap_lysc_region: pCLAP region, rbrid_residue: RBR-ID+ residue, dna_crosslink: DNA crosslink, dna_binding_region: UniProt DNA-binding region, pdb_protein: PDB protein interface, pdb_rna: PDB RNA interface, pdb_dna: PDB DNA interface, pdb_self: PDB interface with another copy, predicted_interface: Predicted interface (ProtVar), predicted_contact: Contact in a predicted model, intact_mutation: IntAct mutation, intact_binding_region: IntAct binding region, intact_methylated: IntAct records it methylated}}
         interactions.ids: {label: Structures or models}
@@ -3408,7 +3430,8 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: crosslink, category: rbrid_residue, label: RBR-ID+ residue}
                     - {analysis: crosslink, category: dna_crosslink_or_candidate, label: DNA crosslink or candidate}
                     - {analysis: crosslink, category: dna_crosslinked_peptide, label: DNA-crosslinked peptide}
-                - {kind: table, table: interactions, title: The crosslinks and RNA-bound peptides at each site, chips: kind, columns: [accession, kind, detail], limit: 25,
+                - {kind: table, table: interactions, title: The crosslinks and RNA-bound peptides at each site, chips: kind, columns: [accession, kind, sequence, study, dataset], limit: 25,
+                   peptides: true, labels: {accession: Site}, download: Download all (TSV),
                    where: [{column: kind, in: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, dna_crosslink, dna_binding_region]}]}
             - id: ix-prox
               title: Sequence proximity to RNA-binding residues

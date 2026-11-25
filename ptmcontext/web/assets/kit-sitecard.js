@@ -414,36 +414,172 @@
           }</span>`;
         })
         .join('')}</div>`;
-    return `<p class="small sc-around">${cap(
-      [...by.entries()]
-        .map(([k, xs]) => {
-          const pts = xs
-            .filter((r) => r.start === r.end)
-            .map((r) => r.start)
-            .sort((a, b) => Math.abs(a - c.pos) - Math.abs(b - c.pos));
-          const spans = xs.filter((r) => r.start !== r.end);
+    const drawn = new Set(peptidesAt(c).map((k) => k.kind));
+    const line = [...by.entries()]
+      .map(([k, xs]) => {
+        const pts = xs
+          .filter((r) => r.start === r.end)
+          .map((r) => r.start)
+          .sort((a, b) => Math.abs(a - c.pos) - Math.abs(b - c.pos));
+        const spans = xs.filter((r) => r.start !== r.end && !drawn.has(k)); // a stretch shown with its sequence above is not repeated
+        if (!pts.length && !spans.length) return '';
+        return (
+          `${esc(lab[k] || k)}${
+            pts.length
+              ? ': ' +
+                pts
+                  .slice(0, 4)
+                  .map((q) =>
+                    q === c.pos ? 'the site (i)' : `${esc((seq[q - 1] || '') + c.shown(q))} (${rel(q - c.pos)})`
+                  )
+                  .join(', ') +
+                (pts.length > 4 ? ` +${pts.length - 4}` : '')
+              : ''
+          }` +
+          `${
+            spans.length ? ' ' + [...new Set(spans.map((r) => `${c.shown(r.start)}–${c.shown(r.end)}`))].join(', ') : ''
+          }`
+        );
+      })
+      .filter(Boolean)
+      .join('; ');
+    return line ? `<p class="small sc-around">${cap(line)}.</p>` : '';
+  }
+  // ---- RNA- and DNA-bound peptides at a site: their sequence, extent, study and dataset ------------------------------
+  // Read from the site_evidence table's `detail` (the release prints each peptide as "start-end SEQUENCE", a crosslinked
+  // peptide as "SEQ[X]UENCE at position"), checked by the release against the UniProt sequence. One home: the site card,
+  // the sites page and the Interactions page's table all draw a peptide through peptideHtml.
+  const PP = EV.peptides || {},
+    PSRC = D.protein_view?.map?.sources || {}, // each source's paper (and dataset): the map's own list
+    PK = PP.kinds || {};
+  const pepOn = () => !!PP.table && has(PP.table) && Object.keys(PK).length > 0;
+  // a row's `detail` as peptides: [{kind, start, end, seq (capitals), mark: Set of 0-based positions}]
+  function peptideList(kind, detail) {
+    const f = (PK[kind] || {}).format,
+      by = new Map(),
+      d = String(detail || '');
+    const add = (start, seq, marks) => {
+      const plain = seq.toUpperCase(),
+        key = start + ':' + plain;
+      if (!by.has(key)) by.set(key, { kind, start, end: start + plain.length - 1, seq: plain, mark: new Set() });
+      marks.forEach((i) => by.get(key).mark.add(i));
+    };
+    if (f === 'range')
+      for (const m of d.matchAll(/(\d+)-(\d+) ([A-Za-z]+)/g))
+        add(
+          +m[1],
+          m[3],
+          [...m[3]].flatMap((ch, i) => (ch !== ch.toUpperCase() ? [i] : []))
+        );
+    else if (f === 'crosslink')
+      for (const m of d.matchAll(/([A-Z]*\[[A-Z]\][A-Z[\]]*) at (\d+)/g)) {
+        const i = m[1].indexOf('[');
+        add(+m[2] - i, m[1].replace(/[[\]]/g, ''), [i]);
+      }
+    return [...by.values()];
+  }
+  const PFULL = 60; // a longer peptide shows the stretch around the site, and all of it behind a fold
+  // one peptide: the sequence with the site residue in bold and possible crosslink residues underlined, then start–end
+  function peptideHtml(e, pos, shown) {
+    const sh = shown || ((q) => q),
+      hit = pos >= e.start && pos <= e.end ? pos - e.start : -1,
+      body = (a, b) =>
+        [...e.seq.slice(a, b)]
+          .map((ch, k) => {
+            const i = a + k;
+            return i === hit
+              ? `<b class="pep-site" title="the site, ${esc(ch + sh(pos))}">${esc(ch)}</b>`
+              : e.mark.has(i)
+                ? `<u class="pep-xl" title="${esc((PK[e.kind] || {}).mark || 'crosslinked residue')} ${esc(ch + sh(e.start + i))}">${esc(ch)}</u>`
+                : esc(ch);
+          })
+          .join('');
+    const long = e.seq.length > PFULL,
+      a = long ? Math.max(0, (hit < 0 ? 0 : hit) - 25) : 0,
+      b = long ? Math.min(e.seq.length, a + 50) : e.seq.length;
+    return (
+      `<span class="pep"><span class="pep-seq mono">${a ? '…' : ''}${body(a, b)}${b < e.seq.length ? '…' : ''}</span> ` +
+      `<span class="muted pep-range">${esc(sh(e.start))}–${esc(sh(e.end))}</span>` +
+      (long
+        ? `<details class="pep-more"><summary>all ${int(e.seq.length)} residues</summary><span class="pep-seq pep-all mono">${body(0, e.seq.length)}</span></details>`
+        : '') +
+      '</span>'
+    );
+  }
+  // a study: its paper (the DOI link) and its dataset, where the source names one. source: the row's own, else the kind's
+  function studyOf(kind, source) {
+    const names = String(source || '')
+        .split(/;\s*/)
+        .filter(Boolean),
+      use = names.length ? names : (PK[kind] || {}).sources || [];
+    return use.map((n) => {
+      const s = PSRC[n] || {};
+      return {
+        name: n,
+        text: s.cite || s.label || n,
+        href: s.doi ? `https://doi.org/${s.doi}` : s.url || '',
+        doi: s.doi || '',
+        data: s.data || null,
+      };
+    });
+  }
+  const studyHtml = (st, sep = '<br>') =>
+    st
+      .map((x) => (x.href ? `<a href="${esc(x.href)}" target="_blank" rel="noopener">${esc(x.text)}</a>` : esc(x.text)))
+      .join(sep);
+  const dataHtml = (st, sep = '<br>') =>
+    st
+      .filter((x) => x.data)
+      .map((x) => `<a href="${esc(x.data.url)}" target="_blank" rel="noopener">${esc(x.data.label)}</a>`)
+      .join(sep);
+  // the peptides at one site, by kind: [{kind, label, st (studies), list (peptides)}]
+  function peptidesAt(c) {
+    if (!pepOn()) return [];
+    const out = new Map();
+    for (const r of at(c.tb, PP.table, c.pos)) {
+      if (!PK[r.kind]) continue;
+      if (!out.has(r.kind))
+        out.set(r.kind, { kind: r.kind, label: PK[r.kind].label || r.kind, src: new Set(), list: [] });
+      const o = out.get(r.kind);
+      String(r.source || '')
+        .split(/;\s*/)
+        .filter(Boolean)
+        .forEach((x) => o.src.add(x));
+      for (const e of peptideList(r.kind, r.detail))
+        if (!o.list.some((x) => x.start === e.start && x.seq === e.seq)) o.list.push(e);
+    }
+    return Object.keys(PK)
+      .filter((k) => out.has(k))
+      .map((k) => ({ ...out.get(k), st: studyOf(k, [...out.get(k).src].join('; ')) }));
+  }
+  const PMAX = 3;
+  function peptides(c) {
+    const ks = peptidesAt(c);
+    if (!ks.length) return '';
+    const one = (e) => `<li>${peptideHtml(e, c.pos, c.shown)}</li>`;
+    return (
+      `<p class="flabel">${esc(ctxWords(PP.title || 'RNA- and DNA-bound peptides at {site}', c))}</p><ul class="sc-pep">` +
+      ks
+        .map((k) => {
+          const d = dataHtml(k.st, ' · ');
           return (
-            `${esc(lab[k] || k)}${
-              pts.length
-                ? ': ' +
-                  pts
-                    .slice(0, 4)
-                    .map((q) =>
-                      q === c.pos ? 'the site (i)' : `${esc((seq[q - 1] || '') + c.shown(q))} (${rel(q - c.pos)})`
-                    )
-                    .join(', ') +
-                  (pts.length > 4 ? ` +${pts.length - 4}` : '')
-                : ''
-            }` +
-            `${
-              spans.length
-                ? ' ' + [...new Set(spans.map((r) => `${c.shown(r.start)}–${c.shown(r.end)}`))].join(', ')
-                : ''
-            }`
+            `<li><span class="tag t-${esc((EV.tags?.tone || {})[k.kind] || 'x')}">${esc(k.label)}</span> ` +
+            `<span class="small">${studyHtml(k.st, '; ')}${d ? ' · ' + d : ''}</span>` +
+            (k.list.length
+              ? `<ul class="pep-list">${k.list.slice(0, PMAX).map(one).join('')}</ul>` +
+                (k.list.length > PMAX
+                  ? `<details class="pep-more"><summary>+${k.list.length - PMAX} more</summary><ul class="pep-list">${k.list
+                      .slice(PMAX)
+                      .map(one)
+                      .join('')}</ul></details>`
+                  : '')
+              : '') +
+            '</li>'
           );
         })
-        .join('; ')
-    )}.</p>`;
+        .join('') +
+      '</ul>'
+    );
   }
   // the whole protein, labeled so it is not read as site evidence
   function wholeProtein(c) {
@@ -479,6 +615,7 @@
       tags(c) +
       entries(c) +
       sequences(c) +
+      peptides(c) +
       around(c) +
       wholeProtein(c);
     return `<section class="sc-ix"><h4>${esc(EV.title || 'Interaction evidence')}${K.methodLink ? '' : ''}</h4>${body}</section>`;
@@ -1879,6 +2016,15 @@
     tags,
     entries,
     sequences,
+    peptides,
+    peptidesAt,
+    peptideList,
+    peptideHtml,
+    peptideKinds: () => PK,
+    peptideColumns: PP.columns || {},
+    studyOf,
+    studyHtml,
+    dataHtml,
     around,
     states,
     changes,

@@ -4139,6 +4139,46 @@ b.t-c {
 .sc-prot {
   margin: 0.35rem 0;
 }
+.sc-pep,
+.pep-list {
+  list-style: none;
+  margin: 0.2rem 0;
+  padding: 0;
+}
+.sc-pep > li {
+  margin: 0.4rem 0;
+}
+.pep-list {
+  padding-left: 0.6rem;
+}
+.pep-seq {
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+.pep-all {
+  display: block;
+  margin-top: 0.2rem;
+}
+.pep-site {
+  background: var(--brand-ink);
+  color: var(--surface);
+  border-radius: 0.15rem;
+  padding: 0 0.05rem;
+}
+.pep-xl {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.pep-more > summary {
+  display: inline;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.ix-dl {
+  margin: 0.3rem 0;
+}
 .sc-prot {
   border-top: 1px dashed var(--line);
   padding-top: 0.45rem;
