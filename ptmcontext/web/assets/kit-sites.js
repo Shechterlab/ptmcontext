@@ -33,7 +33,7 @@
     (SV.state && SPECS[SV.state] ? SV.state : null) ||
     Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category') ||
     null;
-  // the State cell: a dot and the short label of each value the site has (a lysine can carry several states)
+  // the State cell: a dot and the short label of each value the site has (a site can carry several states)
   const stateCell = (vs) =>
     (vs.length ? vs : [''])
       .map(
