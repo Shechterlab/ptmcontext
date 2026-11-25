@@ -206,6 +206,12 @@ def test_the_pages_workflow_uploads_what_the_compare_page_reads():
         assert f'out/${{{{ matrix.site }}}}/{name}' in wf, f'pages.yml does not upload {name}'
 
 
+def test_the_pages_workflow_uploads_the_marks_the_landing_site_index_reads():
+    """proteins-sites.json (the landing search's typed-site routing) is built in the assemble job from each site's marks.tsv."""
+    wf = (Path(__file__).resolve().parents[1] / '.github' / 'workflows' / 'pages.yml').read_text()
+    assert 'out/${{ matrix.site }}/marks.tsv' in wf
+
+
 def test_the_method_text_is_printed_once_per_question_not_once_per_explorer():
     js = CP.ASSET.read_text()
     row = js[js.index('function questionRows') : js.index('function sortBtn')]

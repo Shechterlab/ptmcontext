@@ -84,6 +84,7 @@ jobs:
             out/${{ matrix.site }}/statistics.tsv
             out/${{ matrix.site }}/set_names.tsv
             out/${{ matrix.site }}/protein_sets.json
+            out/${{ matrix.site }}/marks.tsv
             !out/${{ matrix.site }}/web/${{ matrix.site }}.html
           retention-days: 1
           if-no-files-found: error
