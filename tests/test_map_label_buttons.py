@@ -25,9 +25,16 @@ def test_site_table_uses_summary_items_and_is_capped():
     prot, card = read('kit-proteins.js'), read('kit-sitecard.js')
     assert 'function summaryItems(' in card and 'summaryItems,' in card
     assert 'K.card.summaryItems(' in prot
-    assert 'GL_CAP = 25' in prot and 'GL_ALL = 40' in prot and 'glanceKept(p, marks)' in prot
-    assert 'siteGlance(p, rec) +' in prot
-    assert "'All site tables'" in prot
+    assert (
+        'siteGlance' not in prot and 'id="site-glance"' not in prot
+    )  # one site table: the Sites table of kit-sitetable.js
+    assert 'K.siteTable?.fold(p, rec, fold)' in prot
+    assert prot.index('headline(p, rec) || legacyFacts') < prot.index(
+        'K.siteTable?.fold(p, rec, fold)'
+    )  # tiles, then the table
+    st = read('kit-sitetable.js')
+    assert 'OPEN_MAX = 40' in st and 'st-show' in st
+    assert "'site-glance': 'p-sitetab'" in read('kit-openlink.js')
 
 
 def test_sites_tab_has_writer_column():

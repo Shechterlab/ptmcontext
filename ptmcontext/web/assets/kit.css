@@ -12024,3 +12024,8 @@ summary {
     font-size: 0.95rem;
   }
 }
+
+/* the Sites table under the tiles: "Show N sites" in its summary only while it is closed */
+.pfold[open] > summary .st-show {
+  display: none;
+}

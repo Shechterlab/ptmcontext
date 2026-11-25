@@ -54,7 +54,7 @@ const rec = {{ marks: [[3, 'w', 'on'], [1, 'w', 'off'], [2, 'w', 'on']], units: 
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-sitetable.js'))}, 'utf8'));
 window.PTMC_MODULES.forEach(m => m(K));
 let args;
-K.proteinFolds[0]({{ acc: 'P1', gene: 'G1' }}, rec, (...a) => ((args = a), ''));
+K.siteTable.fold({{ acc: 'P1', gene: 'G1' }}, rec, (...a) => ((args = a), ''));
 const rows = [...args[3].matchAll(/<tr><td[^>]*><a[^>]*>(X\\d)<\\/a>/g)].map(m => m[1]);
 Promise.resolve(K.clicks.find(c => c[0] === '[data-stexp]')[1]({{ dataset: {{ stexp: 'tsv' }} }})).then(() => console.log(JSON.stringify({{ id: args[0], title: args[1], sum: args[2], rows, tsv: global.TSV, sections: K.proteinFoldSections }})));"""
     run = subprocess.run(['node', '-e', script], capture_output=True, text=True)

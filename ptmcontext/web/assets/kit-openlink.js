@@ -39,6 +39,7 @@
   const ALIAS = {
     'ixg-partners-and-complexes': 'ixg-protein-partners-and-complexes',
     'ixg-partners': 'ixg-binding-proteins',
+    'site-glance': 'p-sitetab', // the site table that briefly sat under the map is the Sites table
   };
   K.foldId = (id) => ALIAS[id] || id;
   const parse = (v) => {

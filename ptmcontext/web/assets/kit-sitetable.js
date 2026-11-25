@@ -16,6 +16,7 @@
     TITLE = CFG.title || 'Sites and their variants',
     RING = K.prop.ring;
   const SRC = PR.sources.filter((s) => !K.prop.desc(s.id)); // sources with a test: k, O/E and q
+  const OPEN_MAX = 40; // up to this many sites the table is open
   const TOP = SRC.find((s) => s.kind === 'somatic') || SRC[0]; // the source the default sort and the summary read
   if (!SRC.length) return;
   const ST = { key: `${TOP.id}:q`, dir: 1 };
@@ -311,7 +312,10 @@
           ).hot;
           parts.push(`${int(n)} with ${x.label} ${x.highlight.label} variants`);
         });
-    return esc(parts.join('; '));
+    return (
+      esc(parts.join('; ')) +
+      (n > OPEN_MAX ? `<span class="st-show"> · Show ${esc(int(n))} ${esc(n === 1 ? W.mark : W.marks)}</span>` : '')
+    );
   }
   // the columns as drawn: each source is one column (k · O/E, with q under it) with a small menu to sort by any of its three values
   function display(cols) {
@@ -405,14 +409,19 @@
     if (K.prop.peek(acc) === undefined) K.prop.load(acc).then(() => refresh());
   }
   (K.afterUni ||= []).push(() => cur() && refresh());
-  (K.proteinFolds ||= []).push((p, rec, fold) => {
-    if (!rec.marks?.length) return '';
-    load(p.acc);
-    const M = model(p, rec);
-    return fold('p-sitetab', esc(TITLE), summary(M), body(M), false);
-  });
+  // drawn by the protein page right after the summary tiles (not by the page's groups): open when the protein has up to OPEN_MAX
+  // sites, else closed with "Show N sites" in its one-line summary
+  K.siteTable = {
+    refresh: () => refresh(),
+    fold: (p, rec, fold) => {
+      if (!rec.marks?.length) return '';
+      load(p.acc);
+      const M = model(p, rec);
+      return fold('p-sitetab', esc(TITLE), summary(M), body(M), rec.marks.length <= OPEN_MAX, true);
+    },
+  };
+  K.card?.vc.onDetail?.(() => cur() && refresh());
   (K.proteinFoldSections ||= []).push(['p-sitetab', TITLE, 1]);
-  K.siteTable = { refresh: () => refresh() };
   K.prop.onHyper(() => refresh());
   (K.mapReady ||= []).push(() => refresh());
 
