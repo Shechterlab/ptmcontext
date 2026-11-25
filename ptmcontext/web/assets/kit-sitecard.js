@@ -480,7 +480,7 @@
   }
   const PFULL = 60; // a longer peptide shows the stretch around the site, and all of it behind a fold
   // one peptide: the sequence with the site residue in bold and possible crosslink residues underlined, then start–end
-  function peptideHtml(e, pos, shown) {
+  function peptideHtml(e, pos, shown, label) {
     const sh = shown || ((q) => q),
       hit = pos >= e.start && pos <= e.end ? pos - e.start : -1,
       body = (a, b) =>
@@ -503,8 +503,15 @@
       (long
         ? `<details class="pep-more"><summary>all ${int(e.seq.length)} residues</summary><span class="pep-seq pep-all mono">${body(0, e.seq.length)}</span></details>`
         : '') +
+      (hit < 0 ? ` <span class="muted pep-near">${esc(missNote(e, pos, label || String(sh(pos))))}</span>` : '') +
       '</span>'
     );
+  }
+  // a peptide beside the site, not over it: how far off, computed from its ends
+  function missNote(e, pos, label) {
+    const d = pos < e.start ? e.start - pos : pos - e.end,
+      n = `${d} residue${d === 1 ? '' : 's'}`;
+    return `does not cover ${label}; ${pos < e.start ? `starts ${n} after it` : `ends ${n} before it`}`;
   }
   // a study: its paper (the DOI link) and its dataset, where the source names one. source: the row's own, else the kind's
   function studyOf(kind, source) {
@@ -556,7 +563,7 @@
   function peptides(c) {
     const ks = peptidesAt(c);
     if (!ks.length) return '';
-    const one = (e) => `<li>${peptideHtml(e, c.pos, c.shown)}</li>`;
+    const one = (e) => `<li>${peptideHtml(e, c.pos, c.shown, c.label)}</li>`;
     return (
       `<p class="flabel">${esc(ctxWords(PP.title || 'RNA- and DNA-bound peptides at {site}', c))}</p><ul class="sc-pep">` +
       ks

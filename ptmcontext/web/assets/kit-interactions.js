@@ -250,7 +250,7 @@
     const x = pepOf(t, r),
       dash = '<span class="muted">–</span>';
     if (name === 'sequence') {
-      const one = (e) => `<div>${K.card.peptideHtml(e, x.pos, x.shown)}</div>`;
+      const one = (e) => `<div>${K.card.peptideHtml(e, x.pos, x.shown, siteName(x.acc, x.pos))}</div>`;
       return !x.list.length
         ? dash
         : x.list.slice(0, PEPMAX).map(one).join('') +
@@ -1618,7 +1618,22 @@
         ps = protSet();
       rows = rows.filter((r) => (r[j] || []).some((a) => ps.has(byAcc[a])));
     }
-    return rows;
+    return b.peptides ? collapse(t, rows) : rows;
+  }
+  // rows alike in protein, site, kind and every peptide (start, end, sequence) are one row; NREC holds how many records it stands for
+  const NREC = new WeakMap();
+  function collapse(t, rows) {
+    const by = new Map();
+    rows.forEach((r) => {
+      const x = pepOf(t, r),
+        key = [r[0], r[1], cellText(t, r, 'kind'), ...x.list.map((e) => `${e.start}-${e.end}:${e.seq}`)].join('|');
+      if (by.has(key)) NREC.set(by.get(key), NREC.get(by.get(key)) + 1);
+      else {
+        by.set(key, r);
+        NREC.set(r, 1);
+      }
+    });
+    return [...by.values()];
   }
   // a peptide table's download: one line a peptide (a row of several peptides is several lines), with the study's DOI
   function peptideTsv(b, t) {
@@ -1634,6 +1649,7 @@
         'doi',
         'dataset',
         'dataset_url',
+        'n_records',
       ],
       plain = (x) => String(x ?? '').replace(/[\t\r\n]+/g, ' ');
     const lines = [];
@@ -1653,7 +1669,15 @@
         ];
       (x.list.length ? x.list : [null]).forEach((e) =>
         lines.push(
-          [...base, e ? x.shown(e.start) : '', e ? x.shown(e.end) : '', e ? e.seq : '', ...study, ...data]
+          [
+            ...base,
+            e ? x.shown(e.start) : '',
+            e ? x.shown(e.end) : '',
+            e ? e.seq : '',
+            ...study,
+            ...data,
+            NREC.get(r) || 1,
+          ]
             .map(plain)
             .join('\t')
         )

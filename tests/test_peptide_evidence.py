@@ -99,3 +99,22 @@ def test_rbdmap_and_pclap_peptides_stay_out():
         if b.get('peptides')
     ):
         assert set(blk['columns']) <= set(PEP['columns']) | {'accession', 'kind'}
+
+
+@pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+def test_a_peptide_beside_the_site_says_how_far_off():
+    out = _run(
+        """
+const a = K.card.peptideList('capri_xl_peptide', '15-31 KLFIGGLSFETTDESLR')[0];
+const b = K.card.peptideList('capri_xl_peptide', '2-8 SKSESPK')[0];
+const c = K.card.peptideList('capri_xl_peptide', '2-14 SKSESPKEPEQLR')[0];
+console.log(JSON.stringify([a, b, c].map(e => K.card.peptideHtml(e, 14, q => q, 'R14'))));"""
+    )
+    assert 'does not cover R14; starts 1 residue after it' in out[0]
+    assert 'does not cover R14; ends 6 residues before it' in out[1]
+    assert 'does not cover' not in out[2]
+
+
+def test_the_table_collapses_identical_rows_and_counts_them():
+    src = (ASSETS / 'kit-interactions.js').read_text()
+    assert 'function collapse(' in src and 'NREC.get(r) || 1' in src and "'n_records'" in src
