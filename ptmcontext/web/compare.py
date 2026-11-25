@@ -79,6 +79,9 @@ CSS = """
 .cmp-table tr.q > th { font-size: 0.95rem; color: var(--ink); font-weight: 700; }
 .cmp-table tr.q .q-test { display: block; }
 .cmp-table tr.q .q-group { display: block; color: var(--muted); }
+.cmp-table tr.q .q-line { display: block; position: sticky; left: 12rem; width: min(60rem, calc(100vw - 3.5rem - 12rem)); color: var(--muted); }
+.cmp-table tr.q .q-dag { margin-left: 0.15rem; font-weight: 400; color: var(--muted); cursor: help; }
+.cmp-table tr.q-d > th { padding: 0; }
 .cmp-table tr.q .q-flag { display: block; color: var(--more); font-weight: 600; }
 .cmp-gh td { background: var(--surface); padding: 0.9rem 0.7rem 0.3rem; border-bottom: 0; }
 .cmp-gh td > * { position: sticky; left: 0.7rem; max-width: min(40rem, calc(100vw - 4.5rem)); }
@@ -100,7 +103,7 @@ CSS = """
 .cmp-dot-ns { fill: var(--surface); stroke: var(--same); stroke-width: 1.5; }
 .cmp-ring { fill: none; stroke-width: 1.2; opacity: 0.55; }
 .cmp-ring.more { stroke: var(--more); } .cmp-ring.less { stroke: var(--less); } .cmp-ring.same { stroke: var(--same); }
-@media (max-width: 640px) { .cmp-table tr.q > th { min-width: 7.5rem; max-width: 9rem; font-size: 0.85rem; } .cmp-dl { margin-left: 0; } .cmp-bar { gap: 0.6rem 1rem; } .cmp-table tbody th[scope=row] { min-width: 7.5rem; max-width: 9rem; font-size: 0.85rem; } .cmp-table th, .cmp-table td { padding: 0.4rem 0.5rem; } }
+@media (max-width: 640px) { .cmp-table tr.q .q-line { left: 9rem; width: calc(100vw - 3.5rem - 9rem); } .cmp-table tr.q > th { min-width: 7.5rem; max-width: 9rem; font-size: 0.85rem; } .cmp-dl { margin-left: 0; } .cmp-bar { gap: 0.6rem 1rem; } .cmp-table tbody th[scope=row] { min-width: 7.5rem; max-width: 9rem; font-size: 0.85rem; } .cmp-table th, .cmp-table td { padding: 0.4rem 0.5rem; } }
 """
 
 

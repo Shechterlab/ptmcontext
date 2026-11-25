@@ -204,3 +204,15 @@ def test_the_pages_workflow_uploads_what_the_compare_page_reads():
     wf = (Path(__file__).resolve().parents[1] / '.github' / 'workflows' / 'pages.yml').read_text()
     for name in ('run.json', 'statistics.tsv', 'set_names.tsv', 'protein_sets.json'):
         assert f'out/${{{{ matrix.site }}}}/{name}' in wf, f'pages.yml does not upload {name}'
+
+
+def test_the_method_text_is_printed_once_per_question_not_once_per_explorer():
+    js = CP.ASSET.read_text()
+    row = js[js.index('function questionRows') : js.index('function sortBtn')]
+    # one line for what the explorers share, a second row only where a part differs
+    assert 'same(' in row and 'q-line' in row and 'q-d' in row
+    # the per-explorer cell no longer carries the whole test, note and group unconditionally
+    assert row.count('Test: ${') == 1 and row.count('Compared with: ${') == 1
+    # the abundance note is one legend item with a dagger on the question; the downloads keep every explorer's own columns
+    assert 'legendNote' in js and 'q-dag' in js
+    assert 'c.test,' in js and 'c.group,' in js

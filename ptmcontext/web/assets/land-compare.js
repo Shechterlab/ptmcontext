@@ -117,20 +117,48 @@
       `<span class="s">q ${esc(fq(c.q))} · n ${esc(int(c.n))}</span></td>`
     );
   }
-  function questionRow(q, cols) {
+  // the test, the comparison group and the note are printed once for a question when every shown explorer states them the
+  // same; only a part that differs goes into that explorer's column. A note every question shares (the abundance note) is
+  // in the legend, and the question carries a dagger. The downloads keep each explorer's own test, group and note.
+  const notes = [
+    ...new Set(D.groups.flatMap((g) => g.questions.flatMap((q) => Object.values(q.tests).map((t) => t.note || '')))),
+  ].filter(Boolean);
+  const legendNote = notes.length === 1 ? notes[0] : '';
+  const lower = (t) => t.charAt(0).toLowerCase() + t.slice(1);
+  const upper = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  function questionRows(q, cols) {
+    const ts = cols.map((e) => q.tests[e.id]).filter(Boolean),
+      same = (k) => ts.every((t) => (t[k] || '') === (ts[0][k] || '')),
+      inlineNote = (t) => (t.note && t.note !== legendNote ? t.note : '');
     const flag = q.same_test ? '' : '<span class="q-flag">The explorers do not use the same test here.</span>';
-    return (
-      `<tr class="q"><th scope="rowgroup">${esc(q.title)}${flag}</th>` +
-      cols
-        .map((e) => {
-          const t = q.tests[e.id];
-          return t
-            ? `<td><span class="q-test">Test: ${esc(t.test)}</span>${t.note ? `<span class="q-group">${esc(t.note)}</span>` : ''}<span class="q-group">Compared with: ${esc(t.group)}</span></td>`
-            : '<td class="nt">not tested</td>';
-        })
-        .join('') +
-      '</tr>'
-    );
+    const dag = ts.some((t) => t.note && t.note === legendNote)
+      ? `<sup class="q-dag" title="${esc(legendNote)}" aria-label="${esc(legendNote)}">†</sup>`
+      : '';
+    const line = [];
+    if (ts.length && same('test')) line.push(upper(ts[0].test));
+    if (ts.length && same('group')) line.push(`compared with ${ts[0].group}`);
+    if (ts.length && same('note') && inlineNote(ts[0])) line.push(lower(inlineNote(ts[0]).replace(/\.$/, '')));
+    const diff = ts.length && !(same('test') && same('group') && same('note'));
+    let html = `<tr class="q"><th scope="rowgroup">${esc(q.title)}${dag}${flag}</th>`;
+    html += ts.length
+      ? `<td colspan="${cols.length}"><span class="q-line">${esc(line.join(' · '))}</span></td></tr>`
+      : `<td colspan="${cols.length}" class="nt">not tested</td></tr>`;
+    if (diff)
+      html +=
+        '<tr class="q q-d"><th scope="row" aria-label="Where the explorers differ"></th>' +
+        cols
+          .map((e) => {
+            const t = q.tests[e.id];
+            if (!t) return '<td class="nt">not tested</td>';
+            const o = [];
+            if (!same('test')) o.push(`Test: ${t.test}`);
+            if (!same('group')) o.push(`Compared with: ${t.group}`);
+            if (!same('note') && inlineNote(t)) o.push(inlineNote(t));
+            return `<td>${o.map((x) => `<span class="q-group">${esc(x)}</span>`).join('')}</td>`;
+          })
+          .join('') +
+        '</tr>';
+    return html;
   }
   function sortBtn(id, label) {
     const on = state.sort === id;
@@ -161,7 +189,7 @@
           g.questions
             .map(
               (q) =>
-                questionRow(q, cols) +
+                questionRows(q, cols) +
                 q.rows
                   .map(
                     (r) =>
@@ -197,6 +225,7 @@
     ]
       .map(([d, f, t]) => `<li>${marker(d, f, false, 20)}<span>${esc(t)}</span></li>`)
       .join('') +
+    (legendNote ? `<li><span>† ${esc(legendNote)}</span></li>` : '') +
     '<li><span>Circle size grows with the fold.</span></li><li><span><i>Not tested</i> means the explorer does not test the class, or has too few.</span></li></ul>';
 
   // ---- the controls ------------------------------------------------------------------------------------------------------
