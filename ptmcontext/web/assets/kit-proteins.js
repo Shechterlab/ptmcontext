@@ -670,15 +670,27 @@
   const shownAt = (rec, pos) => (rec.shown || []).find((x) => x[0] === pos);
   // opening an address with a site lands on the card's header (under the sticky bar); the page above it settles for several
   // seconds (UniProt's text, AlphaFold, Ensembl, RCSB), so the target is kept pinned until the reader acts
-  let moved = false;
+  let moved = false,
+    scrolled = scrollY > 0; // the reader has scrolled the page itself since the last click, key or address change (or before
+  // the kit loaded): a landing that starts later (the card is drawn only when its data arrives) must not take the page back
+  let at = location.hash.split('?')[0];
+  const SCROLL_KEYS = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '];
   ['wheel', 'touchstart', 'keydown', 'mousedown', 'pointerdown', 'click'].forEach((ev) =>
     addEventListener(
       ev,
-      () => {
+      (e) => {
         moved = true;
+        scrolled = ev === 'wheel' || ev === 'touchstart' || (ev === 'keydown' && SCROLL_KEYS.includes(e.key));
+        at = location.hash.split('?')[0];
       },
       { passive: true, capture: true }
     )
+  );
+  ['hashchange', 'popstate'].forEach((ev) =>
+    addEventListener(ev, () => {
+      // another page (a section or option changing the address on the same page does not count)
+      if (location.hash.split('?')[0] !== at) scrolled = false;
+    })
   );
   // a target (found by `find`, as the page is drawn again) scrolled to just below the sticky toolbar and kept there: on every
   // size change above it, and on any scroll that moves it, its measured top is put back (no browser anchoring needed). Held
@@ -686,6 +698,7 @@
   // kit-openlink.js) have all settled and the page has stopped growing for 4 s; the one landing every in-page address uses (K.landOn)
   let landing = 0; // the landing in progress; a new one replaces it
   function landOn(find, keep = () => true) {
+    if (scrolled) return;
     moved = false;
     const id = ++landing,
       t0 = Date.now();
@@ -696,20 +709,68 @@
     const live = () => id === landing && !moved && keep() && Date.now() - t0 < 15000;
     // the browser's own scroll anchoring moves the page when a section above is redrawn, then the pin moves it back: off
     // while the pin holds, so the page does not jump in between
-    document.documentElement.style.overflowAnchor = 'none';
-    const stop = () => {
-      if (id === landing) document.documentElement.style.overflowAnchor = '';
+    const root = document.documentElement;
+    root.style.overflowAnchor = 'none';
+    let follow = false, // the reader has taken over: the pin is gone, but the page may still grow above the view
+      ref = null,
+      refTop = 0;
+    const mine = () => id === landing;
+    const pick = () => {
+      const e = document.elementFromPoint(innerWidth / 2, innerHeight * 0.4);
+      ref = e && e !== root && e !== document.body ? e : null;
+      refTop = ref ? ref.getBoundingClientRect().top : 0;
+    };
+    // after the release the element the reader looks at is kept where it is when content above it changes height; a reader's
+    // own scroll (which fires a scroll event before the size observer runs) takes a new reference
+    const hold = () => {
+      if (!mine()) return;
+      if (ref?.isConnected) {
+        const d = ref.getBoundingClientRect().top - refTop;
+        if (Math.abs(d) > 1) scrollBy(0, d);
+      }
+      pick();
+    };
+    const end = () => {
+      if (mine()) root.style.overflowAnchor = '';
       ro?.disconnect();
       clearInterval(poll);
       removeEventListener('scroll', go);
+      removeEventListener('scroll', pick);
+    };
+    const stop = () => {
+      // release the pin: no re-land, timer or observer of it survives; keep only the reference hold until the page settles
+      ro?.disconnect();
+      clearInterval(poll);
+      removeEventListener('scroll', go);
+      if (!mine() || follow) return;
+      follow = true;
+      pick();
+      addEventListener('scroll', pick, { passive: true });
+      if (window.ResizeObserver) {
+        ro = new ResizeObserver(hold);
+        ro.observe(root);
+        ro.observe(document.getElementById('view') || document.body);
+      }
+      const t1 = Date.now();
+      let q = 0,
+        h0 = 0;
+      poll = setInterval(() => {
+        if (!mine()) return end();
+        hold();
+        const hgt = root.scrollHeight;
+        q = (K.inflight?.() ?? 1) > 0 || hgt !== h0 ? 0 : q + 250;
+        h0 = hgt;
+        if ((q >= 2000 && Date.now() - t1 > 1000) || Date.now() - t1 > 20000) end();
+      }, 250);
     };
     function go() {
+      if (follow) return;
       if (!live()) return stop();
       const t = find();
       if (!t) return;
       // the sticky bars' real height (the toolbar and the strip above it; on a phone the strip alone)
-      const root = getComputedStyle(document.documentElement),
-        h = parseFloat(root.getPropertyValue('--sticky-h')) || parseFloat(root.getPropertyValue('--toolbar-h')) || 0,
+      const st = getComputedStyle(root),
+        h = parseFloat(st.getPropertyValue('--sticky-h')) || parseFloat(st.getPropertyValue('--toolbar-h')) || 0,
         want = Math.max(0, t.getBoundingClientRect().top + scrollY - h - 12);
       if (Math.abs(want - scrollY) > 1) scrollTo(0, want);
     }
@@ -718,18 +779,19 @@
     // is painted, so the target stays put
     if (window.ResizeObserver) {
       ro = new ResizeObserver(go);
-      ro.observe(document.documentElement);
+      ro.observe(root);
       ro.observe(document.getElementById('view') || document.body);
     }
     addEventListener('scroll', go, { passive: true });
     poll = setInterval(() => {
+      if (follow) return;
       if (!live()) return stop();
       go();
       // settled: nothing in flight and the page's height unchanged for 4 s, and at least 8 s since the address opened
-      const hgt = document.documentElement.scrollHeight;
+      const hgt = root.scrollHeight;
       quiet = (K.inflight?.() ?? 1) > 0 || hgt !== lastH ? 0 : quiet + 250;
       lastH = hgt;
-      if (quiet >= 4000 && Date.now() - t0 > 8000) stop();
+      if (quiet >= 4000 && Date.now() - t0 > 8000) stop() || end();
     }, 250);
   }
   K.landOn = landOn;

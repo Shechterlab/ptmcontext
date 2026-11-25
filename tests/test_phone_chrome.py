@@ -50,3 +50,15 @@ def test_the_landing_stays_pinned_until_the_reader_acts_or_the_page_settles():
     assert "style.overflowAnchor = 'none'" in land  # no browser scroll anchoring against the pin
     opn = _t('kit-openlink.js')
     assert 'K.inflight = ' in opn and 'window.fetch = counted' in opn
+
+
+def test_after_the_reader_takes_over_the_page_does_not_move_on_its_own():
+    land = _t('kit-proteins.js').split('function landOn')[1].split('K.landOn = landOn')[0]
+    stop = land.split('const stop = () => {')[1].split('function go()')[0]
+    # release: the pin's observer, timer and scroll listener are gone, and anchoring stays off (not reset to auto)
+    assert 'ro?.disconnect()' in stop and 'clearInterval(poll)' in stop and "removeEventListener('scroll', go)" in stop
+    assert "overflowAnchor = ''" not in stop
+    # the element the reader looks at is held in place while content above it changes height
+    assert 'const hold = () =>' in land and 'scrollBy(0, d)' in land and "addEventListener('scroll', pick" in land
+    # a landing that starts after the reader has scrolled (the card arrives late) does not start
+    assert 'scrolled = scrollY > 0' in _t('kit-proteins.js') and 'if (scrolled) return;' in land
