@@ -8359,6 +8359,21 @@
                                     "additionalProperties": false
                                   }
                                 },
+                                "peptides": {
+                                  "type": "boolean",
+                                  "description": "table: the columns named in card.evidence.peptides.columns (sequence, study, dataset) draw a peptide's cells from the row's detail and source, and the download has a line a peptide"
+                                },
+                                "labels": {
+                                  "type": "object",
+                                  "description": "table: column name -> the heading to show in place of the column's own",
+                                  "additionalProperties": {
+                                    "type": "string"
+                                  }
+                                },
+                                "download": {
+                                  "type": "string",
+                                  "description": "table: the words of a button above the table that downloads every row as a TSV"
+                                },
                                 "chips": {
                                   "type": "string"
                                 },
@@ -9894,6 +9909,23 @@
             "properties": {
               "label": {
                 "type": "string"
+              },
+              "data": {
+                "type": "object",
+                "description": "the source's dataset (a PRIDE project, say), linked beside the study on a peptide's row",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "label",
+                  "url"
+                ],
+                "additionalProperties": false
               },
               "cite": {
                 "type": "string"

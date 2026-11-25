@@ -1201,6 +1201,8 @@ def card_problems(site: dict) -> list[str]:
         table('card.evidence.sequences', n, 'bound_windows')
     if ev.get('around'):
         table('card.evidence.around', ev['around']['table'], 'residue_evidence')
+    if ev.get('peptides'):
+        table('card.evidence.peptides', ev['peptides']['table'], 'site_evidence')
     if ev.get('protein'):
         if ev['protein'].get('table'):
             table('card.evidence.protein', ev['protein']['table'], 'protein_values')
@@ -1418,7 +1420,14 @@ def page_problems(site: dict) -> list[str]:
                         if not b.get('table'):
                             out.append(f'{w}: {k} needs table:')
                             continue
-                        cols = list(b.get('columns') or []) + [
+                        virtual = set(
+                            ((web.get('protein') or {}).get('card') or {})
+                            .get('evidence', {})
+                            .get('peptides', {})
+                            .get('columns')
+                            or {}
+                        )
+                        cols = [c for c in b.get('columns') or [] if not (b.get('peptides') and c in virtual)] + [
                             b.get(x)
                             for x in (
                                 'group_by',

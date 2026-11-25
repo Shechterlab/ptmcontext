@@ -196,8 +196,11 @@
           ? -1
           : j + k;
   };
+  // sequence, study and dataset: a peptide table's cells, drawn by the site card's own functions (K.card.peptideHtml)
+  const PEPCOL = (K.card?.peptideColumns && K.card.peptideColumns) || {};
   const colMeta = (t, name) =>
     t.columns.find((c) => c.name === name) ||
+    (PEPCOL[name] ? { name, type: 'peptide', label: PEPCOL[name] } : null) ||
     (name === 'accession'
       ? { name, type: 'protein', label: 'Protein' }
       : name === 'position'
@@ -215,7 +218,50 @@
       return i == null ? others : isSelMark(i);
     });
   }
+  // a peptide table's row: its peptides (K.card.peptideList), their studies, and how a position is numbered here
+  function pepOf(t, r) {
+    const col = (n) => {
+        const i = colIdx(t, n);
+        return i < 0 ? '' : r[i];
+      },
+      kind = col('kind'),
+      acc = prot(r[0])[0];
+    return {
+      acc,
+      pos: r[1],
+      list: K.card.peptideList(kind, col('detail')),
+      st: K.card.studyOf(kind, col('source')),
+      shown: (q) => (K.prot?.shownPos ? K.prot.shownPos(acc, q) : q),
+    };
+  }
+  const pepText = (t, r, name) => {
+    const x = pepOf(t, r);
+    return name === 'sequence'
+      ? x.list.map((e) => `${x.shown(e.start)}-${x.shown(e.end)} ${e.seq}`).join('; ')
+      : name === 'study'
+        ? x.st.map((s) => s.text).join('; ')
+        : x.st
+            .filter((s) => s.data)
+            .map((s) => s.data.label)
+            .join('; ');
+  };
+  const PEPMAX = 3;
+  function pepCell(t, r, name) {
+    const x = pepOf(t, r),
+      dash = '<span class="muted">–</span>';
+    if (name === 'sequence') {
+      const one = (e) => `<div>${K.card.peptideHtml(e, x.pos, x.shown, siteName(x.acc, x.pos))}</div>`;
+      return !x.list.length
+        ? dash
+        : x.list.slice(0, PEPMAX).map(one).join('') +
+            (x.list.length > PEPMAX
+              ? `<details class="pep-more"><summary>+${x.list.length - PEPMAX} more</summary>${x.list.slice(PEPMAX).map(one).join('')}</details>`
+              : '');
+    }
+    return (name === 'study' ? K.card.studyHtml(x.st) : K.card.dataHtml(x.st)) || dash;
+  }
   const cellText = (t, r, name) => {
+    if (colMeta(t, name).type === 'peptide') return pepText(t, r, name);
     const j = colIdx(t, name);
     if (j < 0) return '';
     const v = r[j],
@@ -254,6 +300,7 @@
       c = colMeta(t, name);
     if (name === 'accession') return t.key === 'residue' ? siteLink(r[0], r[1]) : protLink(r[0]);
     if (name === 'position') return t.key === 'residue' ? siteLink(r[0], r[1]) : '';
+    if (c.type === 'peptide') return pepCell(t, r, name);
     const v = j < 0 ? null : r[j],
       show = (x) => (c.values || {})[x] ?? x;
     if (v == null || (Array.isArray(v) && !v.length)) return '<span class="muted">–</span>';
@@ -1476,7 +1523,7 @@
               colMeta(t, c).help ? ` title="${esc(colMeta(t, c).help)}"` : ''
             }${s.sort === c ? ` aria-sort="${s.desc ? 'descending' : 'ascending'}"` : ''} class="${
               colMeta(t, c).type === 'number' ? 'num' : ''
-            }">${esc(colMeta(t, c).label)}${s.sort === c ? (s.desc ? ' ▾' : ' ▴') : ''}</th>`
+            }">${esc((b.labels || {})[c] ?? colMeta(t, c).label)}${s.sort === c ? (s.desc ? ' ▾' : ' ▴') : ''}</th>`
         )
         .join('')}</tr></thead>` +
       `<tbody>` +
@@ -1490,7 +1537,7 @@
                   `<td class="${
                     colMeta(t, c).type === 'number'
                       ? 'num'
-                      : ['list', 'text', 'sequence'].includes(colMeta(t, c).type)
+                      : ['list', 'text', 'sequence', 'peptide'].includes(colMeta(t, c).type)
                         ? 'wrapok'
                         : ''
                   }">${cellHtml(t, r, c, b.label && c === b.partner ? (rr) => cellText(t, rr, b.label) : null)}</td>`
@@ -1530,7 +1577,12 @@
         (rows.length ? tbl(rows) : `<p class="muted">No rows${selOn() ? ' for your selection' : ''}.</p>`);
     // the summary line, one short count per kind or group, then the rows behind "Show all rows" (ten at a time)
     const total = blockRows(t, b).length;
-    if (total <= PAGE) return inner;
+    // a visible download of every row of the block, with its sequences (b.download is the button's words)
+    const dl = b.download
+      ? `<p class="ix-dl"><button type="button" class="btn small" data-ixexp="${esc(bkey(pg, sec, bi))}" data-k="tsv">${esc(b.download)}</button> ` +
+        `<span class="muted small">${int(total)} rows${b.peptides ? ', one line a peptide, with its start, end, sequence, study and dataset' : ''}</span></p>`
+      : '';
+    if (total <= PAGE) return dl + inner;
     const vl = (g) => (colMeta(t, b.group_by).values || {})[g] ?? (g || 'none');
     const rolled = new Map();
     (groupsOf || []).forEach(([g, rs]) => {
@@ -1543,8 +1595,9 @@
           .sort((x, y) => y[1] - x[1])
           .map(([v, n]) => `${vlab(v)} ${int(n)}`);
     return (
+      dl +
       (parts.length ? `<p class="ix-tsum">${esc(parts.join(' · '))}</p>` : '') +
-      `<details class="ix-fold ix-rows" data-ix-open="${esc(bkey(pg, sec, bi))}"${OPEN.has(bkey(pg, sec, bi)) ? ' open' : ''}><summary>Show all rows ` +
+      `<details class="ix-fold ix-rows" data-ix-open="${esc(bkey(pg, sec, bi))}"${OPEN.has(bkey(pg, sec, bi)) || b.peptides ? ' open' : ''}><summary>Show all rows ` +
       `<span class="muted">${int(total)}</span></summary>${inner}</details>`
     );
   }
@@ -1565,11 +1618,77 @@
         ps = protSet();
       rows = rows.filter((r) => (r[j] || []).some((a) => ps.has(byAcc[a])));
     }
-    return rows;
+    return b.peptides ? collapse(t, rows) : rows;
+  }
+  // rows alike in protein, site, kind and every peptide (start, end, sequence) are one row; NREC holds how many records it stands for
+  const NREC = new WeakMap();
+  function collapse(t, rows) {
+    const by = new Map();
+    rows.forEach((r) => {
+      const x = pepOf(t, r),
+        key = [r[0], r[1], cellText(t, r, 'kind'), ...x.list.map((e) => `${e.start}-${e.end}:${e.seq}`)].join('|');
+      if (by.has(key)) NREC.set(by.get(key), NREC.get(by.get(key)) + 1);
+      else {
+        by.set(key, r);
+        NREC.set(r, 1);
+      }
+    });
+    return [...by.values()];
+  }
+  // a peptide table's download: one line a peptide (a row of several peptides is several lines), with the study's DOI
+  function peptideTsv(b, t) {
+    const head = [
+        'accession',
+        'gene',
+        'site',
+        'evidence',
+        'start',
+        'end',
+        'sequence',
+        'study',
+        'doi',
+        'dataset',
+        'dataset_url',
+        'n_records',
+      ],
+      plain = (x) => String(x ?? '').replace(/[\t\r\n]+/g, ' ');
+    const lines = [];
+    blockRows(t, b).forEach((r) => {
+      const x = pepOf(t, r),
+        base = [x.acc, gene(r[0]), siteName(x.acc, r[1]), cellText(t, r, 'kind')],
+        study = [x.st.map((s) => s.text).join('; '), x.st.map((s) => s.doi).join('; ')],
+        data = [
+          x.st
+            .map((s) => s.data?.label || '')
+            .filter(Boolean)
+            .join('; '),
+          x.st
+            .map((s) => s.data?.url || '')
+            .filter(Boolean)
+            .join('; '),
+        ];
+      (x.list.length ? x.list : [null]).forEach((e) =>
+        lines.push(
+          [
+            ...base,
+            e ? x.shown(e.start) : '',
+            e ? x.shown(e.end) : '',
+            e ? e.seq : '',
+            ...study,
+            ...data,
+            NREC.get(r) || 1,
+          ]
+            .map(plain)
+            .join('\t')
+        )
+      );
+    });
+    return head.join('\t') + '\n' + lines.join('\n') + '\n';
   }
   function tableTsv(b) {
     const t = table(b.table);
     if (!t) return '';
+    if (b.peptides) return peptideTsv(b, t);
     const cols = b.columns && b.columns.length ? b.columns : t.columns.map((c) => c.name);
     const keys =
       t.key === 'residue' ? ['accession', 'gene', 'position'] : t.key === 'protein' ? ['accession', 'gene'] : [];
@@ -2347,6 +2466,8 @@
       entries = K2.entries(c, 1e9),
       tags = K2.tags(c),
       cont = K2.sequences(c),
+      pep = K2.peptides(c),
+      nPep = K2.peptidesAt(c).reduce((a, k) => a + k.list.length, 0),
       near = K2.around(c),
       whole = K2.wholeProtein(c),
       ids = new Set([...entries.matchAll(/data-entry3d="([^"]+)"/g)].map((x) => x[1])),
@@ -2367,6 +2488,7 @@
         nTags ? { text: n(nTags, 'evidence type'), to: 'partners' } : null,
         nStruct ? { text: n(nStruct, 'solved structure'), to: 'partners' } : null,
         nWin ? { text: n(nWin, 'bound window'), to: 'contacts' } : null,
+        nPep ? { text: n(nPep, 'bound peptide'), to: 'peptides' } : null,
         nNear ? { text: n(nNear, 'feature') + ' nearby', to: 'near' } : null,
         whole ? { text: 'whole protein', to: 'protein' } : null,
       ].filter(Boolean),
@@ -2378,6 +2500,7 @@
           body: tags + entries,
         },
         { id: 'contacts', title: 'RNA and DNA contacts', sum: n(nWin, 'bound window'), body: cont },
+        { id: 'peptides', title: 'RNA- and DNA-bound peptides', sum: n(nPep, 'peptide'), body: pep },
         { id: 'near', title: 'Around the site', sum: lead(plain(near)), body: near },
         {
           id: 'protein',

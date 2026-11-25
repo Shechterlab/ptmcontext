@@ -22,7 +22,7 @@ FORMATS: dict[str, dict] = {
     'site_evidence': {
         'key': 'site',
         'required': ['kind'],
-        'optional': ['partner', 'partner_accession', 'ids', 'score', 'detail'],
+        'optional': ['partner', 'partner_accession', 'ids', 'score', 'detail', 'source'],
     },
     'bound_windows': {
         'key': 'site',

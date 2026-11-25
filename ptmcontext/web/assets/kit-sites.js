@@ -1202,7 +1202,7 @@
         m = SD().marks.find((x) => x[0] === pi && x[1] === pos);
       if (!m || TB[pr(pi).acc] === undefined) return '';
       const c = ctxOf(m),
-        h = K.card.sequences(c, false) + K.card.around(c, false);
+        h = K.card.sequences(c, false) + K.card.peptides(c) + K.card.around(c, false);
       return h ? `<div class="na-tip"><b>${esc(c.gene)} ${esc(c.label)}</b>${h}</div>` : '';
     },
   ]);

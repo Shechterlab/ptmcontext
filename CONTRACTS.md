@@ -748,7 +748,7 @@ shows). Every value is text unless said otherwise; empty means not known. Lists 
 | `protein_values` | `accession` | `aliases` (other names a search or an old link may use), and any columns under `values:` | the whole-protein line of the card, a headline card's hover; `aliases` make `#TDP-43` and a search for an alias find the protein |
 | `protein_records` | `accession` | any columns, under `values:`; several rows a protein | the RNA and DNA interactions card: bound regions, DNA-binding profiles, RNA Bind-n-Seq and eCLIP experiments |
 | `lookup` | `key` | any columns under `values:` | the sources of the citation box and of the card's links (`label`, `citation`, `doi`, `licence`) |
-| `site_evidence` | site | **`kind`** (a code: the values of the card's evidence attribute), `partner`, `partner_accession`, `ids` (a list of entry ids, e.g. PDB), `score` (number), `detail` | the card's interaction evidence: the entries at the site by kind, the partners counted in a tag |
+| `site_evidence` | site | **`kind`** (a code: the values of the card's evidence attribute), `partner`, `partner_accession`, `ids` (a list of entry ids, e.g. PDB), `score` (number), `detail`, `source` (the studies, `; `-separated, named in `website.protein.map.sources`) | the card's interaction evidence: the entries at the site by kind, the partners counted in a tag; the peptides block below |
 | `bound_windows` | site | **`window`** (the bound chain around the contacted unit: one letter a unit, `[X]` a contacted unit, `-` past the chain's end), **`kind`** (a code: rna, dna, …), `type` (a code), `name`, `entry` (an id), `entries` (a count, for a row that stands for several), `distance` (Å), `offset` (k when the residue i + k makes the contact; empty or 0: the site), `preparation`, `chain`, `nucleotides`, `numbers`, `distances` (the contacted units, their author numbers and Å, lists in the same order) | the card's bound sequences, aligned on the contacted unit; the sites table's contacts column |
 | `residue_changes` | site | **`alt`** (the new residue, `*` a stop) | a list with one row per tumor sample or cell line: counted per site and new residue, and per gene when a `gene` column is mapped (columns `alt`, `gene`, `n`), for `website.protein.card.change_counts` |
 | `residue_evidence` | `accession` | **`start`**, **`end`** (integers; a residue: start = end), **`kind`** (a code), `source` | the card's line on evidence at or within `span` residues of the site (crosslinks, bound stretches) |
@@ -937,6 +937,16 @@ keep some of its rows (`include`/`exclude`, on the format's columns), map the ta
 | `bound` | `bound_windows` | per mark and entry, `entry`, `kind` (`rna`, `dna`, `hybrid`), `type`, `name`, `window`, and to draw the contacted nucleotides `chain` (the nucleic acid's author chain id), `nucleotides`, `numbers` (their author numbers) and `distances` (Å), lists in the same order |
 | `predicted` | `site_evidence` | per mark, `partner`, `partner_accession`, `ids` (the model: an AlphaFold DB model id `AF-…`, or a ProtVar pair `ACC1_ACC2` in the order it was made), `score` |
 | `residues` | `residue_evidence` | runs of residues (`accession`, `start`, `end`), for the colorings |
+
+`evidence.peptides` of the site card (and a page table block with `peptides: true`) shows the peptides at a site from a
+`site_evidence` table: `table`, `title` (`{site}` is the site), `kinds` (kind code: `label`, `format`, `sources`, `mark`) and
+`columns` (`sequence`, `study`, `dataset`: the headings of the three cells a table block may list). `format: range` reads
+`detail` as `start-end SEQUENCE` (lower-case letters mark residues a crosslink may sit on); `format: crosslink` reads
+`SEQ[X]UENCE at position` (the bracket is the crosslinked residue, and the start follows from the position). The row's
+`source` names the study, else the kind's `sources` do; `website.protein.map.sources` gives each its paper (`cite`, `doi`)
+and, optionally, its dataset (`data: {label, url}`). A kind in `marks.attributes.<name>.presence_only` (RBDmap, pCLAP)
+never goes here. A table block adds `labels` (column heading overrides) and `download` (the words of a button that
+downloads every row, one line a peptide, with start, end, sequence, study, DOI and dataset).
 
 `residues` holds the viewer's colorings: `colourings: [{id, label, none, help, classes}]`, each class `{id, label,
 color}` with either `where` (conditions on the table's format columns, all holding) or `all` (the residues in every one
