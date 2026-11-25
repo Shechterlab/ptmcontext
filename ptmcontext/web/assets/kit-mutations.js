@@ -155,6 +155,11 @@
   };
   const siteNameU = (acc, pos, res) => siteName(acc, pos, res) + uniNote(acc, pos, res);
   const gname = (g) => g || '(no lineage)';
+  // a cancer type by its name, with the TCGA code after it (the names are the release's project names, config/tcga_projects.json)
+  const cancerName = (g) => {
+    const n = PR.group_names?.[g];
+    return n ? `${n} (${String(g).replace(/^TCGA-/, '')})` : gname(g);
+  };
 
   // ---- the waterfall's numbers ------------------------------------------------------------------------------------------------
   const hyper = () => K.prop.state.hyper;
@@ -864,7 +869,7 @@
       (V === 'oncoprint'
         ? `<label class="mu-ct"><span class="seg-l">Cancer type</span><select data-mu-ct aria-label="Cancer type"><option value="">All cancer types</option>` +
           groups
-            .map((g) => `<option value="${esc(g)}"${g === M.group ? ' selected' : ''}>${esc(gname(g))}</option>`)
+            .map((g) => `<option value="${esc(g)}"${g === M.group ? ' selected' : ''}>${esc(cancerName(g))}</option>`)
             .join('') +
           `</select></label>`
         : '') +
@@ -1577,7 +1582,7 @@
 
   // ---- Ranked sites: the sites of each source with a test, ranked by p; the top 20 whatever their q, those with q < 0.05 counted ---------------------------------------------------------
   const RANK_N = 20,
-    RANK_MORE = 100; // what Show all opens: every site with q < 0.05, or at least this many sites
+    RANK_MORE = 100; // the most rows of q < 0.05 a table shows (the download has all)
   const geneOf = (acc) => byAcc[acc]?.[1] || acc;
   // whether a site lies in a disordered region, from the site's disorder question (the first of layer disorder that is not a
   // subset): the release's class of the site, and yes only for inside a disordered region; empty where the question or the marks
@@ -1623,16 +1628,27 @@
     }
     return lists;
   }
+  // who is in a table's "tested", in one line (the population differs by source)
+  function testedNote(l) {
+    const { s, rows, g } = l,
+      n = int(rows.length);
+    if (g)
+      return `Tested: the ${n} ${esc(W.marks)} with a stored test for fewer ${esc(s.unit?.[1] || 'variants')} than expected.`;
+    return `Tested: the ${n} ${esc(W.marks)} with a change in at least one ${esc(s.unit?.[0] || 'sample')} (hypermutated ${esc(s.unit?.[1] || 'samples')} count here) and a test in the chosen cohort. A site with no change cannot be above expectation and is not listed.`;
+  }
   function rankSection(l) {
     const { s, rows, sig } = l,
       title = rankTitle(s),
       all = !!M.all[s.id],
-      more = Math.min(rows.length, Math.max(sig, RANK_MORE)),
-      shown = all ? rows.slice(0, more) : rows.slice(0, RANK_N);
+      sigRows = rows.filter((r) => r.qq < RING_Q),
+      shown = all ? rows.slice(0, RANK_N) : sigRows.slice(0, RANK_MORE),
+      canTop = sig < RANK_N && rows.length > sig;
     const head =
-      `<div class="mu-top"><div><h3>${esc(title)}</h3><p class="small muted">${int(sig)} ${sig === 1 ? 'site' : 'sites'} with q &lt; 0.05` +
-      (rows.length ? `; the top ${int(Math.min(shown.length, rows.length))} by p of ${int(rows.length)} tested` : '') +
-      `</p></div>` +
+      `<div class="mu-top"><div><h3>${esc(title)}</h3><p class="small">${
+        sig
+          ? `<b>${int(sig)} ${sig === 1 ? 'site' : 'sites'}</b> with q &lt; 0.05 of ${int(rows.length)} tested`
+          : `<b>No site</b> reaches q &lt; 0.05 (${int(rows.length)} tested)`
+      }</p><p class="small muted">${testedNote(l)}</p></div>` +
       (rows.length ? K.expBar(['pdf', 'svg', 'png', 'tsv'], 'murank', title, 'propensity') : '') +
       `</div>`;
     if (!rows.length)
@@ -1647,17 +1663,22 @@
           `<td><a href="${esc(K.link('protein', `${r.acc}/${r.pos}`))}">${esc(siteOnly(r))}</a>${
             uniNote(r.acc, r.pos, r.res) ? `<span class="muted small">${esc(uniNote(r.acc, r.pos, r.res))}</span>` : ''
           }</td>` +
-          `<td class="num">${int(r.k)}</td><td class="num">${K.prop.fe(r.e)}</td><td class="num">${K.prop.fo(r.o)}</td><td class="num">${fpv(r.qq)}</td></tr>`
+          `<td class="num">${int(r.k)}</td><td class="num">${K.prop.fo(r.o)}</td><td class="num">${fpv(r.qq)}</td><td class="num mu-ex">${K.prop.fe(r.e)}</td></tr>`
         );
       })
       .join('');
     return (
       `<section class="mu-rank" data-mu-rank="${esc(s.id)}">${head}` +
-      `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Gene</th><th>Site</th><th class="num" title="k is the count of ${s.kind === 'germline' ? 'variants' : 'changes'} seen at the site">${s.kind === 'germline' ? 'Variants' : 'Changes'} (k)</th><th class="num">Expected</th><th class="num">O/E</th><th class="num" title="p and q pool all cancer types">q</th></tr></thead><tbody>${body}</tbody></table></div>` +
-      (rows.length > RANK_N
-        ? `<p class="small"><button type="button" class="btn small" data-mu-all="${esc(s.id)}" aria-expanded="${all}">${all ? `Show the top ${RANK_N}` : `Show ${int(more)}`}</button>${
-            all && more < rows.length ? ` <span class="muted">The download has all ${int(rows.length)}.</span>` : ''
+      (shown.length
+        ? `<div class="tbl-wrap"><table class="tbl mu-rt"><thead><tr><th>Gene</th><th>Site</th><th class="num" title="k is the count of ${s.kind === 'germline' ? 'variants' : 'changes'} seen at the site">${s.kind === 'germline' ? 'Variants' : 'Changes'} (k)</th><th class="num" title="Observed over expected">O/E</th><th class="num" title="p and q pool all cancer types">q</th><th class="num mu-ex" title="The count the residue's codon predicts, from the protein's own changes">Expected</th></tr></thead><tbody>${body}</tbody></table></div>`
+        : '') +
+      (canTop || all
+        ? `<p class="small"><button type="button" class="btn small" data-mu-all="${esc(s.id)}" aria-expanded="${all}">${all ? 'Show only q &lt; 0.05' : `Show the top ${RANK_N} by p`}</button>${
+            all ? ` <span class="muted">Rows with q of 0.05 or more are lighter.</span>` : ''
           }</p>`
+        : '') +
+      (!all && sig > shown.length
+        ? `<p class="small muted">${int(shown.length)} of ${int(sig)} shown; the download has all.</p>`
         : '') +
       `</section>`
     );
@@ -1669,7 +1690,7 @@
     return (
       K.preamble(
         rankTitle(l.s),
-        `${l.s.long || l.s.label}; every site with a test, sorted by p (q < 0.05 for ${l.sig} of ${l.rows.length}; the page shows the top 20) (${g ? 'fewer' : 'more'}); ${K.sel.describe() || 'every ' + W.mark}${g ? '' : `; ${hyper() ? 'with' : 'without'} hypermutated samples`}`
+        `${l.s.long || l.s.label}; every site with a test, sorted by p (q < 0.05 for ${l.sig} of ${l.rows.length}; the page shows the sites with q < 0.05, or the top 20 by p on request) (${g ? 'fewer' : 'more'}); ${K.sel.describe() || 'every ' + W.mark}${g ? '' : `; ${hyper() ? 'with' : 'without'} hypermutated samples`}`
       ) +
       `rank\tgene\taccession\tsite\tuniprot_position\t${l.s.kind === 'germline' ? 'variants_k' : 'changes_k'}\texpected\tobserved_over_expected\tp_${g ? 'fewer' : 'more'}\tq_${g ? 'fewer' : 'more'}\tq_below_0.05\thotspot_note\tdisordered\tdisorder_class\n` +
       l.rows
@@ -1695,11 +1716,6 @@
       '\n'
     );
   };
-  function rankedBody() {
-    const lists = rankedLists();
-    if (!lists) return null;
-    return lists.map(rankSection).join('');
-  }
   K.clicks.push(
     [
       '[data-murank]',
@@ -1979,7 +1995,20 @@
     ]
   );
 
-  const CHART_LINK = `<button type="button" class="mu-linkbtn" data-mu-view="waterfall">Show all sites as a chart</button>`;
+  // the page's answer: the Overview's tiles of the three within-protein tests (one computation, K.tilesOf)
+  const TILE_IDS = ['cancer_change', 'clinvar_plp', 'gnomad_variant'];
+  const tilesHtml = () => {
+    const h = K.tilesOf?.(TILE_IDS, 2) || '';
+    return h ? `<div class="tiles mu-tiles">${h}</div>` : '';
+  };
+  // the sites of this page's tables with q < 0.05, per source, as one line under the tiles
+  function sigLine(lists) {
+    if (!lists?.length) return '';
+    return `<p class="small mu-sig">Single sites with q &lt; 0.05: ${lists
+      .map((l) => `${esc(l.s.label)}${l.g ? ' (fewer)' : ''} <b>${int(l.sig)}</b> of ${int(l.rows.length)} tested`)
+      .join(' · ')}.</p>`;
+  }
+  const CHART_LINK = `<p class="small muted mu-more">Every site in one chart: <button type="button" class="mu-linkbtn" data-mu-view="waterfall">All sites as a chart</button></p>`;
   function view() {
     const page = (line, inner) =>
       `<div class="page-head results-head"><div><h2>Disease variants</h2>${line ? `<p class="cx">${line}</p>` : ''}</div></div>${inner}`;
@@ -2015,19 +2044,23 @@
       ],
       V
     );
-    const bar = `<div class="mu-bar">${tabs}${controls(wf)}${V === 'waterfall' ? '' : CHART_LINK}</div>`;
+    const bar = `<div class="mu-bar">${tabs}${controls(wf)}</div>`;
     // a small selection leads with each site's own variants, linking to the views below
     const few = K.siteFew?.('variants');
     const lead = few || '';
     let line = '',
       body = '';
     if (V === 'ranked') {
-      line = `Sites with more changes than expected in tumors and cell lines, or fewer inherited variants than expected.`;
-      body = rankedBody();
+      line = `Which ${esc(W.marks)} are changed in tumors and cell lines more often than expected, or carry fewer inherited variants than expected?`;
+      const lists = rankedLists();
+      body = lists ? sigLine(lists) + lists.map(rankSection).join('') : null;
       if (body === null)
-        return page(line, note + bar + `<div class="mu-skel" role="status">${K.loading('Loading…')}</div>`);
+        return page(
+          line,
+          note + tilesHtml() + bar + `<div class="mu-skel" role="status">${K.loading('Loading…')}</div>`
+        );
     } else if (V === 'clinvar') {
-      line = `ClinVar pathogenic and likely pathogenic variants by disease family. Click a family to list them. Counts only: ClinVar reflects clinical testing.`;
+      line = `ClinVar pathogenic and likely pathogenic variants by disease family. Click a family to list them. A variant can count in several families, so a site's chips can add up to more than its total. Counts only: ClinVar reflects clinical testing.`;
       body = cvData() === undefined ? K.loading('Loading…') : clinvarBody();
       if (body === null)
         body = cvData() === null ? '<p class="muted">The variants could not be read.</p>' : K.loading('Loading…');
@@ -2050,7 +2083,9 @@
         ringUp = m.rows.filter((r) => r.q != null && r.q < RING_Q).length,
         nZero = m.rows.filter((r) => r.y === 0).length,
         nNone = m.rows.filter((r) => r.y == null).length;
-      line = `${int(m.n)} ${esc(W.marks)}: ${int(nUp)} above 0 (${int(ringUp)} with q &lt; 0.05), ${int(nDn)} below${m.germ ? ` (${int(m.nFewer)} with q &lt; 0.05)` : ''}, ${int(nZero)} at 0 (O/E 1), ${int(nNone)} drawn at 0 with no stored test.`;
+      const nScored = nUp + nDn + nZero,
+        nQ = m.rows.filter((r) => r.q != null || r.ql != null).length;
+      line = `${int(m.n)} ${esc(W.marks)}, ${int(nScored)} with a score (${int(nQ)} of them with a q, the sites of the ranked tables): ${int(nUp)} above 0 (${int(ringUp)} with q &lt; 0.05), ${int(nDn)} below${m.germ ? ` (${int(m.nFewer)} with q &lt; 0.05)` : ''}, ${int(nZero)} at 0. The other ${int(nNone)} have no stored test and are drawn at 0.`;
       body =
         `<section class="mu-card"><h3>All sites as a chart</h3><div class="mu-top mu-end">${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muwf', 'all sites as a chart', 'propensity')}</div>` +
         `<div class="mu-bar">${zoom}</div>` +
@@ -2071,12 +2106,13 @@
     } else {
       const o = onco();
       if (!o) return page('', note + bar + `<div class="mu-skel" role="status">${K.loading('Loading…')}</div>`);
-      line = `${int(o.top.length)} of the ${int(o.nSites)} ${esc(W.marks)} with a changed tumor${M.group ? ` in ${esc(M.group)}` : ''}; hypermutated tumors are ${hyper() ? 'included' : 'left out'}.`;
+      line = `The ${int(o.top.length)} ${esc(W.marks)} with the most changed tumors, out of ${int(o.nSites)} changed in at least one tumor${M.group ? ` of ${esc(cancerName(M.group))}` : ''}; hypermutated tumors are ${hyper() ? 'included' : 'left out'}. This counts sites with a change, a different set from the tested sites of the ranked tables.`;
       if (!o.top.length)
         body = `<p class="muted">No ${esc(W.mark)} of the selection has a tumor with a change${hyper() ? '' : ' (hypermutated tumors left out)'}.</p>`;
       else {
         const f = oncoprintSvg(o, { ...ONC_THEME }, 760, ['var(--onc-1)', 'var(--onc-2)'], true);
         body =
+          whyCommon(o) +
           `<section class="mu-card"><div class="mu-top"><h3>Top TCGA sites</h3>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muon', 'top sites across TCGA tumors', 'propensity')}</div>` +
           `<svg id="mu-svg" class="mu-svg" viewBox="0 0 760 ${f.H}" role="img" aria-label="Top TCGA sites, with the tumors that carry them">${f.svg}` +
           `<rect id="mu-hover" class="mu-link" x="${f.ml}" y="0" width="${f.pw}" height="${f.H}" fill="transparent" data-prtip=""/></svg>` +
@@ -2087,7 +2123,25 @@
       }
     }
     const extra = V === 'waterfall' ? (model() ? zeroSection(model()) : '') + setSummary() : '';
-    return page(line, `${note}${lead}${bar}${body}${extra}${V === 'clinvar' ? '' : chosenSection()}`);
+    return page(
+      line,
+      `${note}${lead}${tilesHtml()}${bar}${body}${V === 'clinvar' ? '' : chosenSection()}${extra}${V === 'waterfall' ? '' : CHART_LINK}`
+    );
+  }
+  // the oncoprint's first site is the one with the most changed tumors; when its q is not below 0.05, say why it is common
+  // (the expected count the release computes: the protein's own changes spread over its residues of the type by codon rate)
+  function whyCommon(o) {
+    const r = o.top[0],
+      s = SRC.find((x) => x.set_source === 'tcga_mc3') || SRC[0],
+      m = r && s.kind !== 'germline' ? model(s) : null,
+      row = m?.rows[m.index.get(r.acc + ':' + r.pos)];
+    if (!row || row.q == null || row.q < RING_Q) return '';
+    const nm = siteName(r.acc, r.pos, r.res);
+    return (
+      `<p class="small mu-why"><b>Expected</b> is the protein's own changes at its ${esc(W.residues)}, shared among them by each codon's mutation rate. ` +
+      `${esc(nm)} tops this list because ${esc(geneOf(r.acc))} has many changes overall. Against what the protein's own ${esc(W.residues)} predict it does not stand out: ` +
+      `${int(row.k)} changes, ${K.prop.fe(row.e)} expected (O/E ${K.prop.fo(row.o)}, q ${fpv(row.q)}).</p>`
+    );
   }
   const ONC_THEME = {
     ink: 'var(--ink)',
@@ -2119,7 +2173,7 @@
       const has = o.top.filter((_, jj) => o.has[jj].has(o.cols[k])).map((rr) => siteName(rr.acc, rr.pos, rr.res));
       r.setAttribute(
         'data-prtip',
-        `TCGA-${smp[0]} · ${o.oc.projects[smp[1]]}\n${smp[3]} coding calls per Mb${smp[2] ? ' (hypermutated)' : ''}\nchanged: ${has.join(', ')}\nclick to open the card of the row`
+        `TCGA-${smp[0]} · ${cancerName(o.oc.projects[smp[1]])}\n${smp[3]} coding calls per Mb${smp[2] ? ' (hypermutated)' : ''}\nchanged: ${has.join(', ')}\nclick to open the card of the row`
       );
     }
   });
@@ -2305,11 +2359,11 @@
       `<p>ClinVar variants reflect clinical testing and submission more than how often residues change, so its O/E is descriptive: no ring, no q. gnomAD also has a lower tail (fewer variants than expected); a dashed ring marks q &lt; 0.05 there.</p>` +
       `<p>On the cancer and germline cards, stick height is the count in the card's table, circle size grows with O/E, and a ring marks q &lt; 0.05.</p>` +
       `<p>Expected counts are within a protein. Where the residues of a type that are themselves enriched (q &lt; 0.05) carry ${Math.round((PR.hotspot?.min_share ?? 0.3) * 100)}% or more of a protein's changes or variants (and the protein has at least ${PR.hotspot?.min_changes ?? 20}), such as TP53 R273, R248 and R175, the expected count at its other residues is inflated and they look depleted. The explorer flags such a protein per source and cohort, names up to three of those residues on the waterfall tooltip, the site card and the tested-sites table, and leaves its ${esc(W.marks)} out of the default waterfall labels. You can still label them. The flag changes no count, expected value, O/E, p or q.</p>` +
-      `<p><b>Disease variants page.</b> It has three views of the sites of your selection, or of every ${esc(W.mark)} when nothing is selected, and a chart of all sites. Hypermutated tumors are left out unless you choose With hypermutated. Cancer types are pooled, so p and q do not change with them.</p>` +
-      `<p><b>Ranked sites.</b> Each table lists the sites of one source ranked by p. The top 20 are shown whether or not q is below 0.05; the header counts the sites with q &lt; 0.05, and a row above that line is lighter and shows its q. Show opens the sites with q &lt; 0.05, or the top 100 if there are fewer; the download has every tested site. The first two (tumors, cell lines) hold sites with more changes than expected (q is the release's, for the upper tail). The third holds sites with fewer inherited gnomAD variants than expected (q for the lower tail, the dashed-ring sites of the chart). k is the count, expected the count the residue's codon predicts, and O/E their ratio. A protein flagged as dominated by a few enriched residues (see above) says so in its row. A row opens the site's card.</p>` +
-      `<p><b>Cancer: tumors.</b> This is an oncoprint. The ${esc(W.marks)} with the most changed TCGA tumors are the rows, the tumors that carry them are the columns, and the bar above each tumor is its coding calls per Mb from the release's sample_burden (capped at 40; the dashed line is the hypermutated threshold). A tumor with two changes at one site counts once, so a table that counts changes can show a higher number.</p>` +
+      `<p><b>Disease variants page.</b> The tiles at the top are the Overview's tests of changes in tumors and cell lines, ClinVar pathogenic variants and gnomAD variants against the other ${esc(W.residues)} of the same proteins. Below them are three views of the sites of your selection, or of every ${esc(W.mark)} when nothing is selected, and a chart of all sites. Hypermutated tumors are left out unless you choose With hypermutated. Cancer types are pooled, so p and q do not change with them.</p>` +
+      `<p><b>Ranked sites.</b> Each table lists the sites of one source with q &lt; 0.05, ranked by p (at most 100; the download has every tested site). The header gives how many of the tested sites that is. For TCGA and DepMap, tested means the ${esc(W.marks)} with a change in at least one sample that the release gives a test; a site with no change cannot be above expectation and is not listed. Show the top 20 by p adds the next rows, lighter, with their q. The first two (tumors, cell lines) hold sites with more changes than expected (q is the release's, for the upper tail). The third holds sites with fewer inherited gnomAD variants than expected (q for the lower tail, the dashed-ring sites of the chart). k is the count, expected the count the residue's codon predicts, and O/E their ratio. A protein flagged as dominated by a few enriched residues (see above) says so in its row. A row opens the site's card.</p>` +
+      `<p><b>Cancer: tumors.</b> This is an oncoprint. The ${esc(W.marks)} with the most changed TCGA tumors are the rows, the tumors that carry them are the columns, and the bar above each tumor is its coding calls per Mb from the release's sample_burden (capped at 40; the dashed line is the hypermutated threshold). A tumor with two changes at one site counts once, so a table that counts changes can show a higher number. The oncoprint counts the sites changed in at least one tumor of the chosen cohort, which is not the tested set of the ranked table (it leaves out sites changed only in hypermutated tumors, and includes a few changed sites the release has no test for).</p>` +
       `<p><b>Inherited disease.</b> Each row is a ${esc(W.mark)} with at least one ClinVar variant classified pathogenic or likely pathogenic in the release's ClinVar change tables (the same P/LP rule as the site card; conflicting classifications are not counted). A chip is a disease family, with its number of variants. Each condition name of a variant (split at | and ;; "not specified", "not provided" and "see cases" dropped) gets the family of the first rule it matches in the release's name rules for its DisGeNET disease families (PTM_Pipeline scripts/disease_families.py), applied here to ClinVar condition names and read as text when the explorer is built, so a few conditions can land in a broader family than a specialist would choose; the detail of a cell always lists ClinVar's own condition names; a name no rule matches goes to Other / unassigned, which is listed first, right after All. A variant counts once in each of its families, so a row's chips can add up to more than its All count. A chip is shaded from light (one variant) to full (the most in any chip); click it to list the variants, their conditions and review stars, with links to ClinVar. The review filter keeps variants with at least that many ClinVar review stars. A variant that names no condition is not shown. These counts come from clinical testing and submission, not from a test against expectation, so they carry no p or q.</p>` +
-      `<p><b>All sites as a chart.</b> The chart ranks the sites from most above to most below the expected count. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side; one with a small expected count has no stored test and is drawn at 0. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The top and bottom sites are labeled, except those of a flagged protein; click a point to label it too (up to 20, saved in the link). Highlight genes outlines every site of the genes you paste and labels each one's most extreme site; it changes no statistic. Under the chart, a table lists the ${esc(W.marks)} with no change, most expected first, with the raw lower-tail p. Whole list against expectation is the release's own test for the site set.</p>` +
+      `<p><b>All sites as a chart.</b> The chart ranks the sites from most above to most below the expected count. Height is the signed −log10 p: −log10 of the upper-tail p for a site with O/E above 1, log10 of the lower-tail p for a site with O/E below 1. A site with no change has O/E 0 and sits on the lower side; one with a small expected count has no stored test and is drawn at 0. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by O/E and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The top and bottom sites are labeled, except those of a flagged protein; click a point to label it too (up to 20, saved in the link). Highlight genes outlines every site of the genes you paste and labels each one's most extreme site; it changes no statistic. The header counts the sites with a score and, of them, the sites with a q (the tested sites of the ranked tables). Under the chart, a table lists the ${esc(W.marks)} with no change, most expected first, with the raw lower-tail p. Whole list against expectation is the release's own test for the site set.</p>` +
       `<p>The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example).</p>` +
       (ctl.length
         ? `<p>Positive controls (H3 oncohistone residues and recurrent cancer hotspots; <a href="https://doi.org/10.1038/nbt.3391" target="_blank" rel="noopener">Chang et al., Nat Biotechnol 34:155 (2016)</a>). A control passes when q &lt; 0.05. A failed control is reported here and does not block the release.</p>` +
@@ -2337,7 +2391,7 @@
   st.id = 'kit-mutations-css';
   st.textContent = [
     ':root{--onc-1:#2a78d6;--onc-2:#eb6834;--onc-3:#1baf7a;--wf-hot:#e34948;--wf-cold:#2a78d6;--wf-mid:#f0efec}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--onc-1:#3987e5;--onc-2:#d95926;--onc-3:#199e70;--wf-hot:#e66767;--wf-cold:#3987e5;--wf-mid:#383835}}:root[data-theme="dark"]{--onc-1:#3987e5;--onc-2:#d95926;--onc-3:#199e70;--wf-hot:#e66767;--wf-cold:#3987e5;--wf-mid:#383835}',
-    '.mu-skel{min-height:26rem}.mu-end{justify-content:flex-end}.mu-linkbtn{border:0;background:none;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;padding:0}.mu-rank{margin:1.2rem 0;max-width:720px}.mu-rank h3{margin:.2rem 0}.mu-rank p{margin:.1rem 0}.mu-rt .num{text-align:right;font-variant-numeric:tabular-nums}.mu-rt td:first-child{min-width:8rem}.mu-go{cursor:pointer}.mu-go:hover td{background:var(--surface-2)}.mu-faint td{opacity:.62}.mu-list label{font-weight:600}.mu-lt .num,.mu-rt .num{text-align:right}',
+    '.mu-tiles{margin:.8rem 0}.mu-sig,.mu-why,.mu-more{margin:.5rem 0;max-width:60rem}.mu-skel{min-height:26rem}.mu-end{justify-content:flex-end}.mu-linkbtn{border:0;background:none;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;padding:0}.mu-rank{margin:1.2rem 0;max-width:720px}.mu-rank h3{margin:.2rem 0}.mu-rank p{margin:.1rem 0}.mu-rt .num{text-align:right;font-variant-numeric:tabular-nums}.mu-rt td:first-child{min-width:8rem}@media (max-width:600px){.mu-rt td:first-child{min-width:0}.mu-rt th,.mu-rt td{padding-left:.35rem;padding-right:.35rem}.mu-rt .mu-ex{display:none}}.mu-go{cursor:pointer}.mu-go:hover td{background:var(--surface-2)}.mu-faint td{opacity:.62}.mu-list label{font-weight:600}.mu-lt .num,.mu-rt .num{text-align:right}',
     '.mu-cv{max-width:100%}.mu-cvl{list-style:none;margin:0;padding:0}.mu-cvh,.mu-cvr{display:grid;grid-template-columns:minmax(6rem,max-content) 3rem minmax(0,1fr);gap:.2rem .7rem;align-items:start}.mu-cvh{font-size:.78rem;font-weight:600;color:var(--muted);border-bottom:1px solid var(--line-strong);padding:.3rem 0}.mu-cvr{padding:.35rem 0;border-bottom:1px solid var(--line)}.mu-cvr .mu-site{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}.mu-cvr .mu-all,.mu-cvh .num{text-align:right}.mu-all{color:var(--muted);font-variant-numeric:tabular-nums}.mu-chipset{display:flex;flex-wrap:wrap;gap:.25rem}.mu-cell{border:1px solid var(--line);border-radius:999px;padding:.12rem .6rem;font:inherit;font-size:.8rem;color:var(--ink);cursor:pointer;text-align:left}.mu-cell b{font-variant-numeric:tabular-nums}.mu-cell:hover,.mu-cell:focus-visible,.mu-cell[aria-pressed=true]{outline:2px solid var(--ink)}.mu-sw{display:inline-block;width:18px;height:12px;border:1px solid var(--line-strong);vertical-align:-1px;margin-right:4px}.mu-cvd{margin:.8rem 0}.mu-cvd h4{margin:.2rem 0}.mu-cvd ul{margin:.3rem 0;padding-left:1.1rem;font-size:.9rem}@media (max-width:600px){.mu-cvh,.mu-cvr{grid-template-columns:minmax(0,1fr) 3rem}.mu-cvh span:nth-child(3){display:none}.mu-chipset{grid-column:1/-1}}',
     '.mu-bar{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin:.8rem 0}.mu-ctl{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center}',
     '.mu-ct{display:inline-flex;align-items:center;gap:.4rem}.mu-ct select{font:inherit;padding:.25rem .4rem;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);max-width:14rem}',

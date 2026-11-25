@@ -1780,7 +1780,7 @@
     const ans = fr && !made && !card.rows_from && shown.length > 1 ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
     return (
       `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${esc(title)}${
-        followsTest(a)
+        followsTest(a) && !card.noTest
           ? ` <span class="tsw" title="This tile changes with the Test switch"><span aria-hidden="true">⇄</span><span class="vh"> changes with the Test switch</span></span>`
           : ''
       }</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
@@ -2535,6 +2535,15 @@
       .join('')}</ol></section>`;
   }
   K.keyFindings = keyFindings;
+  // the tiles of some questions as the Overview draws them (a page that shows the same tests, Disease variants): the same
+  // tile(), so the effect and q are the Overview's; without the Test switch's note, which only the Overview carries
+  K.tilesOf = (ids, rows = 2) => {
+    REG = [];
+    return ids
+      .filter((id) => A[id])
+      .map((id) => tile({ analysis: id, rows, noTest: true }))
+      .join('');
+  };
   function overview() {
     REG = [];
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
