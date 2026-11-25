@@ -29,7 +29,14 @@
       else if (ex) tiers[0].push({ row: r, via: ex });
       else if (gs.some((g) => g.startsWith(t))) tiers[1].push({ row: r, via: '' });
       else {
-        const a = al.find((x) => low(x).startsWith(t) || (tn.length >= 3 && norm(x).startsWith(tn)));
+        // another symbol that starts with it: a whole word of it for a short text (H4 is not H41 or H4F5rel)
+        const a = al.find((x) =>
+          t.length < 4
+            ? low(x)
+                .split(/[\s\-_./]+/)
+                .includes(t)
+            : low(x).startsWith(t) || (tn.length >= 3 && norm(x).startsWith(tn))
+        );
         if (a) tiers[2].push({ row: r, via: a });
         else if (low(r.acc).startsWith(t)) tiers[3].push({ row: r, via: '' });
         else if (t.length >= 3 && low(r.name).includes(t)) tiers[4].push({ row: r, via: '' });
@@ -44,35 +51,43 @@
   // the hits that are exactly the name (gene, accession, entry name or other symbol, hyphens and spaces aside)
   const exact = (rows, name) => rank(rows, name, 1e9).filter((h) => h.tier === 0);
   const AA = 'ACDEFGHIKLMNPQRSTVWY';
-  // a position as typed: R216, or 216 alone -> { letter ('' when none), pos }, or null when it is not one
+  // a position as typed: R216, or 216 alone, with a mark code after it that is read and dropped (K4me3, R3me2s, S15ph)
+  // -> { letter ('' when none), pos, mark ('' when none) }, or null when it is not one
+  const MARK = 'me[1-3][as]?|me|ac|ph|ub|su|cr|sm|gl|ox|ar|ma|la|bu|pr|hib';
   const pos = (t) => {
-    const m = /^([A-Z]?)(\d+)$/i.exec(String(t ?? ''));
-    return m && (!m[1] || AA.includes(m[1].toUpperCase())) ? { letter: m[1].toUpperCase(), pos: +m[2] } : null;
+    const m = new RegExp(`^([A-Z]?)(\\d+)(${MARK})?$`, 'i').exec(String(t ?? ''));
+    return m && (!m[1] || AA.includes(m[1].toUpperCase()))
+      ? { letter: m[1].toUpperCase(), pos: +m[2], mark: low(m[3]) }
+      : null;
   };
   // a name with its site in one word: GENE_R216, GENE-R216, GENE/216, GENE:R216 or H4R3. known(name) gives what the name
-  // names (or nothing); -> { name, hit: what known gave, letter, pos } or null
+  // names (or nothing); -> { name, hit: what known gave, letter, pos, mark } or null
   const siteOf = (t, known) => {
-    for (const re of [/^(.+?)[:_/-]([A-Z]?\d+)$/i, /^(.+?)([A-Z]\d+)$/i]) {
-      const m = re.exec(String(t ?? '')),
-        p = m && pos(m[2]),
-        hit = p && known(m[1]);
-      if (hit) return { name: m[1], hit, ...p };
+    const w = String(t ?? ''),
+      sep = /^(.+?)[:_/-]([A-Z]?\d+[A-Z0-9]*)$/i.exec(w),
+      tries = sep ? [[sep[1], sep[2]]] : [];
+    for (let i = 1; i < w.length; i++) if (/^[A-Z]\d/i.test(w.slice(i))) tries.push([w.slice(0, i), w.slice(i)]);
+    for (const [name, tail] of tries) {
+      const p = pos(tail),
+        hit = p && known(name);
+      if (hit) return { name, hit, ...p };
     }
     return null;
   };
   // what a phrase of several words asks for, by one rule for the landing page and the explorers: a name and a site token
-  // (TP53 R213 mutation methylation) is that site, the other words ignored; with no site token, the words that name
+  // (TP53 R213 mutation methylation, H3 K4, H3 K4me3) is that site, the other words ignored; a word of the site's form
+  // (K4 is also a gene symbol) that follows a protein is a site, never a gene name. With no site token, the words that name
   // proteins are a gene list when two or more do (an ordinary word that names nothing never makes one), else the one
-  // protein. known(word) gives what a word names (or nothing). -> { site: { name, hit, letter, pos } } | { list: [words] }
-  // | { one: { name, hit } } | null
+  // protein. known(word) gives what a word names (or nothing). -> { site: { name, hit, letter, pos, mark } } | { list:
+  // [words] } | { one: { name, hit } } | null
   const read = (words, known) => {
     const hits = words.map((w) => known(w) || null),
-      at = words.findIndex((w, i) => !hits[i] && pos(w)),
-      first = hits.findIndex(Boolean);
-    if (at >= 0 && first >= 0) return { site: { name: words[first], hit: hits[first], ...pos(words[at]) } };
+      first = hits.findIndex(Boolean),
+      at = first < 0 ? -1 : words.findIndex((w, i) => i > first && pos(w));
+    if (at > 0) return { site: { name: words[first], hit: hits[first], ...pos(words[at]) } };
     const named = words.filter((w, i) => hits[i]);
-    if (at < 0 && named.length > 1) return { list: named };
-    return at < 0 && first >= 0 ? { one: { name: words[first], hit: hits[first] } } : null;
+    if (named.length > 1) return { list: named };
+    return first >= 0 ? { one: { name: words[first], hit: hits[first] } } : null;
   };
   // the readable name: the short name, then the protein's name and, for a protein several genes encode, how many
   const text = (r, via) => {

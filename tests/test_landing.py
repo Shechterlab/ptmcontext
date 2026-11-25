@@ -377,8 +377,8 @@ def test_the_landing_search_reads_a_site_as_the_explorers_do_and_offers_the_fitt
         ['TP53', 'R', 213],
         None,
         None,
-        {'letter': 'R', 'pos': 213},
-        {'letter': '', 'pos': 213},
+        {'letter': 'R', 'pos': 213, 'mark': ''},
+        {'letter': '', 'pos': 213, 'mark': ''},
         None,
         None,
     ]
