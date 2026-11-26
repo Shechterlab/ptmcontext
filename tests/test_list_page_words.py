@@ -55,3 +55,10 @@ def test_overlap_reason_covers_every_user_selection_and_is_shown_once():
     assert 'The first question' not in OV
     assert "? 'Counts only.'" in OV
     assert 'const once = (t) =>' in OV
+
+
+def test_sites_block_line_is_the_tiles_answer():
+    body = KIT[KIT.index('K.selAnswer = ') :][:1400]
+    assert 'K.tilekit.answerOf' in body and 'noneDiffers(st.rows)' in body
+    assert 'summaryLine' not in body
+    assert 'with q over all of them' not in GL

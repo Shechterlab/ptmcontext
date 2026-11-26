@@ -33,9 +33,9 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
   how:
     - "A row is a class of a question that two or more explorers test. A column is one explorer. A cell is that explorer's own result."
     - "The number is a fold: the share of the marks in the class over the share of the comparison group in it. For a protein set (PANTHER, condensates, cell locations, GO, disease) it is the fold enrichment of the marked proteins. The q is the explorer's Benjamini–Hochberg q."
-    - "Each question row names the test and the comparison group for each explorer. They can differ, so read them before comparing numbers. A different test is flagged."
+    - "Each question row names the test and the comparison group for each explorer. A different test is flagged."
     - "Ringed: q is 0.05 or less and the fold is at least 1.1 or at most 1/1.1 (red ▲ more often, slate ▼ less often). Gray: q is 0.05 or less but the fold is within 1.1. Hollow: q is above 0.05, or the fold and the test point different ways. Circle size grows with the fold."
-    - "Not tested: the explorer doesn't test that class or has too few marks. It is not zero."
+    - "Not tested: the explorer doesn't test that class or has too few marks."
     - "Download gives the rows as a table (TSV) or a figure (SVG, PNG, PDF), with each explorer's data release and DOI."
   groups:
     - id: disorder

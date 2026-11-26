@@ -789,11 +789,7 @@
         );
       })
       .join('');
-    return (
-      `<div class="kinds qv-psets">${blocks}</div><p class="note">Each result is for all ${esc(W.marked)} proteins ` +
-      `against the background, not for this protein. A name selects the ${esc(W.marks)} on its proteins, and ↗ ` +
-      `opens the set’s page.</p>`
-    );
+    return `<div class="kinds qv-psets">${blocks}</div><p class="note">All ${esc(W.marked)} proteins vs background (not this protein)</p>`;
   }
   // a card may take an id of its own (the explorer's p-dis), and its module's live parts before its sets (K.setsLive: kit-pcards.js)
   const cardId = (c, k) => c.id || `p-sets-${k}`;

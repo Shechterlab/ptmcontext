@@ -1735,8 +1735,8 @@
     return (
       head +
       (sel && sel.size < rec.marks.length
-        ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} match your ` +
-          `selection; the others are faded. <button class="linkish" type="button" data-sel-clear-all>Clear ` +
+        ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} selected ` +
+          `(others faded). <button class="linkish" type="button" data-sel-clear-all>Clear ` +
           `filters</button></p>`
         : '') +
       page(

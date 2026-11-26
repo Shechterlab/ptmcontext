@@ -1329,11 +1329,17 @@
     const rows = K.sel.rows(aid, 'mantel_haenszel');
     if (!rows?.length) return null;
     const card = allCards().find((c) => c.analysis === aid) || { analysis: aid };
-    return {
-      id: aid,
-      title: tileTitle(card),
-      line: rows.some((r) => r.descriptive) ? whyShown(a, rows) : summaryLine(rows, card.summary, card),
-    };
+    // the tile's own answer (K.tilekit.answerOf over the rows it shows, or its none-line), not a second generator
+    const st = tileState(card),
+      line = rows.some((r) => r.descriptive)
+        ? whyShown(a, rows)
+        : st.shown.length && K.tilekit
+          ? K.tilekit.answerOf(
+              st.shown.map((r) => frModel(a, r)),
+              SETS(a.id)
+            )
+          : noneDiffers(st.rows);
+    return { id: aid, title: tileTitle(card), line };
   };
   const OV = D.overview || {},
     FR = D.front || {};
