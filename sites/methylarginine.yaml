@@ -2979,7 +2979,7 @@ website:                  # the look and words of the website (ptmc web); layout
           classes: {prmt: "PRMTs associated with {gene}", tudor: "Tudor proteins associated with {gene}"}
           note: STRING physical, whole protein
           none: none at STRING ≥ 0.7
-        note: "The suggestion is indirect. Antibodies, inhibitors and knockouts measure peptides, and a peptide with several methylarginines answers for any of them. No total-protein correction was made, and a decrease after PRMT loss does not show a direct substrate. STRING associations are to the whole protein and do not show that a partner methylates or reads this arginine. The records at the residue are under \"Who binds it\" above. Several Tudor domains read methyllysine instead."
+        note: "Indirect: antibody, inhibitor or knockout data on peptides; no protein-abundance correction. STRING associations are to the whole protein and do not show that a partner methylates or reads this arginine. The records at the residue are under \"Who binds it\" above. Several Tudor domains read methyllysine instead."
       sources:             # a source_records table: every report of the site, in the sites table's Evidence row
         table: sources
         attribute: studies                   # the provenance attribute whose values name the sources
