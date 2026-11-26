@@ -913,12 +913,7 @@
     const siteHtml =
       group('records', 'UniProt and sources', uniRow + citeRow, true) + group('site', 'Site', siteRows, true);
     const nMore = qrows.length + qmore.length + rest.length + (K.shown?.on && K.shown.counted(m) ? 1 : 0),
-      moreHtml = group(
-        'questions',
-        `Questions and other attributes (${nMore})`,
-        qrows.join('') + qmore.join('') + restRows,
-        false
-      );
+      moreHtml = group('questions', `Other attributes (${nMore})`, qrows.join('') + qmore.join('') + restRows, false);
     const ev = ready ? K.card.evidenceBlock(c) : '',
       recs = ready ? K.card.recordsBlock(c) : '',
       wr = ready ? K.card.writerBlock(c) : '';
@@ -2193,12 +2188,20 @@
     const covLine = cov
       ? `<p class="kind-cov"><b>Abundance</b>: ${
           cov.me[0] == null ? 'no value' : `${esc(cov.value)} ${K.fxn(cov.me[0])}`
-        }${cov.me[1] !== 'none' ? `, decile ${esc(cov.me[1])} of ${int(cov.strata)}` : ''} <span class="muted">(${esc(
-          (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input
-        )}; the decile ` + `of the estimate within abundance deciles)</span></p>`
+        } <span class="muted">(${[
+          cov.me[1] !== 'none' ? `decile ${esc(cov.me[1])} of ${int(cov.strata)}` : '',
+          esc(
+            String(
+              (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version ||
+                cov.input
+            ).replace(/\s*\(([^)]*?)(?:[- ]integrated)?\)/, (m, x) => ', ' + x.replace(/-/g, ' '))
+          ),
+        ]
+          .filter(Boolean)
+          .join('; ')})</span></p>`
       : '';
     // names only: a set's test is for every mark in it, not for this protein, so its numbers stay on the question's page
-    const across = `<p class="muted small kinds-note">Sets ${esc(p.gene || p.acc)} is in; each name opens its question.</p>`;
+    const across = `<p class="muted small kinds-note">Sets containing ${esc(p.gene || p.acc)}</p>`;
     const noneLine = none.length ? `<p class="muted small kinds-none">Not in: ${none.join('; ')}.</p>` : '';
     return covLine + across + `<div class="kinds kinds-chips">${blocks}</div>` + noneLine;
   }
@@ -2323,7 +2326,7 @@
       `<div class="card-head"><p class="sub">${int(seq.length - d)} residues (${esc(
         (D.run.snapshot || {}).release || ''
       )}), the ${esc(W.marks)} in color ` +
-      `as on the map; tap or hover one for its name, click it for its card.${d ? ' The initiator methionine is not shown or counted.' : ''}</p>` +
+      `as on the map. Hover for name, click for card.${d ? ' Initiator Met not counted.' : ''}</p>` +
       (`<span class="exp"><button class="btn small" type="button" data-fasta="copy">Copy FASTA</button><button ` +
         `class="btn small" type="button" data-fasta="dl">Download FASTA</button></span></div><pre class="seq">${lines.join('\n')}</pre>`)
     );

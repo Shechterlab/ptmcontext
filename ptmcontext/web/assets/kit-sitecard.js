@@ -1887,13 +1887,8 @@
     const ris = [...(pref ? [[pref.text, pref.doi || '']] : []), ...refs.map((r) => [r.text, r.doi])];
     return (
       `<details class="cite-box"${open ? ' open' : ''}><summary>How to cite ${esc(what)}</summary>` +
-      (`<p class="small">Please cite the original ${esc(
-        SPECS[CT.attribute].label.toLowerCase()
-      )} that reported the ${esc(W.marks)} you use${
-        pref
-          ? `, and ${esc(pref.short || pref.text)} (${doiA(pref.doi, 'doi:' + esc(pref.doi))}) for the ` +
-            `compilation and this site`
-          : ''
+      (`<p class="small">Cite the source ${esc(SPECS[CT.attribute].label.toLowerCase())}${
+        pref ? ` and ${esc(pref.short || pref.text)} (${doiA(pref.doi, 'doi:' + esc(pref.doi))})` : ''
       }. Full list: <a href="${esc(K.link('method', 'cite'))}">How to cite</a>` +
         `</p>`) +
       `<h4>Reported by</h4><ol class="cite-list">${refs
