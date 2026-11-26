@@ -990,6 +990,7 @@
       ch = chain || T.pick[id] || (e.maps[0] || {}).chain || null;
     T.pick[id] = ch;
     T.entry = id;
+    T.loadingId = id;
     message(`Loading PDB ${UP(id)}…`);
     if (!(T.mol && T.mol.acc === acc)) placeholder(`Loading PDB ${UP(id)}…`);
     const nmr = /NMR/i.test(e.method || '');
@@ -1006,6 +1007,7 @@
       meta([id]),
     ])
       .then(([lib, [text, fmt], det]) => {
+        if (T.loadingId === id) T.loadingId = null;
         if (T.acc !== acc || !viewer(lib)) return;
         const sites = det.coverage ? pdbSites(e, det).filter((x) => x[1] != null && x[2]) : [];
         setModel(text, fmt, {
@@ -1054,6 +1056,7 @@
         if (f != null) focusPos(f);
       })
       .catch((err) => {
+        if (T.loadingId === id) T.loadingId = null;
         message(
           `PDB ${UP(id)} could not be loaded (${
             err.message === 'timeout' ? 'RCSB or PDBe did not answer in time' : esc(err.message)
@@ -1094,35 +1097,67 @@
     const acc = T.acc,
       pos = siteNow();
     if (pos != null && T.rec?.marks?.some((m) => m[0] === pos)) {
-      // the AlphaFold model is drawn first; the experimental entry that resolves the site replaces it once one is found,
-      // unless the reader has changed the model by then (the entries list is asked for while the model loads; the site
-      // scan starts after it, so its 10 s read is not shared with the model's download)
-      loadPdb(acc).catch(() => {});
-      (T.scanning ||= {})[`${acc}:${pos}`] = true;
-      return showAf()
-        .then(
-          () => T.mol,
-          () => T.mol
-        )
-        .then((shown) =>
-          scanSite(acc, pos).then(
-            (list) => {
-              delete T.scanning[`${acc}:${pos}`];
-              if (T.acc !== acc) return;
-              if (!list.length) {
-                (T.noneAt ||= {})[`${acc}:${pos}`] = true;
-                if (!T.msg) message(`No PDB entry resolves ${rl(pos)}; the AlphaFold model is shown.`);
-                return paintSrc();
-              }
-              if (T.mol !== shown || (shown && shown.mode !== 'af')) return;
-              const e = list[0];
-              return showPdb(e, resolvesAt(e.id, pos), pos);
-            },
-            () => {
-              delete T.scanning[`${acc}:${pos}`];
-            }
+      const afFirst = () => {
+        // the AlphaFold model is drawn first; the experimental entry that resolves the site replaces it once one is found,
+        // unless the reader has changed the model by then (the entries list is asked for while the model loads; the site
+        // scan starts after it, so its 10 s read is not shared with the model's download)
+        loadPdb(acc).catch(() => {});
+        (T.scanning ||= {})[`${acc}:${pos}`] = true;
+        return showAf()
+          .then(
+            () => T.mol,
+            () => T.mol
           )
-        );
+          .then((shown) =>
+            scanSite(acc, pos).then(
+              (list) => {
+                delete T.scanning[`${acc}:${pos}`];
+                if (T.acc !== acc) return;
+                if (!list.length) {
+                  (T.noneAt ||= {})[`${acc}:${pos}`] = true;
+                  if (!T.msg) message(`No PDB entry resolves ${rl(pos)}; the AlphaFold model is shown.`);
+                  return paintSrc();
+                }
+                if (T.mol !== shown || (shown && shown.mode !== 'af')) return;
+                const e = list[0];
+                return showPdb(e, resolvesAt(e.id, pos), pos);
+              },
+              () => {
+                delete T.scanning[`${acc}:${pos}`];
+              }
+            )
+          );
+      };
+      // an entry the site card lists for this site that PDBe maps over it is opened as the first view: one model is
+      // drawn, and the scan for the other entries (menu only) starts once it is shown
+      const listed = new Set(entriesAt(pos).flatMap((c) => c[2].map(UP)));
+      if (!listed.size) return afFirst();
+      return loadPdb(acc).then(
+        (res) => {
+          const inSite = (m) => pos >= m.unpStart && pos <= m.unpEnd,
+            // the order the scan gives: the modified residue modeled, then the sharpest
+            e = res.entries
+              .filter((x) => listed.has(UP(x.id)) && x.maps.some(inSite))
+              .sort(
+                (x, y) => res.modified.has(y.id) - res.modified.has(x.id) || (x.resolution || 99) - (y.resolution || 99)
+              )[0];
+          if (!e || T.acc !== acc) return afFirst();
+          const ch = e.maps.find(inSite).chain;
+          SITE_AT[`${acc}:${pos}:${e.id}`] ||= ch;
+          V.src = 'pdb';
+          return showPdb(e, ch, pos).then(() => {
+            if (T.acc !== acc) return;
+            if (!T.mol || T.mol.acc !== acc) return afFirst();
+            scanSite(acc, pos).then(() => {
+              if (T.acc === acc) {
+                paintPdbList();
+                paintSrc();
+              }
+            });
+          });
+        },
+        () => afFirst()
+      );
     }
     placeholder(`Finding the experimental chain that models most of ${esc(T.p.gene || T.acc)}…`);
     return bestPdb(acc).then(
@@ -1974,7 +2009,8 @@
       mode = !mol ? null : mol.mode === 'af' ? 'af' : own ? 'pdb' : null;
     const res = T.res,
       best = T.best;
-    const target = own ? own.e : best && !best.failed ? best.e : null;
+    const loading = !own && T.loadingId ? T.loadingId : null,
+      target = own ? own.e : loading ? { id: loading } : best && !best.failed ? best.e : null;
     const list = res ? pdbMenu(res) : [];
     const chains = own ? own.e.maps.map((m) => m.chain).filter((c, k, a) => a.indexOf(c) === k) : [];
     const none = !own && siteNow() != null && !!T.noneAt?.[`${acc}:${siteNow()}`];
@@ -2544,7 +2580,7 @@
     }
     // the entries that resolve the selected site go first in the menu once they are read
     const site = siteNow();
-    if (site != null && T.started && !scanSite.shown?.has(`${T.acc}:${site}`)) {
+    if (site != null && T.started && !T.loadingId && !scanSite.shown?.has(`${T.acc}:${site}`)) {
       const acc = T.acc;
       (scanSite.shown ||= new Set()).add(`${acc}:${site}`);
       scanSite(acc, site).then(() => {
