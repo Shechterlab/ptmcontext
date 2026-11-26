@@ -40,7 +40,7 @@ def _flat(blocks):
 def test_the_page_has_a_tile_row_and_opens_its_first_group(name):
     pg = _page(name)
     assert len(pg['highlights']) >= 3
-    key_test = 'ix-na' if name == 'methylarginine' else 'ixs-pdb'  # the contact test, or the interface tests
+    key_test = 'ixs-pdb'  # the interface tests
     opened = [g for g in pg['groups'] if g.get('open') is True]
     assert len(opened) == 1 and key_test in {s['id'] for s in opened[0]['sections']}
     secs = _sections(pg)

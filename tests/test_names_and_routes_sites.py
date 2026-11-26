@@ -125,3 +125,11 @@ def test_no_visible_label_says_holding_it():
     text = (ROOT / 'sites/methylarginine.yaml').read_text()
     assert 'Binds a region containing the site (IntAct)' in text
     assert 'Another reaction on a region containing the site' in text
+
+
+@pytest.mark.parametrize('name', SITES)
+def test_interactions_page_puts_protein_contacts_before_rna_and_dna(name):
+    page = next(p for p in _site(name)['website']['pages'] if p['id'] == 'interactions')
+    assert page['title'] == 'Protein, RNA and DNA contacts'
+    names = [g['name'] for g in page['groups']]
+    assert names.index('Binding proteins and partners') < names.index('RNA and DNA')

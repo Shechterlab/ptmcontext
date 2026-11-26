@@ -2457,7 +2457,7 @@ website:                  # the look and words of the website (ptmc web); layout
   pages:
     - id: interactions
       tab: Interactions
-      title: RNA, DNA and protein contacts
+      title: Protein, RNA and DNA contacts
       aliases:             # the Structures group is now Structures and models; Binding proteins also holds the partners and complexes
         ixg-structures: ixg-structures-and-models
         ixg-binding-proteins: ixg-binding-proteins-and-partners
@@ -2546,6 +2546,20 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: intact, category: mutation_changes_interaction, label: "Mutated alone, with an effect on binding"}
                     - {analysis: intact, category: binding_region, label: Inside a binding region of ≤ 20 aa}
                     - {analysis: intact, category: binding_region_disordered, label: … disordered serines, threonines and tyrosines only}
+        - name: Binding proteins and partners
+          sections:
+            - id: ix-who
+              title: Proteins that bind the phosphosite
+              question: Which proteins bind these sites, in which state of the residue, and how was each found?
+              sub: phosphosites with a record
+              blocks:
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the modified residue, values: [binds_modified]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
+            - id: ixs-complexes
+              title: Protein complexes
+              question: Which complexes have more phosphorylated members than expected?
+              blocks:
+                - {kind: sets, analysis: complex, title: Complex Portal complexes}
+
         - name: RNA and DNA
           sections:
             - id: ixs-cells
@@ -2568,16 +2582,3 @@ website:                  # the look and words of the website (ptmc web); layout
                 - {kind: table, table: htr_selex, title: RNA in vitro (HTR-SELEX), columns: [accession, consensus, motif_kind, model_id]}
                 - {kind: table, table: ix_eclip, title: RNA in cells (eCLIP), columns: [accession, cell_line, n_peaks, top_target_genes, top_5mers, experiment], sort: n_peaks}
                 - {kind: table, table: ix_dna_motifs, title: DNA (JASPAR), columns: [accession, consensus, name, tf_family, matrix_id]}
-        - name: Binding proteins and partners
-          sections:
-            - id: ix-who
-              title: Proteins that bind the phosphosite
-              question: Which proteins bind these sites, in which state of the residue, and how was each found?
-              sub: phosphosites with a record
-              blocks:
-                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the modified residue, values: [binds_modified]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
-            - id: ixs-complexes
-              title: Protein complexes
-              question: Which complexes have more phosphorylated members than expected?
-              blocks:
-                - {kind: sets, analysis: complex, title: Complex Portal complexes}

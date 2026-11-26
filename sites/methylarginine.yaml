@@ -3248,7 +3248,7 @@ website:                  # the look and words of the website (ptmc web); layout
   pages:
     - id: interactions
       tab: Interactions
-      title: RNA, DNA and protein contacts
+      title: Protein, RNA and DNA contacts
       aliases:           # sections that moved: the Evidence map (now a line in the crosslinking section) and the sequence proximity chart
         ix-ex: ixs-cells
         ix-ix-ex: ixg-rna-and-dna
@@ -3326,11 +3326,11 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: crosslink, category: rbrid_residue_among_measured, phrase: in RNA-bound residues}
           - {analysis: crosslink, category: rna_crosslink, phrase: at RNA-crosslinked residues}
       highlights:
+        - {share: {table: string, of: partner_accession, flag: partner_marked}, label: of their partners are methylated (22% of human proteins), tag: Protein partners, section: ixs-partners, glyph: protein}
         - {rows: [{analysis: crosslink, category: capri_adj_peptide_among_measured}, {analysis: crosslink, category: pclap_peptide_among_measured}, {analysis: crosslink, category: rbdmap_peptide_among_measured}, {analysis: crosslink, category: rbrid_residue_among_measured}],
            label: in RNA-bound peptides and residues, tag: RNA · in living cells, section: ixs-cells, glyph: rna}
         - {rows: [{analysis: crosslink, category: dna_crosslink_or_candidate}], label: at DNA-crosslinked residues, tag: DNA · in living cells, section: ixs-cells, glyph: dna}
         - {rows: [{analysis: crosslink, category: rna_crosslink}], label: at the crosslinked residue itself, tag: RNA · in living cells, section: ixs-cells, glyph: rna}
-        - {share: {table: string, of: partner_accession, flag: partner_marked}, label: of their partners are methylated (22% of human proteins), tag: Protein partners, section: ixs-partners, glyph: protein}
         - {counts: [{attribute: nucleic_acid, values: [rna_at]}, {attribute: nucleic_acid, values: [dna_at]}], label: methylarginines in contact with RNA · with DNA, tag: Experimental structures · not tested, section: ix-na, glyph: structure}
       overview:
         section: RNA and DNA binding
@@ -3341,19 +3341,19 @@ website:                  # the look and words of the website (ptmc web); layout
         checker: [interaction, evidence, nucleic_acid, partner_class]
         findings:          # the explorer's four, each said with its direction, significant or not (the first three on the tile)
           - {lead: In living cells, section: ixs-cells, rows: [{analysis: crosslink, category: rna_crosslink, phrase: the residue crosslinked to RNA}]}
-          - {lead: In PDB structures, section: ixs-pdb, rows: [{analysis: pdb_interface, category: rna, label: RNA interface, phrase: at RNA interfaces},
-                                                               {analysis: pdb_interface, category: protein, label: Protein interface, phrase: at protein interfaces}]}
+          - {lead: In PDB structures, section: ixs-pdb, rows: [{analysis: pdb_interface, category: protein, label: Protein interface, phrase: at protein interfaces},
+                                                               {analysis: pdb_interface, category: rna, label: RNA interface, phrase: at RNA interfaces}]}
           - {lead: In predicted interfaces, section: ixs-predicted, rows: [{analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, phrase: "at the interface (AlphaFold-Multimer models, pDockQ ≥ 0.23)"}]}
           - {share: {table: string, of: partner_accession, flag: partner_marked}, label: "of the physical partners of methylated proteins (STRING ≥ 0.7) are themselves methylated (22% of human proteins)", section: ixs-partners}
         rows:
+          - {analysis: pdb_interface, category: protein, label: Protein interface (PDB), group: Protein contacts, phrase: at a protein interface in PDB structures}
+          - {analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, group: Protein contacts, phrase: at the interface of a predicted complex}
           - {analysis: crosslink, category: rna_crosslink, group: In living cells, phrase: the residue crosslinked to RNA}
           - {analysis: crosslink, category: capri_adj_peptide_among_measured, group: In living cells, phrase: inside a CAPRI RNA-bound peptide (among the arginines CAPRI measured)}
           - {analysis: crosslink, category: pclap_peptide_among_measured, group: In living cells, phrase: inside a pCLAP RNA-binding peptide (among the arginines pCLAP measured)}
           - {analysis: crosslink, category: rbdmap_peptide_among_measured, group: In living cells, phrase: inside an RBDmap RNA-bound peptide (among the arginines RBDmap measured)}
           - {analysis: crosslink, category: rbrid_residue_among_measured, group: In living cells, phrase: an RNA-contact residue (RBR-ID) (among the arginines RBR-ID measured)}
           - {analysis: crosslink, category: dna_crosslink_or_candidate, group: In living cells, phrase: at a DNA crosslink or one of its candidate residues}
-          - {analysis: pdb_interface, category: protein, label: Protein interface (PDB), group: Protein contacts, phrase: at a protein interface in PDB structures}
-          - {analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, group: Protein contacts, phrase: at the interface of a predicted complex}
       groups:
         - name: Summary
           sections:
@@ -3429,8 +3429,81 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {filter: "a:disorder", value: disordered, label: Disordered, group: Context}
                     - {filter: "a:domain_context", value: in_domain, label: In a domain, group: Context}
                 - {kind: checker, title: Check one site, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], tables: [interactions]}
+        - name: Structures and models
+          open: true
+          sections:
+            - id: ixs-pdb
+              title: Interfaces in PDB structures
+              question: Are methylarginines at protein, RNA or DNA interfaces in experimental structures?
+              blocks:
+                - kind: forest
+                  rows:
+                    - {analysis: pdb_interface, category: protein, label: Protein, group: All observed arginines}
+                    - {analysis: pdb_interface, category: rna, label: RNA, group: All observed arginines}
+                    - {analysis: pdb_interface, category: dna, label: DNA, group: All observed arginines}
+                    - {analysis: pdb_interface, category: any, label: Any partner, group: All observed arginines}
+                    - {analysis: pdb_interface, category: protein_ordered, label: Protein, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: rna_ordered, label: RNA, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: dna_ordered, label: DNA, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: any_ordered, label: Any partner, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: protein_domain, label: Protein, group: Inside domains only}
+                    - {analysis: pdb_interface, category: rna_domain, label: RNA, group: Inside domains only}
+                    - {analysis: pdb_interface, category: dna_domain, label: DNA, group: Inside domains only}
+                    - {analysis: pdb_interface, category: any_domain, label: Any partner, group: Inside domains only}
+                - {kind: table, table: interactions, title: The PDB interfaces at each site, chips: kind, columns: [accession, kind, partner_accession, ids, detail], limit: 25,
+                   where: [{column: kind, in: [pdb_protein, pdb_rna, pdb_dna, pdb_self]}], partner: partner_accession, label: partner}
+            - id: ixs-predicted
+              title: Predicted interfaces
+              question: Are methylarginines at the interfaces of AlphaFold-Multimer models of human protein pairs?
+              blocks:
+                - kind: forest
+                  rows:
+                    - {analysis: predicted_interface, category: pdockq_0.23, label: Likely interface, group: All arginines}
+                    - {analysis: predicted_interface, category: pdockq_0.5, label: Strong interface, group: All arginines}
+                    - {analysis: predicted_interface, category: pdockq_0.23_ordered, label: Likely interface, group: Ordered}
+                    - {analysis: predicted_interface, category: pdockq_0.5_ordered, label: Strong interface, group: Ordered}
+                    - {analysis: predicted_interface, category: pdockq_0.23_disordered, label: Likely interface, group: Disordered}
+                    - {analysis: predicted_interface, category: pdockq_0.5_disordered, label: Strong interface, group: Disordered}
+                - {kind: table, table: interactions, title: Contacts in predicted models, sub: "Each site’s contacts in a predicted complex, with the model's pDockQ, the closest distance and the contact (salt bridge, hydrogen bond) with pLDDT.", columns: [accession, partner_accession, score, detail, ids], sort: score, limit: 25,
+                   where: [{column: kind, in: [predicted_contact]}], partner: partner_accession, label: partner}
+        - name: Binding proteins and partners
+          sections:
+            - id: ix-who
+              title: Proteins that write or bind the methylarginine
+              question: Which proteins methylate these sites, demethylate them, bind them methylated, or bind the residue in another state, and in which experiments?
+              sub: methylarginines with a record
+              blocks:
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the methylated residue, values: [binds_methylated]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
+                   where: [{column: group, in: [writes, removes, binds_methylated, binds_unmodified, binds_other_residue, binds_state_not_read, mutation_changes_binding]}]}
+            - id: ixs-partners
+              title: Protein partners (STRING)
+              question: Which PRMTs and reader-domain proteins associate with the methylated proteins?
+              blocks:
+                - {kind: bars, table: string, label: partner, partner: partner_accession, groups: {column: classes, values: {prmt: Protein arginine methyltransferases, tudor: Tudor-domain proteins, wd40: WD40-repeat proteins, phd: PHD-finger proteins}}, top: 12}
+            - id: ix-wr
+              title: PRMTs and Tudor proteins with shared protein partners
+              question: Which methylated proteins are bound by both a PRMT and a Tudor-domain protein?
+              blocks:
+                - {kind: pairs, table: string, label: partner, rows: {column: classes, value: prmt}, cols: {column: classes, value: tudor}, top: 12}
+            - id: ixs-complexes
+              title: Protein complexes
+              question: Which complexes have more methylated members than expected?
+              sub: complexes with a methylated member (curated Complex Portal and predicted hu.MAP together)
+              blocks:
+                - {kind: table, table: complexes, chips: curation, columns: [complex_id, complex_name, n_members, n_members_methylated, fold_enrichment, q, methylated_members], sort: q, descending: false, limit: 15, members: methylated_members}
+            - id: ixs-intact
+              title: IntAct binding regions and mutations
+              question: Are methylarginines at curated mutation sites and short binding regions more often?
+              blocks:
+                - kind: forest
+                  rows:
+                    - {analysis: intact, category: mutation_changes_interaction, label: "Mutated alone, with an effect on binding"}
+                    - {analysis: intact, category: binding_region, label: Inside a binding region of ≤ 20 aa}
+                    - {analysis: intact, category: binding_region_disordered, label: … disordered arginines only}
+                - {kind: table, table: interactions, title: The IntAct records at each site, chips: kind, columns: [accession, kind, partner_accession, detail], limit: 25,
+                   where: [{column: kind, in: [intact_mutation, intact_binding_region, intact_methylated]}], partner: partner_accession, label: partner}
+
         - name: RNA and DNA
-          open: true        # the first group: the contact tests are in view
           sections:
             - id: ixs-cells
               title: RNA and DNA crosslinks in cells
@@ -3517,75 +3590,3 @@ website:                  # the look and words of the website (ptmc web); layout
               question: Are methylated proteins annotated as RNA- or DNA-binding more often than human proteins?
               blocks:
                 - {kind: sets, analysis: go_binding, title: Gene Ontology}
-        - name: Structures and models
-          sections:
-            - id: ixs-pdb
-              title: Interfaces in PDB structures
-              question: Are methylarginines at protein, RNA or DNA interfaces in experimental structures?
-              blocks:
-                - kind: forest
-                  rows:
-                    - {analysis: pdb_interface, category: protein, label: Protein, group: All observed arginines}
-                    - {analysis: pdb_interface, category: rna, label: RNA, group: All observed arginines}
-                    - {analysis: pdb_interface, category: dna, label: DNA, group: All observed arginines}
-                    - {analysis: pdb_interface, category: any, label: Any partner, group: All observed arginines}
-                    - {analysis: pdb_interface, category: protein_ordered, label: Protein, group: Ordered regions only}
-                    - {analysis: pdb_interface, category: rna_ordered, label: RNA, group: Ordered regions only}
-                    - {analysis: pdb_interface, category: dna_ordered, label: DNA, group: Ordered regions only}
-                    - {analysis: pdb_interface, category: any_ordered, label: Any partner, group: Ordered regions only}
-                    - {analysis: pdb_interface, category: protein_domain, label: Protein, group: Inside domains only}
-                    - {analysis: pdb_interface, category: rna_domain, label: RNA, group: Inside domains only}
-                    - {analysis: pdb_interface, category: dna_domain, label: DNA, group: Inside domains only}
-                    - {analysis: pdb_interface, category: any_domain, label: Any partner, group: Inside domains only}
-                - {kind: table, table: interactions, title: The PDB interfaces at each site, chips: kind, columns: [accession, kind, partner_accession, ids, detail], limit: 25,
-                   where: [{column: kind, in: [pdb_protein, pdb_rna, pdb_dna, pdb_self]}], partner: partner_accession, label: partner}
-            - id: ixs-predicted
-              title: Predicted interfaces
-              question: Are methylarginines at the interfaces of AlphaFold-Multimer models of human protein pairs?
-              blocks:
-                - kind: forest
-                  rows:
-                    - {analysis: predicted_interface, category: pdockq_0.23, label: Likely interface, group: All arginines}
-                    - {analysis: predicted_interface, category: pdockq_0.5, label: Strong interface, group: All arginines}
-                    - {analysis: predicted_interface, category: pdockq_0.23_ordered, label: Likely interface, group: Ordered}
-                    - {analysis: predicted_interface, category: pdockq_0.5_ordered, label: Strong interface, group: Ordered}
-                    - {analysis: predicted_interface, category: pdockq_0.23_disordered, label: Likely interface, group: Disordered}
-                    - {analysis: predicted_interface, category: pdockq_0.5_disordered, label: Strong interface, group: Disordered}
-                - {kind: table, table: interactions, title: Contacts in predicted models, sub: "Each site’s contacts in a predicted complex, with the model's pDockQ, the closest distance and the contact (salt bridge, hydrogen bond) with pLDDT.", columns: [accession, partner_accession, score, detail, ids], sort: score, limit: 25,
-                   where: [{column: kind, in: [predicted_contact]}], partner: partner_accession, label: partner}
-        - name: Binding proteins and partners
-          sections:
-            - id: ix-who
-              title: Proteins that write or bind the methylarginine
-              question: Which proteins methylate these sites, demethylate them, bind them methylated, or bind the residue in another state, and in which experiments?
-              sub: methylarginines with a record
-              blocks:
-                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the methylated residue, values: [binds_methylated]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
-                   where: [{column: group, in: [writes, removes, binds_methylated, binds_unmodified, binds_other_residue, binds_state_not_read, mutation_changes_binding]}]}
-            - id: ixs-partners
-              title: Protein partners (STRING)
-              question: Which PRMTs and reader-domain proteins associate with the methylated proteins?
-              blocks:
-                - {kind: bars, table: string, label: partner, partner: partner_accession, groups: {column: classes, values: {prmt: Protein arginine methyltransferases, tudor: Tudor-domain proteins, wd40: WD40-repeat proteins, phd: PHD-finger proteins}}, top: 12}
-            - id: ix-wr
-              title: PRMTs and Tudor proteins with shared protein partners
-              question: Which methylated proteins are bound by both a PRMT and a Tudor-domain protein?
-              blocks:
-                - {kind: pairs, table: string, label: partner, rows: {column: classes, value: prmt}, cols: {column: classes, value: tudor}, top: 12}
-            - id: ixs-complexes
-              title: Protein complexes
-              question: Which complexes have more methylated members than expected?
-              sub: complexes with a methylated member (curated Complex Portal and predicted hu.MAP together)
-              blocks:
-                - {kind: table, table: complexes, chips: curation, columns: [complex_id, complex_name, n_members, n_members_methylated, fold_enrichment, q, methylated_members], sort: q, descending: false, limit: 15, members: methylated_members}
-            - id: ixs-intact
-              title: IntAct binding regions and mutations
-              question: Are methylarginines at curated mutation sites and short binding regions more often?
-              blocks:
-                - kind: forest
-                  rows:
-                    - {analysis: intact, category: mutation_changes_interaction, label: "Mutated alone, with an effect on binding"}
-                    - {analysis: intact, category: binding_region, label: Inside a binding region of ≤ 20 aa}
-                    - {analysis: intact, category: binding_region_disordered, label: … disordered arginines only}
-                - {kind: table, table: interactions, title: The IntAct records at each site, chips: kind, columns: [accession, kind, partner_accession, detail], limit: 25,
-                   where: [{column: kind, in: [intact_mutation, intact_binding_region, intact_methylated]}], partner: partner_accession, label: partner}
