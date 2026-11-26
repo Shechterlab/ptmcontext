@@ -1484,8 +1484,8 @@ website:                  # the look and words of the website (ptmc web); layout
       - {label: One methyllysine in its structure, query: TAF10 K189, help: "Its protein's domain and disorder map, the evidence for the residue, and its structures."}
   stats: [marks, proteins, {attribute: sources, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
+    cell_first: true       # the cell drawing opens the Overview
     statistic_label: true  # each tile names its statistic
-    question: "Which proteins have methyllysine, and how do methylated lysines differ from the other lysines of their protein?"
     rows: 5
     random_maps: {n: 3, title: Example proteins, enabled: false}   # off: the Overview points to other pages instead of repeating them
     sections:

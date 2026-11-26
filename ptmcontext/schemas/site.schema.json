@@ -3062,13 +3062,14 @@
               ]
             },
             "key_findings": {
-              "description": "the strip at the top of the Overview: the strongest results that hold their controls, one tile each, linked to their question. Chosen by the largest effect among rows with q ≤ 0.05 at or above min_fold that fail no control badge, at most one per section; false leaves the strip out",
+              "description": "the strip at the top of the Overview: the strongest results that hold their controls, one tile each, linked to their question. Chosen by the largest effect among rows with q ≤ 0.05 at or above min_fold that fail no control badge, at most one per section; off unless enabled is true",
               "oneOf": [
                 {"const": false},
                 {
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
+                    "enabled": {"type": "boolean", "default": false, "description": "true draws the strip; without it the strip is not drawn"},
                     "count": {"type": "integer", "minimum": 1, "maximum": 6, "default": 4, "description": "how many results (default 4)"},
                     "min_fold": {"type": "number", "minimum": 1, "default": 1.25, "description": "the smallest fold a result needs (default 1.25)"},
                     "pin": {

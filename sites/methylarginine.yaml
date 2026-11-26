@@ -1656,8 +1656,8 @@ website:                  # the look and words of the website (ptmc web); layout
       - {label: One methylarginine in its structure, query: FUS R216, help: "The protein's domain and disorder map, the evidence for the residue, and its structures."}
   stats: [marks, proteins, {attribute: studies, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
+    cell_first: true       # the cell drawing opens the Overview
     statistic_label: true  # each tile names its statistic
-    question: "Which proteins have methylarginine, where in the protein is it, and which other modifications are nearby?"
     rows: 5
     random_maps: {n: 3, title: Example proteins, enabled: false}   # off: the Overview points to other pages instead of repeating them (open: true opens it; enabled: false leaves it out)
     starting_points:       # under the sections: proteins to start from, and ready-made selections (the explorer's)
@@ -3360,7 +3360,8 @@ website:                  # the look and words of the website (ptmc web); layout
             - id: ix-nac
               title: RNA and DNA contact tests
               question: Are methylarginines at RNA and DNA contacts more often than the other arginines of the same proteins?
-              place: link
+              place: top
+              open: true
               blocks:
                 - kind: forest
                   rows:

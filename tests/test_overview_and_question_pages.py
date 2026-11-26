@@ -23,10 +23,10 @@ def test_the_site_own_sections_sit_between_position_and_other_modifications():
     assert 'star >= 0 ? star : 1e6' in KIT and "G.shared.indexOf('*')" in KIT
 
 
-def test_the_overview_asks_the_landing_question_and_repeats_no_other_tab():
+def test_the_overview_has_the_short_heading_the_cell_first_and_repeats_no_other_tab():
     for name in SITES:
         w = _site(name)
-        assert w['overview']['question'] == w['landing']['question'], name
+        assert 'question' not in w['overview'] and w['overview']['cell_first'] is True, name
         assert w['overview']['random_maps']['enabled'] is False, name
         assert 'tile' not in w['network'], name
         names = [s['name'] for s in w['overview']['sections']]
@@ -65,3 +65,24 @@ def test_a_question_page_has_tiles_then_the_table_then_closed_controls_and_the_p
     assert '<details class="pcard controls" id="q-controls"' in KIT
     assert 't.open = true' in KIT
     assert "inFocus ? '' : `<h3>" in KIT
+
+
+def test_the_overview_heading_is_key_findings_and_the_strongest_results_row_is_off_by_default():
+    assert '<h2>Key findings</h2>${tools}${tnote}' in KIT and 'OV.question' not in KIT
+    assert 'if (KF?.enabled !== true ||' in KIT
+    for name in SITES:
+        assert 'enabled' not in (_site(name)['overview'].get('key_findings') or {}), name
+
+
+def test_figures_come_before_tables_and_text_on_the_interactions_and_disease_variants_pages():
+    ix = (ROOT / 'ptmcontext/web/assets/kit-interactions.js').read_text()
+    assert '!FIG[x[0].kind] - !FIG[y[0].kind] || x[1] - y[1]' in ix and 'blocksHtml(pg, s), s.open' in ix
+    mu = (ROOT / 'ptmcontext/web/assets/kit-mutations.js').read_text()
+    assert '`${lead}${tilesHtml()}${note}${bar}${body}' in mu
+    assert mu.index('<h3>Top TCGA sites</h3>') < mu.index('whyCommon(o);')
+
+
+def test_the_interactions_contact_tests_open_above_the_group_cards():
+    text = (ROOT / 'sites' / 'methylarginine.yaml').read_text()
+    sec = text.split('- id: ix-nac')[1].split('blocks:')[0]
+    assert 'place: top' in sec and 'open: true' in sec

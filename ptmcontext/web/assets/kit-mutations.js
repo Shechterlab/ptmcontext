@@ -2062,7 +2062,7 @@
       if (body === null)
         return page(
           line,
-          note + tilesHtml() + bar + `<div class="mu-skel" role="status">${K.loading('Loading…')}</div>`
+          tilesHtml() + note + bar + `<div class="mu-skel" role="status">${K.loading('Loading…')}</div>`
         );
     } else if (V === 'clinvar') {
       line = `ClinVar pathogenic and likely pathogenic variants by disease family. Click a family to list them. A variant can count in several families, so a site's chips can add up to more than its total. Counts only: ClinVar reflects clinical testing.`;
@@ -2117,20 +2117,20 @@
       else {
         const f = oncoprintSvg(o, { ...ONC_THEME }, 760, ['var(--onc-1)', 'var(--onc-2)'], true);
         body =
-          whyCommon(o) +
           `<section class="mu-card"><div class="mu-top"><h3>Top TCGA sites</h3>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'muon', 'top sites across TCGA tumors', 'propensity')}</div>` +
           `<svg id="mu-svg" class="mu-svg" viewBox="0 0 760 ${f.H}" role="img" aria-label="Top TCGA sites, with the tumors that carry them">${f.svg}` +
           `<rect id="mu-hover" class="mu-link" x="${f.ml}" y="0" width="${f.pw}" height="${f.H}" fill="transparent" data-prtip=""/></svg>` +
           `<p class="pr-key small muted"><span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-1)"/></svg>missense change</span>` +
           `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-2)"/></svg>stop gained</span>` +
           `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--muted)"/></svg>burden, below the threshold</span>` +
-          `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-3)"/></svg>burden, hypermutated</span></p></section>`;
+          `<span class="pr-k"><svg width="12" height="12" aria-hidden="true"><rect width="12" height="12" fill="var(--onc-3)"/></svg>burden, hypermutated</span></p></section>` +
+          whyCommon(o);
       }
     }
     const extra = V === 'waterfall' ? (model() ? zeroSection(model()) : '') + setSummary() : '';
     return page(
       line,
-      `${note}${lead}${tilesHtml()}${bar}${body}${V === 'clinvar' ? '' : chosenSection()}${extra}${V === 'waterfall' ? '' : CHART_LINK}`
+      `${lead}${tilesHtml()}${note}${bar}${body}${V === 'clinvar' ? '' : chosenSection()}${extra}${V === 'waterfall' ? '' : CHART_LINK}`
     );
   }
   // the oncoprint's first site is the one with the most changed tumors; when its q is not below 0.05, say why it is common

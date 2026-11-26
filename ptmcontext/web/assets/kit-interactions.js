@@ -2317,11 +2317,16 @@
       b.title ? `<div class="card-head"><div><h4>${esc(b.title)}</h4></div></div>` : ''
     }${blockHtml(pg, sec, b, bi)}${exportsOf(pg, sec, b, bi)}</div>`;
   }
+  // a section's figures (FIG) come before its other blocks, each keeping its index (its address and downloads)
+  const blocksHtml = (pg, sec) =>
+    sec.blocks
+      .map((b, bi) => [b, bi])
+      .sort((x, y) => !FIG[x[0].kind] - !FIG[y[0].kind] || x[1] - y[1])
+      .map(([b, bi]) => blockCard(pg, sec, b, bi))
+      .join('');
   const sectionCard = (pg, sec) =>
     `<section class="pcard ix-sec" id="ix-${esc(sec.id)}"><div class="card-head">` +
-    `<div><h3>${esc(sec.title)}</h3></div></div>${sec.blocks
-      .map((b, bi) => blockCard(pg, sec, b, bi))
-      .join('')}</section>`;
+    `<div><h3>${esc(sec.title)}</h3></div></div>${blocksHtml(pg, sec)}</section>`;
 
   // ---- tiles: a section at a glance --------------------------------------------------------------------------------
   function miniForest(refs, m, all = refs) {
@@ -2857,17 +2862,7 @@
       answerHtml(pg) +
       evidenceLine(pg) +
       highlightsHtml(pg) +
-      top
-        .map((s) =>
-          K.fold(
-            `ix-${esc(s.id)}`,
-            esc(s.title),
-            '',
-            s.blocks.map((b, bi) => blockCard(pg, s, b, bi)).join(''),
-            s.open === true
-          )
-        )
-        .join('') +
+      top.map((s) => K.fold(`ix-${esc(s.id)}`, esc(s.title), '', blocksHtml(pg, s), s.open === true)).join('') +
       (links.length
         ? `<p class="ix-links">${links
             .map((s) => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)} ›</a>`)

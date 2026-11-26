@@ -1501,8 +1501,8 @@ website:                  # the look and words of the website (ptmc web); layout
       - {label: One phosphosite in its structure, query: TP53 S15, help: "Its protein's domain and disorder map, the evidence for the residue, and its structures."}
   stats: [marks, proteins, {attribute: sources, label: databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
+    cell_first: true       # the cell drawing opens the Overview
     statistic_label: true  # each tile names its statistic
-    question: "Where are phosphosites in human proteins, which kinase motifs do they match, and which have a high predicted functional score?"
     rows: 5
     random_maps: {n: 3, title: Example proteins, enabled: false}   # off: the Overview points to other pages instead of repeating them
     sections:

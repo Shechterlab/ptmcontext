@@ -1588,8 +1588,8 @@ website:                  # the look and words of the website (ptmc web); layout
       - {label: One modified lysine in its structure, query: TP53 K372, help: "Its protein's domain and disorder map, the evidence for the residue, and its structures."}
   stats: [marks, proteins, {attribute: sources, label: studies and databases, opens: provenance}]
   overview:                # what the Overview opens with: tiles, in sections, each with its strongest classes
+    cell_first: true       # the cell drawing opens the Overview
     statistic_label: true  # each tile names its statistic
-    question: "Which proteins have modified lysines, and how do modified lysines differ from the other lysines of their protein?"
     rows: 5
     random_maps: {n: 3, title: Example proteins, enabled: false}   # off: the Overview points to other pages instead of repeating them
     sections:

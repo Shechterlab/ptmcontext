@@ -2105,7 +2105,6 @@
     `</span></p>` +
     (S.vs === 'cmp' ? `<p class="muted small">Exploratory: not adjusted for other selections tried.</p>` : '');
   function lead() {
-    const q = OV.question || `Which parts of proteins are ${W.marked_long}?`;
     const keyP =
       `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less ` +
       `often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>` +
@@ -2143,7 +2142,9 @@
     // the marks the site shows and counts nowhere (kit-shown.js): the note says how many, beside how many are counted
     if (!selOn())
       return (
-        `<div class="page-head"><h2>${esc(q)}</h2>${tools}${tnote}</div>` + (K.shown?.note ? K.shown.note() : '') + key
+        `<div class="page-head"><h2>Key findings</h2>${tools}${tnote}</div>` +
+        (K.shown?.note ? K.shown.note() : '') +
+        key
       );
     const c = K.sel.compute(),
       n = (c.marks || []).length,
@@ -2454,10 +2455,10 @@
   });
   // ---- Key findings: the strongest results that hold their controls, in one plain line each, at the top of the Overview.
   // Chosen from the tiles' rows: among those with q ≤ 0.05 at or above 1.25× that fail no control, the largest effect, at most one per section
-  // (website.overview.key_findings: count, min_fold, pin and exclude, each a question id or "id/class"; false leaves it out)
+  // (website.overview.key_findings: off unless {enabled: true}; count, min_fold, pin and exclude, each a question id or "id/class")
   function keyFindings() {
     const KF = OV.key_findings;
-    if (KF === false || selOn() || vsOn() || S.arg) return '';
+    if (KF?.enabled !== true || selOn() || vsOn() || S.arg) return '';
     const n = KF?.count ?? 4,
       minFold = KF?.min_fold ?? 1.25; // a tiny effect with a huge n (a tiny q) is not a finding
     const named = (list, a, c) =>
