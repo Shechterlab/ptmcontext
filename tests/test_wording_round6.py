@@ -21,3 +21,23 @@ def test_faded_marks_note():
     s = (A / 'kit-proteins.js').read_text()
     assert 'selected ` +' in s and '(others faded).' in s
     assert 'match your' not in s and 'the others are faded' not in s
+
+
+def test_classes_note():
+    s = (A / 'kit-questions.js').read_text()
+    assert 'proteins vs background (not this protein)' in s
+    assert 'Each result is for all' not in s
+
+
+def test_compare_how_to_read():
+    t = (ROOT / 'sites' / 'landing.yml').read_text()
+    assert 'read them before comparing' not in t and 'It is not zero' not in t
+    assert 'A different test is flagged.' in t
+
+
+def test_help_and_changelog_notes():
+    h = (A / 'kit-help.js').read_text()
+    assert "q is across the list's sites only." in h
+    assert 'smaller question' not in h and 'Unlike a fold' not in h
+    c = (ROOT / 'CHANGELOG.md').read_text()
+    assert 'sites to test it.' in c and 'in one sentence' not in c.split('## 0.5')[0]
