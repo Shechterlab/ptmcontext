@@ -147,7 +147,7 @@
       ];
     return (
       `${parts.join('; ')}; ${int(c.marks.length)} of ${int(D.counts.marks)} ${W.marks} on ${int(np)} protein${np === 1 ? '' : 's'}` +
-      (K.selEffect ? `; ${K.selEffect().replace(/^Pages show only the selection · /, '')}` : '')
+      (K.selEffect ? `; ${K.selEffect().replace(/^./, (ch) => ch.toLowerCase()).replace(/\.$/, '')}` : '')
     );
   }
   function bar() {

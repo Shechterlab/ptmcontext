@@ -1551,14 +1551,13 @@
   };
   // what the selection does, in one clause (the bar, a figure's subtitle, Copy link): follows the Test and Compared with settings
   K.selEffect = () =>
-    'Pages show only the selection · ' +
-    (vsOn()
-      ? `compared with ${S.vs === 'cmp' ? 'the sites of ' + cmpName() : 'the other ' + W.marks}`
+    vsOn()
+      ? `Compared with ${S.vs === 'cmp' ? 'the sites of ' + cmpName() : 'the other ' + W.marks}.`
       : S.m === 'fisher'
-        ? `tested against all other ${W.residues}`
+        ? `Tested against all other ${W.residues}.`
         : S.m === 'study'
-          ? `tested against ${W.marks} from the same studies or databases`
-          : `tested against other ${W.residues} of the same proteins`);
+          ? `Tested against ${W.marks} from the same studies or databases.`
+          : `Tested against other ${W.residues} of these proteins.`;
   const selTestable = () => !selOn() || (K.sel.data() && K.sel.testable() && K.sel.nMarks() > 0);
   // which rows a tile shows: up to 7, the classes that differ most first (a few of those less often, if any), then
   // significant ones within 1.1×; none, unknown and other classes are left to the full figure
