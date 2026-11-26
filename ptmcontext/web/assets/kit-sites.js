@@ -274,7 +274,7 @@
         ...cs,
         {
           id: 'writer',
-          label: D.protein_view?.card?.role_labels?.writer || 'Writer (UniProt)',
+          label: D.protein_view?.card?.role_labels?.writer || 'Writer',
           menu: 'Writers: the records’ writers, then those UniProt names for the residue',
           show: ['writer'],
           hide: 'sm',

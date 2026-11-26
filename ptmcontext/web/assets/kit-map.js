@@ -1586,16 +1586,27 @@
     // a label beside a tick, with a halo, flipped left at the right edge; skipped where it would hit the one before
     // (ticks: the x of every tick in the row; a label that would stand over another tick is left out, its hover has the name)
     const labelAt = (xx, yy, text, right, ticks = []) => {
-      const tw = K.tw(text, 9) * SL,
-        flip = xx + 4 + tw > Wd - 2,
-        left = flip ? xx - 4 - tw : xx + 4;
-      if (left <= right.v + 5) return;
-      if (ticks.some((t) => Math.abs(t - xx) > 1 && t + 3 > left && t - 2 < left + tw)) return;
-      parts.push(
-        `<text x="${r1(flip ? xx - 4 : xx + 4)}" y="${r1(yy - 4)}" font-size="9" fill="${P.ink}" stroke="${P.surf}" stroke-width="2.5" ` +
-          `paint-order="stroke"${flip ? ' text-anchor="end"' : ''}>${esc(text)}</text>`
-      );
-      right.v = flip ? xx : xx + 4 + tw;
+      // the label goes right of its mark, else left of it, and never over another tick; a list of items that fits neither way
+      // is cut to its first items and a count ("R213* ×71, R213Q ×9 +3 more")
+      const items = text.split(', '),
+        variants = [text];
+      for (let n = items.length - 1; n >= 1; n--)
+        variants.push(`${items.slice(0, n).join(', ')} +${items.length - n} more`);
+      for (const t of variants) {
+        const tw = K.tw(t, 9) * SL,
+          rightFirst = xx + 4 + tw <= Wd - 2;
+        for (const flip of rightFirst ? [false, true] : [true]) {
+          const left = flip ? xx - 4 - tw : xx + 4;
+          if (left <= right.v + 5 || left < 0) continue;
+          if (ticks.some((q) => Math.abs(q - xx) > 1 && q + 3 > left && q - 2 < left + tw)) continue;
+          parts.push(
+            `<text x="${r1(flip ? xx - 4 : xx + 4)}" y="${r1(yy - 4)}" font-size="9" fill="${P.ink}" stroke="${P.surf}" stroke-width="2.5" ` +
+              `paint-order="stroke"${flip ? ' text-anchor="end"' : ''}>${esc(t)}</text>`
+          );
+          right.v = flip ? xx : xx + 4 + tw;
+          return;
+        }
+      }
     };
     // boxes in lanes, each named inside, after it, or cut (UniProt's regions, a site's families)
     const lanes = (list, maxL = 5, lab = () => '') => {

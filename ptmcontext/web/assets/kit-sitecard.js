@@ -654,16 +654,23 @@
       '</p>'
     );
   }
+  // the site's structures: closed, behind a count of their entries (the records block lists who they are)
+  function spanning(c) {
+    const st = entries(c);
+    if (!st) return '';
+    const n = new Set([...st.matchAll(/data-entry3d="([^"]*)"/g)].map((m) => m[1].toLowerCase())).size;
+    return `<details class="sp-more"><summary>Structures ${int(n)}</summary>${st}</details>`;
+  }
   function evidenceBlock(c) {
     if (!EV.status && !EV.tags && !EV.entries && !(SQ.tables || []).length) return '';
     const body =
       (EV.status ? `<p class="sc-status">${badge(c)} ${sentence(c)}</p>` : '') +
       tags(c) +
-      entries(c) +
       contactLine(c) +
       sequences(c) +
       peptides(c) +
       around(c) +
+      spanning(c) +
       wholeProtein(c);
     return `<section class="sc-ix"><h4>${esc(EV.title || 'Interaction evidence')}${K.methodLink ? '' : ''}</h4>${body}</section>`;
   }
@@ -738,14 +745,24 @@
   const residueName = (l) => D.residue_names?.[l] || ((D.residues || []).length === 1 ? W.residue : l);
   const residueNames = (l) =>
     D.residue_names?.[l] ? D.residue_names[l] + 's' : (D.residues || []).length === 1 ? W.residues : l + ' residues';
-  function changeCounts(c) {
+  // a residue's samples with a change, as the site table counts them: distinct samples in all, and without hypermutated ones
+  // (K.prop, the one home of both). null until the protein's shard is in; the card then falls back to the rows' sum
+  function sampleCounts(x, acc, pos) {
+    const s = K.prop?.sources.find((y) => y.card === x.id);
+    if (!s || !K.prop.peek(acc)) return null;
+    const all = K.prop.at(acc, s.id, pos, true),
+      nh = K.prop.at(acc, s.id, pos, false);
+    return all ? { all: all.kAll, nh: nh?.nh && nh.k !== all.kAll ? nh.k : null } : null;
+  }
+  function changeCountsInner(c) {
     const letter = (c.seq || '')[c.pos - 1] || '',
       nm = residueName(letter);
     return CCN.map((x) => {
       const v = changesAt(c.tb, x, c.pos),
-        t = changeTotal(v),
         unit = x.unit || ['', ''],
         b = changeAvg(c.tb, x, letter);
+      const sc = v.length ? sampleCounts(x, c.acc, c.pos) : null,
+        t = sc ? sc.all : changeTotal(v);
       const head = t
         ? `${v
             .map((r) => `<b>${esc(letter + c.shown(c.pos) + r.alt)}</b>${r.n > 1 ? ' ×' + int(r.n) : ''}`)
@@ -753,9 +770,20 @@
         : `<span class="muted">no change in ${esc(unit[1])} (${esc(x.label)})</span>`;
       return (
         `<div>${head}<br><span class="muted small">${t ? `at this ${esc(nm)}: ${int(t)} · ` : ''}` +
+        `${sc?.nh != null ? `without hypermutated: ${int(sc.nh)} · ` : ''}` +
         `protein average per ${esc(nm)}: ${avgText(b?.per)}</span></div>`
       );
     }).join('');
+  }
+  // the counts are redrawn in place once the protein's samples are in
+  function changeCounts(c) {
+    const id = `${c.acc}:${c.pos}`;
+    if (CCN.length && K.prop && K.prop.peek(c.acc) === undefined)
+      K.prop.load(c.acc).then(() => {
+        const el = document.querySelector(`[data-cc-host="${CSS.escape(id)}"]`);
+        if (el) el.innerHTML = changeCountsInner(c);
+      });
+    return `<div data-cc-host="${esc(id)}">${changeCountsInner(c)}</div>`;
   }
   // ---- variants at residues from per-variant tables (card.variant_counts): the count at a residue beside the protein's
   // average per residue of the same kind, as the change counts above. A table lists one row per variant (site_table).
@@ -839,13 +867,34 @@
       .map(({ x, n, hot }) => `${x.label}: ${variantWords(x, n, hot)}`)
       .join('; ');
   // the one line other pages show for a site: its counts as a link that opens the site card at its variants
-  const variantLine = (tb, acc, pos) =>
-    `<a class="sc-vline" href="${esc(K.link('protein', `${acc}/${pos}`, { open: 'sc-variants' }))}" title="Open the site card at its variants">${siteVariants(
-      tb,
-      pos
-    )
+  // with `changes`, the site's tumors and cell lines follow (the card's summary: those counts are as the site table gives them)
+  const changeWords = (x, tb, acc, pos) => {
+    const sc = sampleCounts(x, acc, pos),
+      n = sc ? sc.all : changeTotal(changesAt(tb, x, pos)),
+      unit = x.unit || ['', ''];
+    return `${n ? int(n) : 'no'} ${n === 1 ? unit[0] : unit[1]}`;
+  };
+  const variantParts = (tb, acc, pos, changes) =>
+    siteVariants(tb, pos)
       .map(({ x, n, hot }) => `<b>${esc(x.label)}</b> ${esc(variantWords(x, n, hot))}`)
-      .join(' · ')}</a>`;
+      .concat(
+        changes
+          ? CCN.filter((x) => changesAt(tb, x, pos).length).map(
+              (x) => `<b>${esc(x.label)}</b> ${esc(changeWords(x, tb, acc, pos))}`
+            )
+          : []
+      )
+      .join(' · ');
+  function variantLine(tb, acc, pos, changes) {
+    const id = `${acc}:${pos}`;
+    if (changes && CCN.length && K.prop && K.prop.peek(acc) === undefined)
+      K.prop.load(acc).then(() => {
+        document.querySelectorAll(`[data-vl="${CSS.escape(id)}"]`).forEach((el) => {
+          el.innerHTML = variantParts(tb, acc, pos, true);
+        });
+      });
+    return `<a class="sc-vline" data-vl="${esc(id)}" href="${esc(K.link('protein', `${acc}/${pos}`, { open: 'sc-variants' }))}" title="Open the site card at its variants">${variantParts(tb, acc, pos, changes)}</a>`;
+  }
   // the condition names the table carries for a site's highlighted (P/LP) variants, each once, in table order. The rows are the
   // protein's variant lists (a file of their own for a lazy source), read on the first ask: null until they arrive, then
   // onDetail's functions run. [] where the source has no highlight or no field with a separator.
@@ -1047,7 +1096,7 @@
 
   // ---- who binds it, and how it was found (site_records) ------------------------------------------------------------
   const RC = C.records || {};
-  const RL = C.role_labels || {}; // the site file's names for the enzyme roles (phospho: Kinase (UniProt), Phosphatase)
+  const RL = C.role_labels || {}; // the site file's names for the enzyme roles (phospho: Kinase, Phosphatase)
   const grpLabel = (g) => {
     const attr = RC.groups && SPECS[RC.groups] ? RC.groups : '';
     if (attr && (SPECS[attr].values || {})[g] != null) return vLabel(attr, g); // the attribute's label wins
@@ -1456,7 +1505,6 @@
     if (!WR.who && !WR.suggest && !WR.partners) return '';
     const dl = (dt, dd) => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`;
     const lines = [];
-    let none = '';
     if (has(RC.table)) {
       const by = partnerGroups(at(c.tb, RC.table, c.pos));
       const inCard = new Set([...roleGroups('writer'), ...roleGroups('eraser'), ...roleGroups('reader')]);
@@ -1491,7 +1539,6 @@
               `class="muted">(indirect) · ${esc(hits.map((r) => r.because).join('; '))}${refs ? ` (${refs})` : ''}</span>`
           )
         );
-      else if (sg.none) none = sg.none;
     }
     if (WR.partners && has(WR.partners.table)) {
       const ps = rows(c.tb, WR.partners.table);
@@ -1516,10 +1563,10 @@
         );
       }
     }
-    if (!lines.length && !none) return '';
+    if (!lines.length) return '';
     return `<section class="sc-wr"><h4>${esc(WR.title || 'Writer and reader')}</h4>${
       lines.length ? `<dl class="sc-kv">${lines.join('')}</dl>` : ''
-    }${none ? `<p class="muted small">${esc(none)}</p>` : ''}${
+    }${
       WR.note
         ? `<details ` + `class="sc-note"><summary>Key</summary><p class="muted small">${esc(WR.note)}</p></details>`
         : ''
@@ -1576,7 +1623,7 @@
         uniHtml = uni.length ? `${uni.join(', ')} <span class="muted">(UniProt)</span>` : '';
       lines.writer = [
         lab(RL.writer || 'Writer', wx.size ? open(wg).join(',') : 'sc-uniprot', 'Open the records, or UniProt'),
-        folded ? `${uniHtml} · ${recs}` : recs + (recs && uni.length ? ' · ' : '') + uniHtml,
+        folded ? `${uniHtml}\u00a0· ${recs}` : recs + (recs && uni.length ? '\u00a0· ' : '') + uniHtml,
       ];
       lines.push(lines.writer);
     }
@@ -1609,9 +1656,12 @@
     // (the structure-contact line, "RNA contact: PDB 5FWE, 3.1 Å", goes here: after the binding proteins, before variants)
     // 4. variants: the variant counter's own line
     const vc = K.card.vc;
-    if (vc.entries.length && vc.siteVariants(c.tb, c.pos).some((x) => x.n))
+    if ((vc.entries.length && vc.siteVariants(c.tb, c.pos).some((x) => x.n)) || vc.hasChanges(c.tb, c.pos))
       lines.push(
-        (lines.variants = ['Variants', vc.line(c.tb, c.acc, c.pos).replace(/^<a /, '<a title="Open the variants" ')])
+        (lines.variants = [
+          'Variants',
+          vc.line(c.tb, c.acc, c.pos, true).replace(/^<a /, '<a title="Open the variants" '),
+        ])
       );
     // 5. conservation: from the module's own lookup, once it has arrived
     const cv = K.conserve?.siteLine?.(c.acc, c.pos);
@@ -2119,6 +2169,7 @@
       words: variantWords,
       text: variantText,
       line: variantLine,
+      hasChanges: (tb, pos) => CCN.some((x) => changesAt(tb, x, pos).length),
       conditions: variantConditions,
       conditionsText,
       ready: detailReady,

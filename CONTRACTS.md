@@ -802,7 +802,7 @@ of the one-line count. The rows are kept in the lazy files of `variant_counts` (
 `_xc` (`{id: {value: n}}`). A card (`cards.dependency`, `cards.germline`) names an entry with `excluded: <id>` and shows "12
 changes not shown: the source's residue differs from UniProt's" with a Download button that writes that protein's rows.
 
-`website.protein.card.role_labels: {writer, eraser}` (optional) names the enzyme roles on the site card and the sites table (default "Writer (UniProt)" and "Writer", "Eraser"; phospho: "Kinase (UniProt)", "Phosphatase").
+`website.protein.card.role_labels: {writer, eraser}` (optional) names the enzyme roles on the site card and the sites table (default "Writer", "Eraser"; phospho: "Kinase", "Phosphatase"; the sources are marked on the names).
 
 `website.protein.card.records` (the card's "Who binds it" block over a `site_records` table) names the group headings in
 this order: the label of the `groups` attribute's value, else `labels: {code: label}` (optional, a map of a group's code to

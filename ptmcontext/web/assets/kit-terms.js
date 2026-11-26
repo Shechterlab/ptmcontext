@@ -51,7 +51,8 @@
     if (idq && (t.idl === idq || t.id.toLowerCase() === raw)) best = 100;
     else if (idq && raw.length >= 4 && t.id.toLowerCase().startsWith(raw)) best = 70;
     const one = (cand, cw, bonus) => {
-      if (cand === q) return 100 - bonus;
+      // a name differing from the words only by a closing parenthesis ("Stress granule (CD-CODE)") reads as exact; size breaks the tie
+      if (cand === q || cand.replace(/ \(.*\)$/, '') === q) return 100 - bonus;
       if (cand.startsWith(q)) return 80 - bonus;
       if (toks.every((w) => cw.some((c) => c.startsWith(w)))) return 60 - bonus + (cw[0]?.startsWith(toks[0]) ? 3 : 0);
       return 0;
@@ -97,11 +98,27 @@
     });
     return order.flatMap((g) => take.filter((h) => h.t.src.group === g));
   }
-  const prepare = (raw) => ({
-    sources: raw.sources,
-    terms: raw.terms.map((t) => prep(raw.sources, t)),
-    byKey: new Map(raw.terms.map((t) => [raw.sources[t[0]].key + '\n' + t[1], t])),
-  });
+  // two sets of one group never share a display name: a plain name whose group also holds "name (source)" takes that
+  // source and its own id ("Stress granule (CD-CODE 40C311B2)")
+  function distinct(raw) {
+    const paren = new Map();
+    raw.terms.forEach((t) => {
+      const m = t[2] && /^(.*\S) \(([^()]+)\)$/.exec(t[2]);
+      if (m) paren.set(raw.sources[t[0]].group + '\n' + m[1], m[2]);
+    });
+    return raw.terms.map((t) => {
+      const g = t[2] && paren.get(raw.sources[t[0]].group + '\n' + t[2]);
+      return g ? [t[0], t[1], `${t[2]} (${g} ${t[1]})`, ...t.slice(3)] : t;
+    });
+  }
+  const prepare = (raw0) => {
+    const raw = { ...raw0, terms: distinct(raw0) };
+    return {
+      sources: raw.sources,
+      terms: raw.terms.map((t) => prep(raw.sources, t)),
+      byKey: new Map(raw.terms.map((t) => [raw.sources[t[0]].key + '\n' + t[1], t])),
+    };
+  };
 
   // ---- the index, read on first use -------------------------------------------------------------------------------
   let ix = null,

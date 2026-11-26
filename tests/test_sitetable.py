@@ -61,8 +61,10 @@ Promise.resolve(K.clicks.find(c => c[0] === '[data-stexp]')[1]({{ dataset: {{ st
     assert run.returncode == 0, run.stderr[-1500:]
     out = json.loads(run.stdout)
     assert out['id'] == 'p-sitetab' and out['title'] == 'My table'
-    assert out['rows'] == ['X2', 'X1', 'X3']  # the strongest first: q 0.01, 0.2, 1
-    assert out['sum'] == '3 sites; 1 with q < 0.05 in Alpha; 1 with Clin <abbr title="P/LP">P/LP</abbr> variants'  # the site card's counter
+    assert out['rows'] == ['X1', 'X2', 'X3']  # in position order
+    assert (
+        out['sum'] == '3 sites; 1 with q < 0.05 in Alpha; 1 with Clin <abbr title="P/LP">P/LP</abbr> variants'
+    )  # the site card's counter
     lines = out['tsv'].splitlines()
     head = next(i for i, ln in enumerate(lines) if not ln.startswith('#'))
     assert lines[head].split('\t') == [
@@ -97,8 +99,9 @@ def test_a_sites_variants_have_one_counter_and_other_pages_show_its_line():
     pcards = (ASSETS / 'kit-pcards.js').read_text()
     prot = (ASSETS / 'kit-proteins.js').read_text()
     # the home: the site card's module counts, words and links; its variant block is a fold the address can open
-    for name in ('siteVariants', 'variantSites', 'variantWords', 'variantLine'):
+    for name in ('siteVariants', 'variantSites', 'variantWords'):
         assert f'const {name} =' in card, name
+    assert 'function variantLine(' in card
     assert "K.link('protein', `${acc}/${pos}`, { open: 'sc-variants' })" in card
     assert 'id="sc-variants"' in prot
     # the protein's germline fold and the table's summary read it, and the table no longer reads cv.json or lists variants

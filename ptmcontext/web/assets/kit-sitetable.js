@@ -5,7 +5,7 @@
    page already loads (the propensity shard data/m/NNN.json, the map's items, the protein's tables). A site's variants are one
    line from the site card's own counter (K.card.vc), linked to the card's variants. The fold is closed; its one-line
    summary counts the sites with q < 0.05 in the first somatic source and the sites with a highlighted (P/LP) ClinVar variant. Sortable by any
-   column (default: the first somatic source's q, then its p); Data (TSV) with the standard citation header. A module of the
+   column (default: position); Data (TSV) with the standard citation header. A module of the
    site kit; without website.propensity it does nothing. */
 (window.PTMC_MODULES ||= []).push((K) => {
   'use strict';
@@ -17,9 +17,9 @@
     RING = K.prop.ring;
   const SRC = PR.sources.filter((s) => !K.prop.desc(s.id)); // sources with a test: k, observed/expected and q
   const OPEN_MAX = 40; // up to this many sites the table is open
-  const TOP = SRC.find((s) => s.kind === 'somatic') || SRC[0]; // the source the default sort and the summary read
+  const TOP = SRC.find((s) => s.kind === 'somatic') || SRC[0]; // the source the summary reads
   if (!SRC.length) return;
-  const ST = { key: `${TOP.id}:q`, dir: 1 };
+  const ST = { key: 'site', dir: 1 };
   const numOf = (v) => (v == null || Number.isNaN(+v) ? null : +v);
 
   // ---- the files: the protein's propensity shard (K.prop.load) and its tables (K.card.load, for the variant counts) ----------------
@@ -142,7 +142,7 @@
       cols.push({
         id: 'writer',
         tsvName: 'writer_uniprot',
-        label: D.protein_view?.card?.role_labels?.writer || 'Writer (UniProt)',
+        label: D.protein_view?.card?.role_labels?.writer || 'Writer',
         help: 'Enzymes that write the mark at the site: the records’ writers, then those UniProt names for the residue',
         cell: (r) => (r.writer == null ? '…' : r.writer || '<span class="muted">–</span>'),
         val: (r) => (r.writer ? r.writer.replace(/<[^>]*>/g, '') : null),
@@ -281,7 +281,7 @@
   }
   // rows in the chosen order: a missing value last in either direction, ties by the column's second value, then the position
   function sorted(M, cols) {
-    const c = cols.find((x) => x.id === ST.key) || cols.find((x) => x.id === `${TOP.id}:q`) || cols[0];
+    const c = cols.find((x) => x.id === ST.key) || cols[0];
     const cmp = (a, b) => (typeof a === 'string' || typeof b === 'string' ? String(a).localeCompare(String(b)) : a - b);
     return [...M.rows].sort((x, y) => {
       const a = c.val(x),

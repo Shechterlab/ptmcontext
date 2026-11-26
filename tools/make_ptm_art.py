@@ -57,11 +57,11 @@ SITES = {
     ),
     'phospho': (
         '#67e8f9',
-        'Phosphoserine (Sph), phosphothreonine (Tph) and phosphotyrosine (Yph)',
+        'Phosphoserine (pS), phosphothreonine (pT) and phosphotyrosine (pY)',
         [
-            ('Sph', 'phosphoserine', '*CCOP([O-])([O-])=O', PHOSPHATE, 'ser'),
-            ('Tph', 'phosphothreonine', '*CC(OP([O-])([O-])=O)C', PHOSPHATE, 'thr'),
-            ('Yph', 'phosphotyrosine', '*CCc1ccc(OP([O-])([O-])=O)cc1', PHOSPHATE, 'tyr'),
+            ('pS', 'phosphoserine', '*CCOP([O-])([O-])=O', PHOSPHATE, 'ser'),
+            ('pT', 'phosphothreonine', '*CC(OP([O-])([O-])=O)C', PHOSPHATE, 'thr'),
+            ('pY', 'phosphotyrosine', '*CCc1ccc(OP([O-])([O-])=O)cc1', PHOSPHATE, 'tyr'),
         ],
     ),
 }
