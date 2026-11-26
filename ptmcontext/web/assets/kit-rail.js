@@ -624,6 +624,9 @@
         (order.includes(x) ? order.indexOf(x) : 999) - (order.includes(y) ? order.indexOf(y) : 999) ||
         (cnt('t:' + id, y) || 0) - (cnt('t:' + id, x) || 0)
     );
+    // a value of none, said with the name of its group, not "none" under each of four groups
+    const noneLabel = (aid, v, sp) =>
+      v === '' && !(sp.values || {})[''] && sp.label ? `${sp.label}: none` : valueLabel(aid, v);
     if (spec.control === 'select')
       // many values: a drop-down list, one value at a time
       return (
@@ -634,7 +637,7 @@
             (v) =>
               `<option value="${esc(v)}"${on.has(v) ? ' selected' : ''}${
                 fc && !shownN(v) && !on.has(v) ? ' class="zero"' : ''
-              }>${esc(valueLabel(id, v))} (${int(shownN(v))})</option>`
+              }>${esc(noneLabel(id, v, spec))} (${int(shownN(v))})</option>`
           )
           .join('') +
         '</select></div>'
@@ -644,7 +647,7 @@
         spec.kind === 'list' ? ' <span class="muted">(match any)</span>' : ''
       }</p><div ` +
       `class="fchips">` +
-      sorted.map((v) => chip(v, valueLabel(id, v))).join('') +
+      sorted.map((v) => chip(v, noneLabel(id, v, spec))).join('') +
       '</div></div>'
     );
   }
