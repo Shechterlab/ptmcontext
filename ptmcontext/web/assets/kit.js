@@ -1897,11 +1897,11 @@
       (OV.statistic_label !== false && !vsOn() && shown.length && rows.some((r) => r.eff != null)
         ? ownSel && fr
           ? `<p class="tstat">${otherRows(a, made)}</p>`
-          : `<p class="tstat">${
+          : `<p class="tstat"${SETS(a.id) ? ' data-setnote' : ''}>${
               shown.every((r) => r.absent || r.shown != null)
                 ? gloss('fold', 'Fold')
                 : gloss('odds ratio', 'Odds ratio')
-            } ${esc(baseline(a, vsMethod(S.m)))}${SETS(a.id) ? `. ${esc(SET_NOTE)}` : ''}</p>`
+            } ${esc(baseline(a, vsMethod(S.m)))}</p>`
         : '') +
       (fr && ms.some((x) => x.wv != null) ? '<p class="tkey">Dashed ring: the whole dataset.</p>' : '') +
       (side.length ? '' : besideLine(card, shown)) +
@@ -2767,6 +2767,8 @@
       (selOn() && !vsOn() && !small ? selBlocks(K.selLead) : '') +
       secs +
       folded +
+      // the abundance note of the protein-set tiles, once under the sections (the question page keeps its own)
+      ((secs + folded).includes('data-setnote') ? `<p class="muted small ov-foot">${esc(SET_NOTE)}</p>` : '') +
       (selOn() ? '' : (K.overviewBlocks || []).map((f) => f()).join(''))
     ); // the modules' own blocks (Starting points)
   }
