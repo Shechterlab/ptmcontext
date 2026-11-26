@@ -54,3 +54,8 @@ def test_the_writer_and_reader_rows_read_name_class_and_partners_or_none():
     js = src('kit-pix.js')
     assert 'const classOne' in js and '<span class="muted">none</span>' in js
     assert 'binds none of the other' not in js
+
+
+def test_an_interactions_tile_names_the_comparison_its_rows_share():
+    js = src('kit-interactions.js')
+    assert 'function compareOf' in js and 'compareOf(h)' in js

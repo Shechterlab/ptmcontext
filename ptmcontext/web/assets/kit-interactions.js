@@ -2680,6 +2680,12 @@
       '<ellipse cx="10" cy="10" rx="8" ry="6" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="19" cy="10" rx="8" ry="6" fill="none" stroke="currentColor" stroke-width="2"/>',
     structure: '<path d="M2 14 l6 -8 l6 8 l6 -8 l6 8" fill="none" stroke="currentColor" stroke-width="2"/>',
   };
+  // the comparison the tile's tests share, in the words of their labels ("..., among arginines RBR-ID measured" in each
+  // row: "among arginines measured"); '' when the rows do not all say it
+  function compareOf(h) {
+    const ms = rowsFor(h.rows || [], 'mantel_haenszel').map((x) => /, among (\w+) .*\bmeasured$/.exec(x.label || ''));
+    return ms.length && ms.every((m) => m && m[1] === ms[0][1]) ? `among ${ms[0][1]} measured` : '';
+  }
   function highlightsHtml(pg) {
     if (!pg.highlights.length) return '';
     return `<div class="ix-hls">${pg.highlights
@@ -2705,7 +2711,7 @@
           (h.glyph
             ? `<svg class="ix-glyph" viewBox="0 0 28 20" aria-hidden="true">${GLYPH[h.glyph] || ''}</svg>`
             : '') +
-          `<b>${esc(v)}</b><span>${esc(h.label)}</span>${note ? `<em class="ix-hq">${esc(note)}</em>` : ''}${h.tag ? `<small>${esc(h.tag)}</small>` : ''}</a>`
+          `<b>${esc(v)}</b><span>${esc(h.label)}${compareOf(h) ? `, ${esc(compareOf(h))}` : ''}</span>${note ? `<em class="ix-hq">${esc(note)}</em>` : ''}${h.tag ? `<small>${esc(h.tag)}</small>` : ''}</a>`
         );
       })
       .join('')}</div>`;
