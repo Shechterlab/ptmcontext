@@ -2610,13 +2610,12 @@
       phrases.length <= 1 ? phrases.join('') : phrases.slice(0, -1).join(', ') + ' and ' + phrases[phrases.length - 1];
     const fill = (t) =>
       esc(t).replace('{list}', esc(list)).replace('{marks}', esc(theMarks())).replace('{residues}', esc(W.residues));
-    return `<p class="ix-answer">${
-      phrases.length
-        ? fill(pg.answer.more)
-        : fill(pg.answer.none || `{marks} are not ` + `enriched at these contacts.`).replace(/^./, (c) =>
-            c.toUpperCase()
-          )
-    }</p>`;
+    // the tiles state what is enriched; the head says only when nothing is
+    if (phrases.length) return '';
+    return `<p class="ix-answer">${fill(pg.answer.none || `{marks} are not ` + `enriched at these contacts.`).replace(
+      /^./,
+      (c) => c.toUpperCase()
+    )}</p>`;
   }
   // a page with no answer sentence and no highlight cards: one line on the evidence it has, and that nothing is tested
   function evidenceLine(pg) {

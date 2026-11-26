@@ -411,7 +411,11 @@
     K.S.view === 'protein' && String(K.S.arg).split('/')[0] === acc && !!document.getElementById('s3d');
   const inputsOf = (part) =>
     (SD.inputs?.[part] || []).map((n) => ({ name: n, ...(D.inputs?.[n] || {}), md5: D.run?.inputs?.[n]?.md5 || '' }));
-  const dateWords = (v) => String(v || '').replace(/\b\d{4}-\d{2}-\d{2}\b/g, (m) => K.hdate(m)); // the same date form as the header and footer
+  // the same date form as the header and footer; "<explorer name> release v1.7.0" reads "Data: <dataset> v1.7.0"
+  const dateWords = (v) =>
+    String(v || '')
+      .replace(/^.*? release (?=v\d)/, D.dataset?.label ? `Data: ${D.dataset.label} ` : '$&')
+      .replace(/\b\d{4}-\d{2}-\d{2}\b/g, (m) => K.hdate(m));
   const tableWords = (part) =>
     inputsOf(part)
       .map((x) => dateWords(x.version) || x.name)

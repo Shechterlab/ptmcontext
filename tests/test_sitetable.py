@@ -120,7 +120,8 @@ def test_a_sites_variants_have_one_counter_and_other_pages_show_its_line():
 def test_the_conditions_of_p_lp_variants_come_from_the_site_cards_tables_not_cv_json():
     card = (ASSETS / 'kit-sitecard.js').read_text()
     assert 'const variantConditions =' in card and 'const conditionsText =' in card
-    assert '${esc(x.highlight.label)} conditions:' in card  # the site card's variant block shows them
+    assert 'x.highlight.title || x.highlight.label' in card  # the site card's variant block shows them
+    assert ' conditions:' in card
     table = (ASSETS / 'kit-sitetable.js').read_text()
     assert 'K.card.vc.conditionsText(M.vtb, M.p.acc, r.pos)' in table and 'tsvOnly: true' in table
     # the inherited view reads the same P/LP rule through the build
