@@ -777,7 +777,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: disease_ontology
     new: true
     test: protein_sets
-    title: Disease Ontology
+    title: Disease classes (Disease Ontology)
     question: "Which Disease Ontology terms hold more genes of phosphorylated proteins than expected?"
     sub: "Genes of phosphorylated proteins vs all reviewed human genes with a Disease Ontology term, every term of at least 10 genes; a term includes the genes of its child terms (one-sided hypergeometric test, as DOSE's enrichDO). Association, not causation"
     section: Disease associations
@@ -1741,7 +1741,7 @@ website:                  # the look and words of the website (ptmc web); layout
         items:
         - "Mutation propensity: O/E and q for every serine, threonine and tyrosine in TCGA, DepMap and gnomAD from the release, and a descriptive O/E for ClinVar."
         - "Protein cards: lollipops (stick height: count; circle size: O/E; ring: q < 0.05)."
-        - "A Mutations page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), ClinVar pathogenic (variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
+        - "A Mutations page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), ClinVar pathogenic (variants by DisGeNET family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
         - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
         doi: "10.5281/zenodo.24429699"
       - title: PTM_Pipeline v1.6.0 data release (2026-11-20)
@@ -1904,7 +1904,7 @@ website:                  # the look and words of the website (ptmc web); layout
     groups:            # the headings the picker lists terms under
       - {name: GO, from: [go_bp, go_binding]}
       - {name: Cell compartment, from: [hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
-      - {name: Disease, from: [disease_family, disease_ontology, disease_term]}
+      - {name: Disease classes (Disease Ontology), from: [disease_family, disease_ontology, disease_term]}
       - {name: Pathway, from: [reactome_top_level, reactome_pathway]}
       - {name: Protein class, from: [panther_group, panther_class, panther_subclass]}
       - {name: Condensate, from: [condensate, condensate_role, condensate_proteome]}
@@ -2349,7 +2349,7 @@ website:                  # the look and words of the website (ptmc web); layout
     sets:                  # cards of the protein's own sets, each linked to its page and selecting its proteins
       - id: p-dis
         title: Disease associations
-        summary: "UniProt, Open Targets, Disease Ontology, DisGeNET terms and disease families"
+        summary: "UniProt, Open Targets, Disease Ontology, DisGeNET terms and families"
         analyses: [disease_ontology, disease_term, disease_family, disease_family_additional]
         term_groups: {terms: disease_term, families: [disease_family, disease_family_additional]}
         branches: disease_ontology

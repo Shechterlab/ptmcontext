@@ -365,7 +365,7 @@
                   `<li><b>Ranked sites</b>: tumors, cell lines and gnomAD, ranked by p; top 20 per table, the header counts sites with q below 0.05. The download has every tested site.</li>` +
                   `<li><b>Cancer: tumors</b>: oncoprint of the sites with the most changed TCGA tumors, with coding calls per Mb above.</li>` +
                   (D.propensity.cv
-                    ? `<li><b>ClinVar pathogenic</b>: pathogenic and likely pathogenic variants by disease family, a row per site and a column per family. Click a cell to list its variants. A variant counts once in each of its families. A condition no rule matches is Other / unassigned. Counts are not tested against expectation.</li>`
+                    ? `<li><b>ClinVar pathogenic</b>: pathogenic and likely pathogenic variants by DisGeNET family, a row per site and a column per family. Click a cell to list its variants. A variant counts once in each of its families. A condition no rule matches is Other / unassigned. Counts are not tested against expectation.</li>`
                     : '') +
                   `<li><b>Show all sites as a chart</b>: sites ranked by signed −log10 p. Ring: q < 0.05; dashed: fewer than expected. Highlight genes outlines the sites of a pasted list.</li>` +
                   `<li><b>Paste genes</b>, UniProt accessions or sites, one per line or separated by commas or spaces. The list is tested as a whole for each source; q is across the list's sites only. Up to 5,000 sites.</li></ul>`
