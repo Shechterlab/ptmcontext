@@ -885,14 +885,17 @@
             (SC_OPEN.has(id) ? SC_OPEN.get(id) : open) ? ' open' : ''
           }><summary>${esc(title)}</summary><dl class="sc-kv">${rows}</dl></details>`
         : '';
+    // position: the sequence, the model's confidence, the neighbor and the question rows; the sources' states and calls are the experiments
     const siteRows =
-      kv('Sequence (±7 residues)', `<span class="mono">${winHtml(m[1])}</span>`) +
-      afRow +
-      ((CC.states || []).length ? kv(esc(CL_WORDS.states), ready ? K.card.states(c) : wait) : '') +
-      (near != null
-        ? kv(`Nearest other ${esc(W.mark)}`, `${esc(siteOf(p, near))}, ${int(Math.abs(near - m[0]))} aa away`)
-        : '') +
-      (CC.calls ? kv(esc(CL_WORDS.calls), ready ? K.card.calls(c) : wait) : '');
+        kv('Sequence (±7 residues)', `<span class="mono">${winHtml(m[1])}</span>`) +
+        afRow +
+        (near != null
+          ? kv(`Nearest other ${esc(W.mark)}`, `${esc(siteOf(p, near))}, ${int(Math.abs(near - m[0]))} aa away`)
+          : '') +
+        qrows.join(''),
+      expRows =
+        ((CC.states || []).length ? kv(esc(CL_WORDS.states), ready ? K.card.states(c) : wait) : '') +
+        (CC.calls ? kv(esc(CL_WORDS.calls), ready ? K.card.calls(c) : wait) : '');
     const uniRow = kv(
       `UniProt at ${esc(siteOf(p, m[0]))}`,
       PV.uniJson
@@ -908,12 +911,13 @@
     const restRows =
       rest.map((n) => kv(esc(SPECS[n].label), attrHtml(m, n, true), SPECS[n].help)).join('') +
       (K.shown?.on && K.shown.counted(m) ? kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, false))) : '');
-    // "Reported by" and the UniProt lines come first, then the site's own rows; the questions, the other questions and the
-    // other attributes are one closed list (below the card's records)
+    // the Overview's order: mutations, interactions, position, experiments, then the sources and the UniProt lines, and the
+    // other attributes as one closed list
     const siteHtml =
-      group('records', 'UniProt and sources', uniRow + citeRow, true) + group('site', 'Site', siteRows, true);
-    const nMore = qrows.length + qmore.length + rest.length + (K.shown?.on && K.shown.counted(m) ? 1 : 0),
-      moreHtml = group('questions', `Other attributes (${nMore})`, qrows.join('') + qmore.join('') + restRows, false);
+      group('site', 'Position in the protein', siteRows, true) + group('experiments', 'Experiments', expRows, true);
+    const srcHtml = group('records', 'UniProt and sources', uniRow + citeRow, true);
+    const nMore = qmore.length + rest.length + (K.shown?.on && K.shown.counted(m) ? 1 : 0),
+      moreHtml = group('questions', `Other attributes (${nMore})`, qmore.join('') + restRows, false);
     const ev = ready ? K.card.evidenceBlock(c) : '',
       recs = ready ? K.card.recordsBlock(c) : '',
       wr = ready ? K.card.writerBlock(c) : '';
@@ -976,8 +980,11 @@
         )}<button type="button" ` +
         `class="btn small" data-site-close aria-label="Clear selection" title="Clear selection">×</button></span></div>`) +
       sumHtml +
-      `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site">${siteHtml}</section>${recs}${wr}</div>` +
       varBlock +
+      // interactions: the records of proteins that write, read or bind the site, then the evidence (RNA and DNA contacts with it)
+      `<div class="sc-grid one">${wr}${recs}${ev}</div>` +
+      (siteHtml ? `<section class="sc-site">${siteHtml}</section>` : '') +
+      (srcHtml ? `<section class="sc-src">${srcHtml}</section>` : '') +
       `<section class="sc-more">${moreHtml}</section>` +
       (!ready && Object.keys(D.tables || {}).length ? K.loading('Loading tables…') : '') +
       '</section>'

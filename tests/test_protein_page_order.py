@@ -13,7 +13,22 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'ptmcontext' / 'web' / 'assets'
 HUMAN = ('methylarginine', 'methyllysine', 'lysine', 'phospho')
-THEME = ['p-sitetab', 'p-ptm', 'p-depmap', 'p-germline', 'p-cc', 'p-ix', 'p-na', 'p-pert', 'p-cons', 'p-struct']
+THEME = [
+    'p-sitetab',
+    'p-cond',
+    'p-dis',
+    'p-depmap',
+    'p-germline',
+    'p-kinds',
+    'p-cc',
+    'p-ix',
+    'p-na',
+    'p-ptm',
+    'p-cluster',
+    'p-pert',
+    'p-cons',
+    'p-struct',
+]
 
 
 def read(name: str) -> str:
@@ -31,8 +46,8 @@ def test_sections_follow_the_theme_order_on_every_human_explorer():
         assert 'p-score' not in order and all('p-score' not in g['folds'] for g in p['groups']), site
         at = [order.index(x) for x in THEME]
         assert at == sorted(at), site
-        # the details come last, and the where-in-the-cell fold starts closed
-        assert order.index('p-cell') > order.index('p-struct') and 'p-cell' not in p['open'], site
+        # the where-in-the-cell fold comes with the location, and starts closed
+        assert order.index('p-cell') < order.index('p-cond') and 'p-cell' not in p['open'], site
         folds = [f for g in p['groups'] for f in g['folds']]
         assert folds == [x for x in order if x in folds] and sorted(folds) == sorted(order), site
         assert all(set(g) <= {'id', 'title', 'folds', 'switch'} for g in p['groups']), site

@@ -102,10 +102,14 @@ def test_the_card_order_in_the_source():
     # one closed list for the questions and the attributes
     assert "group('more-questions'" not in src and "group('attributes'" not in src
     assert '`Other attributes (${nMore})`' in src
-    # UniProt and sources, then the records, then the closed lists
-    assert src.index("group('records'") < src.index("group('site'")
+    # the Overview's order: variants, interactions, position, experiments, then the sources and the closed list
+    assert src.index("group('site'") < src.index("group('records'")
     assert (
-        src.index('${ev}<section class="sc-site">') < src.index('varBlock +') < src.index('<section class="sc-more">')
+        src.index('varBlock +')
+        < src.index('${wr}${recs}${ev}')
+        < src.index('<section class="sc-site">')
+        < src.index('<section class="sc-src">')
+        < src.index('<section class="sc-more">')
     )
 
 
