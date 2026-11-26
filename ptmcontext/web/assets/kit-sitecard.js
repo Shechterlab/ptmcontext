@@ -912,6 +912,8 @@
     }
     return null;
   };
+  // condition names that name no condition ('not provided'): left out, as the disease families leave them out
+  const NO_COND = new Set((D.no_condition || []).map((t) => String(t).toLowerCase()));
   const variantConditions = (tb, acc, x, pos) => {
     const f = (x.fields || []).find((y) => y.separator);
     if (!x.highlight || !f) return [];
@@ -923,7 +925,7 @@
         String(r[f.column] ?? '')
           .split(f.separator)
           .map((t) => t.trim())
-          .filter((t) => t && !names.includes(t))
+          .filter((t) => t && !NO_COND.has(t.toLowerCase()) && !names.includes(t))
           .forEach((t) => names.push(t))
       );
     return names;
@@ -1665,7 +1667,7 @@
     if ((vc.entries.length && vc.siteVariants(c.tb, c.pos).some((x) => x.n)) || vc.hasChanges(c.tb, c.pos))
       lines.push(
         (lines.variants = [
-          'Variants',
+          lab('Variants', 'p-germline,p-mutations', 'Open the variant sections'),
           vc.line(c.tb, c.acc, c.pos, true).replace(/^<a /, '<a title="Open the variants" '),
         ])
       );

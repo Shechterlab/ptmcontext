@@ -36,6 +36,7 @@ from .cellpct import cell_percent, cell_proteome
 from .counts import counts_data
 from .glance import glance
 from .landing import whats_new
+from . import disease_families
 from . import seldata as SEL
 from . import structure as S3D
 from . import nucleic as NUC
@@ -695,6 +696,8 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         **({'reading': web['reading']} if web.get('reading') else {}),
         'legacy_links': web.get('legacy_links') or {},
         'legacy_routes': web.get('legacy_routes') or {},
+        # condition names that name no condition: the site card drops them, as the disease families do
+        'no_condition': sorted(disease_families.NO_CONDITION),
         'tabs': web.get('tabs') or {},
         'export': web.get('export') or {},
         'search_aliases': web.get('search_aliases') or {},
