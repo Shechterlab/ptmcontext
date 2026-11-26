@@ -8437,6 +8437,9 @@ details.sc-vars[open] > summary {
 }
 
 /* ---- the protein page's folds, the site card and the interactions view ---- */
+.sc-note {
+  margin: 0.4rem 0 0;
+}
 .sc-note > summary {
   cursor: pointer;
   font-size: 0.8rem;

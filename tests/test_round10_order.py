@@ -86,3 +86,13 @@ def test_the_four_site_files_pass_the_site_checks():
 
     for n in HUMAN:
         assert not S.website_problems(S.load_site(ROOT / 'sites' / f'{n}.yaml')), n
+
+
+def test_the_site_card_has_a_mutations_block_then_an_interactions_block():
+    src = (ROOT / 'ptmcontext/web/assets/kit-proteins.js').read_text()
+    card = (ROOT / 'ptmcontext/web/assets/kit-sitecard.js').read_text()
+    assert '<h4>Mutations at ${esc(siteOf(p, m[0]))}</h4>' in src and 'id="sc-variants"' in src
+    assert 'Variants at' not in src
+    assert src.index('id="sc-variants"') < src.index('id="sc-interactions"') < src.index('${wr}${recs}${ev}')
+    assert "group('records', 'Sources'" in src and 'UniProt and sources' not in src
+    assert '<summary>Key</summary>' not in card

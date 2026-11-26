@@ -915,7 +915,7 @@
     // other attributes as one closed list
     const siteHtml =
       group('site', 'Position in the protein', siteRows, true) + group('experiments', 'Experiments', expRows, true);
-    const srcHtml = group('records', 'UniProt and sources', uniRow + citeRow, true);
+    const srcHtml = group('records', 'Sources', uniRow + citeRow, true);
     const nMore = qmore.length + rest.length + (K.shown?.on && K.shown.counted(m) ? 1 : 0),
       moreHtml = group('questions', `Other attributes (${nMore})`, qmore.join('') + restRows, false);
     const ev = ready ? K.card.evidenceBlock(c) : '',
@@ -927,7 +927,7 @@
         (CC.tables || []).some((x) => K.card.has(x.table)) ||
         (CC.calls?.tables || []).some(K.card.has));
     const varBlock =
-      `<details class="sc-vars" id="sc-variants" data-sc-group="variants"${SC_OPEN.get('variants') === true ? ' open' : ''} aria-label="Variants at ${esc(siteOf(p, m[0]))}"><summary><h4>Variants at ${esc(siteOf(p, m[0]))}</h4></summary><dl ` +
+      `<details class="sc-vars" id="sc-variants" data-sc-group="variants"${SC_OPEN.get('variants') === true ? ' open' : ''} aria-label="Mutations at ${esc(siteOf(p, m[0]))}"><summary><h4>Mutations at ${esc(siteOf(p, m[0]))}</h4></summary><dl ` +
       `class="sc-kv">` +
       kv(
         'UniProt variants',
@@ -982,7 +982,9 @@
       sumHtml +
       varBlock +
       // interactions: the records of proteins that write, read or bind the site, then the evidence (RNA and DNA contacts with it)
-      `<div class="sc-grid one">${wr}${recs}${ev}</div>` +
+      (wr || recs || ev
+        ? `<details class="sc-vars" id="sc-interactions" data-sc-group="interactions"${SC_OPEN.get('interactions') === false ? '' : ' open'} aria-label="Interactions at ${esc(siteOf(p, m[0]))}"><summary><h4>Interactions</h4></summary><div class="sc-grid one">${wr}${recs}${ev}</div></details>`
+        : '') +
       (siteHtml ? `<section class="sc-site">${siteHtml}</section>` : '') +
       (srcHtml ? `<section class="sc-src">${srcHtml}</section>` : '') +
       `<section class="sc-more">${moreHtml}</section>` +
