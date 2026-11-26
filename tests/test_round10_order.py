@@ -62,3 +62,27 @@ def test_the_interactions_page_lists_partners_then_structures_then_rna_and_dna()
     ma = next(p for p in site('methylarginine')['website']['pages'] if p['id'] == 'interactions')
     last = ma['groups'][-1]
     assert last['name'] == 'RNA and DNA' and 'ix-nac' in [s['id'] for s in last['sections']]
+
+
+def test_lysine_overview_puts_its_modification_sections_next_to_other_modifications():
+    order = site('lysine')['website']['overview']['group_order']
+    i = order.index('Other modifications')
+    assert order[i + 1 : i + 3] == ['Same lysine, different modifications', 'Modification type']
+    assert order.index('Enzymes and readers') < i < order.index('Position in the protein')
+
+
+def test_methyllysine_classes_show_the_all_states_tiles_and_fold_the_per_state_ones():
+    sec = next(
+        s for s in site('methyllysine')['website']['overview']['sections'] if s['name'] == 'Classes and pathways'
+    )
+    ids = [c['analysis'] for c in sec['cards']]
+    per_state = [i for i in ids if i.endswith(('_me1', '_me2', '_me3'))]
+    assert per_state and ids[-len(per_state) :] == per_state
+    assert sec['show'] == len(ids) - len(per_state)
+
+
+def test_the_four_site_files_pass_the_site_checks():
+    from ptmcontext import site as S
+
+    for n in HUMAN:
+        assert not S.website_problems(S.load_site(ROOT / 'sites' / f'{n}.yaml')), n
