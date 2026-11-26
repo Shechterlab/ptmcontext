@@ -539,7 +539,11 @@
       'where-in-the-cell': 'localization',
       'which-proteins': 'classes-and-pathways',
       'where-in-the-protein': 'position-in-the-protein',
-      'rna-and-dna-binding': 'interactions-and-enzymes', // its tile is a link under Interactions and enzymes
+      'rna-and-dna-binding': 'enzymes-and-readers', // its tile is a link under Enzymes and readers
+      'interactions-and-enzymes': 'enzymes-and-readers',
+      'disease-and-cancer': 'disease-associations',
+      'evidence-and-studies': 'studies-and-databases',
+      'which-kinases-': 'kinase-motifs',
     };
     if (S.jumpArg && OLD_SECTIONS[S.jumpArg]) S.jumpArg = OLD_SECTIONS[S.jumpArg];
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';

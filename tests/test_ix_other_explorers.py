@@ -62,7 +62,7 @@ def test_the_interface_questions_have_one_home(name):
     assert {'pdb_interface', 'predicted_interface', 'intact'} <= here
     assert not (here & on_overview)  # a card on the Overview would be a second home
     ov = pg['overview']
-    assert ov['rows'] == [] and ov['section'] == 'Interactions and enzymes'  # one pointer, no tests of its own
+    assert ov['rows'] == [] and ov['section'] == 'Enzymes and readers'  # one pointer, no tests of its own
     assert pg['aliases']['ixg-structures'] == 'ixg-structures-and-models'
 
 

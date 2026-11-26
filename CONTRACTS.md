@@ -458,9 +458,9 @@ Other modifications shown beside a site's own mark, declared in the site file as
 map row the context rows follow (default `ptm`), `website.context_group` the Filters group's name.
 
 What follows from the entries, with nothing else written: the input role; a protein-map row per entry (ticks, hover
-with state, evidence and sources); in the run, per mark `a.ctx_near` ("Other marks nearby": the marks within the
+with state, evidence and sources); in the run, per mark `a.ctx_near` ("Other modifications nearby": the marks within the
 window with signed distance, nearest first) and `a.ctx_near_<id>` (yes or no), and per protein `p.ctx_n_<id>` (the
-entry's residues on it); on the website, "Other marks nearby" on the site card, the filter "Has a <noun> within ±N", a
+entry's residues on it); on the website, "Other modifications nearby" on the site card, the filter "Has a <noun> within ±N", a
 "Nearby marks" column of the Sites table and one count column per entry of the Proteins table (all off by default under
 Columns), and the same columns in the downloads (where the site file lists them: `website.sites.table`,
 `website.proteins.columns`, `.download`, `website.filters`). They are context only: a context mark never changes which

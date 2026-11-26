@@ -928,6 +928,7 @@ def website_problems(site: dict) -> list[str]:
                 'proteins',
                 'sites',
                 'idrs',
+                'mutations',
             }:
                 out.append(f'website.legacy_links: {key!r} opens {to!r}, which is not a page of this site')
         elif not to.startswith('?') and to not in questions:

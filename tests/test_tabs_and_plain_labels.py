@@ -40,7 +40,7 @@ def test_every_explorer_has_the_most_sites_preset_and_the_sorts_equal_the_starti
     ma = _site('methylarginine')['website']
     start = ma['overview']['starting_points']['lists']
     pre = ma['proteins']['presets']
-    assert [p['title'] for p in pre] == ['Most sites', 'Most methylated for their arginine count', 'Dense stretch']
+    assert [p['title'] for p in pre] == ['Most sites', 'Most methylated for their arginine count', 'Densest clusters']
     for a, b in zip(start, pre):  # the same definitions, so the same lists
         for k in ('by', 'order', 'where', 'show', 'n'):
             assert a.get(k) == b.get(k), (a['title'], k)

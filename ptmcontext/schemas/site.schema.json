@@ -2002,7 +2002,7 @@
           },
           "context_group": {
             "type": "string",
-            "description": "the Filters panel group the context marks' filters go in (default 'Other marks')"
+            "description": "the Filters panel group the context marks' filters go in (default 'Other modifications')"
           },
         "name": {
           "type": "string"
@@ -8769,7 +8769,7 @@
     },
       "context_marks": {
         "type": "array",
-        "description": "other modifications shown beside the site's own mark (CONTRACTS.md, Context marks): a row of the protein map, 'Other marks nearby' on the site card, a filter, columns of the Sites and Proteins tables and their downloads. Never part of a statistic, except through a near_marks question",
+        "description": "other modifications shown beside the site's own mark (CONTRACTS.md, Context marks): a row of the protein map, 'Other modifications nearby' on the site card, a filter, columns of the Sites and Proteins tables and their downloads. Never part of a statistic, except through a near_marks question",
         "items": {
           "type": "object",
           "required": [
