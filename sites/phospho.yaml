@@ -2197,15 +2197,16 @@ website:                  # the look and words of the website (ptmc web); layout
       logo: true
       logo_mode: freq      # the logo's first stack is residue frequency, as the explorer's; bits is a switch
     open_partners: true
-    order: [p-map, p-sitetab, p-sites, p-ptm, p-cluster, p-depmap, p-germline, p-cc, p-ix, p-na, p-pert, p-exp, p-cons, p-struct, p-cell, p-cond, p-dis, p-kinds, p-regions, p-seq]   # the page's order: sites, other modifications, variants, binding, experiments, then the details
-    groups:                # about seven headings in the page's order: sites, variants, binding, evidence, then the details (website.protein.groups)
-      - {id: g-overview, title: Map and summary, folds: [p-map]}
-      - {id: g-sites, title: Sites and other modifications, folds: [p-sitetab, p-sites, p-ptm, p-cluster]}
-      - {id: g-variants, title: Disease variants, folds: [p-depmap, p-germline]}
+    order: [p-map, p-sitetab, p-sites, p-cell, p-cond, p-dis, p-depmap, p-germline, p-kinds, p-cc, p-ix, p-na, p-ptm, p-cluster, p-regions, p-seq, p-pert, p-exp, p-cons, p-struct]   # the page's order, as the Overview's sections
+    groups:                # the headings in the Overview's order: location, disease, classes, interactions, other modifications, position, then the experiments (website.protein.groups)
+      - {id: g-overview, title: Map and summary, folds: [p-map, p-sitetab, p-sites]}
+      - {id: g-location, title: Localization, switch: true, folds: [p-cell, p-cond]}
+      - {id: g-disease, title: Disease associations and mutations, switch: true, folds: [p-dis, p-depmap, p-germline]}
+      - {id: g-classes, title: Classes and pathways, switch: true, folds: [p-kinds]}
       - {id: g-binding, title: Interactions, folds: [p-cc, p-ix, p-na]}
+      - {id: g-modifications, title: Other modifications, folds: [p-ptm]}
+      - {id: g-position, title: Position in the protein, folds: [p-cluster, p-regions, p-seq]}
       - {id: g-evidence, title: "Experiments, conservation and structure", folds: [p-pert, p-exp, p-cons, p-struct]}
-      - {id: g-context, title: Context, switch: true, folds: [p-cell, p-cond, p-dis, p-kinds]}
-      - {id: g-sequence, title: Domains and sequence, folds: [p-regions, p-seq]}
     headings:              # the cards front end's folds under labeled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
       - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
       - {id: h-sites, title: Sites and structure, folds: [p-pert, p-exp]}

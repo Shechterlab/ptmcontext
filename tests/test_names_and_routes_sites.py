@@ -133,3 +133,20 @@ def test_interactions_page_puts_protein_contacts_before_rna_and_dna(name):
     assert page['title'] == 'Protein, RNA and DNA contacts'
     names = [g['name'] for g in page['groups']]
     assert names.index('Binding proteins and partners') < names.index('RNA and DNA')
+
+
+@pytest.mark.parametrize('name', SITES)
+def test_protein_page_groups_follow_the_overview_order(name):
+    protein = _site(name)['website']['protein']
+    assert [g['title'] for g in protein['groups']] == [
+        'Map and summary',
+        'Localization',
+        'Disease associations and mutations',
+        'Classes and pathways',
+        'Interactions',
+        'Other modifications',
+        'Position in the protein',
+        'Experiments, conservation and structure',
+    ]
+    assert [f for g in protein['groups'] for f in g['folds']] == protein['order']
+    assert protein['order'].index('p-ix') < protein['order'].index('p-na')
