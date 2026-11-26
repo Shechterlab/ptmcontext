@@ -201,16 +201,16 @@
     mantel_haenszel: [
       'within each protein',
       `Compares each ${W.mark} only with the other ${W.residues} of its own protein, so a protein with many sites cannot ` +
-        `decide the result. Applies to tiles marked ⇄; protein-class questions keep their own test.`,
+        `decide the result. Applies to residue questions only.`,
     ],
     fisher: [
       'across all proteins',
       `Puts all the ${W.residues} of all the proteins in one group. Simpler, but a protein with many sites counts for more. ` +
-        `Applies to tiles marked ⇄; protein-class questions keep their own test.`,
+        `Applies to residue questions only.`,
     ],
     study: [
       'within studies',
-      `Compares ${W.marks} only with those reported by the same studies or databases. Applies to tiles marked ⇄.`,
+      `Compares ${W.marks} only with those reported by the same studies or databases. Applies to residue questions only.`,
     ],
   };
   // plain words for the terms of the tests, shown on hover (an abbr) and in one line on the Help page
