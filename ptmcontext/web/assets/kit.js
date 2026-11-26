@@ -104,6 +104,8 @@
   const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
   const int = (n) => (n == null ? '–' : Number(n).toLocaleString('en-US'));
+  // a count with its noun, by the count: "1 protein", "2 proteins", "0 proteins"
+  const plural = (n, one, many) => `${int(n)} ${n === 1 ? one : many || one + 's'}`;
   // effect sizes as the Methylarginine Site Explorer prints them: 19, 2.1, 1.19, 0.48
   const fxn = (v) =>
     v == null
@@ -417,6 +419,7 @@
     S,
     esc,
     int,
+    plural,
     fx,
     fxn,
     fq,

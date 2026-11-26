@@ -25,3 +25,9 @@ def test_the_small_selection_cards_share_the_writer_chip_and_say_the_legend_once
     assert st.count('A ring means q below') == 2  # the table's note and the cards' single legend
     assert 'o.legend' in few and 'o.lead' in few
     assert 'loadUni' in src('kit-proteins.js')
+
+
+def test_search_suggestion_counts_pluralize_through_one_helper():
+    assert 'const plural = (n, one, many)' in src('kit.js')
+    assert 'K.plural(t.n, noun())' in src('kit-terms.js')
+    assert 'K.plural(n, `${W.marked} protein`)' in src('kit-search.js')

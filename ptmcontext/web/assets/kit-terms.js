@@ -149,8 +149,7 @@
   const state = () => (!TI || failed ? 'none' : ix ? 'ready' : loading ? 'loading' : 'idle');
 
   // ---- the rows the search box offers -----------------------------------------------------------------------------
-  const int = K.int || String;
-  const noun = () => `${K.W?.marked || ''} proteins`.trim();
+  const noun = () => `${K.W?.marked || ''} protein`.trim();
   function suggest(phrase) {
     if (!ix) return [];
     return rank(ix, phrase).map(({ t }) => ({
@@ -160,7 +159,7 @@
       sub: [t.src.title, t.name !== t.id && /\d/.test(t.id) && t.id.length <= 24 ? t.id : '']
         .filter(Boolean)
         .join(' · '),
-      n: `${int(t.n)} ${noun()}`,
+      n: K.plural(t.n, noun()),
       filter: [t.src.key, [t.id]],
     }));
   }

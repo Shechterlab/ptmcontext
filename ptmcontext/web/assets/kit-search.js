@@ -113,9 +113,7 @@
       ];
       names
         .sort((a, b) => b[1] - a[1])
-        .forEach(([s, n]) =>
-          out.push([String(A[key].labels?.[s] || s), `${int(n)} ${W.marked} protein${n === 1 ? '' : 's'}`])
-        );
+        .forEach(([s, n]) => out.push([String(A[key].labels?.[s] || s), K.plural(n, `${W.marked} protein`)]));
     }
     if (SPECS[key] && sd)
       (sd.attributes[key] || []).filter(Boolean).forEach((v) => out.push([v, (SPECS[key].values || {})[v] || '']));
