@@ -529,7 +529,16 @@
           e.preventDefault();
           close();
         }
-      } else if (e.key === 'Enter') close();
+      } else if (e.key === 'Enter') {
+        // a set or term named in full and entered without picking it: the top term match applies, as choosing it does
+        const top = suggestions(input.value);
+        if (top[0]?.kind === 'termsel' && top[0].group) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          items = top;
+          choose(0);
+        } else close();
+      }
     },
     true
   );

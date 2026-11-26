@@ -39,12 +39,12 @@ def test_site_table_uses_summary_items_and_is_capped():
 
 def test_sites_tab_has_writer_column():
     js = read('kit-sitetable.js')
-    assert "label: 'Writer (UniProt)'" in js and 'K.prot.summaryAt' in js
+    assert "|| 'Writer (UniProt)'" in js and 'K.prot.summaryAt' in js
 
 
 def test_sites_tab_writer_column_reads_uniprot_for_shown_rows():
     js = read('kit-sites.js')
-    assert "label: 'Writer (UniProt)'" in js and "show: ['writer']" in js  # added on every explorer
+    assert "|| 'Writer (UniProt)'" in js and "show: ['writer']" in js  # added on every explorer
     assert 'ft_mod_res' in js and 'K.card.summaryItems(' in js and 'writerHtml(m, true)' in js  # sorting never fetches
     assert 'show: [writer], default: true' in (
         Path(__file__).resolve().parents[1] / 'sites' / 'phospho.yaml'

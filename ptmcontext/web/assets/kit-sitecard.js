@@ -1047,6 +1047,7 @@
 
   // ---- who binds it, and how it was found (site_records) ------------------------------------------------------------
   const RC = C.records || {};
+  const RL = C.role_labels || {}; // the site file's names for the enzyme roles (phospho: Kinase (UniProt), Phosphatase)
   const grpLabel = (g) => {
     const attr = RC.groups && SPECS[RC.groups] ? RC.groups : '';
     if (attr && (SPECS[attr].values || {})[g] != null) return vLabel(attr, g); // the attribute's label wins
@@ -1574,7 +1575,7 @@
             : namesBySpecies(wxs, SUMMARY_MAX, c.isListed, href(open(wg).join(',')), 'writer').html,
         uniHtml = uni.length ? `${uni.join(', ')} <span class="muted">(UniProt)</span>` : '';
       lines.writer = [
-        lab('Writer', wx.size ? open(wg).join(',') : 'sc-uniprot', 'Open the records, or UniProt'),
+        lab(RL.writer || 'Writer', wx.size ? open(wg).join(',') : 'sc-uniprot', 'Open the records, or UniProt'),
         folded ? `${uniHtml} · ${recs}` : recs + (recs && uni.length ? ' · ' : '') + uniHtml,
       ];
       lines.push(lines.writer);
@@ -1584,7 +1585,7 @@
       ex = groupPartners(by, eg);
     if (ex.size)
       lines.push([
-        lab('Eraser', open(eg).join(','), 'Open the records table'),
+        lab(RL.eraser || 'Eraser', open(eg).join(','), 'Open the records table'),
         namesBySpecies([...ex.values()], SUMMARY_MAX, c.isListed, href(open(eg).join(',')), 'eraser').html,
       ]);
     // 3. readers and binders: a count and the first three names, "+N more" opens the table
@@ -1617,7 +1618,7 @@
     if (cv)
       lines.push((lines.conservation = [lab('Conservation', 'p-cons', 'Open the conservation section'), esc(cv)]));
     // 6. marks nearby: the attribute's own text
-    if (o.near) lines.push(['Other marks nearby', o.near]);
+    if (o.near) lines.push(['Other modifications nearby', o.near]);
     return lines;
   }
   function cardSummary(c, o = {}) {

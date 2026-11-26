@@ -1667,7 +1667,7 @@
     if (!LN.length || !rec) return '';
     return fold(
       'p-cc',
-      'Interaction evidence at a glance',
+      'Interaction evidence by site',
       `${LN.length} types of evidence, site by site`,
       `<div class="card-head">` +
         (`${K.expBar(

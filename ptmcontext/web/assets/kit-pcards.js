@@ -271,11 +271,11 @@
         `<details class="pc-mapsfold"><summary>Cell maps table <span class="muted">· each map's words on ${esc(gene(p))}</span></summary>${mapsTable(p, ms)}</details>`,
       sum:
         sets.length || grades.length
-          ? `${nPl} of ${ms.length} maps find it: ${sumList(sets, 3)}${
+          ? `Located in ${nPl} of ${ms.length} maps: ${sumList(sets, 3)}${
               grades.length ? (sets.length ? '; ' : '') + grades.join(', ') : ''
             }`
-          : `${ms.length} maps, none ` + `finds it in a compartment`,
-      pic: K.pfolds ? K.pfolds.bigN([[`${nPl}/${ms.length}`, 'maps find it']]) : '',
+          : `Located in 0 of ${ms.length} maps`,
+      pic: K.pfolds ? K.pfolds.bigN([[`${nPl}/${ms.length}`, 'maps locate it']]) : '',
     };
   }
   // where the RNAs the protein binds gather: for each map of the bound RNAs (protein-set questions), the compartments of the protein's own sets, each with the dataset's test of it
@@ -1375,7 +1375,7 @@
     const html =
       sub +
       (verdict ? `<p class="pc-verdict">${verdict}</p>` : '') +
-      `<details class="pc-more"><summary>Spacing and sequence picture</summary>${dl}${pic}</details>`;
+      `<details class="pc-more"><summary>Site spacing and sequence</summary>${dl}${pic}</details>`;
     return {
       pic: '',
       html,
@@ -1384,7 +1384,7 @@
           ? `median spacing ${int(sp)} aa`
           : ''
         : q > PADJ
-          ? `not bunched (q ${qf(q)})`
+          ? `Clustering: not clustered (q ${qf(q)})`
           : `${int(sites)} within ${int(win)} aa (q ${qf(q)})`,
     };
   }
@@ -1616,8 +1616,8 @@
   // ---- the folds -----------------------------------------------------------------------------------------------------
   const CARDS = [
     ...(CELLFOLD ? [['location_cell', 'p-cell', 'Localization', cellBuild]] : []),
-    ['location', 'p-cond', 'Location', locationBuild],
-    ['dependency', 'p-depmap', 'Cancer cell lines', dependencyBuild],
+    ['location', 'p-cond', 'Condensates and HPA location', locationBuild],
+    ['dependency', 'p-depmap', 'Changes in tumors and cell lines', dependencyBuild],
     [
       'perturbations',
       'p-pert',
@@ -1627,7 +1627,7 @@
     ['experiments', 'p-exp', 'Experiments', experimentsBuild],
     ['clustering', 'p-cluster', 'Clustering', clusteringBuild],
     ['other_ptms', 'p-ptm', 'Other modifications', ptmsBuild],
-    ['germline', 'p-germline', 'Germline variants', germlineBuild],
+    ['germline', 'p-germline', 'ClinVar and gnomAD variants', germlineBuild],
   ].filter(([k]) => PC[k] || k === 'location_cell');
   const BUILD = { live: liveBuild };
   K.pcards = BUILD; // the cards' builders: (protein, record, tables) -> { html, sum }
