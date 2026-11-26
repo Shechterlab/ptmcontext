@@ -1915,7 +1915,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - title: PTM_Pipeline v1.7.0 data release (2026-11-21)
         items:
         - "Mutation propensity: O/E and q for every arginine in TCGA, DepMap and gnomAD from the release, and a descriptive O/E for ClinVar."
-        - "Protein cards now draw lollipops. Stick height is the count, circle size is O/E, and a ring marks q below 0.05. They replace the flag for counts at least 3 times the protein's average."
+        - "Protein cards: lollipops (stick height: count; circle size: O/E; ring: q < 0.05)."
         - "A Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), ClinVar pathogenic (variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
         - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
         doi: "10.5281/zenodo.24429699"

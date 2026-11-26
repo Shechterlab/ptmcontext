@@ -310,14 +310,14 @@
       ) +
       sec(
         'h-read',
-        `<p>Each tile is a question and each row a class. Each dot and number show the fold, drawn on a log scale: the share ` +
-          `of ${esc(W.marks)} in the class divided by the share of the comparison in it (1× is no difference). The line under it is ` +
-          `the test: odds ratio, 95% interval and q. Hover a row, or tap it, for the counts.</p>` +
+        `<p>Tile: a question. Row: a class.</p>` +
+          `<p>Dot and number: fold, on a log scale.</p>` +
+          `<p>Line under a row: odds ratio, 95% interval, q.</p>` +
+          `<p>Hover or tap a row for the counts.</p>` +
           (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and an odds ratio (or fold, where the test gives one) of at least 1.1×</li><li><i ` +
             `class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: q ≤ 0.05, but ` +
             `within 1.1×</li><li><i class="kd ns"></i> no difference (q > 0.05), or too few to test</li></ul>`) +
-          `<p>The Test switch changes how the residue questions compare ${esc(W.marks)}; the tiles about protein classes keep ` +
-          `their own test. ${mlink('tests', 'Methods › Tests')} describes each test.</p>`
+          `<p>The Test switch applies to residue questions only. ${mlink('tests', 'Methods › Tests')} describes each test.</p>`
       ) +
       sec(
         'h-terms',
@@ -388,7 +388,7 @@
                     ? `<li><b>ClinVar pathogenic</b> counts ClinVar pathogenic and likely pathogenic variants by disease family, one row per site and one column per family. A cell is the number of variants. Click it to list them with their conditions, review stars and ClinVar links. A variant counts once in each of its families. Families come from the release's name rules for its DisGeNET disease families, applied to ClinVar condition names, so a few conditions can land in a broader family. A cell's list shows ClinVar's own condition names. A name that no rule matches is listed as Other / unassigned, and a variant with no condition is not shown. The review filter keeps variants with at least 1 or 2 ClinVar review stars. The counts reflect clinical testing and are not tested against expectation.</li>`
                     : '') +
                   `<li><b>Show all sites as a chart</b> ranks every site from most above to most below the expected count (signed −log10 p, up for more changes than expected). A solid ring marks q below 0.05 for more, a dashed ring for fewer. Highlight genes takes a pasted list of genes and outlines their sites. The default labels skip sites of flagged proteins.</li>` +
-                  `<li><b>Paste a list</b>, under Test the sites you chose, takes gene symbols, UniProt accessions and sites, one per line or separated by commas or spaces. A gene or accession adds all its ${esc(W.marks)}, and a site adds that site. The box says how many genes and sites it read and which names it did not find. For each source the page tests the whole list: the changes at the listed sites against the expected count, summed over their proteins. This is the release's site-set test with your sites in place of a site set. The p is the exact tail of a sum of binomials, one per protein and residue type, so it can go below the release's smallest p of 1e−4. A table then lists each site with its own p and a q that is Benjamini–Hochberg across the sites of your list, not across the release. q is across the list's sites only. A protein flagged as dominated by a few enriched residues has an inflated expected count at its other residues, so those sites can look depleted. Lists of up to 5,000 sites work. The link holds the list, and the download has every site.</li></ul><p>`
+                  `<li><b>Paste genes</b>, UniProt accessions or sites, one per line or separated by commas or spaces. A gene or accession adds all its ${esc(W.marks)}, and a site adds that site. The box says how many genes and sites it read and which names it did not find. For each source the page tests the whole list: the changes at the listed sites against the expected count, summed over their proteins. This is the release's site-set test with your sites in place of a site set. The p is the exact tail of a sum of binomials, one per protein and residue type, so it can go below the release's smallest p of 1e−4. A table then lists each site with its own p and a q that is Benjamini–Hochberg across the sites of your list, not across the release. q is across the list's sites only. A protein flagged as dominated by a few enriched residues has an inflated expected count at its other residues, so those sites can look depleted. Lists of up to 5,000 sites work. The link holds the list, and the download has every site.</li></ul><p>`
                 : '') +
               `Hypermutated tumors (more than ${D.propensity.hypermutated.per_mb} coding calls per Mb) are left out unless you choose ` +
               `With hypermutated. ` +
