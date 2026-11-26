@@ -876,7 +876,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   # methylation. The dependency classes partition the entries whose gene DepMap 24Q4 screened (gene_effect)
   - id: depmap_dependency
     test: protein_sets
-    title: Cancer cell dependency
+    title: Cancer cell dependency (DepMap)
     question: "Do cancer cell lines depend on these proteins more than on others? (DepMap CRISPR screens)"
     sub: "DepMap Public 24Q4 dependency classes, methylated proteins vs all screened reviewed proteins (one per gene); the dependency of 1,178 cancer cell lines on them in CRISPR knockout screens. Cancer genetics, not evidence about methylation (one-sided hypergeometric test)"
     section: Disease associations
@@ -1589,7 +1589,7 @@ website:                  # the look and words of the website (ptmc web); layout
       eclip_rna_apexseq: "Bound RNAs (APEX-seq)"
       eclip_gene_tsaseq: "Genes of bound RNAs (TSA-seq)"
       eclip_gene_hic: "Genes of bound RNAs (Hi-C)"
-      depmap_dependency: "Cancer cell dependency"
+      depmap_dependency: "Cancer cell dependency (DepMap)"
       cancer_change: "Changes in tumors and cell lines"
       clinvar_plp: "ClinVar pathogenic or likely pathogenic"
       gnomad_variant: "gnomAD variants"
@@ -1717,7 +1717,7 @@ website:                  # the look and words of the website (ptmc web); layout
                   of:
                     - {analysis: disease_family, label: disease families checked by hand}
                     - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
-          - {analysis: depmap_dependency, title: Cancer cell dependency}
+          - {analysis: depmap_dependency, title: Cancer cell dependency (DepMap)}
       - name: Classes and pathways
         about: "Protein classes, pathways and condensates of the methylated proteins."
         cards:

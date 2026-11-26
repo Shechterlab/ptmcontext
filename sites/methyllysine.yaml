@@ -682,7 +682,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: depmap_dependency
     new: true
     test: protein_sets
-    title: Cancer cell dependency
+    title: Cancer cell dependency (DepMap)
     question: "Do cancer cell lines depend on these proteins more than on others? (DepMap CRISPR screens)"
     sub: "DepMap Public 24Q4 dependency classes, methylated proteins vs all screened reviewed proteins (one per gene); the dependency of 1,178 cancer cell lines on them in CRISPR knockout screens. Cancer genetics, not evidence about methylation (one-sided hypergeometric test)"
     section: Disease associations
@@ -1517,7 +1517,7 @@ website:                  # the look and words of the website (ptmc web); layout
                   of:
                     - {analysis: disease_family, label: disease families checked by hand}
                     - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
-          - {analysis: depmap_dependency, title: Cancer cell dependency}
+          - {analysis: depmap_dependency, title: Cancer cell dependency (DepMap)}
       - name: Classes and pathways
         about: "Histones, protein classes, pathways and condensates of the methylated proteins."
         cards:
