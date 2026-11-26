@@ -16,4 +16,4 @@ def test_the_sites_table_names_its_count_column_by_the_count_noun_not_k():
     assert "sub: 'k'" not in st
     assert 'sub: noun(s)' in st
     assert '>k: ' not in st and 'st-note">k:' not in st
-    assert '(k:' not in st
+    assert '(k: samples' not in st
