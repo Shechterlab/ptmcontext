@@ -363,7 +363,7 @@
               (K.views.mutations
                 ? `<p><a href="${esc(K.link('mutations'))}">Mutations</a>: sites of your selection (every ${esc(W.mark)} when nothing is selected).</p><ul>` +
                   `<li><b>Ranked sites</b>: tumors, cell lines and gnomAD, ranked by p; top 20 per table, the header counts sites with q below 0.05. The download has every tested site.</li>` +
-                  `<li><b>Cancer: tumors</b>: oncoprint of the sites with the most changed TCGA tumors, with coding calls per Mb above.</li>` +
+                  `<li><b>Cancer: tumors</b> is an oncoprint of the sites with the most changed TCGA tumors, with coding calls per Mb above.</li>` +
                   (D.propensity.cv
                     ? `<li><b>ClinVar pathogenic</b>: pathogenic and likely pathogenic variants by DisGeNET family, a row per site and a column per family. Click a cell to list its variants. A variant counts once in each of its families. A condition no rule matches is Other / unassigned. Counts are not tested against expectation.</li>`
                     : '') +
