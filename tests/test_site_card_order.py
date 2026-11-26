@@ -75,8 +75,8 @@ def test_records_are_counted_by_distinct_partner():
     )
     text, heads = out
     assert text.startswith('2 partners, 5 papers')  # 6 records, 2 partners
-    assert 'binds it methylated 1' in text and 'unmodified 2' in text
-    assert 'record' not in text.split(':')[0]
+    assert 'binds it methylated: 1' in text and 'unmodified: 2' in text
+    assert 'record' not in text.split('·')[0]
     assert heads[1] == '1 partner' and '1 partner' in heads and '2 partners' in heads
 
 

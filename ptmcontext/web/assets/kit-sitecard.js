@@ -540,7 +540,7 @@
       `<span class="pep"><span class="pep-seq mono">${a ? '…' : ''}${body(a, b)}${b < e.seq.length ? '…' : ''}</span> ` +
       `<span class="muted pep-range">${esc(sh(e.start))}–${esc(sh(e.end))}</span>` +
       (long
-        ? `<details class="pep-more"><summary>all ${int(e.seq.length)} residues</summary><span class="pep-seq pep-all mono">${body(0, e.seq.length)}</span></details>`
+        ? `<details class="pep-more"><summary>full peptide (${int(e.seq.length)} residues)</summary><span class="pep-seq pep-all mono">${body(0, e.seq.length)}</span></details>`
         : '') +
       (hit < 0 ? ` <span class="muted pep-near">${esc(missNote(e, pos, label || String(sh(pos))))}</span>` : '') +
       '</span>'
@@ -1353,11 +1353,11 @@
     });
     const all = nPartners(rs);
     return (
-      `${int(all)} partner${all === 1 ? '' : 's'}, ${int(papers.size)} paper${papers.size === 1 ? '' : 's'}: ` +
+      `${int(all)} partner${all === 1 ? '' : 's'}, ${int(papers.size)} paper${papers.size === 1 ? '' : 's'}` +
       [...n.values()]
         .sort((a, b) => a.at - b.at)
-        .map((x) => `${x.label.replace(/^[A-Z](?=[a-z])/, (ch) => ch.toLowerCase())} ${int(x.who.size)}`)
-        .join(' · ')
+        .map((x) => ` · ${x.label.replace(/^[A-Z](?=[a-z])/, (ch) => ch.toLowerCase())}: ${int(x.who.size)}`)
+        .join('')
     );
   }
   // the fold id of a group's table in the card's records block (an `open=` in an address opens it)
@@ -1412,7 +1412,7 @@
     const rs = at(c.tb, RC.table, c.pos);
     const body = !rs.length
       ? `<p class="muted small">No interaction record at ${esc(c.label)}.</p>`
-      : `<p class="sp-sum">${esc(recordsSummary(c, rs))} <button ` +
+      : `<p class="sp-sum">${esc(recordsSummary(c, rs))}</p><p class="sp-sum sp-dl"><button ` +
         `class="linkish small" type="button" data-rec-tsv="${c.pos}">${esc(K.exp.label('tsv'))}</button></p>` +
         recordGroups(c, rs)
           .map(([g, m], _k, all) => {
