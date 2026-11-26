@@ -2193,9 +2193,16 @@
     const covLine = cov
       ? `<p class="kind-cov"><b>Abundance</b>: ${
           cov.me[0] == null ? 'no value' : `${esc(cov.value)} ${K.fxn(cov.me[0])}`
-        }${cov.me[1] !== 'none' ? `, decile ${esc(cov.me[1])} of ${int(cov.strata)}` : ''} <span class="muted">(${esc(
-          (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input
-        )}; the decile ` + `of the estimate within abundance deciles)</span></p>`
+        } <span class="muted">(${[
+          cov.me[1] !== 'none' ? `decile ${esc(cov.me[1])} of ${int(cov.strata)}` : '',
+          esc(
+            String(
+              (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input
+            ).replace(/\s*\(([^)]*?)(?:[- ]integrated)?\)/, (m, x) => ', ' + x.replace(/-/g, ' '))
+          ),
+        ]
+          .filter(Boolean)
+          .join('; ')})</span></p>`
       : '';
     // names only: a set's test is for every mark in it, not for this protein, so its numbers stay on the question's page
     const across = `<p class="muted small kinds-note">Sets containing ${esc(p.gene || p.acc)}</p>`;
