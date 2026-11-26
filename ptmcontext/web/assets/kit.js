@@ -681,7 +681,16 @@
     own.forEach((v, k) => p.set(k, v));
     return '#' + path + (p.toString() ? '?' + p : '');
   }
+  // a question whose home is another page (website.legacy_links, K.questionHome): the address of that page, so that no link goes
+  // through the redirect an old #overview/<id> address takes
+  const movedHome = (id) => {
+    const old = (D.legacy_links || {})[id];
+    if (old?.[0] !== '#') return '';
+    const [v, ...a] = old.slice(1).split('/');
+    return BUILT_IN_VIEWS.includes(v) || K.views[v] ? link(v, a.join('/')) : '';
+  };
   const link = (view, arg, extra) =>
+    (view === 'overview' && arg && !extra && (K.questionHome?.(arg) || movedHome(arg))) ||
     carry('#' + view + (arg ? '/' + pathOf(view, arg) : '') + (extra ? '?' + new URLSearchParams(extra) : ''));
   let shown = null; // the address the page is drawn for (onNav skips a change to it)
   function writeHash(push) {
