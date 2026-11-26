@@ -1,6 +1,7 @@
 """Names and routes in the site files: no Overview group repeats a tab name, a tile that moved has one home and its old
 address, and the questions carry one title wherever they are named."""
 
+import re
 from pathlib import Path
 
 import pytest
@@ -114,3 +115,13 @@ def test_more_disease_families_has_no_tile_but_stays_a_link_of_the_disease_famil
     assert 'disease_family_additional' not in _cards({'cards': cards})
     fam = next(c for c in cards if isinstance(c, dict) and c.get('analysis') == 'disease_family')
     assert fam['views'][0]['more']['analysis'] == 'disease_family_additional'
+
+
+def test_no_visible_label_says_holding_it():
+    for name in SITES:
+        assert not re.search(r'holding it\b', (ROOT / 'sites' / f'{name}.yaml').read_text()), name
+    for js in (ROOT / 'ptmcontext/web/assets').glob('kit*.js'):
+        assert not re.search(r'holding it\b', js.read_text()), js.name
+    text = (ROOT / 'sites/methylarginine.yaml').read_text()
+    assert 'Binds a region containing the site (IntAct)' in text
+    assert 'Another reaction on a region containing the site' in text

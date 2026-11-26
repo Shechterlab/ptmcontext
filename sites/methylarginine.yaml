@@ -374,8 +374,8 @@ marks:
         mutation_changes_binding: Mutating it changes binding (IntAct)
         mutation_no_effect: Mutating it leaves binding unchanged (IntAct)
         mutation_unspecified: A mutation tested, effect not stated (IntAct)
-        binds_region: Binds a region holding it (IntAct)
-        other_reaction: Another reaction on a region holding it
+        binds_region: Binds a region containing the site (IntAct)
+        other_reaction: Another reaction on a region containing the site
         nucleic_acid: RNA or DNA
         not_a_protein: A partner that is not a protein
         self: Another copy of the same protein
