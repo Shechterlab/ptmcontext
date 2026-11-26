@@ -2008,8 +2008,8 @@
                 }>${esc(optLabel(x))}</option>`
             )
             .join('')}</select>` +
-          `</label><span class="muted small s3d-optkey"> Each entry: PDB code · method and resolution in Å (lower ` +
-          `is sharper) · what it resolves</span>`
+          `</label><span class="muted small s3d-optkey"> PDB code · method · resolution (Å) · ` +
+          `residues resolved</span>`
         : '') +
       (chains.length > 1
         ? `<label class="s3d-ctl">Chain <select data-s3d-sel="chain" aria-label="Chain of this ` +
@@ -4183,7 +4183,7 @@
       sub('s3d-pdb', 'Experimental structures (PDB)', '<div id="s3d-pdb-list"></div>') +
       sub('s3d-hom', 'Homologous experimental structures', '<div id="s3d-hom-list"></div>') +
       sub('s3d-pred', 'Predicted complexes', `<div id="s3d-pred-list"></div>`) +
-      `<p class="src">Live, by accession: AlphaFold DB, PDBe, RCSB${SD.predicted ? ', ProtVar' : ''}; drawn with ${esc(LIB_CITE)}.${
+      `<p class="src">Live: AlphaFold DB, PDBe, RCSB${SD.predicted ? ', ProtVar' : ''}. Viewer: ${esc(LIB_CITE)}.${
         hasTables
           ? ` What the ${esc(NOUNS)} touch: the ` +
             `tables of this explorer (${esc([...new Set(Object.keys(SD.inputs).map(tableWords))].join('; '))}).`
