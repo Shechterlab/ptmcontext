@@ -231,6 +231,35 @@
     `<abbr class="gloss" tabindex="0" title="${esc(
       GLOSS[String(term).toLowerCase()] || ''
     )}">${esc(text || term)}</abbr>`;
+  // the variant sources named once where they first appear: a plain label for a heading, an abbr title for a tile or card
+  // (the gnomAD version is read from the release's source list, never typed here)
+  const SRCNAME = {
+    gnomAD: 'gnomAD (population variants)',
+    TCGA: 'TCGA tumors',
+    DepMap: 'DepMap cell lines',
+    ClinVar: 'ClinVar (clinical variants)',
+  };
+  const srcVersion = () =>
+    /v\d+(\.\d+)?/.exec(
+      (D.propensity?.sources || []).find((s) => /^gnomad/i.test(s.set_source || s.id || ''))?.long || ''
+    )?.[0];
+  const SRCTIP = () => ({
+    gnomAD: `gnomAD: variants observed in the general population${srcVersion() ? ` (${srcVersion()})` : ''}`,
+    TCGA: 'TCGA: tumor samples of The Cancer Genome Atlas',
+    DepMap: 'DepMap: cancer cell lines of the Cancer Dependency Map',
+    ClinVar: 'ClinVar: variants with clinical interpretations',
+  });
+  const srcName = (k) => SRCNAME[k] || k;
+  // html text with its first gnomAD, TCGA, DepMap and ClinVar spelled out on hover (the text is escaped here)
+  const srcAbbr = (text) => {
+    const tip = SRCTIP(),
+      seen = new Set();
+    return esc(text).replace(/\b(gnomAD|TCGA|DepMap|ClinVar)\b/g, (w) => {
+      if (seen.has(w)) return w;
+      seen.add(w);
+      return `<abbr class="gloss" tabindex="0" title="${esc(tip[w])}">${w}</abbr>`;
+    });
+  };
   // a variant highlight's short label (P/LP) as an abbreviation that spells itself out on hover; the one home of that markup
   const hlFull = (h) => (h?.title || '').replace(/\s*\([^)]*\)\s*$/, '');
   const hlLabel = (h) =>
@@ -696,6 +725,8 @@
     GLOSS,
     BTN,
     gloss,
+    srcName,
+    srcAbbr,
     hlFull,
     hlLabel,
     baseline,
@@ -1821,7 +1852,7 @@
       ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
     const ans = fr && !made && !card.rows_from && shown.length > 1 ? K.tilekit.answerOf(ms, SETS(a.id), title) : '';
     return (
-      `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${esc(title)}</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
+      `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${srcAbbr(title)}</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
       (ans ? `<p class="tans">${ans}</p>` : '') +
       (shown.length
         ? `<div class="trows${fr ? ' fr-rows' : ''}">${
@@ -3414,7 +3445,7 @@
           }</button>`
         : '';
     return (
-      `<div class="card-body"><div class="card-head"><div>${inFocus ? '' : `<h3>${esc(a.title)}</h3>`}` +
+      `<div class="card-body"><div class="card-head"><div>${inFocus ? '' : `<h3>${srcAbbr(a.title)}</h3>`}` +
       (`<p class="sub">${
         vsOn()
           ? `Your selection (filled) against ${esc(vsName())} (hollow)${

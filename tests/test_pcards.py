@@ -169,7 +169,7 @@ const tb = {{
   cl: [{{ spacing_min: '1', spacing_median: '4', max_3: '2', max_10: '5', window_size: '30', window_start: '10', window_end: '39', window_sites: '6', window_log2: '0.5', window_q: '0.003', architecture: 'spread', clusters: '10,12,14; 30,33' }}],
   ptm: [{{ kind: 'ph', start: 12, end: 12, source: 's' }}, {{ kind: 'ph', start: 90, end: 90, source: 's' }}], ex: [],
   dep: [{{ lines: '100', dependent: '7', median: '-0.5', common_essential: 'False', histogram: '0;1;5;20;30;20;15;5;3;1', lineages: 'Lung|10|-0.2' }}] }};
-const K = {{ D, W: {{ mark: 'site', marks: 'sites', residues: 'serines' }}, A: {{}}, S: {{}}, esc: s => String(s ?? ''), int: n => String(n), cap: s => s, fq: q => q.toExponential(1), PADJ: 0.05,
+const K = {{ D, W: {{ mark: 'site', marks: 'sites', residues: 'serines' }}, A: {{}}, S: {{}}, esc: s => String(s ?? ''), int: n => String(n), cap: s => s, srcName: s => s, fq: q => q.toExponential(1), PADJ: 0.05,
   link: (...a) => '#' + a.join('/'), sections: {{}}, proteinFolds: [], afterRender: [], hasData: {{}},
   card: {{ rows: (t, n) => t[n] || [], at: () => [], load: () => Promise.resolve({{}}) }}, sel: {{ data: () => null, setHas: () => false }} }};
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-cols.js'))}, 'utf8'));

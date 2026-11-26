@@ -30,3 +30,13 @@ def test_the_tab_and_page_are_named_mutations_at_the_same_address():
     src = (Path(__file__).resolve().parents[1] / 'ptmcontext/web/assets/kit-mutations.js').read_text()
     assert "['mutations', 'Mutations'," in src and '<h2>Mutations</h2>' in src and "title: () => 'Mutations'" in src
     assert 'Disease variants' not in src
+
+
+def test_the_variant_sources_are_named_by_one_helper():
+    assets = Path(__file__).resolve().parents[1] / 'ptmcontext/web/assets'
+    kit = (assets / 'kit.js').read_text()
+    assert "gnomAD: 'gnomAD (population variants)'" in kit and "TCGA: 'TCGA tumors'" in kit
+    assert 'variants observed in the general population' in kit
+    assert 'srcVersion()' in kit and 'D.propensity?.sources' in kit  # the version comes from the release
+    assert 'srcName' in (assets / 'kit-mutations.js').read_text()
+    assert "K.srcName('gnomAD')" in (assets / 'kit-pcards.js').read_text()

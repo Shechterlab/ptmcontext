@@ -1629,7 +1629,7 @@
     ['experiments', 'p-exp', 'Experiments', experimentsBuild],
     ['clustering', 'p-cluster', 'Clustering', clusteringBuild],
     ['other_ptms', 'p-ptm', 'Other modifications', ptmsBuild],
-    ['germline', 'p-germline', 'ClinVar and gnomAD variants', germlineBuild],
+    ['germline', 'p-germline', `${K.srcName('ClinVar')} and ${K.srcName('gnomAD')}`, germlineBuild],
   ].filter(([k]) => PC[k] || k === 'location_cell');
   const BUILD = { live: liveBuild };
   K.pcards = BUILD; // the cards' builders: (protein, record, tables) -> { html, sum }

@@ -877,13 +877,15 @@
       `</div>`
     );
   }
+  // a source's id as the page names it: spelled out once, here
+  const SRCKEY = { tcga_mc3: 'TCGA', depmap_24q4: 'DepMap', clinvar: 'ClinVar', gnomad_v4_1: 'gnomAD' };
+  const srcLab = (id) => (SRCKEY[id] ? K.srcName(SRCKEY[id]) : id);
   // a residue letter spelled out: "Serine (S)"
   const resLabel = (l) => (D.residue_names?.[l] ? `${cap1(D.residue_names[l])} (${l})` : l);
   function setSummary() {
     const rows = PR.summary?.sets || [];
     if (!rows.length || K.sel.active()) return '';
     const pick = rows.filter((r) => ['tcga_mc3', 'depmap_24q4', 'clinvar', 'gnomad_v4_1'].includes(r.source));
-    const lab = { tcga_mc3: 'TCGA', depmap_24q4: 'DepMap', clinvar: 'ClinVar', gnomad_v4_1: 'gnomAD' };
     const fo = (v) => (v == null ? '–' : v >= 10 ? v.toFixed(0) : v.toFixed(2));
     const fp = (v) => (v == null ? '–' : v < 0.001 ? v.toExponential(1).replace('e-', 'e−') : v.toFixed(3));
     return (
@@ -893,7 +895,7 @@
       pick
         .map(
           (r) =>
-            `<tr><td>${esc(lab[r.source] || r.source)}${r.oe_status === 'descriptive' ? ' <span class="muted">(count only, no test)</span>' : ''}</td><td>${esc(resLabel(r.residue))}</td><td>${r.cohort === 'no_hypermutated' ? 'without hypermutated' : 'all'}</td><td>${int(r.sites)}</td><td>${int(r.observed)}</td><td>${fo(r.expected)}</td><td>${fo(r.oe)}</td><td>${r.oe_status === 'descriptive' ? '–' : fp(r.p_upper)}</td><td>${r.oe_status === 'descriptive' ? '–' : fp(r.p_lower)}</td></tr>`
+            `<tr><td>${esc(srcLab(r.source))}${r.oe_status === 'descriptive' ? ' <span class="muted">(count only, no test)</span>' : ''}</td><td>${esc(resLabel(r.residue))}</td><td>${r.cohort === 'no_hypermutated' ? 'without hypermutated' : 'all'}</td><td>${int(r.sites)}</td><td>${int(r.observed)}</td><td>${fo(r.expected)}</td><td>${fo(r.oe)}</td><td>${r.oe_status === 'descriptive' ? '–' : fp(r.p_upper)}</td><td>${r.oe_status === 'descriptive' ? '–' : fp(r.p_lower)}</td></tr>`
         )
         .join('') +
       `</tbody></table></div></details>`
@@ -2056,7 +2058,7 @@
     let line = '',
       body = '';
     if (V === 'ranked') {
-      line = `Sites changed more often than expected (TCGA, DepMap); sites with fewer gnomAD variants than expected.`;
+      line = `Sites changed more often than expected (${K.srcName('TCGA')}, ${K.srcName('DepMap')}); sites with fewer variants than expected in ${K.srcName('gnomAD')}.`;
       const lists = rankedLists();
       body = lists ? sigLine(lists) + lists.map(rankSection).join('') : null;
       if (body === null)
@@ -2383,8 +2385,7 @@
       (val.length
         ? `<p>As a check, on up to 1,000 protein and residue-type units per source, the binomial p and a permutation p (each unit's changes redrawn over its residues by mutability, ${int(val[0].iterations || 10000)} draws) agree on whether p &lt; 0.05 for ${val
             .map(
-              (v) =>
-                `${(100 * v.agreement_p05).toFixed(1)}% of ${int(v.residues)} residues (${esc({ tcga_mc3: 'TCGA', depmap_24q4: 'DepMap', clinvar: 'ClinVar', gnomad_v4_1: 'gnomAD' }[v.source] || v.source)})`
+              (v) => `${(100 * v.agreement_p05).toFixed(1)}% of ${int(v.residues)} residues (${esc(srcLab(v.source))})`
             )
             .join(', ')}.</p>`
         : '') +
