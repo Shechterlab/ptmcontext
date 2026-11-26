@@ -1117,12 +1117,13 @@
                   (T.noneAt ||= {})[`${acc}:${pos}`] = true;
                   return paintSrc();
                 }
-                if (T.mol !== shown || (shown && shown.mode !== 'af')) return;
+                if (T.mol !== shown || (shown && shown.mode !== 'af')) return paintSrc();
                 const e = list[0];
                 return showPdb(e, resolvesAt(e.id, pos), pos);
               },
               () => {
                 delete T.scanning[`${acc}:${pos}`];
+                if (T.acc === acc) paintSrc(); // the toggle stops saying it is searching
               }
             )
           );
