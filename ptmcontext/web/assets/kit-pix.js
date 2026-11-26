@@ -22,7 +22,7 @@
       .replace(/^an? /, '')
       .replace(/\s+associated with \{gene\}$/, '')
       .replace(/\{gene\}/g, '');
-  // the class as one partner's label: "PRMTs" -> "PRMT", "Tudor proteins" -> "Tudor"
+  // the class as one partner's label: a plural acronym loses its s, and a trailing "proteins" is dropped
   const classOne = (c) =>
     classWord(c)
       .replace(/\s+proteins$/i, '')

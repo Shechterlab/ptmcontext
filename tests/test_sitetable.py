@@ -40,7 +40,7 @@ const cells = {{
 }};
 const D = {{ site: {{ id: 'toy' }}, run: {{}}, proteins: [], tracks: [{{ kind: 'dis', style: 'disorder' }}],
   propensity: {{ sources }}, protein_view: {{ site_table: {{ title: 'My table' }} }} }};
-const K = {{ D, W: {{ mark: 'site', marks: 'sites' }}, S: {{}}, esc: s => String(s ?? ''), int: n => String(n), clicks: [], us: s => s, link: (v, a) => '#' + v + '/' + a,
+const K = {{ D, W: {{ mark: 'site', marks: 'sites' }}, S: {{}}, esc: s => String(s ?? ''), int: n => String(n), hlFull: h => (h.title || '').replace(/\\s*\\([^)]*\\)\\s*$/, ''), hlLabel: h => '<abbr title="' + h.label + '">' + h.label + '</abbr>', clicks: [], us: s => s, link: (v, a) => '#' + v + '/' + a,
   loading: () => '', expBar: () => '', preamble: (t, w) => '# ' + t + '\\n# What: ' + w + '\\n', exportFigure: (k, f, n, b, tsv) => (global.TSV = tsv()),
   prop: {{ ring: 0.05, desc: id => id === 'c', cfg: D.propensity, state: {{ hyper: false }}, peek: () => ({{}}), load: () => Promise.resolve(),
     at: (acc, id, pos) => cells[id + ':' + pos] || null, fo: o => String(o), kOE: (id, v) => v.k + ' changes · O/E ' + v.o, fq: q => String(q), tip: () => 'tip', hotNote: () => 'a hotspot', hyperSwitch: () => '', onHyper: noop }},
