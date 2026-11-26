@@ -6321,7 +6321,94 @@
     .join('');
   setTheme(document.documentElement.dataset.theme || 'auto');
   themed = true;
+  // ---- hover text: a label or a short sentence; the detail is in Help and on the card the hover opens ----------------------------
+  // The lines of a hover (<br> in the html ones, newlines in a title) are kept in order while the whole stays within HOVER_MAX
+  // words; a source note (a muted span of more than 12 words) goes first; one line that is itself too long is cut at a sentence
+  // or semicolon outside parentheses. The short footer ("Click for details") is always kept.
+  const HOVER_MAX = 40,
+    wordsIn = (t) => (String(t).match(/[A-Za-z0-9][\w'’-]*/g) || []).length;
+  // a parenthesis of more than 8 words (a definition, a citation) goes first
+  const dropLong = (t) => {
+    let depth = 0,
+      start = 0;
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] === '(') {
+        if (!depth) start = i;
+        depth++;
+      } else if (t[i] === ')' && depth && !--depth && wordsIn(t.slice(start, i + 1)) > 8)
+        return dropLong(t.slice(0, start) + t.slice(i + 1));
+    }
+    return t;
+  };
+  const cutLine = (t0, budget) => {
+    let t = dropLong(t0).replace(/\s+([:;,.])/g, '$1');
+    if (wordsIn(t) <= budget) return t.trim();
+    const parts = [];
+    let depth = 0,
+      at = 0;
+    for (let i = 0; i < t.length; i++) {
+      const c = t[i];
+      if (c === '(') depth++;
+      else if (c === ')') depth = Math.max(0, depth - 1);
+      else if (!depth && (c === ';' || c === '.') && /\s/.test(t[i + 1] || ' ')) {
+        parts.push(t.slice(at, i + 1));
+        at = i + 1;
+      }
+    }
+    parts.push(t.slice(at));
+    let out = '';
+    for (const x of parts) {
+      if (wordsIn(out + x) > budget) break;
+      out += x;
+    }
+    if (!out.trim()) out = t.split(/\s+/).slice(0, Math.max(3, budget)).join(' ') + '…';
+    return out.trim().replace(/;$/, '');
+  };
+  K.shortHover = (h, html = true) => {
+    const sep = html ? '<br>' : '\n',
+      txt = (x) => (html ? x.replace(/<\/?[a-z][^>]*>/gi, ' ') : x);
+    if (!h || wordsIn(txt(h)) <= HOVER_MAX) return h;
+    let lines = String(h).split(sep);
+    if (html)
+      lines = lines.filter((x) => {
+        const m = /^<span class="muted">([^<]*)<\/span>$/.exec(x.trim());
+        return !m || wordsIn(m[1]) <= 12;
+      });
+    const foot = html && /^<span class="muted">[^<]*<\/span>$/.test(lines[lines.length - 1] || '') ? lines.pop() : null;
+    const out = [];
+    let used = foot ? wordsIn(txt(foot)) : 0;
+    for (const x of lines) {
+      const n = wordsIn(txt(x));
+      if (used + n <= HOVER_MAX) {
+        out.push(x);
+        used += n;
+      } else {
+        // only the plain text of a line can be cut (after a bold label); the first line is kept at least in part
+        const pre = (/^<b>[^<]*<\/b>/.exec(x) || [''])[0],
+          rest = x.slice(pre.length),
+          room = HOVER_MAX - used - wordsIn(txt(pre));
+        if (!/<\/?[a-z]/i.test(rest) && room >= 6) {
+          const cut = cutLine(rest, room);
+          out.push(pre + (/^\s/.test(rest) && !/^[:;,.]/.test(cut) ? ' ' : '') + cut);
+        } else if (!out.length) out.push(x);
+        break;
+      }
+    }
+    if (foot) out.push(foot);
+    return out.join(sep);
+  };
   (window.PTMC_MODULES || []).forEach((f) => f(K));
+  // every hover goes through it: the modules' hover functions, and the titles drawn on the page
+  K.tips.forEach((e) => {
+    const f = e[1];
+    e[1] = (el) => K.shortHover(f(el));
+  });
+  (K.afterRender ||= []).push(() =>
+    document.querySelectorAll('[title]').forEach((e) => {
+      const t = e.getAttribute('title');
+      if (t.length > 160 && wordsIn(t) > HOVER_MAX) e.setAttribute('title', K.shortHover(t, false));
+    })
+  );
   // the explorer's links put the selection before the hash (?q=FUS%20R216#P35637): it moves into the hash once, and leaves
   // the address's query, so a search cleared later stays cleared on reload
   (() => {

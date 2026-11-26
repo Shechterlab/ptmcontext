@@ -140,7 +140,7 @@
     const ring = c.fewer || c.more,
       why = c.fewer ? 'fewer than expected' : 'more than expected';
     return (
-      `<span class="st-src${ring ? ` st-ring${c.fewer ? ' dash' : ''}` : ''}" title="${esc(c.tip + (ring ? `\n${why}, q below ${RING}` : ''))}">` +
+      `<span class="st-src${ring ? ` st-ring${c.fewer ? ' dash' : ''}` : ''}" title="${esc(K.shortHover(c.tip + (ring ? `\n${why}, q below ${RING}` : ''), false))}">` +
       `<span>${K.prop.kOE(s.id, { k: c.k, o: c.o })}${c.q != null && c.k > 0 ? ` · <span class="st-q">q ${fq(c.q)}</span>` : ''}</span></span>`
     );
   }
