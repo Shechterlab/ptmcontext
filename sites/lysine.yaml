@@ -503,7 +503,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_hpa
     new: true
     test: protein_sets
-    title: Regions of the cell (Human Protein Atlas)
+    title: Localization (Human Protein Atlas)
     question: "Where do proteins with modified lysines localize in the cell, by Human Protein Atlas locations: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Proteins with modified lysines against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
@@ -520,7 +520,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_hcm
     new: true
     test: protein_sets
-    title: Regions of the cell (Human Cell Map)
+    title: Localization (Human Cell Map)
     question: "Where do proteins with modified lysines localize in the cell, by Human Cell Map compartments: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Proteins with modified lysines against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
@@ -536,7 +536,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: cell_region_organelle_ip
     new: true
     test: protein_sets
-    title: Regions of the cell (organelle IP)
+    title: Localization (organelle IP)
     question: "Where do proteins with modified lysines localize in the cell, by organelle IP clusters: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Proteins with modified lysines against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
@@ -1895,7 +1895,7 @@ website:                  # the look and words of the website (ptmc web); layout
     max_terms: 4
     groups:            # the headings the picker lists terms under
       - {name: GO, from: [go_bp, go_binding]}
-      - {name: Cell compartment, from: [hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
+      - {name: Localization, from: [hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
       - {name: Disease classes (Disease Ontology), from: [disease_family, disease_ontology, disease_term]}
       - {name: Pathway, from: [reactome_top_level, reactome_pathway]}
       - {name: Protein class, from: [panther_group, panther_class, panther_subclass]}

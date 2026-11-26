@@ -97,7 +97,7 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
             - {class: translation, label: "Translation machinery"}
             - {class: proteasome, label: "Proteasome"}
     - id: cell
-      title: Cell compartments
+      title: Localization
       questions:
         - id: hpa
           analysis: hpa_location
