@@ -913,12 +913,7 @@
     const siteHtml =
       group('records', 'UniProt and sources', uniRow + citeRow, true) + group('site', 'Site', siteRows, true);
     const nMore = qrows.length + qmore.length + rest.length + (K.shown?.on && K.shown.counted(m) ? 1 : 0),
-      moreHtml = group(
-        'questions',
-        `Other attributes (${nMore})`,
-        qrows.join('') + qmore.join('') + restRows,
-        false
-      );
+      moreHtml = group('questions', `Other attributes (${nMore})`, qrows.join('') + qmore.join('') + restRows, false);
     const ev = ready ? K.card.evidenceBlock(c) : '',
       recs = ready ? K.card.recordsBlock(c) : '',
       wr = ready ? K.card.writerBlock(c) : '';
@@ -2197,7 +2192,8 @@
           cov.me[1] !== 'none' ? `decile ${esc(cov.me[1])} of ${int(cov.strata)}` : '',
           esc(
             String(
-              (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input
+              (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version ||
+                cov.input
             ).replace(/\s*\(([^)]*?)(?:[- ]integrated)?\)/, (m, x) => ', ' + x.replace(/-/g, ' '))
           ),
         ]
