@@ -38,7 +38,7 @@ def test_the_summary_writer_line_marks_perturbation_writers_indirect_from_one_fu
 
 def test_the_3d_toggle_says_when_no_entry_resolves_the_site_and_the_model_comes_first():
     js = src('kit-3d.js')
-    assert 'Experimental (none at ${rl(siteNow())})' in js and 'T.noneAt' in js
+    assert 'No experimental structure at ${rl(siteNow())}' in js and 'T.noneAt' in js
     assert js.index('return showAf()') < js.index('scanSite(acc, pos).then(')
 
 

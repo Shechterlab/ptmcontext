@@ -1433,7 +1433,7 @@
       head = `${int(n)} of the ${m != null ? int(m) + ' ' : ''}selected ${plural(m, 'protein', 'proteins')} ${plural(n, 'is', 'are')} linked at ${how}`;
     } else
       // the sentence above says how many of the top proteins are drawn and how many groups they form; this line keeps the rest
-      head = `Linked at ${how}${total ? `; ${int(total)} proteins have ${W.marks} in all` : ''}`;
+      head = `Linked at ${how}${total ? `; ${int(total)} ${W.marked} proteins` : ''}`;
     const asked =
       CL.nShown && UI.clusters && UI.clusters !== CL.nShown
         ? `${int(UI.clusters)} clusters asked for; closest is ${int(CL.nShown)}`

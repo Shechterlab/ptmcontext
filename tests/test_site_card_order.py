@@ -50,7 +50,7 @@ VIEW = {
                 {'label': 'Binds it methylated', 'groups': ['binds_methylated']},
                 {'label': 'Binds the residue, unmodified', 'groups': ['binds_unmodified']},
             ],
-            'span': {'group': 'binds_unmodified', 'label': 'In a structure whose peptide spans {site}'},
+            'span': {'group': 'binds_unmodified', 'label': 'Structure with a peptide containing {site}'},
         }
     }
 }
@@ -75,8 +75,8 @@ def test_records_are_counted_by_distinct_partner():
     )
     text, heads = out
     assert text.startswith('2 partners, 5 papers')  # 6 records, 2 partners
-    assert 'binds it methylated 1' in text and 'unmodified 2' in text
-    assert 'record' not in text.split(':')[0]
+    assert 'binds it methylated: 1' in text and 'unmodified: 2' in text
+    assert 'record' not in text.split('·')[0]
     assert heads[1] == '1 partner' and '1 partner' in heads and '2 partners' in heads
 
 
@@ -91,7 +91,7 @@ def test_the_structure_span_group_is_closed_and_named_for_the_site():
     out = _run(_ctx('console.log(JSON.stringify(K.card.recordsBlock(c)));'), VIEW)
     g = out.split('id="sc-rec-binds_unmodified"')[1].split('>')[0]
     assert 'open' not in g
-    assert 'In a structure whose peptide spans R3' in out and 'Binds it unmodified' not in out
+    assert 'Structure with a peptide containing R3' in out and 'Binds it unmodified' not in out
     assert 'id="sc-rec-binds_methylated"' in out
 
 
@@ -116,6 +116,6 @@ def test_the_card_order_in_the_source():
 def test_every_explorer_names_the_structure_span_group():
     for name in ('methylarginine', 'methyllysine', 'lysine', 'phospho'):
         assert (
-            'span: {group: binds_unmodified, label: "In a structure whose peptide spans {site}"}'
+            'span: {group: binds_unmodified, label: "Structure with a peptide containing {site}"}'
             in (SITES / f'{name}.yaml').read_text()
         )

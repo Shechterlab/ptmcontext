@@ -514,7 +514,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   # table, so the run checks them against that table (reference.tables)
   - id: disease_ontology
     test: protein_sets
-    title: Disease Ontology
+    title: Disease classes (Disease Ontology)
     question: "Which Disease Ontology terms hold more genes of methylated proteins than expected?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a Disease Ontology term, every term of at least 10 genes; a term includes the genes of its child terms (one-sided hypergeometric test, as DOSE's enrichDO). Association, not causation"
     section: Protein classes and pathways
@@ -728,7 +728,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   # membranes (sites/data/methylarginine_cell_regions.yaml), in the three maps that place proteins all over the cell
   - id: cell_region_hpa
     test: protein_sets
-    title: Regions of the cell (Human Protein Atlas)
+    title: Localization (Human Protein Atlas)
     question: "Where do methylated proteins localize in the cell, by Human Protein Atlas locations: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins with a Human Protein Atlas location (Approved or better), with locations grouped into three regions of the cell (cilia and sperm structures are in none) (one-sided hypergeometric test)"
     section: Localization
@@ -744,7 +744,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_region_hcm
     test: protein_sets
-    title: Regions of the cell (Human Cell Map)
+    title: Localization (Human Cell Map)
     question: "Where do methylated proteins localize in the cell, by Human Cell Map compartments: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins the Human Cell Map localises (HEK293 BioID, NMF compartments), its compartments gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Localization
@@ -759,7 +759,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     abundance: {input: abundance, protein: canonical_UniProtAC, value: percentile, label: ", each PaxDb abundance decile a stratum"}
   - id: cell_region_organelle_ip
     test: protein_sets
-    title: Regions of the cell (organelle IP)
+    title: Localization (organelle IP)
     question: "Where do methylated proteins localize in the cell, by organelle IP clusters: the nucleus, the cytoplasm, or the organelles and membranes?"
     sub: "Methylated proteins against the other proteins classified by organelle IP (HEK293T), its clusters gathered into three regions of the cell (one-sided hypergeometric test)"
     section: Localization
@@ -876,7 +876,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   # methylation. The dependency classes partition the entries whose gene DepMap 24Q4 screened (gene_effect)
   - id: depmap_dependency
     test: protein_sets
-    title: Cancer cell dependency
+    title: Cancer cell dependency (DepMap)
     question: "Do cancer cell lines depend on these proteins more than on others? (DepMap CRISPR screens)"
     sub: "DepMap Public 24Q4 dependency classes, methylated proteins vs all screened reviewed proteins (one per gene); the dependency of 1,178 cancer cell lines on them in CRISPR knockout screens. Cancer genetics, not evidence about methylation (one-sided hypergeometric test)"
     section: Disease associations
@@ -1568,7 +1568,7 @@ website:                  # the look and words of the website (ptmc web); layout
       panther_subclass: "Protein subclasses (PANTHER)"
       disease_family: "Disease families (DisGeNET)"
       disease_family_additional: "More disease families"
-      disease_ontology: "Disease Ontology"
+      disease_ontology: "Disease classes (Disease Ontology)"
       disease_term: "DisGeNET terms"
       condensate_proteome: "Biomolecular condensates"
       condensate: "Biomolecular condensates, against other condensate proteins"
@@ -1589,7 +1589,7 @@ website:                  # the look and words of the website (ptmc web); layout
       eclip_rna_apexseq: "Bound RNAs (APEX-seq)"
       eclip_gene_tsaseq: "Genes of bound RNAs (TSA-seq)"
       eclip_gene_hic: "Genes of bound RNAs (Hi-C)"
-      depmap_dependency: "Cancer cell dependency"
+      depmap_dependency: "Cancer cell dependency (DepMap)"
       cancer_change: "Changes in tumors and cell lines"
       clinvar_plp: "ClinVar pathogenic or likely pathogenic"
       gnomad_variant: "gnomAD variants"
@@ -1717,7 +1717,7 @@ website:                  # the look and words of the website (ptmc web); layout
                   of:
                     - {analysis: disease_family, label: disease families checked by hand}
                     - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
-          - {analysis: depmap_dependency, title: Cancer cell dependency}
+          - {analysis: depmap_dependency, title: Cancer cell dependency (DepMap)}
       - name: Classes and pathways
         about: "Protein classes, pathways and condensates of the methylated proteins."
         cards:
@@ -1918,7 +1918,7 @@ website:                  # the look and words of the website (ptmc web); layout
         items:
         - "Mutation propensity: O/E and q for every arginine in TCGA, DepMap and gnomAD from the release, and a descriptive O/E for ClinVar."
         - "Protein cards: lollipops (stick height: count; circle size: O/E; ring: q < 0.05)."
-        - "A Mutations page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), ClinVar pathogenic (variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
+        - "A Mutations page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), ClinVar pathogenic (variants by DisGeNET family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
         - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
         doi: "10.5281/zenodo.24429699"
       - title: PTM_Pipeline v1.6.0 data release (2026-11-20)
@@ -2173,8 +2173,8 @@ website:                  # the look and words of the website (ptmc web); layout
     max_terms: 4
     groups:            # the headings the picker lists terms under
       - {name: GO, from: [go_bp, go_binding]}
-      - {name: Cell compartment, from: [hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
-      - {name: Disease, from: [disease_family, disease_ontology, disease_term]}
+      - {name: Localization, from: [hpa_location, cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin]}
+      - {name: Disease classes (Disease Ontology), from: [disease_family, disease_ontology, disease_term]}
       - {name: Pathway, from: [reactome_top_level, reactome_pathway]}
       - {name: Protein class, from: [panther_group, panther_class, panther_subclass]}
       - {name: Condensate, from: [condensate, condensate_role, condensate_proteome]}
@@ -2285,7 +2285,7 @@ website:                  # the look and words of the website (ptmc web); layout
          help: "Experimental: an RNA or DNA crosslink at the residue, an RBDmap fragment covering it, or a PDB interface. Predicted only: an AlphaFold-Multimer interface or a confident predicted contact. Click a tag for the tables"}
       - {id: na, label: RNA/DNA contacts, menu: "RNA/DNA contacts (structures) and crosslinks (cells)", show: [sequences, around], sort: [nucleic_acid, evidence], default: true, hide: xs,
          help: "RNA or DNA within 4 Å of the side chain in PDB structures (within 8 Å, or at a residue i ± 1–5, without direct contact), or UV-crosslinked or RNA-bound within i ± 3 in cells. Tap or hover for sequences"}
-      - {id: prmt, label: PRMT perturbation, menu: "PRMT inhibitors, knockouts and knockdowns", show: [calls], sort: [gsk591, ms023, perturbation], default: true,
+      - {id: prmt, label: "PRMT inhibitors, knockouts and knockdowns", menu: "PRMT inhibitors, knockouts and knockdowns", show: [calls], sort: [gsk591, ms023, perturbation], default: true,
          help: "Change after GSK591 (PRMT5i) or MS023 (type I PRMTi), Maron 2021 Table S3, adj. p ≤ 0.05, or in the release's knockouts, knockdowns and inhibitors by the rule each names"}
       - {id: src, label: Reported by, attribute: studies, default: true, hide: sm}
       - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context], hide: xs}
@@ -2656,7 +2656,7 @@ website:                  # the look and words of the website (ptmc web); layout
         near: 10
         note: "Not exhaustive: only what the cross-PTM table holds (an iPTMnet export of HPRD, literature mining and other curated sources, plus UniProt)."
       germline:
-        title: Germline variants
+        title: Inherited variants (ClinVar, gnomAD)
         excluded: germline
         sub: "Variants in ClinVar (clinical classifications) and gnomAD v4.1 (population frequencies) at the protein's arginines, against the protein's average for an arginine. A variant at a residue does not show an effect on methylation, and a variant observed in the population is not necessarily benign."
         note: "Data: ClinVar (NCBI; public domain; submitters may claim rights in what they submitted) and gnomAD v4.1 exomes (CC0 1.0; Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0). A variant counts only at an arginine of the canonical UniProt sequence."
@@ -2767,7 +2767,7 @@ website:                  # the look and words of the website (ptmc web); layout
     sets:                  # cards of the protein's own sets, each linked to its page and selecting its proteins
       - id: p-dis
         title: Disease associations
-        summary: "UniProt, Open Targets, Disease Ontology, DisGeNET terms and disease families"
+        summary: "UniProt, Open Targets, Disease Ontology, DisGeNET terms and families"
         analyses: [disease_ontology, disease_term, disease_family, disease_family_additional]
         term_groups: {terms: disease_term, families: [disease_family, disease_family_additional]}
         branches: disease_ontology
@@ -2953,10 +2953,10 @@ website:                  # the look and words of the website (ptmc web); layout
           - {label: Writes, groups: [writes], role: writer}
           - {label: erases, groups: [removes], role: eraser}
           - {label: binds methylated, groups: [binds_methylated], role: reader}
-        span: {group: binds_unmodified, label: "In a structure whose peptide spans {site}"}   # a group drawn closed under this label (the site's own name)
+        span: {group: binds_unmodified, label: "Structure with a peptide containing {site}"}   # a group drawn closed under this label (the site's own name)
         rollup:              # the groups under two headings: the residue in the site's state, against in any other
           - {label: Binds the methylated residue, groups: [binds_methylated]}
-          - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
+          - {label: "Binds the unmodified residue", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
         not_papers: [predicted]              # groups whose records are not counted among the papers
         kinds: {self: another copy, rna: RNA, dna: DNA, gene: Gene locus, small_molecule: Small molecule, peptide: Peptide or complex}
         species: Homo sapiens                # partners of another species are named with theirs
@@ -3020,7 +3020,7 @@ website:                  # the look and words of the website (ptmc web); layout
       columns:
         - {id: ix, label: Interaction evidence, show: [status, tags], default: true}
         - {id: na, label: RNA/DNA contacts, menu: "RNA/DNA contacts (structures) and crosslinks (cells)", show: [sequences, around], default: true}
-        - {id: prmt, label: PRMT perturbation, menu: "PRMT inhibitors, knockouts and knockdowns", show: [calls], default: true}
+        - {id: prmt, label: "PRMT inhibitors, knockouts and knockdowns", menu: "PRMT inhibitors, knockouts and knockdowns", show: [calls], default: true}
         - {id: src, label: Reported by, attribute: studies, default: true}
         - {id: af, label: AlphaFold, menu: AlphaFold pLDDT, show: [plddt]}
         - {id: ctx, label: Context, menu: Disorder and domain context, analyses: [disorder, domain_context]}
@@ -3404,7 +3404,7 @@ website:                  # the look and words of the website (ptmc web); layout
               question: Which proteins methylate these sites, demethylate them, bind them methylated, or bind the residue in another state, and in which experiments?
               sub: methylarginines with a record
               blocks:
-                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the methylated residue, values: [binds_methylated]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the methylated residue, values: [binds_methylated]}, {label: "Binds the unmodified residue", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
                    where: [{column: group, in: [writes, removes, binds_methylated, binds_unmodified, binds_other_residue, binds_state_not_read, mutation_changes_binding]}]}
             - id: ixs-partners
               title: Protein partners (STRING)

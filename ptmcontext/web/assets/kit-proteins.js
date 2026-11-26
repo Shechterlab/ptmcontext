@@ -532,7 +532,7 @@
     states: 'State by source',
     calls: 'Perturbations',
     changes: 'Changes',
-    germline: 'Germline variants',
+    germline: 'Inherited variants (ClinVar, gnomAD)',
     reported: 'Reported by',
     ...(CC.labels || {}),
   };
@@ -1710,7 +1710,9 @@
       PV.cleanArg = true;
     }
     const selTxt = K.sel?.active()
-      ? `${int(K.sel.nMarks())} ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)} · selection`
+      ? K.sel.loading()
+        ? 'selection'
+        : `${int(K.sel.nMarks())} ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)} · selection`
       : `all ${esc(W.marks)}`;
     const head =
       `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a>` +

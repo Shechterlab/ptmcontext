@@ -2047,7 +2047,7 @@
       return head(K.loading('Loading the tumor, cell line and gnomAD counts…'));
     if (needWf && (wf === null || (V === 'waterfall' && germ() && gnData() === null)))
       return head('<p class="muted">The frequencies could not be read.</p>');
-    const note = K.sel.active() ? '' : `<div class="filter-note">Showing every ${esc(W.mark)}.</div>`;
+    const note = K.sel.active() ? '' : `<div class="filter-note">Showing all ${esc(W.marks)}.</div>`;
     const tabs = seg(
       'data-mu-view',
       'View',

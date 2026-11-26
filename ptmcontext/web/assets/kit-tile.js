@@ -122,12 +122,11 @@
         ? attrs.replace(/ title="([^"]*)"/, (m, t) => ` title="${esc(x.tip)}. ${t}"`)
         : `${attrs} title="${esc(x.tip)}"`
       : attrs;
+    const spoken = [x.badge, x.sub, x.n != null ? `n ${int(x.n)}` : ''].filter(Boolean).join(', ');
     const pop = x.pop && !x.mine ? ` data-pop="${esc(JSON.stringify(x.pop))}"` : '';
     return (
       `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${x.lead ? ' lead' : ''}${x.go ? ' qlink' : ''}${cls ? ' ' + cls : ''}"${tipped}${pop}><span class="fr-lab">` +
-      `<span>${esc(x.label)}</span>${x.badge ? `<span class="vh">, ${esc(x.badge)}</span>` : ''}${
-        x.sub ? `<span class="vh">, ${esc(x.sub)}</span>` : ''
-      }${x.n != null ? `<span class="vh">, n ${int(x.n)}</span>` : ''}</span>${track}` +
+      `<span>${esc(x.label)}</span>${spoken ? `<span class="vh"> (${esc(spoken)})</span>` : ''}</span>${track}` +
       (`<span class="fr-val">${esc(val)}<i class="fr-q ${dir}${x.desc ? ' desc' : ''}" aria-hidden="true"></i>` +
         `</span></div>`)
     );
