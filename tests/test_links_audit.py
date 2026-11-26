@@ -25,6 +25,8 @@ def test_the_audit_script_parses_and_the_workflows_run_it():
     assert 'tools/audit/links.js' in tests and '--external' not in tests
     assert 'cron:' in weekly and '--external' in weekly and 'tools/audit/links.js' in weekly
     assert 'unverified' in weekly and 'unverified' in script.read_text()
+    # the test job has no browser kit, and external.js needs the playwright package for its requests
+    assert tests.index('npm install --no-save playwright') < tests.index('pytest -q')
 
 
 @node

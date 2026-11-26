@@ -129,7 +129,10 @@ def test_complex_names_are_configured_not_coded():
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
 def test_other_species_fold_after_the_human_records_and_an_eraser_line_shows():
     cols = ['position', 'group', 'partner_kind', 'partner', 'partner_accession', 'species']
-    rec = lambda g, n, sp='': [15, g, 'protein', n, '', sp]
+
+    def rec(g, n, sp=''):
+        return [15, g, 'protein', n, '', sp]
+
     rows = [
         rec('writes', 'PRMT1'),
         rec('writes', 'PRMT7', 'Trypanosoma brucei'),
