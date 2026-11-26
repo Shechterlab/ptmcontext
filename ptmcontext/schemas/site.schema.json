@@ -3211,6 +3211,12 @@
                               ],
                               "description": "the classes' order on the tile and its question: by effect (default) or by evidence (q), for sets where a small set reaches the largest fold when every member is marked"
                             },
+                            "classes": {
+                              "type": "array",
+                              "minItems": 1,
+                              "items": {"type": "string"},
+                              "description": "the tile shows exactly these classes of its question (class ids, as in the statistics rows), by effect or evidence as order says, with the question's own numbers; a class without a row is not drawn. For a question with many classes, such as the Disease Ontology"
+                            },
                             "wide": {
                               "type": "boolean",
                               "description": "spans two columns where the page has room"
@@ -4141,6 +4147,10 @@
                   "opens": {
                     "type": "string"
                   },
+                  "branches": {
+                    "type": "boolean",
+                    "description": "a protein-set question: count only the classes its Overview card lists (card `classes`)"
+                  },
                   "hide_in": {
                     "enum": ["cards"],
                     "description": "cards: the tile is left out on the cards front end (its number is in a fold's header there)"
@@ -4579,6 +4589,20 @@
                     "type": "string",
                     "pattern": "^p-[a-z0-9-]+$",
                     "description": "the fold's id (default p-sets-N): website.protein.order and open name folds by it"
+                  },
+                  "branches": {
+                    "type": "string",
+                    "description": "a question of the card whose Overview card lists classes (overview card `classes`): the protein's own among those classes lead the card, and the fold's header counts them"
+                  },
+                  "behind": {
+                    "type": "object",
+                    "required": ["label", "analyses"],
+                    "additionalProperties": false,
+                    "description": "questions of the card shown after the rest, under a closed heading",
+                    "properties": {
+                      "label": {"type": "string", "description": "the heading's words"},
+                      "analyses": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+                    }
                   },
                   "term_groups": {
                     "type": "object",

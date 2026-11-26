@@ -1599,6 +1599,8 @@
   const cardHas = (c, aid) =>
     c.analysis === aid || (c.rows_from || []).includes(aid) || (c.views || []).some((v) => v.analysis === aid);
   const cardOf = (aid) => allCards().find((c) => c.analysis === aid) || {};
+  // the classes an Overview card lists for a question (card.classes): the protein page lists a protein's own among them
+  const branchClasses = (aid) => allCards().find((c) => c.analysis === aid && c.classes)?.classes || null;
   // a row's evidence: its reading's q (a set's test within abundance deciles where it has one)
   const qOf = (r) => r.q ?? 1;
   const byOrder = (card) =>
@@ -1746,12 +1748,23 @@
       foot: '',
     };
   }
+  // a card with classes: the rows of exactly those classes (of the question's own rows), in the usual order; a class
+  // without a row is not drawn
+  function pickListed(rows, card) {
+    const want = new Set(card.classes);
+    return {
+      shown: rows.filter((r) => r.eff != null && want.has(r.category)).sort(byOrder(card)),
+      more: 0,
+      left: [],
+    };
+  }
   function tileState(card) {
     if (card.rows_from) return groupState(card);
     const a = A[card.analysis],
       max = card.rows || OV.rows || 5;
+    const choose = (rs) => (card.classes ? pickListed(rs, card) : pick(rs, max, card));
     const rows = collapseSimilar(a, smallSel() ? rowsFor(a, S.m) : withRef(a, rowsOf(a, S.m), S.m));
-    let { shown, more, left } = pick(rows, max, card);
+    let { shown, more, left } = choose(rows);
     const whole = selOn() && !vsOn() && !smallSel() ? rowsFor(a, S.m) : null;
     // shown, not tested: the whole dataset's rows stand in, except for a selection of whole proteins against the other
     // marks, whose shares are drawn (the retest ran; it is only not tested)
@@ -1760,7 +1773,7 @@
     // a ring); a class the selection does not hold is a faint row without a value; a selection made with this question is
     // not tested again, so its tile shows the whole dataset's rows
     if (whole) {
-      const base = pick(whole, max, card),
+      const base = choose(whole),
         by = Object.fromEntries(rows.filter((r) => !r.descriptive).map((r) => [r.category, r]));
       shown = base.shown.map((w) =>
         made
@@ -5278,6 +5291,7 @@
     fkeyOf,
     allCards,
     cardOf,
+    branchClasses,
     byOrder,
     methodLink,
     setWords,

@@ -45,7 +45,8 @@ def test_the_disease_group_shows_all_its_tiles_and_leaves_the_variants_to_their_
     sec = _sections(_site(name))['Disease associations']
     assert 'show' not in sec and 'more' not in sec
     cards = _cards(sec)
-    assert 'disease_family' in cards and 'depmap_dependency' in cards
+    assert 'disease_ontology' in cards and 'depmap_dependency' in cards
+    assert not {'disease_family', 'disease_family_additional'} & set(cards)
     assert not {'cancer_change', 'clinvar_plp', 'gnomad_variant'} & set(cards)
 
 
