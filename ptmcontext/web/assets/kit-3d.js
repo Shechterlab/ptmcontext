@@ -4111,11 +4111,18 @@
     const hasTables = Object.keys(SD.inputs || {}).length > 0;
     return (
       `<div class="s3d" id="s3d"><div class="s3d-head card-head">` +
-      (`<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep">` +
+      (`<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}${
+        // on a phone the four view controls stay and the downloads and links sit behind "More"
+        matchMedia('(max-width: 40rem)').matches
+          ? '<details class="s3d-more"><summary class="exp-btn">More</summary>'
+          : ''
+      }<span class="s3d-sep">` +
         `</span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where ` +
         `the structures, the placing of the ${esc(NOUNS)} and the colors come from">Methods</a><a class="exp-btn" ` +
         `id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a ` +
-        `page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>`) +
+        `page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a>${
+          matchMedia('(max-width: 40rem)').matches ? '</details>' : ''
+        }</div></div>`) +
       `<div class="s3d-src" id="s3d-src"></div>` +
       `<div class="s3d-wrap"><div class="s3d-stage"><div class="s3d-viewer" id="s3d-viewer"></div>` +
       `<div class="s3d-pan" role="group" aria-label="Slide the structure">${[
@@ -4673,6 +4680,13 @@
 .s3d .s3d-head .sub { margin: 0; color: var(--muted); font-size: .88rem; }
 .s3d-tools { border-top: 0; padding-top: 0; }
 .s3d-sep { width: .6rem; }
+.s3d-more { display: inline-block; }
+.s3d-more[open] { flex-basis: 100%; }
+.s3d-more[open] > :not(summary) { margin: .35rem .35rem 0 0; }
+.s3d-more .s3d-sep { display: none; }
+.s3d-more > summary { list-style: none; }
+.s3d-more > summary::-webkit-details-marker { display: none; }
+.s3d-more[open] > summary { background: var(--brand-ink); color: var(--surface); }
 .s3d-tools .exp-btn[aria-pressed="true"] { background: var(--brand-ink); color: var(--surface); border-color: ` +
     `var(--brand-ink); }
 .s3d-src, .s3d-row { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .9rem; margin: .55rem 0; }

@@ -12139,3 +12139,30 @@ details.controls > summary::before {
 details.controls[open] > summary::before {
   content: '\25BE';
 }
+
+/* ---- A phone: the page's Download button sits on the heading's row, and the filter button shares a row with the count */
+@media (max-width: 700px) {
+  .xm-pagebar {
+    position: relative;
+    height: 0;
+    margin: 0;
+    z-index: 3;
+  }
+  .xm-pagebar .xm-page {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+  .xm-pagebar + .page-head h2,
+  .xm-pagebar + .prot-head h2 {
+    padding-right: 6.5rem;
+  }
+  .scope:not(.selected) {
+    flex-wrap: nowrap;
+  }
+  .scope:not(.selected) > span:not(.scope-hint) {
+    flex: 1 1 0;
+    min-width: 0;
+    line-height: 1.25;
+  }
+}

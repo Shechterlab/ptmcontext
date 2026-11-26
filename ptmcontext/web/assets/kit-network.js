@@ -1898,7 +1898,7 @@
       keyItem(
         10,
         `<circle cx="5" cy="0" r="4.5" fill="${clusterFill(x, true)}"/>`,
-        `${x.other ? 'Smaller cluster' : x.label} · ${x.l.q != null ? `${int(x.l.k)} of ${int(x.n)}` : int(x.n)} proteins`
+        `${x.other ? 'Smaller cluster' : x.label} · ${x.l.q != null ? `${int(x.l.k)} of ${int(x.n)} carry this term` : `${int(x.n)} proteins`}`
       );
     });
     if (pinIdx.length)

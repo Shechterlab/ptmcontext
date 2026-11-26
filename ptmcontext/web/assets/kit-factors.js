@@ -266,7 +266,7 @@
       ? `<p class="note small muted">Left out because it does not vary: ${esc(fit.dropped.join(', '))}.</p>`
       : '';
     return (
-      `<div class="card-head"><div><h3>${esc(card.title || a.title)}</h3><p class="sub">${esc(a.sub || '')}</p></div>${K.expBar(
+      `<div class="card-head"><div><p class="sub">${esc(a.sub || '')}</p></div>${K.expBar(
         ['pdf', 'svg', 'png', 'tsv'],
         'fexp',
         a.title,

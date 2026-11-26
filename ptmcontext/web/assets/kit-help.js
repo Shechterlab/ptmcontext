@@ -316,7 +316,7 @@
           (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and an odds ratio (or fold, where the test gives one) of at least 1.1×</li><li><i ` +
             `class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: q ≤ 0.05, but ` +
             `within 1.1×</li><li><i class="kd ns"></i> no difference (q > 0.05), or too few to test</li></ul>`) +
-          `<p>The Test switch changes how the tiles marked ⇄ compare ${esc(W.marks)}; the tiles about protein classes keep ` +
+          `<p>The Test switch changes how the residue questions compare ${esc(W.marks)}; the tiles about protein classes keep ` +
           `their own test. ${mlink('tests', 'Methods › Tests')} describes each test.</p>`
       ) +
       sec(

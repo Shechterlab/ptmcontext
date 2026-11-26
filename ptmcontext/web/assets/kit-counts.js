@@ -249,13 +249,15 @@
   }
 
   // ---- pages ------------------------------------------------------------------------------------------------------
+  // the heading is the page's; the card under it holds the one sentence (its sub), the question stands in only without one
   const head = (id, card) => {
-    const c = C[id];
+    const c = C[id],
+      line =
+        (c.sub ? '' : esc(c.question || '') + ' ') +
+        (selOn() ? `<b>Your selection</b> is counted beside the whole dataset${SD() ? '' : ' (loading…)'}.` : '');
     return (
-      `<div class="page-head"><h2>${esc(card.title || c.title)}</h2></div><p class="page-sub">${esc(c.question || '')} <span class="muted">` +
-      `Counted, not tested.</span>` +
-      (selOn() ? ` <b>Your selection</b> is counted beside the whole dataset${SD() ? '' : ' (loading…)'}.` : '') +
-      '</p>'
+      `<div class="page-head"><h2>${esc(card.title || c.title)}</h2></div>` +
+      (line.trim() ? `<p class="page-sub">${line.trim()}</p>` : '')
     );
   };
   const selCell = (k, n) =>
@@ -335,7 +337,7 @@
         }.</p></div>`
       : '';
     return (
-      `<section class="pcard cnt-card" data-count="${esc(id)}"><div class="card-head"><div><h3>${esc(c.title)}</h3><p class="sub">${esc(K.shortSub(c.sub))}. Counts, not tests${
+      `<section class="pcard cnt-card" data-count="${esc(id)}"><div class="card-head"><div><p class="sub">${esc(K.shortSub(c.sub))}. Counts, not tests${
         on ? '; bars: the whole dataset, <span class="cnt-sel"><i></i></span> your selection' : ''
       }.</p></div>` +
       K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cexp', c.title, id) +
@@ -408,7 +410,7 @@
       );
     };
     return (
-      `<section class="pcard cnt-card" data-count="${esc(id)}"><div class="card-head"><div><h3>${esc(c.title)}</h3><p class="sub">${esc(K.shortSub(c.sub))}. Counts ` +
+      `<section class="pcard cnt-card" data-count="${esc(id)}"><div class="card-head"><div><p class="sub">${esc(K.shortSub(c.sub))}. Counts ` +
       `and shares, not tests.</p></div>` +
       K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cexp', c.title, id) +
       '</div>' +

@@ -475,7 +475,12 @@
     let [view, ...rest] = (path || '').split('/');
     // the old addresses: #statistics is the Every test section of Methods, and #compare (with no saved selection after it) is the
     // Overlap of protein sets page, whose own address stays #overlap
-    const aliased = view === 'statistics' || (view === 'compare' && !rest[0]);
+    // and #sec-<section> (the Overview's section element ids) is that section of the Overview
+    const aliased = view === 'statistics' || (view === 'compare' && !rest[0]) || (/^sec-./.test(view) && !rest.length);
+    if (/^sec-./.test(view) && !rest.length) {
+      const nm = view.slice(4);
+      [view, rest] = BUILT_IN_VIEWS.includes(nm) || K.views[nm] ? [nm, []] : ['overview', [nm]];
+    }
     if (view === 'statistics') [view, rest] = ['method', ['every']];
     else if (view === 'compare' && !rest[0]) [view, rest] = ['overlap', []];
     S.view = BUILT_IN_VIEWS.includes(view) || K.views[view] ? view : 'overview';
@@ -542,6 +547,8 @@
       'rna-and-dna-binding': 'enzymes-and-readers', // its tile is a link under Enzymes and readers
       'interactions-and-enzymes': 'enzymes-and-readers',
       'disease-and-cancer': 'disease-associations',
+      disease: 'disease-associations',
+      evidence: 'studies-and-databases',
       'evidence-and-studies': 'studies-and-databases',
       'which-kinases-': 'kinase-motifs',
     };
@@ -1420,13 +1427,20 @@
   const pcS = (v) => (v < 0.1 ? (100 * v).toFixed(1) : (100 * v).toFixed(0)) + '%';
   // the share in each group beside an odds ratio ("22.8% vs 14.6%"): the two proportions the odds ratio compares
   const pcD = (v) => (100 * v).toFixed(v > 0 && v < 0.01 ? 2 : 1) + '%';
+  // a protein set's fold is the share of the marked proteins in the set over the share of all proteins in it (the
+  // hypergeometric test), so its pair is those two shares, not the share of the unmarked proteins
+  const isSetRow = (r) => SETS(r.analysis) && r.method === 'enricher';
+  const share2Of = (r) => (isSetRow(r) ? (r.a + r.c) / (r.a + r.b + r.c + r.d) : share2(r));
   const sharePair = (r) =>
-    r && r.a != null && r.a + r.b > 0 && r.c + r.d > 0 ? `${pcD(share1(r))} vs ${pcD(share2(r))}` : '';
+    r && r.a != null && r.a + r.b > 0 && r.c + r.d > 0 ? `${pcD(share1(r))} vs ${pcD(share2Of(r))}` : '';
   const shareSpan = (r) =>
     sharePair(r) && !r.vs
-      ? `<span class="sh" title="Share in the selection vs the others, ` +
-        `crude (not adjusted for the protein); the odds ratio is ${
-          r.method === 'mantel_haenszel' ? 'within-protein' : 'the one tested'
+      ? `<span class="sh" title="${
+          isSetRow(r)
+            ? `Share of the ${esc(W.marked)} proteins in the set vs share of all proteins in it; the fold is their ratio`
+            : `Share in the selection vs the others, crude (not adjusted for the protein); the odds ratio is ${
+                r.method === 'mantel_haenszel' ? 'within-protein' : 'the one tested'
+              }`
         }">${sharePair(r)}</span>`
       : '';
   K.sharePair = sharePair;
@@ -1470,6 +1484,7 @@
   K.setReading = (aid, category, rows) =>
     readingOf((rows || D.rows).find((x) => x.analysis === aid && x.category === category && x.method === 'enricher'));
   K.estLine = estLine;
+  K.ceilingLine = (a, rows) => ceilingLine(a, rows); // the one sentence a set question with a ceiling shows (kit-interactions.js)
   K.SET_NOTE = SET_NOTE;
   // a vertical line of an export from y0 to y1 with the stretches under a text left out (gaps: [x0, x1, y0, y1] boxes), so
   // no text is crossed by a line whatever draws its halo
@@ -5391,6 +5406,23 @@
         t = document.getElementById(id);
       }
       t?.scrollIntoView({ block: 'start' });
+      // the sections above fill in after the jump and move the target: land on it again until the reader scrolls
+      if (!t) return;
+      let moved = false;
+      const stop = () => (moved = true),
+        evs = ['wheel', 'touchstart', 'keydown', 'mousedown'];
+      evs.forEach((ev) => addEventListener(ev, stop, { once: true, passive: true }));
+      let n = 0;
+      const want = parseFloat(getComputedStyle(t).scrollMarginTop) || 0, // where it lands (below the sticky bar)
+        tick = setInterval(() => {
+          const el = document.getElementById(id);
+          if (!moved && el && Math.abs(el.getBoundingClientRect().top - want) > 12)
+            el.scrollIntoView({ block: 'start' });
+          if (moved || ++n >= 16) {
+            clearInterval(tick);
+            evs.forEach((ev) => removeEventListener(ev, stop));
+          }
+        }, 400);
     }, 0);
   });
   (K.afterRender ||= []).push(() => {
