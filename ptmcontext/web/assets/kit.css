@@ -1619,6 +1619,19 @@ body.rail-open .rail-scrim {
 .fgroup {
   border-bottom: 1px solid var(--line);
 }
+.fheading {
+  margin: 0.9rem 0 0;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.fheading + .fgroup {
+  border-top: 0;
+}
 .fgroup > summary {
   list-style: none;
   cursor: pointer;

@@ -1430,7 +1430,10 @@
         if (cards.has(a.id)) return;
         const g = (D.filters || []).find((f) => (f.analyses || []).includes(a.id)),
           at = (g?.analyses || []).filter((x) => cards.has(x)).map((x) => cards.get(x));
-        if (at.length) rank.set(a.id, Math.min(...at) + 0.5);
+        if (at.length) return rank.set(a.id, Math.min(...at) + 0.5);
+        // else next to its theme: after the last question of the same section that a card holds
+        const kin = a.section ? D.analyses.filter((x) => x.section === a.section && cards.has(x.id)) : [];
+        if (kin.length) rank.set(a.id, Math.max(...kin.map((x) => cards.get(x.id))) + 0.5);
       });
     };
     // the sections that close every Overview ("More questions") hold what the others do not: they rank last
@@ -1462,6 +1465,14 @@
       .sort((u, v) => key(u[0]) - key(v[0]) || u[1] - v[1])
       .map((u) => u[0]);
   };
+  K.questionOrder = methodOrder;
+  // a cell map's grouped-regions question is the same question as the map's own: lists name it once, by the regions' title
+  // (K.regionsOf: the map's analysis id -> its regions question's id)
+  K.regionsOf = Object.fromEntries(
+    (D.cell?.maps || []).filter((m) => m.regions && A[m.regions]).map((m) => [m.analysis, m.regions])
+  );
+  K.listTitle = (a) => A[K.regionsOf[a.id]]?.title || a.title;
+  K.listHides = (a) => Object.values(K.regionsOf).includes(a.id);
   // against other marks the attributes are questions too: about the sites, and (last, as a caveat) how they were found
   const wholeTile = (c) => A[c.analysis]?.anySize || !(A[c.analysis]?.tile || K.questions[c.analysis]?.tile); // a tile that reads the whole dataset: for a selection too small to test
   const secList = () =>
@@ -3409,7 +3420,9 @@
       ['m-questions', 'How each question was made', 1],
       ['m-parity', 'Checked against the release', 1],
       ['m-gq', 'Each question', 0],
-      ...methodOrder().map((a) => [`m-q-${a.id}`, a.title, 1]),
+      ...methodOrder()
+        .filter((a) => !K.listHides(a))
+        .map((a) => [`m-q-${a.id}`, K.listTitle(a), 1]),
       ...K.methods.map((x) => [`m-q-${x.id}`, x.title, 1]),
       ['m-g2', 'The data', 0],
       ['m-controls', 'Controls', 1],
@@ -3555,7 +3568,7 @@
     // a protein-set question with no abundance repeat has its hypergeometric rows under either test
     const rows = D.rows.filter(
       (r) =>
-        (!S.a || r.analysis === S.a) &&
+        (!S.a || r.analysis === S.a || r.analysis === K.regionsOf[S.a]) &&
         (S.m === 'both' ||
           r.method === S.m ||
           (r.method === 'enricher' && (S.m === 'fisher' || !A[r.analysis]?.stratified))) &&
@@ -3576,7 +3589,13 @@
   // Methods > Every test: the whole table of tests, with its filters and its download
   function everyTest() {
     const rows = shownStatistics();
-    const opts = [['', 'All questions'], ...D.analyses.map((a) => [a.id, a.title])];
+    // the Overview's order; a map's two questions are one entry, named by its regions question
+    const opts = [
+      ['', 'All questions'],
+      ...methodOrder()
+        .filter((a) => !K.listHides(a))
+        .map((a) => [a.id, K.listTitle(a)]),
+    ];
     return (
       `<section id="m-every"><h3>All tests</h3>` +
       `<p class="page-sub">One row per class and test. ${gloss('q')}: Benjamini–Hochberg within each question. ` +
@@ -6302,7 +6321,94 @@
     .join('');
   setTheme(document.documentElement.dataset.theme || 'auto');
   themed = true;
+  // ---- hover text: a label or a short sentence; the detail is in Help and on the card the hover opens ----------------------------
+  // The lines of a hover (<br> in the html ones, newlines in a title) are kept in order while the whole stays within HOVER_MAX
+  // words; a source note (a muted span of more than 12 words) goes first; one line that is itself too long is cut at a sentence
+  // or semicolon outside parentheses. The short footer ("Click for details") is always kept.
+  const HOVER_MAX = 40,
+    wordsIn = (t) => (String(t).match(/[A-Za-z0-9][\w'’-]*/g) || []).length;
+  // a parenthesis of more than 8 words (a definition, a citation) goes first
+  const dropLong = (t) => {
+    let depth = 0,
+      start = 0;
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] === '(') {
+        if (!depth) start = i;
+        depth++;
+      } else if (t[i] === ')' && depth && !--depth && wordsIn(t.slice(start, i + 1)) > 8)
+        return dropLong(t.slice(0, start) + t.slice(i + 1));
+    }
+    return t;
+  };
+  const cutLine = (t0, budget) => {
+    let t = dropLong(t0).replace(/\s+([:;,.])/g, '$1');
+    if (wordsIn(t) <= budget) return t.trim();
+    const parts = [];
+    let depth = 0,
+      at = 0;
+    for (let i = 0; i < t.length; i++) {
+      const c = t[i];
+      if (c === '(') depth++;
+      else if (c === ')') depth = Math.max(0, depth - 1);
+      else if (!depth && (c === ';' || c === '.') && /\s/.test(t[i + 1] || ' ')) {
+        parts.push(t.slice(at, i + 1));
+        at = i + 1;
+      }
+    }
+    parts.push(t.slice(at));
+    let out = '';
+    for (const x of parts) {
+      if (wordsIn(out + x) > budget) break;
+      out += x;
+    }
+    if (!out.trim()) out = t.split(/\s+/).slice(0, Math.max(3, budget)).join(' ') + '…';
+    return out.trim().replace(/;$/, '');
+  };
+  K.shortHover = (h, html = true) => {
+    const sep = html ? '<br>' : '\n',
+      txt = (x) => (html ? x.replace(/<\/?[a-z][^>]*>/gi, ' ') : x);
+    if (!h || wordsIn(txt(h)) <= HOVER_MAX) return h;
+    let lines = String(h).split(sep);
+    if (html)
+      lines = lines.filter((x) => {
+        const m = /^<span class="muted">([^<]*)<\/span>$/.exec(x.trim());
+        return !m || wordsIn(m[1]) <= 12;
+      });
+    const foot = html && /^<span class="muted">[^<]*<\/span>$/.test(lines[lines.length - 1] || '') ? lines.pop() : null;
+    const out = [];
+    let used = foot ? wordsIn(txt(foot)) : 0;
+    for (const x of lines) {
+      const n = wordsIn(txt(x));
+      if (used + n <= HOVER_MAX) {
+        out.push(x);
+        used += n;
+      } else {
+        // only the plain text of a line can be cut (after a bold label); the first line is kept at least in part
+        const pre = (/^<b>[^<]*<\/b>/.exec(x) || [''])[0],
+          rest = x.slice(pre.length),
+          room = HOVER_MAX - used - wordsIn(txt(pre));
+        if (!/<\/?[a-z]/i.test(rest) && room >= 6) {
+          const cut = cutLine(rest, room);
+          out.push(pre + (/^\s/.test(rest) && !/^[:;,.]/.test(cut) ? ' ' : '') + cut);
+        } else if (!out.length) out.push(x);
+        break;
+      }
+    }
+    if (foot) out.push(foot);
+    return out.join(sep);
+  };
   (window.PTMC_MODULES || []).forEach((f) => f(K));
+  // every hover goes through it: the modules' hover functions, and the titles drawn on the page
+  K.tips.forEach((e) => {
+    const f = e[1];
+    e[1] = (el) => K.shortHover(f(el));
+  });
+  (K.afterRender ||= []).push(() =>
+    document.querySelectorAll('[title]').forEach((e) => {
+      const t = e.getAttribute('title');
+      if (t.length > 160 && wordsIn(t) > HOVER_MAX) e.setAttribute('title', K.shortHover(t, false));
+    })
+  );
   // the explorer's links put the selection before the hash (?q=FUS%20R216#P35637): it moves into the hash once, and leaves
   // the address's query, so a search cleared later stays cleared on reload
   (() => {

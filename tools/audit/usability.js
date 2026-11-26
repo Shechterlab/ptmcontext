@@ -49,10 +49,16 @@ const { chromium } = require('playwright');
     await pg.fill('#land-q', acc);
     await pg.waitForSelector('#land-hits a', { timeout: 10000 }).catch(() => {});
     const hrefs = await pg.$$eval('#land-hits a', (a) => a.map((x) => x.getAttribute('href')));
-    check(
-      hrefs.some((h) => h.includes('/#/protein/' + acc)),
-      `landing search for ${acc} lists the sites that have it (${hrefs.length})`
-    );
+    // the explorers' address is '#protein/GENE/ACC' (a leading slash after '#' reads the same)
+    const at = new RegExp(`#/?protein/(?:[^/]+/)?${acc}(?:[/?]|$)`),
+      first = hrefs.find((h) => at.test(h));
+    check(!!first, `landing search for ${acc} lists the sites that have it (${hrefs.length})`);
+    if (first) {
+      // and the link selects that protein in the explorer
+      await pg.goto(root + first);
+      await pg.waitForSelector('#pmap svg', { timeout: 60000 }).catch(() => {});
+      check((await pg.innerText('body')).includes(acc), `the landing link for ${acc} opens that protein`);
+    }
   } else check(false, 'the landing page has proteins.json');
 
   // a protein page of the site

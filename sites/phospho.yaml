@@ -334,7 +334,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Interfaces in PDB structures
     question: "Are phosphosites at interfaces in experimental structures?"
     sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins observed in a PDB structure, at a PDBe-KB interface with RNA, DNA, a protein or any partner; all, ordered (outside UniProt disordered regions) and in domains"
-    section: Protein interactions
+    section: Interaction evidence
     counting: every_candidate
     background: other Ser/Thr/Tyr residues of the same proteins observed in a PDB structure
     proteins_with: pdb_interfaces                       # proteins PDBe-KB lists with an interface
@@ -351,7 +351,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Predicted interfaces
     question: "Are phosphosites at predicted protein interfaces?"
     sub: "Phosphosites against the other serines, threonines and tyrosines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly reflects disorder; the ordered and disordered rows compare like with like"
-    section: Protein interactions
+    section: Interaction evidence
     counting: every_candidate
     background: other Ser/Thr/Tyr residues of the same proteins
     tests:
@@ -368,7 +368,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: IntAct binding regions and mutations
     question: "Are phosphosites where IntAct maps interactions?"
     sub: "Phosphosites whose mutation changes an interaction, against the other mutated serines, threonines and tyrosines; and inside an IntAct binding region of at most 20 residues, against the other serines, threonines and tyrosines of the proteins with one (all, and in UniProt disordered regions)"
-    section: Protein interactions
+    section: Interaction evidence
     counting: every_candidate
     tests:
       - {category: mutation_changes_interaction, inside: {role: intact_mutations, where: [{column: class, matches: "(?!MI:2226$).*"}]},
@@ -385,7 +385,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Protein complexes
     question: "Which complexes have more phosphorylated members than expected?"
     sub: "Phosphorylated proteins against the proteins in Complex Portal's curated human complexes, by complex of at least 3 members (one-sided hypergeometric test); a protein in several complexes is in each"
-    section: Protein interactions
+    section: Interaction evidence
     sets:
       input: complexes
       set: complex_id
@@ -1721,16 +1721,16 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Localization, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]}
     - {name: Disease associations and mutations, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
     - {name: Classes and pathways, analyses: [panther_group, panther_class, reactome_top_level], proteins: [marks]}
-    - {name: Kinase motifs, analyses: [kinase_motifs]}
-    - {name: Reader motifs, analyses: [reader_motifs]}
-    - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
+    - {name: Kinase motifs, heading: Enzymes and readers, analyses: [kinase_motifs]}
+    - {name: Reader motifs, heading: Enzymes and readers, analyses: [reader_motifs]}
+    - {name: Interaction evidence, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
     - {name: RNA and DNA, analyses: [go_binding, binding_protein, crosslink, sequence_proximity]}
     - {name: Other modifications}
     - {name: Residue and evidence, attributes: [residue, evidence_class]}
     - {name: Functional score, attributes: [functional_score, functional_band]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context, sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]}
-    - {name: Databases, attributes: [sources, iptmnet_sources]}
+    - {name: Studies and databases, attributes: [sources, iptmnet_sources]}
   dataset: {label: PTM_Pipeline, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
   methods_note: "Sequences use UniProt 2026_03 and the other modifications UniProt 2026_04. The later release's positions are mapped onto the 2026_03 sequences the tests use, so each site keeps the position it was analyzed at."
   license: "Data: CC BY-NC-SA 4.0 (non-commercial, share-alike); UniProt data CC BY 4.0. For commercial use, contact info@shechterlab.org."
@@ -2021,7 +2021,7 @@ website:                  # the look and words of the website (ptmc web); layout
       values: [source, source_id, gene, source_ref, canonical_ref, alt, reason]
       include: [{column: source, in: [clinvar, gnomad_v4_1]}]
       include_any: [{column: source_ref, in: [S, T, Y]}, {column: canonical_ref, in: [S, T, Y]}]
-    dependency:            # the Cancer cell lines and tumors card
+    dependency:            # the Cancer cell dependency (DepMap) card, and the Mutations in tumors and cell lines card
       input: depmap_gene_effect
       format: protein_records
       columns: {accession: canonical_UniProtAC, lines: lines, dependent: dependent_lines, median: median, common_essential: common_essential, histogram: histogram, lineages: most_dependent_lineages}
@@ -2200,11 +2200,11 @@ website:                  # the look and words of the website (ptmc web); layout
       logo: true
       logo_mode: freq      # the logo's first stack is residue frequency, as the explorer's; bits is a switch
     open_partners: true
-    order: [p-map, p-sitetab, p-sites, p-cell, p-cond, p-dis, p-depmap, p-germline, p-kinds, p-cc, p-ix, p-na, p-ptm, p-cluster, p-regions, p-seq, p-pert, p-exp, p-cons, p-struct]   # the page's order, as the Overview's sections
+    order: [p-map, p-sitetab, p-sites, p-cell, p-cond, p-dis, p-dependency, p-mutations, p-germline, p-kinds, p-cc, p-ix, p-na, p-ptm, p-cluster, p-regions, p-seq, p-pert, p-exp, p-cons, p-struct]   # the page's order, as the Overview's sections
     groups:                # the headings in the Overview's order: location, disease, classes, interactions, other modifications, position, then the experiments (website.protein.groups)
       - {id: g-overview, title: Map and summary, folds: [p-map, p-sitetab, p-sites]}
       - {id: g-location, title: Localization, switch: true, folds: [p-cell, p-cond]}
-      - {id: g-disease, title: Disease associations and mutations, switch: true, folds: [p-dis, p-depmap, p-germline]}
+      - {id: g-disease, title: Disease associations and mutations, switch: true, folds: [p-dis, p-dependency, p-mutations, p-germline]}
       - {id: g-classes, title: Classes and pathways, switch: true, folds: [p-kinds]}
       - {id: g-binding, title: Interactions, folds: [p-cc, p-ix, p-na]}
       - {id: g-modifications, title: Other modifications, folds: [p-ptm]}
@@ -2213,7 +2213,7 @@ website:                  # the look and words of the website (ptmc web); layout
     headings:              # the cards front end's folds under labeled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
       - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
       - {id: h-sites, title: Sites and structure, folds: [p-pert, p-exp]}
-      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cons]}
+      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-dependency, p-mutations, p-germline, p-kinds, p-regions, p-cons]}
       - {id: h-seq, title: Sequence features, folds: [p-cluster, p-ptm, p-seq]}
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
@@ -2330,7 +2330,7 @@ website:                  # the look and words of the website (ptmc web); layout
           evidence: {in_vivo: in vivo, in_cellulo: in cellulo, in_vitro: in vitro, frap: FRAP, colocalization: colocalization, mass_spectrometry: mass spectrometry,
                      emergent properties: emergent properties, others: other}
       dependency:
-        title: Cancer cell lines and tumors
+        title: Cancer cell dependency (DepMap)
         excluded: cancer
         table: dependency
         unit: cancer cell lines

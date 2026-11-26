@@ -126,7 +126,7 @@
   const legendNote = notes.length === 1 ? notes[0] : '';
   const lower = (t) => t.charAt(0).toLowerCase() + t.slice(1);
   const upper = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-  function questionRows(q, cols) {
+  function questionRows(q, cols, seen) {
     const ts = cols.map((e) => q.tests[e.id]).filter(Boolean),
       same = (k) => ts.every((t) => (t[k] || '') === (ts[0][k] || '')),
       inlineNote = (t) => (t.note && t.note !== legendNote ? t.note : '');
@@ -144,9 +144,12 @@
       ? `<td colspan="${cols.length}"><span class="q-line">${esc(line.join(' · '))}</span></td></tr>`
       : `<td colspan="${cols.length}" class="nt">not tested</td></tr>`;
     const onlyGroup = diff && same('test') && same('note') && !same('group');
+    // the label "Compared with" is printed once in a group; its later rows keep it for assistive technology
     if (diff)
       html +=
-        `<tr class="q q-d"><th scope="row"${onlyGroup ? '' : ' aria-label="Where the explorers differ"'}>${onlyGroup ? 'Compared with' : ''}</th>` +
+        `<tr class="q q-d"><th scope="row" aria-label="${onlyGroup ? 'Compared with' : 'Where the explorers differ'}">${
+          onlyGroup && !seen.cw ? 'Compared with' : ''
+        }</th>` +
         cols
           .map((e) => {
             const t = q.tests[e.id];
@@ -159,6 +162,7 @@
           })
           .join('') +
         '</tr>';
+    if (onlyGroup) seen.cw = true;
     return html;
   }
   function sortBtn(id, label) {
@@ -184,13 +188,14 @@
         .join('') +
       '</tr>';
     const body = v
-      .map(
-        (g) =>
+      .map((g) => {
+        const seen = { cw: false }; // one group's rows: whether "Compared with" has been printed yet
+        return (
           `<tr class="cmp-gh"><td colspan="${cols.length + 1}"><h2>${esc(g.title)}</h2>${g.note ? `<p>${esc(g.note)}</p>` : ''}</td></tr>` +
           g.questions
             .map(
               (q) =>
-                questionRows(q, cols) +
+                questionRows(q, cols, seen) +
                 q.rows
                   .map(
                     (r) =>
@@ -209,7 +214,8 @@
                   .join('')
             )
             .join('')
-      )
+        );
+      })
       .join('');
     return (
       '<div class="cmp-frame" tabindex="0" role="region" aria-label="Comparison table, scrolls sideways">' +

@@ -7,9 +7,11 @@
 (window.PTMC_MODULES ||= []).push((K) => {
   'use strict';
   const { D, W, esc, int, cap } = K;
-  const PC = D.protein_view?.cards || {},
+  const PC = { ...(D.protein_view?.cards || {}) },
     LIVE = (D.protein_view?.sets || []).filter((c) => c.live);
   if (!Object.keys(PC).length && !LIVE.length) return;
+  // the dependency card's configuration holds both halves of the old card; the mutations card is the second half
+  if (PC.dependency) PC.mutations = { title: 'Mutations in tumors and cell lines' };
   const TH = D.tables || {},
     LK = D.lookups || {},
     SPECS = D.attribute_specs || {},
@@ -503,7 +505,7 @@
     } catch (e) {
       /* storage may be blocked */
     }
-    document.querySelectorAll('[data-pc="dependency"], [data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
+    document.querySelectorAll('[data-pc="mutations"], [data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
     paintAll();
   });
   // a card whose variant lists are in files of their own is filled when it is opened (toggle does not bubble)
@@ -529,7 +531,7 @@
     return v;
   }
   K.prop?.onHyper(() => {
-    document.querySelectorAll('[data-pc="dependency"], [data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
+    document.querySelectorAll('[data-pc="mutations"], [data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
     paintAll();
   });
   // a protein's residues as lollipops for one source (card.change_counts or variant_counts entry `x`): stick = the count the
@@ -1084,6 +1086,28 @@
               .join(' · ')} <span class="muted">` + `(mean gene effect)</span></p>`
           : '');
     }
+    const html =
+      `${
+        cfg.url ? `<p class="actions">${ext(cfg.url.replace('{gene}', encodeURIComponent(g)), 'Source ↗')}</p>` : ''
+      }` + `<div class="pc-grid"><section class="pc-sec">${dep}</section></div>`;
+    const sum = r
+      ? /^true$/i.test(r.common_essential || '')
+        ? 'commonly essential'
+        : `${int(num(r.dependent))} of ${int(num(r.lines))} lines depend on it`
+      : 'not screened';
+    const depPic =
+      r && !/^true$/i.test(r.common_essential || '') && num(r.lines)
+        ? meters1(
+            'Dependent',
+            num(r.dependent) / num(r.lines),
+            `${int(num(r.dependent))} of ${int(num(r.lines))} lines`
+          )
+        : '';
+    return { html, sum, pic: depPic };
+  }
+  // the changes at the residues (the site card's changes and the per-residue change counts): the card next to the inherited variants
+  function mutationsBuild(p, rec, tb) {
+    const cfg = PC.dependency;
     // the changes at the marks: the site card's changes (website.protein.card.changes), one column each
     const ch = (D.protein_view?.card?.changes || []).filter((x) => SPECS[x.attribute]);
     let chg = '',
@@ -1147,25 +1171,15 @@
           : '');
     }
     const cnSec = K.card.cc?.entries.length ? changeCountsSection(p, rec, tb) : null;
+    if (!ch.length && !cnSec) return { html: '', sum: '', hide: true };
     const html =
-      `${
-        cfg.url ? `<p class="actions">${ext(cfg.url.replace('{gene}', encodeURIComponent(g)), 'Source ↗')}</p>` : ''
-      }` +
-      `<div class="pc-grid"><section class="pc-sec"><h4>CRISPR dependency</h4>${dep}</section>` +
-      (ch.length
-        ? `<section class="pc-sec"><h4>Changes at ${esc(W.residues)}</h4>${chg}${cfg.changes_note ? `` : ''}</section>`
-        : '') +
+      `<div class="pc-grid">` +
+      (ch.length ? `<section class="pc-sec"><h4>Changes at ${esc(W.residues)}</h4>${chg}</section>` : '') +
       (cnSec ? cnSec.html : '') +
       '</div>' +
-      excludedLine(p, tb, cfg) +
-      (cfg.note ? `` : '');
+      excludedLine(p, tb, cfg);
     const first = ch[0],
       sum = [
-        r
-          ? /^true$/i.test(r.common_essential || '')
-            ? 'commonly essential'
-            : `${int(num(r.dependent))} of ${int(num(r.lines))} lines depend on it`
-          : 'not screened',
         ch.length
           ? `${nSites[0] ? plural(nSites[0], 'site') : 'no site'} changed in ${(first.unit || ['', 'records'])[1]}`
           : '',
@@ -1175,15 +1189,7 @@
       ]
         .filter(Boolean)
         .join(' · ');
-    const depPic =
-      r && !/^true$/i.test(r.common_essential || '') && num(r.lines)
-        ? meters1(
-            'Dependent',
-            num(r.dependent) / num(r.lines),
-            `${int(num(r.dependent))} of ${int(num(r.lines))} lines`
-          )
-        : '';
-    return { html, sum, pic: depPic, wait: !!cnSec?.wait };
+    return { html, sum, wait: !!cnSec?.wait };
   }
 
   // ---- inhibitors, knockouts and knockdowns of the mark's enzymes: a site against each experiment, a mark per call -----------------------
@@ -1638,7 +1644,8 @@
   const CARDS = [
     ...(CELLFOLD ? [['location_cell', 'p-cell', 'Localization', cellBuild]] : []),
     ['location', 'p-cond', 'Condensates and HPA location', locationBuild],
-    ['dependency', 'p-depmap', 'Changes in tumors and cell lines', dependencyBuild],
+    ['dependency', 'p-dependency', 'Cancer cell dependency (DepMap)', dependencyBuild],
+    ['mutations', 'p-mutations', 'Mutations in tumors and cell lines', mutationsBuild],
     [
       'perturbations',
       'p-pert',

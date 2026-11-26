@@ -253,25 +253,13 @@
 
   // ---- the context switch: what is recorded for the protein, or the dataset's own tests of the same sets -----------------------
   const CTX = { mode: 'protein' };
-  // the sets the Dataset context view covers, named by their questions' titles (website.protein.context)
-  const ctxNames = () => {
-    const ts = [
-      ...new Set(
-        Object.values(PRO.context || {})
-          .flat()
-          .map((aid) => (D.analyses.find((a) => a.id === aid) || {}).title)
-          .filter(Boolean)
-      ),
-    ];
-    return ts.length ? ts.join(', ') : 'These sets';
-  };
   const ctxSwitch = () =>
     `<span class="seg ctx-seg" role="group" aria-label="Context cards"><button type="button" ` +
     `data-pctx="protein" aria-pressed="${CTX.mode === 'protein'}">This protein</button><button type="button" ` +
     `data-pctx="dataset" aria-pressed="${CTX.mode === 'dataset'}">Dataset context</button></span>` +
-    `<span class="muted small ctx-note">${
-      CTX.mode === 'protein' ? ctxNames() : 'The same sets, tested across all proteins.'
-    }</span>`;
+    (CTX.mode === 'protein'
+      ? ''
+      : `<span class="muted small ctx-note">The same sets, tested across all proteins.</span>`);
   // for the protein's own sets of an analysis: each with the dataset's test of it
   function datasetPanel(p, aids) {
     const out = [],

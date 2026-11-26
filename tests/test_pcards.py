@@ -181,7 +181,7 @@ for (const f of K.proteinFolds) out.ids.push((/id="([^"]+)"/.exec(f(p, rec, (id,
 out.loc = K.pcards.location(p, rec, tb); out.cl = K.pcards.clustering(p, rec, tb); out.ptm = K.pcards.other_ptms(p, rec, tb); out.dep = K.pcards.dependency(p, rec, tb); out.ex = K.pcards.experiments(p, rec, tb);
 console.log(JSON.stringify(out));"""
     out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
-    assert [i for i in out['ids'] if i] == ['p-cond', 'p-depmap', 'p-exp', 'p-cluster', 'p-ptm']
+    assert [i for i in out['ids'] if i] == ['p-cond', 'p-dependency', 'p-mutations', 'p-exp', 'p-cluster', 'p-ptm']
     loc = out['loc']
     assert loc['html'].index('Beta granule') < loc['html'].index('Alpha body')  # the more confident membership first
     assert 'Nucleus' in loc['sum'] and '2 Drop condensates, most confident Beta granule (5 of 5 stars)' in loc['sum']

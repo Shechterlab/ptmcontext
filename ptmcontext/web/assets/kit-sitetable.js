@@ -70,9 +70,14 @@
   const inDisorder = (rec, pos) => (rec.units || []).some((u) => disorderKinds.has(u[0]) && pos >= u[1] && pos <= u[2]);
   // the cohort the k columns count: the same switch as the Mutations page
   const cohortTag = () => `${K.prop.state.hyper ? 'with' : 'without'} hypermutated`;
-  // a source's name in the k legend: a somatic source (tumors, cell lines) says which cohort its k counts
-  const kName = (s) =>
-    `${s.label} ${(s.unit || ['sample', 'samples'])[1]}${s.kind === 'somatic' ? ` (${cohortTag()})` : ''}`;
+  // a source's count noun as the column's name (Tumors, Cell lines, Variants) and its line in the legend: a somatic source (tumors,
+  // cell lines) says which cohort the count is of
+  const noun = (s) => {
+    const n = (s.unit || ['sample', 'samples'])[1];
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  };
+  const kName = (s) => `${noun(s)}: ${s.label}${s.kind === 'somatic' ? `, ${cohortTag()}` : ''}.`;
+  const kLegend = () => `${SRC.map(kName).join(' ')} Counts are of those with a change at the site.`;
   const sourceCells = (acc, pos, s) => {
     const v = K.prop.at(acc, s.id, pos);
     if (!v) return { k: null, o: null, q: null, p: null, fewer: false, text: '' };
@@ -135,7 +140,7 @@
     const ring = c.fewer || c.more,
       why = c.fewer ? 'fewer than expected' : 'more than expected';
     return (
-      `<span class="st-src${ring ? ` st-ring${c.fewer ? ' dash' : ''}` : ''}" title="${esc(c.tip + (ring ? `\n${why}, q below ${RING}` : ''))}">` +
+      `<span class="st-src${ring ? ` st-ring${c.fewer ? ' dash' : ''}` : ''}" title="${esc(K.shortHover(c.tip + (ring ? `\n${why}, q below ${RING}` : ''), false))}">` +
       `<span>${K.prop.kOE(s.id, { k: c.k, o: c.o })}${c.q != null && c.k > 0 ? ` · <span class="st-q">q ${fq(c.q)}</span>` : ''}</span></span>`
     );
   }
@@ -185,8 +190,8 @@
           id: `${s.id}:k`,
           tsvName: `${s.id}_${String(unit).replace(/\W+/g, '_')}_changed`,
           grp: s.id,
-          label: `${s.label} k`,
-          sub: 'k',
+          label: `${s.label} ${noun(s).toLowerCase()}`,
+          sub: noun(s),
           num: 1,
           help: `${s.long || s.label}: ${unit} with a change at the site${s.kind === 'somatic' ? ` (${cohortTag()})` : ''}`,
           val: (r) => src(r)?.k,
@@ -366,7 +371,7 @@
             parts: [],
             num: 1,
             label: s.label,
-            help: `${s.long || s.label}: k (${(s.unit || ['sample', 'samples'])[1]} with a change at the site), observed/expected (observed changes over those expected from the residue's codon) and q below them`,
+            help: `${s.long || s.label}: ${noun(s).toLowerCase()} with a change at the site, observed/expected (observed changes over those expected from the residue's codon) and q below them`,
             cell: (r) => srcCell(s, r),
           })
         );
@@ -413,7 +418,7 @@
     const note =
       M.loaded === null
         ? `<p class="muted small">The changes observed at each site could not be read.</p>`
-        : `<p class="muted small st-note">k: ${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected changes (from codons). ` +
+        : `<p class="muted small st-note">${esc(kLegend())} O/E: observed/expected changes (from codons). ` +
           `q: adjusted for the sites tested. Ring: q < ${RING}, more than expected${
             SRC.some((s) => s.lower_tail) ? '; dashed: fewer' : ''
           }.</p>`;
@@ -524,7 +529,7 @@
       lead: withWriter ? writerChip() : '',
       legend:
         mode !== 'variants' && sites.some((s) => s.sections.length)
-          ? `${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected changes (from codons). Ring: q < ${RING}.`
+          ? `${esc(kLegend())} O/E: observed/expected changes (from codons). Ring: q < ${RING}.`
           : '',
       title: `Your selected ${P.all === 1 ? W.mark : W.marks}: ${mode === 'variants' ? 'variants' : 'mutations'}`,
       note: `Each ${W.mark}'s variants are counted by its site card; the link opens the card at its variants.`,
@@ -573,7 +578,7 @@
     const tsv =
       K.preamble(
         `${TITLE}, ${gene}`,
-        `one row for each ${W.mark} of ${gene} (${ps.p.acc}): its state, the changes observed at it in each source (k: samples or variants with a change; O/E: observed changes over expected; q: corrected binomial p, for fewer than expected where a source's column says so), its variants as the site card counts them (variants at the residue, and those classified pathogenic or likely pathogenic), the cell lines named for its changes, the hotspot flag, the disordered-region flag${K.prot.amReady?.(ps.p.acc) ? ' and the mean AlphaMissense score of its substitutions (less reliable in disordered regions)' : ''}. ${
+        `one row for each ${W.mark} of ${gene} (${ps.p.acc}): its state, the changes observed at it in each source (samples or variants with a change; O/E: observed changes over expected; q: corrected binomial p, for fewer than expected where a source's column says so), its variants as the site card counts them (variants at the residue, and those classified pathogenic or likely pathogenic), the cell lines named for its changes, the hotspot flag, the disordered-region flag${K.prot.amReady?.(ps.p.acc) ? ' and the mean AlphaMissense score of its substitutions (less reliable in disordered regions)' : ''}. ${
           K.prop.state.hyper ? 'With' : 'Without'
         } hypermutated samples; sorted as shown on the page`
       ) +

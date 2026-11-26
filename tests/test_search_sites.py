@@ -96,3 +96,15 @@ def test_the_marked_sites_index_gives_each_protein_its_positions_as_the_page_num
     got = _marked_sites(tmp_path, ptab, rules)
     assert got == {'P1': 'K4 K120', 'P2': 'K4', 'P3': 'R9'}  # histone H3 K4 is UniProt K5
     assert _marked_sites(tmp_path / 'none', ptab, rules) == {}
+
+
+@needs_node
+def test_a_typed_accession_ranks_its_protein_first():
+    out = _node(
+        """
+        const rows = [{ acc: 'A0A0U1RRI6', gene: 'CENPVL3', name: 'x', genes: [], aliases: [], ids: [0], w: 1 },
+          { acc: 'P04637', gene: 'TP53', name: 'y', genes: [], aliases: [], ids: [0], w: 1 }];
+        console.log(JSON.stringify([N.rank(rows, 'A0A0U1RRI6', 12), N.rank(rows, 'a0a0u1rri6', 12)].map((r) => r.map((h) => h.row.acc))));
+        """
+    )
+    assert out == [['A0A0U1RRI6'], ['A0A0U1RRI6']]

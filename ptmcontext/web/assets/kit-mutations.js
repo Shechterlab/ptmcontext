@@ -127,7 +127,28 @@
   };
 
   // ---- the sites of the selection: each once (a site counted for several types is one site), with its residue -----------------
+  // without a search or filter every site of the dataset is listed, and the waterfall's file already holds them (wf.known), so
+  // the selection's parts (every mark of the dataset) are read only when a selection needs them
+  const lean = () => !K.sel.active() && PR.wf?.known;
+  let KNOWN = null;
+  function knownSites(wf) {
+    if (KNOWN?.wf !== wf) {
+      const out = [];
+      for (const [acc, list] of Object.entries(wf.known || {}))
+        for (const t of list.split(' ')) {
+          const m = /^([A-Za-z]?)(\d+)$/.exec(t);
+          if (m) out.push([acc, +m[2], m[1]]);
+        }
+      KNOWN = { wf, out };
+    }
+    return KNOWN.out;
+  }
   function selSites() {
+    if (lean()) {
+      const wf = wfData();
+      if (wf?.known) return knownSites(wf);
+      if (wf === undefined) return null;
+    }
     const SD = K.sel.data();
     if (!SD) return null;
     const idx = K.sel.active() ? K.sel.compute().marks || [] : null;
@@ -2039,7 +2060,7 @@
         M.view
       )}</div>`;
     const head = (inner) => page('', viewBar() + `<div class="mu-skel" role="status">${inner}</div>`);
-    if (!K.sel.data()) return head(K.loading(`Loading the ${W.marks}…`));
+    if (!lean() && !K.sel.data()) return head(K.loading(`Loading the ${W.marks}…`));
     const V = M.view === 'clinvar' && !PR.cv ? 'ranked' : M.view;
     const needWf = V !== 'clinvar',
       wf = needWf ? wfData() : null;
@@ -2047,7 +2068,7 @@
       return head(K.loading('Loading the tumor, cell line and gnomAD counts…'));
     if (needWf && (wf === null || (V === 'waterfall' && germ() && gnData() === null)))
       return head('<p class="muted">The frequencies could not be read.</p>');
-    const note = K.sel.active() ? '' : `<div class="filter-note">Showing all ${esc(W.marks)}.</div>`;
+    const note = ''; // the selection bar above the page already says "All n marks" when nothing is set
     const tabs = seg(
       'data-mu-view',
       'View',

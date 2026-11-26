@@ -1900,7 +1900,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Disease associations and mutations, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant], attributes: [tcga_any, depmap_any]}
     - {name: Classes and pathways, analyses: [panther_group, panther_class, condensate_proteome, reactome_top_level], proteins: [marks, arg_enrichment_q]}
     - {name: Methylation state, attributes: [state, maron_s2, methyl_ip, neutral_loss]}
-    - {name: "PRMT inhibitors, knockouts and knockdowns", attributes: [gsk591, ms023, perturbation]}
+    - {name: "PRMT inhibitors, knockouts and knockdowns", heading: Enzymes and readers, attributes: [gsk591, ms023, perturbation]}
     - {name: Interaction evidence, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Other modifications}
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
@@ -2461,7 +2461,7 @@ website:                  # the look and words of the website (ptmc web); layout
       sep: ","
       columns: {key: uid}
       values: [name, condensate_type]
-    dependency:                          # the Cancer cell lines and tumors card
+    dependency:                          # the Cancer cell dependency (DepMap) card, and the Mutations in tumors and cell lines card
       input: depmap_gene_effect
       format: protein_records
       columns: {accession: canonical_UniProtAC, lines: lines, dependent: dependent_lines, median: median, common_essential: common_essential, histogram: histogram, lineages: most_dependent_lineages}
@@ -2586,11 +2586,11 @@ website:                  # the look and words of the website (ptmc web); layout
     complex_names:         # complexes and families a writer name must never resolve to one protein (they link to a UniProt search)
       [AMPK, CK2, CK1, IKK, PKA, PKC, CaMKII, CDK, MAPK, ERK, PP2A, PP1]
     open_partners: true    # the Interaction partners fold is open when the protein has partners in the site's table
-    order: [p-map, p-sitetab, p-sites, p-cell, p-cond, p-dis, p-depmap, p-germline, p-kinds, p-cc, p-ix, p-na, p-ptm, p-cluster, p-regions, p-seq, p-pert, p-exp, p-cons, p-struct]   # the page's order, as the Overview's sections
+    order: [p-map, p-sitetab, p-sites, p-cell, p-cond, p-dis, p-dependency, p-mutations, p-germline, p-kinds, p-cc, p-ix, p-na, p-ptm, p-cluster, p-regions, p-seq, p-pert, p-exp, p-cons, p-struct]   # the page's order, as the Overview's sections
     groups:                # the headings in the Overview's order: location, disease, classes, interactions, other modifications, position, then the experiments (website.protein.groups)
       - {id: g-overview, title: Map and summary, folds: [p-map, p-sitetab, p-sites]}
       - {id: g-location, title: Localization, switch: true, folds: [p-cell, p-cond]}
-      - {id: g-disease, title: Disease associations and mutations, switch: true, folds: [p-dis, p-depmap, p-germline]}
+      - {id: g-disease, title: Disease associations and mutations, switch: true, folds: [p-dis, p-dependency, p-mutations, p-germline]}
       - {id: g-classes, title: Classes and pathways, switch: true, folds: [p-kinds]}
       - {id: g-binding, title: Interactions, folds: [p-cc, p-ix, p-na]}
       - {id: g-modifications, title: Other modifications, folds: [p-ptm]}
@@ -2599,7 +2599,7 @@ website:                  # the look and words of the website (ptmc web); layout
     headings:              # the cards front end's folds under labeled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
       - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
       - {id: h-sites, title: Sites and structure, folds: [p-pert, p-exp]}
-      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cons]}
+      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-dependency, p-mutations, p-germline, p-kinds, p-regions, p-cons]}
       - {id: h-seq, title: Sequence features, folds: [p-cluster, p-ptm, p-seq]}
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
@@ -2626,7 +2626,7 @@ website:                  # the look and words of the website (ptmc web); layout
           evidence: {in_vivo: in vivo, in_cellulo: in cellulo, in_vitro: in vitro, frap: FRAP, colocalization: colocalization, mass_spectrometry: mass spectrometry,
                      emergent properties: emergent properties, others: other}
       dependency:
-        title: Cancer cell lines and tumors
+        title: Cancer cell dependency (DepMap)
         excluded: cancer
         table: dependency
         unit: cancer cell lines

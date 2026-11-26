@@ -3704,6 +3704,10 @@
               "name": {
                 "type": "string"
               },
+              "heading": {
+                "type": "string",
+                "description": "a heading above this group and the following groups that name the same heading"
+              },
               "analyses": {
                 "type": "array",
                 "items": {
@@ -5197,7 +5201,7 @@
                 "type": "string",
                 "pattern": "^p-[a-z0-9-]+$"
               },
-              "description": "the protein page's folds, first to last, by id (p-map, p-sites, p-score, p-kinds, p-regions, p-seq, p-struct, p-ix, p-sitetab, p-cons, and the cards' p-cond, p-dis, p-depmap, p-pert, p-exp, p-cluster, p-ptm); a fold the list lacks follows the one before it, and without the list the page's own order stands"
+              "description": "the protein page's folds, first to last, by id (p-map, p-sites, p-score, p-kinds, p-regions, p-seq, p-struct, p-ix, p-sitetab, p-cons, and the cards' p-cond, p-dis, p-dependency, p-mutations, p-pert, p-exp, p-cluster, p-ptm); a fold the list lacks follows the one before it, and without the list the page's own order stands"
             },
             "groups": {
               "type": "array",
@@ -5245,7 +5249,7 @@
             "cards": {
               "type": "object",
               "additionalProperties": false,
-              "description": "the context cards of a protein page, each on when named (CONTRACTS.md, Protein page cards): location (p-cond), dependency (p-depmap), perturbations (p-pert), experiments (p-exp), clustering (p-cluster), other_ptms (p-ptm)",
+              "description": "the context cards of a protein page, each on when named (CONTRACTS.md, Protein page cards): location (p-cond), dependency (p-dependency and p-mutations), perturbations (p-pert), experiments (p-exp), clustering (p-cluster), other_ptms (p-ptm)",
               "properties": {
                 "location": {
                   "type": "object",

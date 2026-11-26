@@ -18,7 +18,7 @@ Four kinds of file, all read only when something asks for them:
   data/wf.json      the waterfall's numbers: samples profiled per group, each known site's changed samples per group, O/E, q,
                     k, expected and both tails of each site with a change (TCGA and DepMap: the lower tail is computed here
                     with the release's binomial, only where it gives back the release's p_upper), and the signed-score curve
-                    of the other residues of the same type
+                    of the other residues of the same type, and `known` (acc -> 'R332 R381': every site of the dataset)
   data/onco.json    the oncoprint's numbers: every TCGA sample (project, hypermutated or not, coding calls per Mb) and, for each
                     known site, the samples with a change at it
   data/cv.json      the Mutations page's inherited view: the ClinVar pathogenic and likely pathogenic variants at the known
@@ -734,6 +734,12 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
         den = pd.read_csv(df_, sep='\t', dtype={'group': str})
         wf = frequency_payload(freq, den, marks, totals, pooled, [s for s in sources if s.get('frequency_source')])
         wf['sites_total'] = known
+        # every site of the dataset ('R332 R381': its residue and position), so the page lists them without reading the selection
+        wf['known'] = {
+            a: ' '.join(f'{(seqs.get(a) or "")[q - 1 : q]}{q}' for q in sorted(set(ps)))
+            for a, ps in marks.items()
+            if ps
+        }
         wf['hot'] = {
             s['id']: {'all': hot[s['id']].get(False, {}), 'no_hypermutated': hot[s['id']].get(True, {})}
             for s in sources
@@ -749,7 +755,7 @@ def build(site: dict, run: dict, listing: list, records: dict, seqs: dict, out: 
                 )
         text = json.dumps(wf, separators=(',', ':'))
         (out / 'data' / 'wf.json').write_text(text)
-        res['wf'] = {'file': 'data/wf.json'}
+        res['wf'] = {'file': 'data/wf.json', 'known': True}
         log(f'  mutation frequency: wf.json {len(text) / 1e3:.0f} KB')
         ch = [
             pd.read_csv(p, sep='\t', usecols=['canonical_UniProtAC', 'position', 'alt', 'sample_id'])

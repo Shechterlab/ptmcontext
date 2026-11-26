@@ -1104,7 +1104,8 @@
     'p-na',
     'p-cond',
     'p-dis',
-    'p-depmap',
+    'p-dependency',
+    'p-mutations',
     'p-pert',
     'p-exp',
     'p-cluster',
@@ -1131,6 +1132,7 @@
     ...Object.fromEntries(FOLDS.map((f) => [f, f])),
     ...NAME_TO_FOLD,
     'site-glance': 'p-sitetab', // the first site table sat under this name
+    'p-depmap': 'p-mutations', // the old card is two: the dependency card and this one
     'p-score': 'p-sitetab', // the list of counts is gone; the sentence that replaced it sits under the site table
     ...(D.legacy_routes || {}),
   };
@@ -2170,24 +2172,30 @@
     if (!sd) return `${K.loading('Loading the sets…')}`;
     let cov = null;
     const none = [];
-    const blocks = D.analyses
-      .filter((a) => a.kind === 'protein_sets' && sd.protein_sets?.[a.id] && !K.inSetCards?.(a.id))
+    // the questions in the Overview's order, each once: a cell map's grouped regions are listed with the map, under the regions' name
+    const mineOf = (a) =>
+      (sd.protein_sets?.[a.id]?.sets || [])
+        .filter(([s]) => K.sel.setHas(a.id, s, p.i))
+        .map(([s]) => ({ s, r: setRow(a.id, s, 'enricher') }))
+        .filter((x) => x.r)
+        .sort((x, y) => RANK[x.r.dir] - RANK[y.r.dir] || x.r.q - y.r.q);
+    const blocks = K.questionOrder()
+      .filter((a) => a.kind === 'protein_sets' && sd.protein_sets?.[a.id] && !K.inSetCards?.(a.id) && !K.listHides(a))
       .map((a) => {
         const ps = sd.protein_sets[a.id];
         if (ps.covariate && !cov && ps.covariate.proteins[p.i])
           cov = { ...ps.covariate, me: ps.covariate.proteins[p.i], from: a };
-        const mine = ps.sets
-          .filter(([s]) => K.sel.setHas(a.id, s, p.i))
-          .map(([s]) => ({ s, r: setRow(a.id, s, 'enricher') }))
-          .filter((x) => x.r)
-          .sort((x, y) => RANK[x.r.dir] - RANK[y.r.dir] || x.r.q - y.r.q);
+        const reg = A[K.regionsOf[a.id]],
+          mine = [...(reg ? mineOf(reg) : []), ...mineOf(a)].filter(
+            (x, i, all) => all.findIndex((y) => y.r.label === x.r.label) === i
+          );
         if (!mine.length) {
-          none.push(esc(a.title));
+          none.push(esc(K.listTitle(a)));
           return '';
         }
         const shown = PV.open['kinds:' + a.id] ? mine : mine.slice(0, 12);
         return (
-          `<div class="kind-set"><a href="${esc(K.link('overview', a.id))}"><b>${esc(a.title)}</b></a> ` +
+          `<div class="kind-set"><a href="${esc(K.link('overview', a.id))}"><b>${esc(K.listTitle(a))}</b></a> ` +
           `<span class="muted">${int(mine.length)}</span> ` +
           shown.map((x) => `<a class="chip" href="${esc(K.link('overview', a.id))}">${esc(x.r.label)}</a>`).join(' ') +
           (mine.length > 12
