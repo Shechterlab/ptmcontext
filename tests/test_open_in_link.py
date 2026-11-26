@@ -116,6 +116,6 @@ def test_show_in_3d_lands_through_the_shared_landing_and_reads_the_site_in_the_e
     assert 'function openFold()' in js and "closest('details')" in js
     # the default entry resolves the site; the menu marks and sorts those entries first; the AlphaFold model is the fallback
     assert 'scanSite(acc, pos)' in js and 'resolves ${rl(site)}' in js and 'at(b.e) - at(a.e)' in js
-    assert 'No PDB entry resolves ${rl(pos)}; the AlphaFold model is shown.' in js
+    assert 'No PDB entry resolves' not in js  # the toggle says it: No experimental structure at R216
     assert 'pLDDT at ${esc(rl(site))}' in js and 'K.prot?.plddt?.(T.acc, site)' in js
     assert 'plddt: (acc, pos) =>' in _src('kit-proteins.js')  # the card's own array

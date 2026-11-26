@@ -1115,7 +1115,6 @@
                 if (T.acc !== acc) return;
                 if (!list.length) {
                   (T.noneAt ||= {})[`${acc}:${pos}`] = true;
-                  if (!T.msg) message(`No PDB entry resolves ${rl(pos)}; the AlphaFold model is shown.`);
                   return paintSrc();
                 }
                 if (T.mol !== shown || (shown && shown.mode !== 'af')) return;
@@ -2016,7 +2015,7 @@
     const none = !own && siteNow() != null && !!T.noneAt?.[`${acc}:${siteNow()}`];
     const looking = !own && siteNow() != null && !!T.scanning?.[`${acc}:${siteNow()}`];
     const lab = none
-      ? `Experimental (none at ${rl(siteNow())})`
+      ? `No experimental structure at ${rl(siteNow())}`
       : looking
         ? 'Experimental (searching…)'
         : target
