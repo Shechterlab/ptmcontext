@@ -45,7 +45,10 @@ def test_compare_lists_its_groups_in_the_owner_order():
 def test_methods_lists_the_questions_in_the_overview_order_with_controls_last():
     js = (ROOT / 'ptmcontext' / 'web' / 'assets' / 'kit.js').read_text()
     assert 'const methodOrder = () =>' in js
-    assert 'methodOrder().map(questionMethod)' in js and '...methodOrder().map((a) => [`m-q-${a.id}`' in js
+    assert (
+        'methodOrder().map(questionMethod)' in js
+        and '...methodOrder()\n        .filter((a) => !K.listHides(a))\n        .map((a) => [`m-q-${a.id}`' in js
+    )
     assert 'D.analyses.map(questionMethod)' not in js
     assert 'a.control_of ? 2e6 : 0' in js
 

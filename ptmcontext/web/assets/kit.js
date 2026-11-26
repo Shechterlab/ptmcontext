@@ -1430,7 +1430,10 @@
         if (cards.has(a.id)) return;
         const g = (D.filters || []).find((f) => (f.analyses || []).includes(a.id)),
           at = (g?.analyses || []).filter((x) => cards.has(x)).map((x) => cards.get(x));
-        if (at.length) rank.set(a.id, Math.min(...at) + 0.5);
+        if (at.length) return rank.set(a.id, Math.min(...at) + 0.5);
+        // else next to its theme: after the last question of the same section that a card holds
+        const kin = a.section ? D.analyses.filter((x) => x.section === a.section && cards.has(x.id)) : [];
+        if (kin.length) rank.set(a.id, Math.max(...kin.map((x) => cards.get(x.id))) + 0.5);
       });
     };
     // the sections that close every Overview ("More questions") hold what the others do not: they rank last
@@ -1462,6 +1465,14 @@
       .sort((u, v) => key(u[0]) - key(v[0]) || u[1] - v[1])
       .map((u) => u[0]);
   };
+  K.questionOrder = methodOrder;
+  // a cell map's grouped-regions question is the same question as the map's own: lists name it once, by the regions' title
+  // (K.regionsOf: the map's analysis id -> its regions question's id)
+  K.regionsOf = Object.fromEntries(
+    (D.cell?.maps || []).filter((m) => m.regions && A[m.regions]).map((m) => [m.analysis, m.regions])
+  );
+  K.listTitle = (a) => A[K.regionsOf[a.id]]?.title || a.title;
+  K.listHides = (a) => Object.values(K.regionsOf).includes(a.id);
   // against other marks the attributes are questions too: about the sites, and (last, as a caveat) how they were found
   const wholeTile = (c) => A[c.analysis]?.anySize || !(A[c.analysis]?.tile || K.questions[c.analysis]?.tile); // a tile that reads the whole dataset: for a selection too small to test
   const secList = () =>
@@ -3409,7 +3420,9 @@
       ['m-questions', 'How each question was made', 1],
       ['m-parity', 'Checked against the release', 1],
       ['m-gq', 'Each question', 0],
-      ...methodOrder().map((a) => [`m-q-${a.id}`, a.title, 1]),
+      ...methodOrder()
+        .filter((a) => !K.listHides(a))
+        .map((a) => [`m-q-${a.id}`, K.listTitle(a), 1]),
       ...K.methods.map((x) => [`m-q-${x.id}`, x.title, 1]),
       ['m-g2', 'The data', 0],
       ['m-controls', 'Controls', 1],
@@ -3555,7 +3568,7 @@
     // a protein-set question with no abundance repeat has its hypergeometric rows under either test
     const rows = D.rows.filter(
       (r) =>
-        (!S.a || r.analysis === S.a) &&
+        (!S.a || r.analysis === S.a || r.analysis === K.regionsOf[S.a]) &&
         (S.m === 'both' ||
           r.method === S.m ||
           (r.method === 'enricher' && (S.m === 'fisher' || !A[r.analysis]?.stratified))) &&
@@ -3576,7 +3589,13 @@
   // Methods > Every test: the whole table of tests, with its filters and its download
   function everyTest() {
     const rows = shownStatistics();
-    const opts = [['', 'All questions'], ...D.analyses.map((a) => [a.id, a.title])];
+    // the Overview's order; a map's two questions are one entry, named by its regions question
+    const opts = [
+      ['', 'All questions'],
+      ...methodOrder()
+        .filter((a) => !K.listHides(a))
+        .map((a) => [a.id, K.listTitle(a)]),
+    ];
     return (
       `<section id="m-every"><h3>All tests</h3>` +
       `<p class="page-sub">One row per class and test. ${gloss('q')}: Benjamini–Hochberg within each question. ` +
