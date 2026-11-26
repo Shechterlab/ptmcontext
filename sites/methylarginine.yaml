@@ -1715,6 +1715,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     "DOID:7": [by organ system, "A disease that manifests in a defined anatomical structure."]
                     "DOID:0014667": [inherited and acquired metabolic, "A disease that involves errors in metabolic processes of building or degradation of molecules."]
                     "DOID:0050117": ["viral, bacterial, parasitic, fungal"]
+          - {analysis: disease_family_additional, title: "More disease families"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
       - name: Classes and pathways
         about: "Protein classes, pathways and condensates of the methylated proteins."

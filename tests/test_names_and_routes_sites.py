@@ -108,15 +108,6 @@ def test_the_sidebar_lists_sections_on_the_overview_only():
     assert "S.view === 'overview' || S.view === 'method'" not in rail
 
 
-@pytest.mark.parametrize('name', SITES)
-def test_more_disease_families_has_no_tile_but_stays_a_link_of_the_disease_families(name):
-    site = _site(name)
-    cards = [c for sec in _sections(site).values() for c in sec['cards']]
-    assert 'disease_family_additional' not in _cards({'cards': cards})
-    fam = next(c for c in cards if isinstance(c, dict) and c.get('analysis') == 'disease_family')
-    assert fam['views'][0]['more']['analysis'] == 'disease_family_additional'
-
-
 def test_no_visible_label_says_holding_it():
     for name in SITES:
         assert not re.search(r'holding it\b', (ROOT / 'sites' / f'{name}.yaml').read_text()), name
