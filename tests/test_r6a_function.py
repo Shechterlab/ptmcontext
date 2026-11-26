@@ -36,3 +36,8 @@ def test_search_suggestion_counts_pluralize_through_one_helper():
 def test_the_bar_charts_value_column_wraps_the_shares_instead_of_overflowing():
     css = src('kit.css')
     assert 'minmax(9rem, 2fr) 6rem;' in css and '.qrow .val .sh {\n  white-space: normal;' in css
+
+
+def test_the_landing_search_has_a_short_placeholder_on_a_phone():
+    js = src('land-search.js')
+    assert "'Gene, site or topic'" in js and 'max-width: 640px' in js

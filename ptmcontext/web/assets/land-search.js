@@ -8,6 +8,12 @@
     out = document.getElementById('land-hits'),
     say = document.getElementById('land-say');
   if (!box || !out) return;
+  // the full placeholder does not fit a phone's width: a shorter one there
+  const full = box.placeholder,
+    narrow = window.matchMedia('(max-width: 640px)'),
+    ph = () => (box.placeholder = narrow.matches ? 'Gene, site or topic' : full);
+  ph();
+  narrow.addEventListener('change', ph);
   let idx = null,
     pending = null,
     sidx = null, // proteins-sites.json: per listed explorer, accession -> its marked sites ('R3 R15 K120'), read when a site is typed
