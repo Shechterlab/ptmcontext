@@ -967,7 +967,7 @@
             : '';
       return (
         `<tr${hot ? ' class="vc-hot"' : ''}><td>${known.has(q) ? siteLink(p, rec, q) : esc(siteName(rec, q, p.acc))}</td>` +
-        `<td>${esc(l + shown(q) + r[alt])}${hot && x.highlight.label ? ` <span class="tag vc-hot-tag" title="${esc(x.highlight.title || '')}">${esc(x.highlight.label)}</span>` : ''}</td>` +
+        `<td>${esc(l + shown(q) + r[alt])}${hot && x.highlight.label ? ` <span class="tag vc-hot-tag">${K.hlLabel(x.highlight)}</span>` : ''}</td>` +
         (geneOn ? `<td>${r[x.gene] ? geneHtml(r[x.gene]) : '<span class="muted">–</span>'}</td>` : '') +
         fields.map((f) => `<td>${fieldCell(f, r)}</td>`).join('') +
         `<td>${link}</td></tr>`

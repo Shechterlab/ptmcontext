@@ -491,7 +491,7 @@
   // ---- the site card: one mark, everything the site knows about it, from its attributes and tables ----------------
   const CC = D.protein_view?.card || {},
     TC = D.protein_view?.table || null;
-  const cardCtx = (p, rec, m, tb = PV.tb) => ({
+  const cardCtx = (p, rec, m, tb = PV.tb, attr = (n) => attrVal(m, n)) => ({
     p,
     rec,
     m,
@@ -503,7 +503,7 @@
     seq: rec.seq || '',
     window: m[1],
     shown: (q) => shownPos(p, q),
-    attr: (n) => attrVal(m, n),
+    attr,
     attrHtml: (n, v) => K.sel.listHtml(n, [v], [], p.acc, true),
     isListed: (a) => !!byAcc[a],
   });
@@ -1279,7 +1279,9 @@
     if (other) {
       if (!p || !other.tb || !other.m) return null;
       if (!uniOf(acc)) loadUni(acc);
-      return K.card.summaryItems(cardCtx(p, {}, other.m, other.tb), { uni: uniAtPos(uniOf(acc)).get(pos) || [] });
+      return K.card.summaryItems(cardCtx(p, {}, other.m, other.tb, other.attr), {
+        uni: uniAtPos(uniOf(acc)).get(pos) || [],
+      });
     }
     const m = PV.acc === acc && PV.rec?.marks.find((x) => x[0] === pos);
     if (!p || !m || !PV.tb) return null;

@@ -43,9 +43,18 @@
   };
 
   // the site's writers as the site card's summary names them; '' when it has none, null while its tables are not read
+  // a mark row of the selection's data (attribute values as codes) read as the card reads one (the values as text)
+  const attrOf = (m) => (name) => {
+    const i = K.cols.attr(name),
+      codes = i < 0 ? [] : m[3]?.[i] || [],
+      vals = codes.map((c) => K.sel.data().attributes[name]?.[c]).filter((v) => v != null && v !== '');
+    return (K.D.attribute_specs || {})[name]?.kind === 'list'
+      ? vals.join(K.D.attribute_specs[name].separator || '; ')
+      : (vals[0] ?? '');
+  };
   const writerAt = (acc, pos, vtb, m) => {
     if (!K.prot.summaryAt) return null;
-    const other = m && vtb ? { m, tb: vtb } : null;
+    const other = m && vtb ? { m, tb: vtb, attr: attrOf(m) } : null;
     if (other && !K.prot.uniLoaded(acc)) {
       K.prot.loadUni(acc).then(() => asked && again()); // the cards wait for UniProt's names, as the table's cells do
       return null;
@@ -331,11 +340,11 @@
             x,
             M.rows.map((r) => r.pos)
           ).hot;
-          const full = (x.highlight.title || '').replace(/\s*\([^)]*\)\s*$/, '');
+          const full = K.hlFull(x.highlight);
           parts.push(
             full
               ? esc(`${int(n)} with ${full} ${x.label} variants`)
-              : `${esc(`${int(n)} with ${x.label}`)} <abbr title="${esc(x.highlight.label)}">${esc(x.highlight.label)}</abbr> variants`
+              : `${esc(`${int(n)} with ${x.label}`)} ${K.hlLabel(x.highlight)} variants`
           );
         });
     return (

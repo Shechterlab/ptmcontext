@@ -849,7 +849,7 @@
   const siteVariants = (tb, pos) => VCN.map((x) => ({ x, ...variantSum(tb, x, pos) }));
   const variantWords = (x, n, hot) => {
     const unit = x.unit || ['variant', 'variants'];
-    return `${n ? int(n) : 'no'} ${n === 1 ? unit[0] : unit[1]}${n && x.highlight?.label ? `, ${int(hot)} ${x.highlight.label}` : ''}`;
+    return `${n ? int(n) : 'no'} ${n === 1 ? unit[0] : unit[1]}${n && x.highlight?.label ? `, ${int(hot)} ${K.hlFull(x.highlight) || x.highlight.label}` : ''}`;
   };
   // how many of the sites (positions) have a variant, and how many a highlighted one
   const variantSites = (tb, x, positions) => {

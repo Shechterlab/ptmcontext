@@ -231,6 +231,10 @@
     `<abbr class="gloss" tabindex="0" title="${esc(
       GLOSS[String(term).toLowerCase()] || ''
     )}">${esc(text || term)}</abbr>`;
+  // a variant highlight's short label (P/LP) as an abbreviation that spells itself out on hover; the one home of that markup
+  const hlFull = (h) => (h?.title || '').replace(/\s*\([^)]*\)\s*$/, '');
+  const hlLabel = (h) =>
+    h?.label ? (hlFull(h) ? `<abbr title="${esc(hlFull(h))}">${esc(h.label)}</abbr>` : esc(h.label)) : '';
   // what a tile's fold is relative to, in a few words
   const baseline = (a, m) =>
     a.kind === 'protein_sets'
@@ -692,6 +696,8 @@
     GLOSS,
     BTN,
     gloss,
+    hlFull,
+    hlLabel,
     baseline,
     proteinAttr,
     go,
