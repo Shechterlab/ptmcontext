@@ -276,3 +276,9 @@ def test_values_are_not_for_sets_of_other_identifiers():
         'values': {'columns': ['v']},
     }
     assert any('not for sets of other identifiers' in x for x in T.spec_problems(spec))
+
+
+def test_the_grid_sets_one_type_size_that_fits_its_longest_cell_text():
+    js = (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'web' / 'assets' / 'kit-cell.js').read_text()
+    assert 'const widest = Math.max(' in js and 'K.tw(cellText(c), 11) * 1.08' in js
+    assert 'tsize < 11 ? ` style="font-size:${tsize}px"` : \'\'' in js
