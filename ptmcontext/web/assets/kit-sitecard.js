@@ -1353,7 +1353,7 @@
     });
     const all = nPartners(rs);
     return (
-      `${int(all)} distinct partner${all === 1 ? '' : 's'} from ${int(papers.size)} paper${papers.size === 1 ? '' : 's'} and datasets: ` +
+      `${int(all)} partner${all === 1 ? '' : 's'}, ${int(papers.size)} paper${papers.size === 1 ? '' : 's'}: ` +
       [...n.values()]
         .sort((a, b) => a.at - b.at)
         .map((x) => `${x.label.replace(/^[A-Z](?=[a-z])/, (ch) => ch.toLowerCase())} ${int(x.who.size)}`)
@@ -1924,10 +1924,7 @@
           return `<li>${r?.doi ? doiA(r.doi, esc(vLabel(CT.attribute, v))) : c.attrHtml(CT.attribute, v)}</li>`;
         })
         .join('')}</ul>` +
-      (pref
-        ? `<p class="muted small">Cite these for ${esc(c.label)} and ${esc(pref.short || pref.text)} for the ` +
-          `compilation.</p>`
-        : '')
+      (pref ? `<p class="muted small">Cite: sources above; compilation: ${esc(pref.short || pref.text)}</p>` : '')
     );
   }
   // references as an RIS file: each DOI's record from doi.org, else one from the text shown

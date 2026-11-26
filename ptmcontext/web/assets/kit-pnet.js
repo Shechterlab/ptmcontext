@@ -694,12 +694,9 @@
   };
   function ixFold(p, rec, fold) {
     if (!IXP) return '';
-    const g = p.gene || p.acc;
     if (K.pix) {
       // site first: who binds each mark, partners and complexes, writer and reader paths; then the interfaces and the network, folded
       // when no mark sits at an interface (the network is the protein's associations, not its sites')
-      const s3 = rec?.s3d,
-        hasIface = !!((s3?.c || []).some((r) => r[1] === 'protein' || r[1] === 'self') || (s3?.p || []).length);
       const net =
         (K.net?.previewSlot?.(p) || '') + // the protein in its cluster, drawn small (kit-network.js)
         `<div class="card-head">` +
@@ -720,17 +717,14 @@
         K.pix.html(p, rec, K.prot.tables(p.acc)) +
           ifaceFold(p, rec) +
           netLine(p) +
-          (`<details class="pn-fold" id="pn-net"><summary>Protein network <span class="muted">· ${esc(g)}’s STRING partners; ` +
-            `drag the nodes${
-              hasIface ? '; open to draw it' : `; folded, as no ${esc(W.mark)} is at an interface`
-            }</span></summary>${net}</details>`),
+          `<details class="pn-fold" id="pn-net"><summary>Protein network <span class="muted">(STRING partners)</span></summary>${net}</details>`,
         true
       );
     }
     return fold(
       'p-ix',
       'Protein interactions',
-      'protein network (STRING); drag the nodes',
+      'protein network (STRING)',
       netLine(p) +
         `<div class="card-head">` +
         (`${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${optionsHtml()}<div class="pn-box" ` +

@@ -192,9 +192,9 @@ def structure_context_of(
         'domain_folded': 'Folded domain',
         'domain_disordered': 'Disordered domain',
         'ordered_outside_domain': 'Ordered, outside domains',
-        'idr_near_domain': 'IDR ≤<near> aa from a domain',
-        'idr_mid_domain': 'IDR <near+1>–<mid> aa from a domain',
-        'idr_far_from_domain': 'IDR ><mid> aa from any domain',
+        'idr_near_domain': 'Disordered, ≤<near> aa from a domain',
+        'idr_mid_domain': 'Disordered, <near+1>–<mid> aa from a domain',
+        'idr_far_from_domain': 'Disordered, ><mid> aa from any domain',
         'no_disorder_annotation': 'No disorder data',
     },
     help={

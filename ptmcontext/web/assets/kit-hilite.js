@@ -575,7 +575,7 @@
       nf = t.length && pa.notFound.length ? `<span class="hl-nf">${esc(nfText(pa.notFound))}</span>` : '';
     return (
       `<section class="hl-sec" id="hl-sec" aria-labelledby="hl-sec-h"><h3 id="hl-sec-h" class="hl-sec-h">Highlight in figures</h3>` +
-      `<p class="small muted hl-sec-note">Marks genes or sites in the figures and tables; it does not narrow the selection.</p>` +
+      `<p class="small muted hl-sec-note">Highlights only; does not filter.</p>` +
       `<div class="hl-bar-in${t.length ? ' on' : ''}">${control(
         t.length ? `<span class="hl-chips">${chips}${nf ? ' ' + nf : ''}</span>` : ''
       )}</div></section>`

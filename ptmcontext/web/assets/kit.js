@@ -2138,7 +2138,7 @@
       )
       .join('')}</span></span>`;
     // one note beside the switch: which tiles it changes (the protein-set tiles do not follow it)
-    const tnote = `<span class="tnote muted small">Changes the residue questions below; protein-set questions do not follow it.</span>`;
+    const tnote = `<span class="tnote muted small">Applies to residue questions only.</span>`;
     // the marks the site shows and counts nowhere (kit-shown.js): the note says how many, beside how many are counted
     if (!selOn())
       return (
@@ -2214,7 +2214,7 @@
     );
   }
   const tooFew = () =>
-    `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}.</p>`;
+    `<p class="note">Too few to test (minimum ${K.sel.MIN.proteins} proteins, ${K.sel.MIN.marks} ${esc(W.marks)}).</p>`;
   // log2 of the odds ratio or fold: the displayed value stays "2.0×" with an arrow for its direction; the table beside it
   // sorts by log2 (signed) or by strength (|log2|, either direction). Charts of ORs and folds use a log2 axis centered on 1×.
   K.l2 = (r) => {
@@ -2509,22 +2509,10 @@
     if (!pick.length) return '';
     const sentence = ({ a, r, v }) => {
       const label = r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
-        f = `${fxn(v)}×`,
-        // "RGG" and "IDR" keep their capitals; "Nucleus" reads "nucleus" after "in"
-        low = (t) =>
-          /^[A-Z][a-z]*(\s|$)/.test(t) && !/^[A-Z][a-z]{2}\s+(or|and)\s+[A-Z]/.test(t)
-            ? t.charAt(0).toLowerCase() + t.slice(1)
-            : t,
-        where = /^(in|at|near|next to|within|inside|on)\s/i.test(label) ? low(label) : `in ${low(label)}`;
-      // a protein set reads "Proteins in <set>"; a name that already says "proteins" keeps its own noun
-      const noun = (t) => {
-        const [head, ...rest] = t.replace(/^(an?|the)\s+/i, '').split(/(?=\s\()/);
-        if (!/\bproteins?$|\bproteome$/i.test(head)) return `Proteins in ${t}`;
-        return cap(head.replace(/protein$/i, 'proteins').replace(/proteome$/i, 'proteins')) + rest.join('');
-      };
+        f = `${fxn(v)}×`;
       return SETS(a.id)
-        ? `<b>${esc(noun(label))}</b> are ${esc(W.marked)} ${f} as often as all proteins tested.`
-        : `${esc(cap(W.marks))} are more often <b>${esc(where)}</b> (${f} as often as other ${esc(W.residues)}).`;
+        ? `<b>${esc(label)}</b>: ${f} vs all proteins tested`
+        : `<b>${esc(cap(label))}</b>: ${f} vs other ${esc(W.residues)}`;
     };
     return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Strongest results${
       D.variant
@@ -2565,7 +2553,7 @@
     if (selOn() && !vsOn() && !selTestable() && K.sel.data() && !K.sel.nMarks()) return lead() + selBlocks(K.selSmall);
     const small = smallSel();
     const banner = small
-      ? `<p class="note small-sel" role="status"><b>Too few to test</b> (needs ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}). Showing the whole dataset${D.cell && K.sel.proteinIds().size ? '; the cell shows your selection' : ''}.</p>`
+      ? `<p class="note small-sel" role="status"><b>Too few to test</b> (minimum ${K.sel.MIN.proteins} proteins, ${K.sel.MIN.marks} ${esc(W.marks)}); whole dataset shown.</p>`
       : '';
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (
@@ -3371,9 +3359,8 @@
     const nSig = rs.filter((r) => r.q != null && r.q <= PADJ && r.eff > 1).length,
       what = String(a.describe || 'proteins of the universe').replace(/^other /, '');
     return (
-      `<p class="note ix-ceiling"><b>${pcS(marked / total)}</b> of the ${esc(what)} have ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ${esc(W.mark)}, ` +
-      `so no set can reach more than <b>${fxn(cap)}×</b>. The highest is ${fxn(top.eff)}× (${esc(top.label)}); ` +
-      `${int(nSig)} of ${int(rs.length)} sets are above 1× at q ≤ ${PADJ}.</p>`
+      `<p class="note ix-ceiling">Maximum possible fold <b>${fxn(cap)}×</b> (${pcS(marked / total)} of ${esc(what)} are ${esc(W.marked)}). ` +
+      `Highest: ${esc(top.label)}, ${fxn(top.eff)}×; ${int(nSig)} of ${int(rs.length)} sets > 1× (q ≤ ${PADJ}).</p>`
     );
   }
   let inFocus = false; // a question's own page: the heading above holds its title

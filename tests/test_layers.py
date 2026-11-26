@@ -118,8 +118,8 @@ def test_built_in_layers_take_with_parameters_and_their_labels_follow():
     assert bound.tracks[0].help.endswith('of 30 residues or more')
     s = L.get('structure_context', None, {'near': 5, 'mid': 25})
     assert (
-        s.labels['idr_mid_domain'] == 'IDR 6–25 aa from a domain'
-        and s.labels['idr_far_from_domain'] == 'IDR >25 aa from any domain'
+        s.labels['idr_mid_domain'] == 'Disordered, 6–25 aa from a domain'
+        and s.labels['idr_far_from_domain'] == 'Disordered, >25 aa from any domain'
     )
     with pytest.raises(ValueError, match='takes no parameter'):
         L.get('idr', None, {'nope': 1})

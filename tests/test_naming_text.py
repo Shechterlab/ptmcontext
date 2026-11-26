@@ -30,7 +30,7 @@ def test_disease_variants_names_and_one_home():
 def test_generated_sentences_and_headings():
     kit = read('kit.js')
     assert '>Strongest results${' in kit and '>Key findings${' not in kit
-    assert '`Proteins in ${t}`' in kit and 'as often as all proteins tested' in kit
+    assert 'vs all proteins tested' in kit and 'vs other ${esc(W.residues)}' in kit
     assert 'Located in ${nPl} of ${ms.length} maps' in read('kit-pcards.js')
     assert 'Site spacing and sequence' in read('kit-pcards.js')
     assert 'conserved as ${KEPT}' in read('kit-conserve.js')

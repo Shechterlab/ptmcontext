@@ -252,7 +252,7 @@ def test_the_average_view_colors_by_cohens_h_and_fills_where_the_fisher_q_across
     }
     assert {k: by[k]['tone'] for k in p} == want
     assert by['nucleoplasm']['value'] == f'80% · effect +{h["nucleoplasm"]:.1f}'
-    assert out['answer'].startswith('44% of mapped proteins carry a methylarginine. Most above that: nucleus (effect +')
+    assert out['answer'].startswith('Mapped proteins with a methylarginine: 44%. Highest: nucleus (effect +')
 
 
 PHI = {

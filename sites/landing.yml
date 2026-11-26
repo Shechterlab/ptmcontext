@@ -8,8 +8,8 @@ lede: Analysis tools for protein post-translational modifications
 description: "PTMcontext: analysis tools for protein post-translational modifications."
 examples:                  # links under the search box: label and address (relative to the landing page)
   - {label: H4 R3, href: "methylarginine/#protein/H4/P62805/R3"}
-  - {label: TP53 R213 variants, href: "methylarginine/#protein/TP53/P04637/R213?open=sc-variants"}
-  - {label: stress granule across explorers, href: "compare/#q=stress+granule"}
+  - {label: TP53 R213, href: "methylarginine/#protein/TP53/P04637/R213?open=sc-variants"}
+  - {label: "Compare: stress granule", href: "compare/#q=stress+granule"}
 logo: sites/art/ptmcontext_logo.svg
 favicon: sites/art/ptmcontext_favicon.svg   # the bolder mark for the tab icon
 logo_dots: cards           # the mark's dots: one per card, in its band color
@@ -24,9 +24,7 @@ groups:                    # a card goes in the group its site file names (websi
   - {id: other, title: Other organisms, compact: true}
 compare:                   # the Compare marks page (compare/index.html): CONTRACTS.md, "Compare marks"
   title: Compare marks
-  lede: The same questions across explorers
-  intro: "Pick explorers and questions to compare marks on the same class."
-  statement: "Each explorer's published numbers, side by side. Nothing is recalculated or pooled."
+  intro: "Published results of each explorer, by class; not recomputed or pooled."
   columns:                 # each explorer's short name here (default: its landing label)
     methylarginine: Methylarginine
     methyllysine: Methyllysine
@@ -57,9 +55,9 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
             - {class: domain_folded, label: "Folded domain"}
             - {class: domain_disordered, label: "Disordered domain"}
             - {class: ordered_outside_domain, label: "Ordered, outside domains"}
-            - {class: idr_near_domain, label: "IDR within 10 aa of a domain"}
-            - {class: idr_mid_domain, label: "IDR 11 to 30 aa from a domain"}
-            - {class: idr_far_from_domain, label: "IDR more than 30 aa from a domain"}
+            - {class: idr_near_domain, label: "Disordered, within 10 aa of a domain"}
+            - {class: idr_mid_domain, label: "Disordered, 11 to 30 aa from a domain"}
+            - {class: idr_far_from_domain, label: "Disordered, more than 30 aa from a domain"}
         - id: interface
           analysis: pdb_interface
           title: Interfaces in PDB structures

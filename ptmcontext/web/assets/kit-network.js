@@ -1455,15 +1455,14 @@
         .sort((a, b) => b.n - a.n)
         .slice(0, 2),
       drawn = M.seeds || UI.nb || sel0,
-      groups = `${int(CL.nShown)} ${plural(CL.nShown, 'group', 'groups')}`;
+      groups = `${int(CL.nShown)} ${plural(CL.nShown, 'cluster', 'clusters')}`;
     // the top proteins that have a link are the ones drawn: say so when some of them have none
     const who = drawn
-      ? `The ${int(n)} proteins drawn`
-      : n < UI.top
-        ? `Of the ${int(UI.top)} proteins with the most ${W.marks}, ${int(n)} are linked and`
-        : `The ${int(UI.top)} proteins with the most ${W.marks}`;
-    if (!CL.nShown) return `${who} do not form a cluster of ${int(UI.minc)} or more proteins.`;
-    return `${who} form ${groups}; largest: ${big.map((x) => `${x.label} (${int(x.n)})`).join(', ')}.`;
+      ? `${int(n)} proteins drawn`
+      : `${int(UI.top)} proteins with most ${W.marks}${n < UI.top ? `: ${int(n)} linked` : ''}`;
+    const sep = drawn || n >= UI.top ? ': ' : ', ';
+    if (!CL.nShown) return `${who}${sep}no cluster of ${int(UI.minc)} or more proteins.`;
+    return `${who}${sep}${groups}; largest ${big.map((x) => `${int(x.n)} (${x.label})`).join(', ')}.`;
   }
   // the cluster table under the figure: name, size, how many members carry the naming term, the busiest genes
   function clusterTableHtml(M, CL) {
@@ -2735,8 +2734,7 @@
   // name beside it in its colour; the same drawing code as the figure, at a small size
   function previewHtml(j, acc, href) {
     const i = j.nodes.findIndex((n) => sameAcc(n, acc));
-    if (i < 0)
-      return `<span class="muted nw-prev-no">Not among the proteins drawn by default; the link opens the network with it and its partners.</span>`;
+    if (i < 0) return '';
     const view = { gene: j.gene, sites: j.sites, comm: j.comm, edges: j.edges, labels: j.labels },
       c = j.comm[i],
       sl = K.netcore.previewSlice(view, i);

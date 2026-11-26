@@ -387,7 +387,7 @@
     );
   }
 
-  // k and O/E in words, for a row of sites: "3 changes (k) · O/E 22". One change says little (O/E is the count over a small
+  // k and O/E in words, for a row of sites: "3 observed changes · O/E 22". One change says little (O/E is the count over a small
   // expectation), so a single change reads "1 change" with its O/E muted; none reads "none observed". Plain HTML, escaped.
   const KTIP =
     'k: the count of changes observed at this residue (samples with a change, or variants). observed/expected: that count over the count its codon predicts';
@@ -399,7 +399,7 @@
         ? ''
         : ` · <span${v.k <= 1 ? ' class="muted"' : ''} title="${esc(v.k <= 1 ? 'One change only, so observed/expected tells little' : KTIP)}">observed/expected ${fo(v.o)}</span>`;
     const noun = SRC[id]?.kind === 'germline' ? 'variant' : 'change';
-    return `<span title="${esc(KTIP)}">${int(v.k)} ${noun}${v.k === 1 ? '' : 's'} (k)</span>${o}`;
+    return `<span title="${esc(KTIP)}">${int(v.k)} observed ${noun}${v.k === 1 ? '' : 's'}</span>${o}`;
   }
 
   // ---- the site card's line ---------------------------------------------------------------------------------------------------
@@ -410,7 +410,7 @@
         if (!v || v.o == null)
           return `<span class="pr-s"><b>${esc(s.label)}</b> <span class="muted" title="No data for this source">–</span></span>`;
         const q = desc(s.id)
-          ? 'descriptive'
+          ? 'count only'
           : v.q == null
             ? 'not tested'
             : `${v.p != null ? `p ${fq(v.p)}, ` : ''}q ${fq(v.q)}`;

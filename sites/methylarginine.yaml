@@ -2209,12 +2209,12 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: ix, label: Interaction evidence, menu: Interaction evidence (sites), default: true,
          counts: {attribute: interaction, values: {experimental: experimental, predicted_only: predicted only}, dashed: [predicted_only]},
          help: "Sites in this selection with experimental interaction evidence, and with predicted evidence only"}
-      - {id: idr, label: In IDR, classes: {analysis: disorder, classes: [disordered]}, default: true, hide: xs, help: "The share of the protein's sites in an intrinsically disordered region (IDR)"}
+      - {id: idr, label: In disordered region, classes: {analysis: disorder, classes: [disordered]}, default: true, hide: xs, help: "The share of the protein's sites in an intrinsically disordered region (IDR)"}
       - {id: cond, label: Condensates, attribute: condensates, format: count, default: true, hide: sm, help: "CD-CODE condensates (human, not synthetic) the protein is a member of"}
       - {id: loc, label: Location (HPA), attribute: hpa, hide: sm,
          help: "Subcellular locations in the Human Protein Atlas (reliability Approved or better)"}
       - {id: density, label: Densest cluster, template: "{dense_sites} in {dense_window} aa", where: {attribute: dense_q, max: 0.05}, sort: dense_sites, default: true, hide: sm,
-         help: "The cluster whose methylarginines are most bunched compared with the protein's own arginines (lowest q), shown as sites in aa"}
+         help: "Most methylarginines in any window, and the window width"}
       - {id: arg, label: Arg enrichment, attribute: arg_enrichment, format: l2, hide: sm,
          help: "log2 of the shrinkage-estimated share of this protein's arginines that are methylated, over the proteome-wide rate"}
       - {id: len, label: Length, show: length}
@@ -2807,8 +2807,8 @@ website:                  # the look and words of the website (ptmc web); layout
         title: Interaction evidence
         status: interaction                  # the category attribute the badge shows
         sentences:
-          experimental: This arginine has experimental interaction evidence.
-          experimental_pred: This arginine has experimental interaction evidence and is also at a predicted interface.
+          experimental: ''
+          experimental_pred: Also at a predicted interface.
           predicted_only: Predicted to lie at a protein interface. No experimental interaction evidence recorded yet.
           none: No interaction evidence is recorded at this residue. Most proteins were never crystallized, crosslinked or mutated, so this does not show there is none.
         tags:
