@@ -3704,6 +3704,10 @@
               "name": {
                 "type": "string"
               },
+              "heading": {
+                "type": "string",
+                "description": "a heading above this group and the following groups that name the same heading"
+              },
               "analyses": {
                 "type": "array",
                 "items": {

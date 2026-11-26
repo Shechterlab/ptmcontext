@@ -676,6 +676,7 @@
           const keys = keysOf(g),
             n = keys.filter((k) => S.f[k]?.length || termValues(k).length).length;
           return (
+            (g.heading && gs[gi - 1]?.heading !== g.heading ? `<p class="fheading">${esc(g.heading)}</p>` : '') +
             `<details class="fgroup${n ? ' active' : ''}" data-g="${gi}"${R.openGroups?.has(gi) ? ' open' : ''}><summary><span>${esc(g.name)}</span><span ` +
             `class="gcount muted" title="${keys.length} filter${keys.length === 1 ? '' : 's'} in this group${n ? `, ${n} in use` : ''}">${n ? `${n} of ` : ''}${keys.length}</span>${
               n

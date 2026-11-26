@@ -233,7 +233,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Interfaces in PDB structures
     question: "Are modified lysines at interfaces in experimental structures?"
     sub: "Modified lysines against the other lysines of the same proteins observed in a PDB structure, at a PDBe-KB interface with RNA, DNA, a protein or any partner; all, ordered (outside UniProt disordered regions) and in domains"
-    section: Protein interactions
+    section: Interaction evidence
     counting: every_candidate
     background: other lysines of the same proteins observed in a PDB structure
     proteins_with: pdb_interfaces                       # proteins PDBe-KB lists with an interface
@@ -250,7 +250,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Predicted interfaces
     question: "Are modified lysines at predicted protein interfaces?"
     sub: "Modified lysines against the other lysines of the same proteins, at a ProtVar AlphaFold-Multimer interface residue of a heterodimer with pDockQ at or above 0.23 or 0.5; all, ordered and disordered (UniProt). Predicted interfaces lie mostly in ordered regions, so the row of all residues partly reflects disorder; the ordered and disordered rows compare like with like"
-    section: Protein interactions
+    section: Interaction evidence
     counting: every_candidate
     background: other lysines of the same proteins
     tests:
@@ -267,7 +267,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: IntAct binding regions and mutations
     question: "Are modified lysines where IntAct maps interactions?"
     sub: "Modified lysines whose mutation changes an interaction, against the other mutated lysines; and inside an IntAct binding region of at most 20 residues, against the other lysines of the proteins with one (all, and in UniProt disordered regions)"
-    section: Protein interactions
+    section: Interaction evidence
     counting: every_candidate
     tests:
       - {category: mutation_changes_interaction, inside: {role: intact_mutations, where: [{column: class, matches: "(?!MI:2226$).*"}]},
@@ -282,7 +282,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Protein complexes
     question: "Which complexes have more members with modified lysines than expected?"
     sub: "Proteins with modified lysines against the proteins in Complex Portal's curated human complexes, by complex of at least 3 members (one-sided hypergeometric test); a protein in several complexes is in each"
-    section: Protein interactions
+    section: Interaction evidence
     sets:
       input: complexes
       set: complex_id
@@ -1783,7 +1783,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Localization, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]}
     - {name: Disease associations and mutations, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
     - {name: Classes and pathways, analyses: [histone, panther_group, panther_class, reactome_top_level], proteins: [marks]}
-    - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex]}
+    - {name: Interaction evidence, analyses: [pdb_interface, predicted_interface, intact, complex]}
     - {name: RNA and DNA, analyses: [pdb_interface_na, go_binding, binding_protein, crosslink, sequence_proximity]}
     - {name: Other modifications}
     - {name: Modification, attributes: [acyl_type]}

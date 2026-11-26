@@ -1900,7 +1900,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Disease associations and mutations, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant], attributes: [tcga_any, depmap_any]}
     - {name: Classes and pathways, analyses: [panther_group, panther_class, condensate_proteome, reactome_top_level], proteins: [marks, arg_enrichment_q]}
     - {name: Methylation state, attributes: [state, maron_s2, methyl_ip, neutral_loss]}
-    - {name: "PRMT inhibitors, knockouts and knockdowns", attributes: [gsk591, ms023, perturbation]}
+    - {name: "PRMT inhibitors, knockouts and knockdowns", heading: Enzymes and readers, attributes: [gsk591, ms023, perturbation]}
     - {name: Interaction evidence, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], keys: ["o:residues", "b:class", "b:gene", "b:score"], proteins: [go_rna, go_dna]}
     - {name: Other modifications}
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
