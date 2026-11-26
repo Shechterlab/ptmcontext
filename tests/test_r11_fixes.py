@@ -34,3 +34,8 @@ def test_the_cancer_card_is_two_cards_and_the_old_fold_id_opens_the_mutations_ca
         assert 'p-depmap' not in prot['order'] and 'p-depmap' not in folds, site
         assert folds.index('p-mutations') + 1 == folds.index('p-germline') > folds.index('p-dependency'), site
         assert prot['cards']['dependency']['title'] == 'Cancer cell dependency (DepMap)', site
+
+
+def test_compared_with_is_printed_once_in_a_group_of_the_compare_table():
+    js = _src('land-compare.js')
+    assert 'onlyGroup && !seen.cw' in js and 'const seen = { cw: false }' in js
