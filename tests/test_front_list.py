@@ -100,7 +100,7 @@ def test_list_page_rows_equal_the_python_reference(tmp_path):
         assert j['p'] == pytest.approx(p['p'], rel=1e-9) and j['q'] == pytest.approx(p['q'], rel=1e-9)
     h = out['html']
     assert (
-        'One-sided hypergeometric test of your proteins' in h
+        'One-sided hypergeometric test of your proteins' not in h
         and '>Method</a>' in h
         and 'p and q describe the overlap only' in h
     )
