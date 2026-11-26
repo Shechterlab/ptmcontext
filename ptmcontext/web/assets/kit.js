@@ -1336,7 +1336,8 @@
         : st.shown.length && K.tilekit
           ? K.tilekit.answerOf(
               st.shown.map((r) => frModel(a, r)),
-              SETS(a.id)
+              SETS(a.id),
+              tileTitle(card)
             )
           : noneDiffers(st.rows);
     return { id: aid, title: tileTitle(card), line };
@@ -1820,7 +1821,7 @@
           ]
         : ms0,
       ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
-    const ans = fr && !made && !card.rows_from && shown.length > 1 ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
+    const ans = fr && !made && !card.rows_from && shown.length > 1 ? K.tilekit.answerOf(ms, SETS(a.id), title) : '';
     return (
       `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${esc(title)}</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
       (ans ? `<p class="tans">${ans}</p>` : '') +

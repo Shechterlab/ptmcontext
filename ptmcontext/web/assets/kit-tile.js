@@ -138,7 +138,8 @@
       .flatMap((r) => [r.v, r.wv, ...(r.lo || [])])
       .filter((v) => v != null);
   // the one-line answer, from the tile's own rows: the strongest two that are more often and the strongest less often
-  function answerOf(rows, fold) {
+  // `title` is the question's name: a lone row whose words are all in it is not named again
+  function answerOf(rows, fold, title) {
     const ok = rows.filter((r) => !r.absent && !r.mine && r.v != null && !r.desc),
       sig = (r) => r.q != null && r.q <= K.PADJ && (r.dir === 'more' || r.dir === 'less');
     const more = ok
@@ -151,7 +152,14 @@
             .filter((r) => sig(r) && r.dir === 'less')
             .sort((a, b) => a.v - b.v)
             .slice(0, 1);
-    const nm = (r) => `${esc(String(r.label).replace(/^(\d+) or more\b/, '≥$1'))}: ${K.fxn(r.v)}×`;
+    const words = (t) =>
+        String(t ?? '')
+          .toLowerCase()
+          .match(/[a-z]{3,}/g) || [],
+      inTitle = new Set(words(title)),
+      lab = (r) => String(r.label).replace(/^(\d+) or more\b/, '≥$1'),
+      said = (r) => words(lab(r)).length > 0 && words(lab(r)).every((w) => inTitle.has(w)),
+      nm = (r) => (more.length + less.length === 1 && said(r) ? '' : `${esc(lab(r))}: `) + `${K.fxn(r.v)}×`;
     if (!ok.length) return rows.length && rows.every((r) => r.absent) ? 'None of these is in this selection.' : '';
     if (!more.length && !less.length) {
       // the same rule as the colors: a row significant by its test but under 1.1x is said, not hidden (its hover says why)
@@ -161,12 +169,7 @@
         (near ? `; ${near === 1 ? 'one has' : `${near} have`} q ≤ 0.05 but a fold under 1.1×.` : '.')
       );
     }
-    return [
-      more.length ? `${more.map(nm).join(', ')}.` : '',
-      less.length ? `Less often: ${less.map(nm).join(', ')}.` : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
+    return `${[...more, ...less].map(nm).join('; ')}.`;
   }
   // a Download menu that opens on a tap: the formats given, and the question's Method
   const dlMenu = (label, kinds, attrs, method) =>
