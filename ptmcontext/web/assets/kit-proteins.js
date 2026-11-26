@@ -580,7 +580,7 @@
       (`<span class="tools">${
         typeof K.show3d === 'function' ? '<button type="button" class="btn small" data-site-3d>Show in 3D</button>' : ''
       }<button type="button" ` +
-        `class="btn small" data-site-close aria-label="Close">×</button></span></div>`) +
+        `class="btn small" data-site-close aria-label="Clear selection" title="Clear selection">×</button></span></div>`) +
       (`<p class="note small">Shown for reference only: not one of the ${int(D.counts.marks)} ${esc(W.marks)} counted here, ` +
         `and in no count, chart or test.</p><dl class="sc-kv">${rows}</dl></section>`)
     );
@@ -979,7 +979,7 @@
           'the site card',
           'sources'
         )}<button type="button" ` +
-        `class="btn small" data-site-close aria-label="Close">×</button></span></div>`) +
+        `class="btn small" data-site-close aria-label="Clear selection" title="Clear selection">×</button></span></div>`) +
       sumHtml +
       `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site">${siteHtml}</section>${recs}${wr}</div>` +
       varBlock +

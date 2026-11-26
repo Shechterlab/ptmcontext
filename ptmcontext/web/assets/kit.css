@@ -11758,6 +11758,23 @@ body.rail-open .rail {
   }
 }
 
+/* the bar is 44px high: its round controls stay 32px and the tap area reaches 44px, so they are not clipped */
+@media (pointer: coarse) {
+  .dock .dock-ico,
+  .dock .dock-sel {
+    position: relative;
+    min-height: 32px;
+    min-width: 32px;
+    align-self: center;
+  }
+  .dock .dock-ico::after,
+  .dock .dock-sel::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
+}
+
 .dock.tight .dock-sel-p,
 .dock.tight .dock-sel-w {
   display: none;
