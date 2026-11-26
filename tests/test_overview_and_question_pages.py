@@ -90,7 +90,9 @@ def test_figures_come_before_tables_and_text_on_the_interactions_and_disease_var
     assert mu.index('<h3>Top TCGA sites</h3>') < mu.index('whyCommon(o);')
 
 
-def test_the_interactions_contact_tests_open_above_the_group_cards():
+def test_the_interactions_contact_tests_are_in_the_rna_and_dna_group():
+    """Owner order: the partner sections follow the tiles; the contact tests table is in the last group."""
     text = (ROOT / 'sites' / 'methylarginine.yaml').read_text()
     sec = text.split('- id: ix-nac')[1].split('blocks:')[0]
-    assert 'place: top' in sec and 'open: true' in sec
+    assert 'place: top' not in sec
+    assert text.index('- name: RNA and DNA\n') < text.index('- id: ix-nac')

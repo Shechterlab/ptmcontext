@@ -48,3 +48,17 @@ def test_methods_lists_the_questions_in_the_overview_order_with_controls_last():
     assert 'methodOrder().map(questionMethod)' in js and '...methodOrder().map((a) => [`m-q-${a.id}`' in js
     assert 'D.analyses.map(questionMethod)' not in js
     assert 'a.control_of ? 2e6 : 0' in js
+
+
+def test_the_interactions_page_lists_partners_then_structures_then_rna_and_dna():
+    for n in HUMAN:
+        pg = next(p for p in site(n)['website']['pages'] if p['id'] == 'interactions')
+        names = [g['name'] for g in pg['groups']]
+        body = [x for x in names if x != 'Summary']
+        assert body == ['Binding proteins and partners', 'Structures and models', 'RNA and DNA'], n
+        assert names[0] == ('Summary' if n == 'methylarginine' else body[0]), n
+        assert not [s for g in pg['groups'] for s in g['sections'] if s.get('place') == 'top'], n
+        assert pg['groups'][names.index('Binding proteins and partners')].get('open') is True
+    ma = next(p for p in site('methylarginine')['website']['pages'] if p['id'] == 'interactions')
+    last = ma['groups'][-1]
+    assert last['name'] == 'RNA and DNA' and 'ix-nac' in [s['id'] for s in last['sections']]

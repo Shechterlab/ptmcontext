@@ -2445,8 +2445,22 @@ website:                  # the look and words of the website (ptmc web); layout
           - {lead: In PDB structures, section: ixs-pdb, rows: [{analysis: pdb_interface, category: protein, label: Protein interface, phrase: at protein interfaces}, {analysis: pdb_interface_na, category: rna, label: RNA interface, phrase: at RNA interfaces}, {analysis: pdb_interface_na, category: dna, label: DNA interface, phrase: at DNA interfaces}]}
           - {lead: In predicted interfaces, section: ixs-predicted, rows: [{analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, phrase: "at the interface (AlphaFold-Multimer models, pDockQ ≥ 0.23)"}]}
       groups:
+        - name: Binding proteins and partners
+          open: true
+          sections:
+            - id: ix-who
+              title: Proteins that bind the methyllysine
+              question: Which proteins bind these sites, in which state of the lysine, and how was each found?
+              sub: methyllysines with a record
+              blocks:
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the modified residue, values: [binds_modified]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
+            - id: ixs-complexes
+              title: Protein complexes
+              question: Which complexes have more methylated members than expected?
+              blocks:
+                - {kind: sets, analysis: complex, title: Complex Portal complexes}
+
         - name: Structures and models
-          open: true          # the first group: the interface tests are in view
           sections:
             - id: ixs-pdb
               title: Interfaces in PDB structures
@@ -2499,20 +2513,6 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {analysis: intact, category: mutation_changes_interaction, label: "Mutated alone, with an effect on binding"}
                     - {analysis: intact, category: binding_region, label: Inside a binding region of ≤ 20 aa}
                     - {analysis: intact, category: binding_region_disordered, label: … disordered lysines only}
-        - name: Binding proteins and partners
-          sections:
-            - id: ix-who
-              title: Proteins that bind the methyllysine
-              question: Which proteins bind these sites, in which state of the lysine, and how was each found?
-              sub: methyllysines with a record
-              blocks:
-                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the modified residue, values: [binds_modified]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
-            - id: ixs-complexes
-              title: Protein complexes
-              question: Which complexes have more methylated members than expected?
-              blocks:
-                - {kind: sets, analysis: complex, title: Complex Portal complexes}
-
         - name: RNA and DNA
           sections:
             - id: ixs-cells

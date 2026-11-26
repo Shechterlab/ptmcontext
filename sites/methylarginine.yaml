@@ -3363,45 +3363,6 @@ website:                  # the look and words of the website (ptmc web); layout
       groups:
         - name: Summary
           sections:
-            - id: ix-nac
-              title: RNA and DNA contact tests
-              question: Are methylarginines at RNA and DNA contacts more often than the other arginines of the same proteins?
-              place: top
-              open: true
-              blocks:
-                - kind: forest
-                  rows:
-                    - {analysis: crosslink, category: rna_crosslink, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rna_crosslink_single_residue, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rna_crosslink_outside_rg, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rna_crosslink_within_3, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbdmap_fragment, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbdmap_fragment_outside_rg, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbdmap_peptide_among_measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_adj_peptide, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_adj_peptide_outside_rg, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_adj_peptide_among_measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_xl_peptide, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: capri_xl_peptide_outside_rg, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: pclap_lysc_region, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: pclap_lysc_region_outside_rg, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: pclap_peptide, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: pclap_peptide_among_measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_residue, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_residue_outside_rg, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_residue_among_measured, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_residue_published_rule, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: rbrid_region, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: dna_crosslink, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: dna_crosslink_or_candidate, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: crosslink, category: dna_crosslinked_peptide, group: "In cells: crosslinking mass spectrometry"}
-                    - {analysis: pdb_interface, category: rna, label: At an RNA interface (PDBe-KB), group: "In structures: PDB"}
-                    - {analysis: pdb_interface, category: dna, label: At a DNA interface (PDBe-KB), group: "In structures: PDB"}
-                    - {analysis: nucleic_acid_distance, category: rna_within_4a, label: Side chain within 4 Å of RNA, group: "In structures: PDB"}
-                    - {analysis: nucleic_acid_distance, category: rna_within_8a, label: … within 8 Å of RNA, group: "In structures: PDB"}
-                    - {analysis: nucleic_acid_distance, category: dna_within_4a, label: Side chain within 4 Å of DNA, group: "In structures: PDB"}
-                    - {analysis: nucleic_acid_distance, category: dna_within_8a, label: … within 8 Å of DNA, group: "In structures: PDB"}
-                    - {analysis: crosslink, category: dna_binding_region, group: Annotation}
             - id: ix-evmap
               title: How the evidence fits together
               question: How do crosslink, structure, prediction and IntAct evidence overlap on the sites?
@@ -3435,44 +3396,8 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {filter: "a:disorder", value: disordered, label: Disordered, group: Context}
                     - {filter: "a:domain_context", value: in_domain, label: In a domain, group: Context}
                 - {kind: checker, title: Check one site, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], tables: [interactions]}
-        - name: Structures and models
-          open: true
-          sections:
-            - id: ixs-pdb
-              title: Interfaces in PDB structures
-              question: Are methylarginines at protein, RNA or DNA interfaces in experimental structures?
-              blocks:
-                - kind: forest
-                  rows:
-                    - {analysis: pdb_interface, category: protein, label: Protein, group: All observed arginines}
-                    - {analysis: pdb_interface, category: rna, label: RNA, group: All observed arginines}
-                    - {analysis: pdb_interface, category: dna, label: DNA, group: All observed arginines}
-                    - {analysis: pdb_interface, category: any, label: Any partner, group: All observed arginines}
-                    - {analysis: pdb_interface, category: protein_ordered, label: Protein, group: Ordered regions only}
-                    - {analysis: pdb_interface, category: rna_ordered, label: RNA, group: Ordered regions only}
-                    - {analysis: pdb_interface, category: dna_ordered, label: DNA, group: Ordered regions only}
-                    - {analysis: pdb_interface, category: any_ordered, label: Any partner, group: Ordered regions only}
-                    - {analysis: pdb_interface, category: protein_domain, label: Protein, group: Inside domains only}
-                    - {analysis: pdb_interface, category: rna_domain, label: RNA, group: Inside domains only}
-                    - {analysis: pdb_interface, category: dna_domain, label: DNA, group: Inside domains only}
-                    - {analysis: pdb_interface, category: any_domain, label: Any partner, group: Inside domains only}
-                - {kind: table, table: interactions, title: The PDB interfaces at each site, chips: kind, columns: [accession, kind, partner_accession, ids, detail], limit: 25,
-                   where: [{column: kind, in: [pdb_protein, pdb_rna, pdb_dna, pdb_self]}], partner: partner_accession, label: partner}
-            - id: ixs-predicted
-              title: Predicted interfaces
-              question: Are methylarginines at the interfaces of AlphaFold-Multimer models of human protein pairs?
-              blocks:
-                - kind: forest
-                  rows:
-                    - {analysis: predicted_interface, category: pdockq_0.23, label: Likely interface, group: All arginines}
-                    - {analysis: predicted_interface, category: pdockq_0.5, label: Strong interface, group: All arginines}
-                    - {analysis: predicted_interface, category: pdockq_0.23_ordered, label: Likely interface, group: Ordered}
-                    - {analysis: predicted_interface, category: pdockq_0.5_ordered, label: Strong interface, group: Ordered}
-                    - {analysis: predicted_interface, category: pdockq_0.23_disordered, label: Likely interface, group: Disordered}
-                    - {analysis: predicted_interface, category: pdockq_0.5_disordered, label: Strong interface, group: Disordered}
-                - {kind: table, table: interactions, title: Contacts in predicted models, sub: "Each site’s contacts in a predicted complex, with the model's pDockQ, the closest distance and the contact (salt bridge, hydrogen bond) with pLDDT.", columns: [accession, partner_accession, score, detail, ids], sort: score, limit: 25,
-                   where: [{column: kind, in: [predicted_contact]}], partner: partner_accession, label: partner}
         - name: Binding proteins and partners
+          open: true
           sections:
             - id: ix-who
               title: Proteins that write or bind the methylarginine
@@ -3509,8 +3434,81 @@ website:                  # the look and words of the website (ptmc web); layout
                 - {kind: table, table: interactions, title: The IntAct records at each site, chips: kind, columns: [accession, kind, partner_accession, detail], limit: 25,
                    where: [{column: kind, in: [intact_mutation, intact_binding_region, intact_methylated]}], partner: partner_accession, label: partner}
 
+        - name: Structures and models
+          sections:
+            - id: ixs-pdb
+              title: Interfaces in PDB structures
+              question: Are methylarginines at protein, RNA or DNA interfaces in experimental structures?
+              blocks:
+                - kind: forest
+                  rows:
+                    - {analysis: pdb_interface, category: protein, label: Protein, group: All observed arginines}
+                    - {analysis: pdb_interface, category: rna, label: RNA, group: All observed arginines}
+                    - {analysis: pdb_interface, category: dna, label: DNA, group: All observed arginines}
+                    - {analysis: pdb_interface, category: any, label: Any partner, group: All observed arginines}
+                    - {analysis: pdb_interface, category: protein_ordered, label: Protein, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: rna_ordered, label: RNA, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: dna_ordered, label: DNA, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: any_ordered, label: Any partner, group: Ordered regions only}
+                    - {analysis: pdb_interface, category: protein_domain, label: Protein, group: Inside domains only}
+                    - {analysis: pdb_interface, category: rna_domain, label: RNA, group: Inside domains only}
+                    - {analysis: pdb_interface, category: dna_domain, label: DNA, group: Inside domains only}
+                    - {analysis: pdb_interface, category: any_domain, label: Any partner, group: Inside domains only}
+                - {kind: table, table: interactions, title: The PDB interfaces at each site, chips: kind, columns: [accession, kind, partner_accession, ids, detail], limit: 25,
+                   where: [{column: kind, in: [pdb_protein, pdb_rna, pdb_dna, pdb_self]}], partner: partner_accession, label: partner}
+            - id: ixs-predicted
+              title: Predicted interfaces
+              question: Are methylarginines at the interfaces of AlphaFold-Multimer models of human protein pairs?
+              blocks:
+                - kind: forest
+                  rows:
+                    - {analysis: predicted_interface, category: pdockq_0.23, label: Likely interface, group: All arginines}
+                    - {analysis: predicted_interface, category: pdockq_0.5, label: Strong interface, group: All arginines}
+                    - {analysis: predicted_interface, category: pdockq_0.23_ordered, label: Likely interface, group: Ordered}
+                    - {analysis: predicted_interface, category: pdockq_0.5_ordered, label: Strong interface, group: Ordered}
+                    - {analysis: predicted_interface, category: pdockq_0.23_disordered, label: Likely interface, group: Disordered}
+                    - {analysis: predicted_interface, category: pdockq_0.5_disordered, label: Strong interface, group: Disordered}
+                - {kind: table, table: interactions, title: Contacts in predicted models, sub: "Each site’s contacts in a predicted complex, with the model's pDockQ, the closest distance and the contact (salt bridge, hydrogen bond) with pLDDT.", columns: [accession, partner_accession, score, detail, ids], sort: score, limit: 25,
+                   where: [{column: kind, in: [predicted_contact]}], partner: partner_accession, label: partner}
         - name: RNA and DNA
           sections:
+            - id: ix-nac
+              title: RNA and DNA contact tests
+              question: Are methylarginines at RNA and DNA contacts more often than the other arginines of the same proteins?
+              blocks:
+                - kind: forest
+                  rows:
+                    - {analysis: crosslink, category: rna_crosslink, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink_single_residue, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rna_crosslink_within_3, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbdmap_fragment, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbdmap_fragment_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbdmap_peptide_among_measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_adj_peptide, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_adj_peptide_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_adj_peptide_among_measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_xl_peptide, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: capri_xl_peptide_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_lysc_region, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_lysc_region_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_peptide, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: pclap_peptide_among_measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue_outside_rg, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue_among_measured, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_residue_published_rule, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: rbrid_region, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: dna_crosslink, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: dna_crosslink_or_candidate, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: crosslink, category: dna_crosslinked_peptide, group: "In cells: crosslinking mass spectrometry"}
+                    - {analysis: pdb_interface, category: rna, label: At an RNA interface (PDBe-KB), group: "In structures: PDB"}
+                    - {analysis: pdb_interface, category: dna, label: At a DNA interface (PDBe-KB), group: "In structures: PDB"}
+                    - {analysis: nucleic_acid_distance, category: rna_within_4a, label: Side chain within 4 Å of RNA, group: "In structures: PDB"}
+                    - {analysis: nucleic_acid_distance, category: rna_within_8a, label: … within 8 Å of RNA, group: "In structures: PDB"}
+                    - {analysis: nucleic_acid_distance, category: dna_within_4a, label: Side chain within 4 Å of DNA, group: "In structures: PDB"}
+                    - {analysis: nucleic_acid_distance, category: dna_within_8a, label: … within 8 Å of DNA, group: "In structures: PDB"}
+                    - {analysis: crosslink, category: dna_binding_region, group: Annotation}
             - id: ixs-cells
               title: RNA and DNA crosslinks in cells
               question: Is the methylarginine the residue crosslinked to RNA or DNA, or inside an RNA-bound peptide?
