@@ -102,7 +102,7 @@ def test_list_page_rows_equal_the_python_reference(tmp_path):
     assert (
         'One-sided hypergeometric test of your proteins' in h
         and '>Method</a>' in h
-        and 'chosen, not drawn at random' in h
+        and 'p and q describe the overlap only' in h
     )
     assert (
         'Left out of the list' in h
