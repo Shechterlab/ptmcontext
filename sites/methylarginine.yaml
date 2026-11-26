@@ -1674,39 +1674,6 @@ website:                  # the look and words of the website (ptmc web); layout
         - {label: proteins in condensates, query: "f=p:condensate_proteome~*", view: proteins}
         - {label: proteins with dense clusters, query: "f=r:dense_q~0.05", view: proteins}
     sections:
-      - name: Position in the protein
-        about: "Where in the protein the methylated arginines are: motifs, folded or disordered parts, domains."
-        cards:
-          - {analysis: structure_context}
-          - {analysis: idr_charge}
-          - {analysis: domain_class, title: Nearest domain class}
-          - {analysis: motif, title: Sequence motifs}
-          - {analysis: sticker_context_3}
-          - {analysis: sticker_context_5}
-          - {analysis: sticker_context_3_idr}
-          - {analysis: sticker_context_5_idr}
-          - {analysis: which_factor, wide: true}
-      - name: Other modifications
-        about: "Whether methylated arginines are near other modifications (phosphosites and methyllysines), within 10 residues."
-        cards:
-          - {analysis: near_phospho}
-          - {analysis: near_phospho_high}
-          - {analysis: near_methyllysine}
-      - name: Enzymes and readers
-        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked."
-        #  counted from the partner classes (website.search.partners), not tested
-        links: [interactions, network]
-        cards:
-          - reader_classes
-          - {analysis: perturbations, wide: true}
-      - name: Classes and pathways
-        about: "Protein classes, pathways and condensates of the methylated proteins."
-        cards:
-          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
-          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
-          - {analysis: panther_subclass}
-          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
-          - {analysis: condensate_role, title: Driver or client in condensates}
       - name: Localization
         about: "Where in the cell the methylated proteins localize."
         #  its own section: the drawing of the cell on the Overview (website.cell: the maps of the cell as one question, the explorer's)
@@ -1750,6 +1717,39 @@ website:                  # the look and words of the website (ptmc web); layout
                     "DOID:0050117": ["viral, bacterial, parasitic, fungal"]
           - {analysis: disease_family_additional, title: "More disease families"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
+      - name: Classes and pathways
+        about: "Protein classes, pathways and condensates of the methylated proteins."
+        cards:
+          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
+          - {analysis: panther_subclass}
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}   # the proteome background, by evidence: a small condensate reaches the largest fold when every member is methylated
+          - {analysis: condensate_role, title: Driver or client in condensates}
+      - name: Enzymes and readers
+        about: "The enzymes that add methyl groups, the proteins that read them, and what happens when the enzymes are blocked."
+        #  counted from the partner classes (website.search.partners), not tested
+        links: [interactions, network]
+        cards:
+          - reader_classes
+          - {analysis: perturbations, wide: true}
+      - name: Other modifications
+        about: "Whether methylated arginines are near other modifications (phosphosites and methyllysines), within 10 residues."
+        cards:
+          - {analysis: near_phospho}
+          - {analysis: near_phospho_high}
+          - {analysis: near_methyllysine}
+      - name: Position in the protein
+        about: "Where in the protein the methylated arginines are: motifs, folded or disordered parts, domains."
+        cards:
+          - {analysis: structure_context}
+          - {analysis: idr_charge}
+          - {analysis: domain_class, title: Nearest domain class}
+          - {analysis: motif, title: Sequence motifs}
+          - {analysis: sticker_context_3}
+          - {analysis: sticker_context_5}
+          - {analysis: sticker_context_3_idr}
+          - {analysis: sticker_context_5_idr}
+          - {analysis: which_factor, wide: true}
       - name: More questions
         about: "Further protein classes, pathways, cell maps and maps of bound RNAs, one question each."
         cards: [panther_class, {analysis: condensate, order: q}, {analysis: reactome_pathway, title: Reactome pathways (all levels)},

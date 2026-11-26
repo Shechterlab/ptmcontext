@@ -28,8 +28,12 @@ def test_site_files_use_the_new_section_names():
 
 def test_shared_order_uses_the_new_names():
     shared = json.loads((ROOT / 'ptmcontext/config/overview_groups.json').read_text())['shared']
-    assert [n for n in shared if n in OLD.values()] == ['Position in the protein', 'Classes and pathways', 'Localization']
-    assert shared.index('*') == 1 and shared[0] == 'Position in the protein'
+    assert [n for n in shared if n in OLD.values()] == [
+        'Localization',
+        'Classes and pathways',
+        'Position in the protein',
+    ]
+    assert shared[0] == 'Localization' and shared[-1] == 'Position in the protein'
 
 
 def test_old_section_links_are_mapped():

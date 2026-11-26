@@ -15,9 +15,17 @@ def _site(name):
     return yaml.safe_load((ROOT / 'sites' / f'{name}.yaml').read_text())['website']
 
 
-def test_the_site_own_sections_sit_between_position_and_other_modifications():
+def test_the_site_own_sections_follow_enzymes_and_readers_and_precede_other_modifications():
     cfg = json.loads((ROOT / 'ptmcontext/config/overview_groups.json').read_text())
-    assert cfg['shared'][:3] == ['Position in the protein', '*', 'Other modifications']
+    assert cfg['shared'] == [
+        'Localization',
+        'Disease associations',
+        'Classes and pathways',
+        'Enzymes and readers',
+        '*',
+        'Other modifications',
+        'Position in the protein',
+    ]
     assert cfg['last'] == ['More questions', 'Studies and databases']
     # the kit ranks a section the list does not name at the star, not after the closing groups
     assert 'star >= 0 ? star : 1e6' in KIT and "G.shared.indexOf('*')" in KIT

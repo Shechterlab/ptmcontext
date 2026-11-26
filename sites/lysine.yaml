@@ -1593,40 +1593,6 @@ website:                  # the look and words of the website (ptmc web); layout
     rows: 5
     random_maps: {n: 3, title: Example proteins, enabled: false}   # off: the Overview points to other pages instead of repeating them
     sections:
-      - name: Position in the protein
-        about: "Where in the protein the modified lysines are: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
-        cards:
-          - {analysis: disorder}
-          - {analysis: idr_charge}
-          - {analysis: structure_context}
-          - {analysis: domain_class, title: Nearest domain class}
-          - {analysis: motif, title: Sequence motifs}
-          - {analysis: which_factor, wide: true}
-      - name: Same lysine, different modifications
-        about: "Whether a lysine with one modification is also reported with another more often than the other lysines of its protein: acetylation, ubiquitination, SUMOylation and methylation. Mass spectrometry finds some lysines far more often than others, so each tile also gives the result among lysines with another modification."
-        cards:                                  # one tile, a row per pair; each question's page shows its controls beside its result
-          - rows_from: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]
-            title: Same lysine, different modifications
-      - name: Modification type
-        about: "How many lysines have each modification: acetylation, ubiquitination, SUMOylation and the other acylations, each its own type."
-        #  counted, not tested (website.counts)
-        cards: [types]
-      - name: Other modifications
-        about: "Whether modified lysines are near other modifications (methylarginines, methyllysines and phosphosites), within 10 residues."
-        cards:
-          - {analysis: near_methylarginine}
-          - {analysis: near_methyllysine}
-          - {analysis: near_phospho}
-          - {analysis: near_phospho_high}
-      - name: Classes and pathways
-        about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types together. Each question's page links to the same question for each type with at least 200 lysines."
-        cards:
-          - {analysis: histone, title: Histones and other proteins}
-          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
-          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
-          - {analysis: panther_subclass}
-          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
-          - {analysis: condensate_role, title: Driver or client in condensates}
       - name: Localization
         about: "Where in the cell the proteins with modified lysines localize."
         #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
@@ -1654,6 +1620,40 @@ website:                  # the look and words of the website (ptmc web); layout
                 analysis: disease_ontology
                 ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
+      - name: Classes and pathways
+        about: "Histones, protein classes, pathways and condensates of the proteins with modified lysines, for all types together. Each question's page links to the same question for each type with at least 200 lysines."
+        cards:
+          - {analysis: histone, title: Histones and other proteins}
+          - {analysis: panther_group, title: "Protein classes (PANTHER), grouped"}
+          - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
+          - {analysis: panther_subclass}
+          - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
+          - {analysis: condensate_role, title: Driver or client in condensates}
+      - name: Same lysine, different modifications
+        about: "Whether a lysine with one modification is also reported with another more often than the other lysines of its protein: acetylation, ubiquitination, SUMOylation and methylation. Mass spectrometry finds some lysines far more often than others, so each tile also gives the result among lysines with another modification."
+        cards:                                  # one tile, a row per pair; each question's page shows its controls beside its result
+          - rows_from: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]
+            title: Same lysine, different modifications
+      - name: Modification type
+        about: "How many lysines have each modification: acetylation, ubiquitination, SUMOylation and the other acylations, each its own type."
+        #  counted, not tested (website.counts)
+        cards: [types]
+      - name: Other modifications
+        about: "Whether modified lysines are near other modifications (methylarginines, methyllysines and phosphosites), within 10 residues."
+        cards:
+          - {analysis: near_methylarginine}
+          - {analysis: near_methyllysine}
+          - {analysis: near_phospho}
+          - {analysis: near_phospho_high}
+      - name: Position in the protein
+        about: "Where in the protein the modified lysines are: sequence motifs, folded or disordered parts, domains, the charge of disordered regions."
+        cards:
+          - {analysis: disorder}
+          - {analysis: idr_charge}
+          - {analysis: structure_context}
+          - {analysis: domain_class, title: Nearest domain class}
+          - {analysis: motif, title: Sequence motifs}
+          - {analysis: which_factor, wide: true}
       - name: More questions
         about: "Further pathways, cell maps, protein classes and domains, one question each."
         cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, {analysis: hpa_location, title: Human Protein Atlas locations},
