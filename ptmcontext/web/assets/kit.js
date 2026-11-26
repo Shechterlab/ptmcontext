@@ -5840,6 +5840,11 @@
     if (prots.length !== 1 || !K.views.protein) return false;
     const acc = D.proteins[prots[0]][0],
       site = q.sites.length === 1 ? '/' + q.sites[0][1] : '';
+    // a variant word with a site (TP53 R213 mutation): the card opens at its variants, as the Variants line does
+    if (site && window.PTMNames.asksVariants(S.q.split(/[\s,;]+/))) {
+      location.hash = link('protein', acc + site, { open: 'sc-variants' });
+      return true;
+    }
     go('protein', { arg: acc + site });
     return true;
   }

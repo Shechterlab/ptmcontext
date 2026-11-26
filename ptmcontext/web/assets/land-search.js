@@ -87,7 +87,8 @@
   const address = ({ acc, gene }, site, q) => {
     const tag = String(gene || '').split(/[\s;]+/)[0],
       path = [tag, acc, site].filter(Boolean).map(encodeURIComponent).join('/');
-    return `#protein/${path}${site ? '?' + new URLSearchParams({ q }) : ''}`;
+    const open = site && window.PTMNames.asksVariants(q.split(/[\s,;]+/)) ? { open: 'sc-variants' } : {};
+    return `#protein/${path}${site ? '?' + new URLSearchParams({ q, ...open }) : ''}`;
   };
   // what the box holds, read as a site's own search reads it (notations in kit-names.js): { rows: the proteins, site: 'R3' or '',
   // list: the names of a gene list or null }

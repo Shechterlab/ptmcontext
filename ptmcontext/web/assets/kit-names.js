@@ -1,7 +1,7 @@
 /* How a protein is named and found in a search box: one function for a site's search and the landing page's, so both
    give the same hits in the same order. A row is { acc, gene (the short name shown), genes (every gene), aliases (previous
    and alternative symbols), name, entry, w (weight: marks, or sites, most first) }. Plain script (the landing page inlines
-   it); it puts window.PTMNames = { rank, text, exact, pos, siteOf, read } and reads nothing else. The notations of a site typed in a
+   it); it puts window.PTMNames = { rank, text, exact, pos, siteOf, read, asksVariants } and reads nothing else. The notations of a site typed in a
    search are read here too (pos, siteOf), for the explorers' search (kit-select.js) and the landing page's. */
 (() => {
   'use strict';
@@ -98,5 +98,8 @@
       sub: [via, [r.name, n].filter(Boolean).join(', ')].filter(Boolean).join(' · '),
     };
   };
-  window.PTMNames = { rank, text, exact, pos, siteOf, read };
+  // a word that asks about the site's variants (TP53 R213 mutation): the site opens at its variants
+  const VARIANT_WORD = /^(mutations?|variants?|cancer)$/i;
+  const asksVariants = (words) => words.some((w) => VARIANT_WORD.test(w));
+  window.PTMNames = { rank, text, exact, pos, siteOf, read, asksVariants };
 })();

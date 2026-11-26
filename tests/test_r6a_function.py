@@ -41,3 +41,10 @@ def test_the_bar_charts_value_column_wraps_the_shares_instead_of_overflowing():
 def test_the_landing_search_has_a_short_placeholder_on_a_phone():
     js = src('land-search.js')
     assert "'Gene, site or topic'" in js and 'max-width: 640px' in js
+
+
+def test_a_variant_word_with_a_site_opens_the_card_at_its_variants_from_one_word_list():
+    names = src('kit-names.js')
+    assert names.count('VARIANT_WORD') == 2 and 'mutations?|variants?|cancer' in names
+    assert "open: 'sc-variants'" in src('kit.js') and "open: 'sc-variants'" in src('land-search.js')
+    assert src('kit.js').count('asksVariants') == 1 and src('land-search.js').count('asksVariants') == 1
