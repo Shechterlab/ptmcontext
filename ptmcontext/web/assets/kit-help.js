@@ -281,8 +281,6 @@
     const term = (t, d) => `<dt>${t}</dt><dd>${d}</dd>`;
     return (
       `<div class="page-head"><h2>Help</h2></div><div class="doc help-doc">` +
-      whatsNew() +
-      appChanges() +
       sec(
         'h-search',
         `<p>Protein: gene, UniProt accession or entry name.</p>` +
@@ -374,6 +372,8 @@
               `With hypermutated. ${mlink('propensity', 'Methods › Changes vs expected')} has the test and its sources.</p>`
           )
         : '') +
+      whatsNew() +
+      appChanges() +
       '</div>'
     );
   }

@@ -103,3 +103,10 @@ def test_the_mutations_page_leads_with_one_tile_per_source():
     assert '`${lead}${answer}${tilesHtml()}' in mu and 'sourceTiles(lists)' in mu
     assert 'Single sites with q' not in mu and 'Sites changed more often than expected' not in mu
     assert "TILE_IDS = ['cancer_change', 'clinvar_plp', 'gnomad_variant']" in mu  # ClinVar before gnomAD among germline
+
+
+def test_help_ends_with_whats_new_and_what_changed():
+    js = (ROOT / 'ptmcontext/web/assets/kit-help.js').read_text()
+    body = js[js.index('function helpPage()') : js.index('// the rest of the old Help page')]
+    assert body.index("'h-search'") < body.index('whatsNew() +') < body.index('appChanges() +')
+    assert body.index("'h-mutations'") < body.index('whatsNew() +')
