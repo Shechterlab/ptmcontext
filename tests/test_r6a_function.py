@@ -1,0 +1,19 @@
+"""Round-6 function and layout fixes, read from the sources."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+ASSETS = ROOT / 'ptmcontext' / 'web' / 'assets'
+
+
+def src(name: str) -> str:
+    return (ASSETS / name).read_text()
+
+
+def test_the_site_scan_has_no_time_limit_that_ends_in_none_and_reads_listed_entries_first():
+    js = src('kit-3d.js')
+    scan = js[js.index('function scanSite') : js.index('function bestPdb')]
+    assert 'withTimeout' not in scan and 'entriesAt(pos)' in scan and 'Math.min(6, pool.length)' in scan
+    assert "'Experimental (searching…)'" in js and 'looking…' not in js

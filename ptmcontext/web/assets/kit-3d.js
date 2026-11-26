@@ -709,9 +709,36 @@
               (a.resolution || 99) - (b.resolution || 99)
           )
           .slice(0, 40);
-      return withTimeout(
-        Promise.all(
-          pool.map(async (e) => {
+      // the entries the site card lists for this site are read first, 6 at a time; the list is returned once the first
+      // hit and every entry ahead of it are read (the rest go on in the background and fill SITE_AT)
+      const listed = new Set(entriesAt(pos).flatMap((c) => c[2]));
+      pool.sort((a, b) => listed.has(b.id) - listed.has(a.id));
+      const settled = new Array(pool.length).fill(false);
+      return new Promise((done) => {
+        let next = 0,
+          fin = false;
+        const finish = () => {
+          if (fin) return;
+          fin = true;
+          const yes = pool.filter((e) => SITE_AT[`${acc}:${pos}:${e.id}`]);
+          meta(yes.map((e) => e.id))
+            .catch(() => [])
+            .then(() => {
+              const base = acc.split('-')[0],
+                tier = (e) =>
+                  res.modified.has(e.id) ? 0 : te.has(e.id) || partnersText(META[UP(e.id)], base).length ? 1 : 2;
+              done(yes.sort((a, b) => tier(a) - tier(b) || (a.resolution || 99) - (b.resolution || 99)));
+            });
+        };
+        const check = () => {
+          const lead = settled.indexOf(false);
+          if (lead < 0) return finish();
+          if (pool.slice(0, lead).some((e) => SITE_AT[`${acc}:${pos}:${e.id}`])) finish();
+        };
+        const worker = async () => {
+          while (next < pool.length) {
+            const k = next++,
+              e = pool[k];
             let hit = '';
             for (const ch of chainsOf(e).slice(0, 4)) {
               const det = await loadDetail(e.id, ch, res.modified.has(e.id)).catch(() => null);
@@ -722,22 +749,13 @@
             }
             SITE_AT[`${acc}:${pos}:${e.id}`] = hit;
             if (hit) T.pick[e.id] ||= hit;
-          })
-        ),
-        10000
-      )
-        .catch(() => {})
-        .then(() => {
-          const yes = pool.filter((e) => SITE_AT[`${acc}:${pos}:${e.id}`]);
-          return meta(yes.map((e) => e.id))
-            .catch(() => [])
-            .then(() => {
-              const base = acc.split('-')[0],
-                tier = (e) =>
-                  res.modified.has(e.id) ? 0 : te.has(e.id) || partnersText(META[UP(e.id)], base).length ? 1 : 2;
-              return yes.sort((a, b) => tier(a) - tier(b) || (a.resolution || 99) - (b.resolution || 99));
-            });
-        });
+            settled[k] = true;
+            check();
+          }
+        };
+        if (!pool.length) return finish();
+        Array.from({ length: Math.min(6, pool.length) }, worker);
+      });
     }));
   }
   // the chain that models most of the protein: of the chains whose mapping spans most of it (8), the one PDBe says
@@ -1964,13 +1982,13 @@
     const lab = none
       ? `Experimental (none at ${rl(siteNow())})`
       : looking
-        ? 'Experimental (looking…)'
+        ? 'Experimental (searching…)'
         : target
           ? `Experimental · PDB ${UP(target.id)}`
           : best?.failed || res?.failed
             ? 'Experimental (PDBe did not answer; retry)'
             : !res
-              ? 'Experimental (looking…)'
+              ? 'Experimental (searching…)'
               : list.length
                 ? 'Experimental'
                 : 'Experimental (none)';
