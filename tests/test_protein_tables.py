@@ -518,7 +518,7 @@ def test_the_record_groups_and_their_summary_use_the_site_files_labels_with_the_
     card = {'evidence': _CARD_EV, 'records': {**_CARD_REC, 'labels': {'binds_one': 'Binds it as modified'}}}
     rec = _card(card, {}, [], _REC_ROWS)['rec']
     assert '<b>Binds it as modified</b>' in rec and 'binds it as modified: 2' in rec  # heading and summary
-    assert '<b>Binds two</b>' in rec and 'binds two 1' in rec  # no label: the code, underscores replaced
+    assert '<b>Binds two</b>' in rec and 'binds two: 1' in rec  # no label: the code, underscores replaced
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
