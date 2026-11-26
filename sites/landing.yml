@@ -4,8 +4,8 @@
 title: PTMcontext
 url: https://shechterlab.github.io/ptmcontext/   # where the published folder lives: link previews need absolute image addresses
 page_title: "PTMcontext: human PTM site explorers"   # the <title> of the landing page (title is the brand line)
-lede: Where human PTM sites sit in proteins, who writes and reads them, and how they relate to disease.
-description: Where human PTM sites sit in proteins, who writes and reads them, and how they relate to disease.
+lede: Analysis tools for protein post-translational modifications
+description: "PTMcontext: analysis tools for protein post-translational modifications."
 examples:                  # links under the search box: label and address (relative to the landing page)
   - {label: H4 R3, href: "methylarginine/#protein/H4/P62805/R3"}
   - {label: TP53 R213 variants, href: "methylarginine/#protein/TP53/P04637/R213"}
