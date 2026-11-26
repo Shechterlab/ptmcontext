@@ -1064,7 +1064,7 @@ gathers, tested or not) and `checked_against` (the manifest name of its `referen
 show one question several ways (`views`: each a protein-set question with its `label`), more sets tested apart behind a
 button (`more`), the member sets of its families (`members`: the question testing them one by one, `of` the family
 questions) and, for a question with a hierarchy, an ontology view (`ontology`: `short`, `compare`, `tree`, `glosses`);
-`website.protein.sets` gives cards of a protein's own sets. All of these are words and choices of the site file; a site
+`classes` on a card limits its tile to those classes of its question (their rows as tested, none added); on a protein's `sets` card, `branches` (a question whose Overview card has `classes`) leads the card with the protein's own classes among them and `behind` (`label`, `analyses`) puts other questions of the card under a closed heading; a fact tile with `branches: true` counts only those classes. `website.protein.sets` gives cards of a protein's own sets. All of these are words and choices of the site file; a site
 without them shows its questions as plain lists.
 
 ## Search and its filters (website.search)
