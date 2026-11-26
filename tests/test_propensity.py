@@ -333,7 +333,7 @@ def test_the_page_is_told_what_the_files_hold(built):
     assert [s['id'] for s in pr['sources']] == ['tcga', 'depmap', 'clinvar', 'gnomad']
     assert [s['descriptive'] for s in pr['sources']] == [False, False, True, False]
     assert pr['residues'] == ['R'] and pr['hypermutated'] == {'per_mb': 10}
-    assert pr['wf'] == {'file': 'data/wf.json'} and pr['onco'] == {'file': 'data/onco.json'}
+    assert pr['wf'] == {'file': 'data/wf.json', 'known': True} and pr['onco'] == {'file': 'data/onco.json'}
     assert pr['summary']['set_label'] == 'Toy (R)'
     assert {(c['kind'], c['result'], c['n']) for c in pr['summary']['controls']} == {
         ('oncohistone', 'fail', 1),
@@ -1076,3 +1076,14 @@ def test_gene_list_highlights_every_site_and_labels_the_most_extreme_one_per_pro
     assert got['words'] == ['tp53', 'FUS', 'EWSR1', 'TAF15']  # one entry per name, in order, any separator
     assert got['cap'] == 60
     assert got['back'] == got['words']  # the address: wg is the words joined by commas, and reads back the same
+
+
+def test_the_waterfall_file_lists_every_site_with_its_residue_for_the_mutations_page(built):
+    root, sp, index, data = built
+    wf = json.loads((index.parent / 'data' / 'wf.json').read_text())
+    marks = {}
+    for line in (root / 'data' / 'marks.tsv').read_text().splitlines()[1:]:
+        acc, pos, *_ = line.split('\t')
+        marks.setdefault(acc, set()).add(int(pos))
+    got = {a: {int(t[1:]) for t in v.split()} for a, v in wf['known'].items()}
+    assert got == marks and all(t[0].isalpha() for v in wf['known'].values() for t in v.split())

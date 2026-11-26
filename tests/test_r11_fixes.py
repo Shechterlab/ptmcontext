@@ -52,3 +52,11 @@ def test_the_protein_sets_list_follows_the_overview_order_and_lists_a_question_o
     pr = _src('kit-proteins.js')
     assert 'K.questionOrder()' in pr and '!K.listHides(a)' in pr
     assert 'ctxNames' not in _src('kit-pfolds.js')
+
+
+def test_the_mutations_page_lists_every_site_from_the_waterfall_file_until_a_selection_needs_the_marks():
+    mu = _src('kit-mutations.js')
+    assert 'const lean = () => !K.sel.active() && PR.wf?.known;' in mu
+    assert 'if (!lean() && !K.sel.data())' in mu
+    prop = (ROOT / 'ptmcontext' / 'web' / 'propensity.py').read_text()
+    assert "wf['known'] = {" in prop and "'known': True" in prop
