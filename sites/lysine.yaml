@@ -1557,10 +1557,10 @@ website:                  # the look and words of the website (ptmc web); layout
   ci: {order: 4, audit: {workers: 2, budget: 100, proteins: "P68431,P04637", selection: "f=p:histone~histone|f=p:panther_group~Transcription, chromatin and DNA"}}   # CI: published by pages.yml, in this order; the audits' parameters (CONTRACTS.md, Site CI parameters)
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Lysine Modification Site Explorer
-  tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from databases and studies."
+  tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from studies and databases."
   landing:
     from_section: Localization   # the card's strongest result is chosen from the section the Overview opens with
-    tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from databases and studies."
+    tagline: "Human lysine acetylation, other acylations, ubiquitination and SUMOylation sites from studies and databases."
     question: "Which proteins have modified lysines, and how do modified lysines differ from the other lysines of their protein?"
     in_switcher: true
   band: ["#14532d", "#052e16"]      # the header gradient: deep green
@@ -1769,7 +1769,7 @@ website:                  # the look and words of the website (ptmc web); layout
       kind: values
       attribute: sources
       title: Studies and databases
-      question: "Which databases and studies report the modified lysines?"
+      question: "Which studies and databases report the modified lysines?"
       sub: "Modified lysines reported by each database or study"
       unit: [study or database, studies and databases]
       noun: studies and databases

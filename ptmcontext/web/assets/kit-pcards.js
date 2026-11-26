@@ -941,7 +941,9 @@
       })
       .join('');
     const what = known1 ? plural(known.size, W.mark, W.marks) : plural(nKnown.cands, 'candidate residue');
-    const hotWord = x.highlight?.label ? ` (${int(nHot)} with ${esc(x.highlight.label)})` : '';
+    const hotWord = x.highlight?.label
+      ? ` (${int(nHot)} ${esc((x.highlight.title || x.highlight.label).replace(/\s*\(.*\)$/, ''))})`
+      : '';
     const sorts = x.sort || [];
     all.sort((a, b) => {
       const h = VCK.hot(x, b.r) - VCK.hot(x, a.r);
@@ -991,7 +993,7 @@
           (all.length > limit
             ? `<p class="small"><button type="button" class="linkish" data-vc-more="${esc(x.id)}">${
                 open ? 'Show fewer' : `Show all ${int(all.length)} ${esc(unit[1])}`
-              }</button>${open ? '' : ` <span class="muted">(${int(limit)} shown${x.highlight?.label ? `, ${esc(x.highlight.label)} first` : ''})</span>`}</p>`
+              }</button>${open ? '' : ` <span class="muted">(${int(limit)} shown${x.highlight?.label ? `, ${esc((x.highlight.title || x.highlight.label).replace(/\s*\(.*\)$/, ''))} first` : ''})</span>`}</p>`
             : '')
         : '') +
       (all.length
@@ -1022,7 +1024,7 @@
         x,
         rec.marks.map((q) => q[0])
       );
-      return `${x.label}: ${c.any ? plural(c.any, 'site') : 'no site'} with a variant${x.highlight?.label && c.any ? ` (${int(c.hot)} ${x.highlight.label})` : ''}`;
+      return `${x.label}: ${c.any ? plural(c.any, 'site') : 'no site'} with a variant${x.highlight?.label && c.any ? ` (${int(c.hot)} ${(x.highlight.title || x.highlight.label).replace(/\s*\(.*\)$/, '')})` : ''}`;
     };
     const lazy = VCK.entries.some((x) => x.lazy);
     if (lazy && !tb._vd) {

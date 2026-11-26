@@ -942,7 +942,7 @@
         ? kv(
             'Changes vs expected',
             K.prop.siteLine({ acc: p.acc, pos: m[0] }) + (K.mut ? ' ' + K.mut.addButton(p.acc, m[0]) : ''),
-            'observed/expected: observed changes at this residue over those expected from its codon, with the q of the test; descriptive for ClinVar'
+            'observed/expected: observed changes at this residue over those expected from its codon, with the q of the test; count only for ClinVar'
           )
         : '') +
       '</dl></details>';

@@ -23,7 +23,7 @@ def _src(name):
 
 def test_the_network_page_answers_in_a_sentence_and_lists_its_clusters_under_the_graph():
     js = _src('kit-network.js')
-    assert 'function answerText(M, CL, sel0)' in js and 'largest: ${big.map' in js
+    assert 'function answerText(M, CL, sel0)' in js and 'largest ${big.map' in js
     assert 'function clusterTableHtml(M, CL)' in js
     # the table follows the figure and its key; the sentence follows the heading
     assert "${key}</div>${CL.nShown ? clusterTableHtml(M, CL) : ''}" in js

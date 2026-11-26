@@ -22,7 +22,7 @@ def test_a_selection_whose_marks_are_still_coming_shows_no_count_and_no_verdict(
     # the "too few to test" notes come after the loading check
     kit = _js('kit.js')
     assert kit.index('K.sel.loading?.()\n        ? K.loading(K.sel.loadingText())') < kit.index(
-        'Too few to test: a selection needs'
+        'Too few to test (minimum'
     )
 
 

@@ -1800,7 +1800,7 @@ website:                  # the look and words of the website (ptmc web); layout
           genes_file: sites/data/phospho_phosphatases.tsv
           help: "UniProt keyword KW-0904, protein phosphatase (reviewed human entries, UniProt 2026_04)"
         reader_1433:
-          label: a 14-3-3 protein (reader)
+          label: 14-3-3 protein (reader)
           role: reader
           reads: pS or pT in R-S-x-pS-x-P and R-x-Y/F-x-pS-x-P
           interpro: [IPR000308]

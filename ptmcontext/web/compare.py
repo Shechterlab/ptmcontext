@@ -390,7 +390,7 @@ def page(
 {f'<div class="lede"><p class="lede-what">{lede}</p></div>' if lede else ''}</div></header>
 <main class="wrap cmp-wrap" id="cmp-main">
 <p class="cmp-intro">{html.escape(spec.get('intro') or '')}</p>
-<p class="cmp-statement">{html.escape(spec.get('statement') or '')}</p>
+{f'<p class="cmp-statement">{html.escape(spec["statement"])}</p>' if spec.get('statement') else ''}
 <details class="cmp-how"><summary>How to read this</summary><div>{how}</div></details>
 <div id="cmp-app"><noscript><p class="cmp-note">This page needs JavaScript. The same numbers are in <a href="compare.json">compare.json</a>.</p></noscript></div>
 {note}

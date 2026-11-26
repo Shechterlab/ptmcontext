@@ -759,11 +759,10 @@
                 m
                   ? ` <span class="muted">· ${
                       named.length
-                        ? `in ${int(named.length)} of its ${int(own.length)} tested ${ns}, ${
+                        ? `in ${int(named.length)} of ${int(own.length)} tested ${ns}, ${
                             nEnr ? int(nEnr) + ' enriched' : 'none enriched'
                           }`
-                        : `in none of its ${int(own.length)} tested ${ns} (only in ${ns} too small ` +
-                          `or too large to test)`
+                        : `in 0 of ${int(own.length)} tested ${ns}`
                     }</span>`
                   : ''
               }</li>`;

@@ -201,9 +201,7 @@
       (n ? sitesBlock(L) : '') +
       `<h3>What they share</h3>` +
       (n
-        ? `<p class="muted small gl-vs"><b>Compared with:</b> the ${int(D.counts.proteins)} ${esc(W.marked)} proteins ` +
-          `(each set’s source may annotate fewer: its background is in the table). Not the ${esc(W.residues)} ` +
-          `of those proteins, which the Overview tests.</p>` +
+        ? `<p class="muted small gl-vs">Background: ${int(D.counts.proteins)} ${esc(W.marked)} proteins (per-set background in table).</p>` +
           table +
           more +
           `<p class="muted small gl-foot">One-sided hypergeometric test of your proteins against each of the ${int(nT)} sets, ` +

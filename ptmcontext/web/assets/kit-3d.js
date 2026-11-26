@@ -2139,7 +2139,7 @@
         K.link('protein', T.acc + '/' + pos)
       )}">its card</a></p>${contacts}${boundHtml}` +
       (!rows.length && !bound.length && (SD.contacts || SD.bound)
-        ? `<p class="muted small">The tables of this explorer list ` + `no contact for ${esc(rl(pos))} in the PDB.</p>`
+        ? `<p class="muted small">No PDB contact at ${esc(rl(pos))}.</p>`
         : '') +
       (rows.length || bound.length ? `<p class="src">${esc(tableWords('contacts') || tableWords('bound'))}</p>` : '') +
       '</div>'
@@ -2209,13 +2209,10 @@
           const dis = units(styleKinds('disorder')),
             nDis = marks().filter((m) => am.get(m[0])?.n && dis.some(([, a, b]) => m[0] >= a && m[0] <= b)).length;
           el.innerHTML = vals.length
-            ? `AlphaMissense: the mean pathogenicity of the substitutions at each ${esc(NOUN)}, averaged over ${int(vals.length)} ${esc(vals.length === 1 ? NOUN : NOUNS)}, is ${(
-                vals.reduce((s, x) => s + x, 0) / vals.length
-              ).toFixed(2)}; ${vals.filter((x) => x >= 0.564).length} of ${vals.length} are at or ` +
-              `above 0.564, AlphaMissense’s cut-off for a likely pathogenic variant.` +
-              (nDis
-                ? ` ${nDis} of the ${esc(NOUNS)} lie in disordered regions, where AlphaMissense is less reliable.`
-                : '')
+            ? `AlphaMissense mean ${(vals.reduce((s, x) => s + x, 0) / vals.length).toFixed(2)} (${int(vals.length)} ${esc(
+                vals.length === 1 ? NOUN : NOUNS
+              )}); ${vals.filter((x) => x >= 0.564).length} ≥ 0.564` +
+              (nDis ? `; ${nDis} in disordered regions (less reliable)` : '')
             : '';
         });
       return;

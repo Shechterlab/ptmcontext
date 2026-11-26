@@ -2593,9 +2593,9 @@
         : `Percent of each part's proteins with at least one ${W.mark}, among the reviewed proteins each map places there. Median over the maps that have the part.`;
   const keyWords = () =>
     VIEW === 'z'
-      ? `h: Cohen's h of a part's share ${scopedNow() ? 'in your selection' : `with a ${W.mark}`} from the share among all mapped proteins (${pctText(
+      ? `effect: Cohen's h of a part's share ${scopedNow() ? 'in your selection' : `with a ${W.mark}`} from the share among all mapped proteins (${pctText(
           pctRef(scopedNow())
-        )}); about 0.2 is small, 0.5 medium, 0.8 large. Red: above, slate: below, deeper for larger h. Filled where q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the parts shown) and |h| ≥ ${MIN_H}; outlined where significant but smaller; hatched where not significant. Dashed outline: no map measures it.`
+        )}); about 0.2 is small, 0.5 medium, 0.8 large. Red: above, slate: below, deeper for a larger effect. Filled where q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the parts shown) and |effect| ≥ ${MIN_H}; outlined where significant but smaller; hatched where not significant. Dashed outline: no map measures it.`
       : pctOn()
         ? `Blue: the share of a part's proteins ${scopedNow() ? 'that are in your selection' : `with at least one ${W.mark}`}, darker for a larger share${
             scopedNow() ? ' (the steps are fifths of the largest share)' : ''
@@ -3064,11 +3064,14 @@
           .slice(0, 2);
       return (
         (scoped
-          ? `${pctText(ref)} of mapped proteins are in the selection. `
-          : `${pctText(ref)} of mapped proteins carry ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ${W.mark}. `) +
+          ? `Mapped proteins in the selection: ${pctText(ref)}. `
+          : `Mapped proteins with ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ${W.mark}: ${pctText(ref)}. `) +
         (up.length || down.length
-          ? (up.length ? `Most above that: ${and(up.map(ith))}.` : '') +
-            (down.length ? `${up.length ? ' ' : ''}Most below: ${and(down.map(ith))}.` : '')
+          ? cap(
+              [up.length ? `highest: ${and(up.map(ith))}` : '', down.length ? `lowest: ${and(down.map(ith))}` : '']
+                .filter(Boolean)
+                .join('; ')
+            ) + '.'
           : `No part differs from that.`)
       );
     }
@@ -3749,7 +3752,7 @@
         } (Cohen’s h)</span><span class="pk-lo">h −1</span><span class="pk-bar" role="img" aria-label="h from −1 to +1; red above, slate below">${steps
           .map((s) => `<i class="${s === 'ns' ? 'f0' : s}"></i>`)
           .join('')}<b class="pk-ref" style="left:50%"></b></span><span class="pk-hi">h +1</span>` +
-        `<span class="cell-key"><i class="cg-k sm"></i>q ≤ ${Q_MAX} but |h| &lt; ${MIN_H}; <i class="cg-k hx"></i>q &gt; ${Q_MAX}. Filled where q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}</span>` +
+        `<span class="cell-key"><i class="cg-k sm"></i>q ≤ ${Q_MAX} but |h| &lt; ${MIN_H}; <i class="cg-k hx"></i>q &gt; ${Q_MAX}. Filled where q ≤ ${Q_MAX} and |effect| ≥ ${MIN_H}</span>` +
         (ref != null ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctRefWords(scoped, ref))}</span>` : '') +
         `<span class="cell-key"><i class="cg-k na"></i> not measured</span>${
           hasSel() ? '<span class="cell-key"><i class="cg-k sel"></i> outlined: your selection</span>' : ''

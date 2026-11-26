@@ -1453,10 +1453,10 @@ website:                  # the look and words of the website (ptmc web); layout
   ci: {order: 2, lower_confidence: true, audit: {proteins: "P68431,P04637", selection: "f=p:histone~histone|f=p:panther_group~Transcription, chromatin and DNA"}}   # CI: published by pages.yml, in this order; the audits' parameters (CONTRACTS.md, Site CI parameters)
   context_window: 10       # residues either side of a site that count as near a context mark (card, filter, columns, questions)
   name: Methyllysine Site Explorer
-  tagline: "Human lysine methylation sites from databases and studies."
+  tagline: "Human lysine methylation sites from studies and databases."
   landing:
     from_section: Localization   # the card's strongest result is chosen from the section the Overview opens with                 # the landing page's card (ptmc pages) and the header menu of the sites
-    tagline: "Human lysine methylation sites from databases and studies."
+    tagline: "Human lysine methylation sites from studies and databases."
     question: "Which proteins have methyllysine, and how do methylated lysines differ from the other lysines of their protein?"
     in_switcher: true
   band: ["#5b21b6", "#3b0764"]      # the header gradient: purple

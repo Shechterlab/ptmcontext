@@ -74,10 +74,10 @@ def test_records_are_counted_by_distinct_partner():
         VIEW,
     )
     text, heads = out
-    assert text.startswith('2 distinct partners from 5 papers')  # 6 records, 2 partners
+    assert text.startswith('2 partners, 5 papers')  # 6 records, 2 partners
     assert 'binds it methylated 1' in text and 'unmodified 2' in text
     assert 'record' not in text.split(':')[0]
-    assert heads[0] == '1 partner' and '1 partner' in heads and '2 partners' in heads
+    assert heads[1] == '1 partner' and '1 partner' in heads and '2 partners' in heads
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
