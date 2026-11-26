@@ -1635,8 +1635,13 @@ website:                  # the look and words of the website (ptmc web); layout
       - name: Disease associations
         about: "Diseases linked to the proteins with modified lysines, and cancer cell dependency."
         cards:
-          - analysis: disease_family
+          - analysis: disease_ontology
+            title: Disease classes (Disease Ontology)
+            classes: ["DOID:14566", "DOID:0014667", "DOID:630", "DOID:150", "DOID:0050117", "DOID:225", "DOID:0080015", "DOID:863", "DOID:1287", "DOID:17", "DOID:2914", "DOID:1579", "DOID:77", "DOID:18", "DOID:15", "DOID:16", "DOID:28", "DOID:74", "DOID:0060118", "DOID:3463"]   # the branches of the Disease Ontology: the children of "disease of anatomical entity" (DOID:7) and the other children of "disease" (DOID:4); the same on every explorer
             views:               # one question, two vocabularies: a switch on its page
+              - label: Disease Ontology
+                analysis: disease_ontology
+                ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
               - label: DisGeNET families
                 analysis: disease_family
                 more: {analysis: disease_family_additional, label: "Show {n} more families", head: "Additional families"}
@@ -1650,9 +1655,6 @@ website:                  # the look and words of the website (ptmc web); layout
                   of:
                     - {analysis: disease_family, label: disease families checked by hand}
                     - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
-              - label: Disease Ontology
-                analysis: disease_ontology
-                ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
       - name: More questions
         about: "Further pathways, cell maps, protein classes and domains, one question each."

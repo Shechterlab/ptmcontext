@@ -1715,21 +1715,10 @@ website:                  # the look and words of the website (ptmc web); layout
       - name: Disease associations
         about: "Diseases linked to the methylated proteins."
         cards:
-          - analysis: disease_family
+          - analysis: disease_ontology
+            title: Disease classes (Disease Ontology)
+            classes: ["DOID:14566", "DOID:0014667", "DOID:630", "DOID:150", "DOID:0050117", "DOID:225", "DOID:0080015", "DOID:863", "DOID:1287", "DOID:17", "DOID:2914", "DOID:1579", "DOID:77", "DOID:18", "DOID:15", "DOID:16", "DOID:28", "DOID:74", "DOID:0060118", "DOID:3463"]   # the branches of the Disease Ontology: the children of "disease of anatomical entity" (DOID:7) and the other children of "disease" (DOID:4); the same on every explorer
             views:               # one question, two vocabularies: a switch on its page
-              - label: DisGeNET families
-                analysis: disease_family
-                more: {analysis: disease_family_additional, label: "Show {n} more families", head: "Additional families"}
-                members:
-                  analysis: disease_term
-                  label: Show the DisGeNET terms
-                  noun: term
-                  nouns: DisGeNET terms
-                  id_label: UMLS CUI
-                  none: terms in no family
-                  of:
-                    - {analysis: disease_family, label: disease families checked by hand}
-                    - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
               - label: Disease Ontology
                 analysis: disease_ontology
                 ontology:
@@ -1748,7 +1737,19 @@ website:                  # the look and words of the website (ptmc web); layout
                     "DOID:7": [by organ system, "A disease that manifests in a defined anatomical structure."]
                     "DOID:0014667": [inherited and acquired metabolic, "A disease that involves errors in metabolic processes of building or degradation of molecules."]
                     "DOID:0050117": ["viral, bacterial, parasitic, fungal"]
-          - {analysis: disease_family_additional, title: "More disease families"}
+              - label: DisGeNET families
+                analysis: disease_family
+                more: {analysis: disease_family_additional, label: "Show {n} more families", head: "Additional families"}
+                members:
+                  analysis: disease_term
+                  label: Show the DisGeNET terms
+                  noun: term
+                  nouns: DisGeNET terms
+                  id_label: UMLS CUI
+                  none: terms in no family
+                  of:
+                    - {analysis: disease_family, label: disease families checked by hand}
+                    - {analysis: disease_family_additional, label: "additional families, mostly clinical signs"}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
       - name: More questions
         about: "Further protein classes, pathways, cell maps and maps of bound RNAs, one question each."
