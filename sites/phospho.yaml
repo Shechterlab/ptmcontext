@@ -1784,13 +1784,13 @@ website:                  # the look and words of the website (ptmc web); layout
       # members of the entry on the reviewed human proteome).
       classes:
         writer_stk:
-          label: a serine/threonine kinase (writer)
+          label: Ser/Thr kinase
           role: writer
           reads: phosphorylates Ser or Thr
           genes_file: sites/data/phospho_ser_thr_kinases.tsv
           help: "UniProt keyword KW-0723, serine/threonine-protein kinase (reviewed human entries, UniProt 2026_04): candidates, which include pseudokinases and dual-specificity kinases"
         writer_ptk:
-          label: a tyrosine kinase (writer)
+          label: Tyr kinase
           role: writer
           reads: phosphorylates Tyr
           genes_file: sites/data/phospho_tyr_kinases.tsv
