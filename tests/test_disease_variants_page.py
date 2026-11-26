@@ -1,4 +1,4 @@
-"""The Disease variants page: cancer-type names from one config list, the Overview's tiles reused, one tested denominator."""
+"""The Mutations page: cancer-type names from one config list, the Overview's tiles reused, one tested denominator."""
 
 import json
 from pathlib import Path
@@ -24,3 +24,9 @@ def test_page_reuses_overview_tiles_and_names():
     assert "VIEWS = ['ranked', 'oncoprint', 'clinvar', 'waterfall']" in js
     # the default table lists sites with q < 0.05; the top 20 by p is a toggle
     assert 'Show the top ${RANK_N} by p' in js
+
+
+def test_the_tab_and_page_are_named_mutations_at_the_same_address():
+    src = (Path(__file__).resolve().parents[1] / 'ptmcontext/web/assets/kit-mutations.js').read_text()
+    assert "['mutations', 'Mutations'," in src and '<h2>Mutations</h2>' in src and "title: () => 'Mutations'" in src
+    assert 'Disease variants' not in src

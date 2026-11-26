@@ -1,4 +1,4 @@
-"""The pasted-list test of the Disease variants page (kit-listtest.js): the set-level test and the Benjamini-Hochberg q.
+"""The pasted-list test of the Mutations page (kit-listtest.js): the set-level test and the Benjamini-Hochberg q.
 
 The set test is the release's (PTM_Pipeline scripts/propensity.py set_test: the total at the listed sites under the null is a sum of
 Binomial(n, share) over the proteins, n = a protein's changes at its tested residues of the type). The release draws 10,000 times;

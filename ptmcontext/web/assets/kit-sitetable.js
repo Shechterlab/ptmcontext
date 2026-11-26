@@ -464,7 +464,7 @@
   // ---- a small selection: each selected site as one line --------------------------------------------------------------------
   // mode 'sites' leads with the changes seen at the site, 'variants' shows only the site's variants. A site's variants are one
   // line from the site card's counter (K.card.vc.line), linked to the card's variants; nothing here counts or lists them.
-  // Called by the Sites and Disease variants pages; '' when the selection is not small or there is no selection.
+  // Called by the Sites and Mutations pages; '' when the selection is not small or there is no selection.
   K.siteFew = (mode) => {
     if (!K.few?.picked) return '';
     const P = K.few.picked();

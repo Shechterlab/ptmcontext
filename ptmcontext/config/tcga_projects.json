@@ -1,5 +1,5 @@
 {
-  "description": "The 33 TCGA project codes (GDC project ids) and their standard study names, for the cancer-type menu and tooltips of the Disease variants page. A group code with no entry is shown as it is.",
+  "description": "The 33 TCGA project codes (GDC project ids) and their standard study names, for the cancer-type menu and tooltips of the Mutations page. A group code with no entry is shown as it is.",
   "names": {
     "TCGA-ACC": "Adrenocortical carcinoma",
     "TCGA-BLCA": "Bladder urothelial carcinoma",

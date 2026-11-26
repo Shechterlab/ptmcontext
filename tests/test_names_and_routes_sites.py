@@ -37,7 +37,7 @@ def _cards(sec):
 def test_overview_groups_are_not_tab_names_or_old_names(name):
     names = set(_sections(_site(name)))
     assert not names & OLD_GROUPS
-    assert not names & {'Interactions', 'Network', 'Disease variants', 'Methods', 'Proteins', 'Sites'}
+    assert not names & {'Interactions', 'Network', 'Mutations', 'Methods', 'Proteins', 'Sites'}
 
 
 @pytest.mark.parametrize('name', SITES)

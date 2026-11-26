@@ -2562,7 +2562,7 @@
       .join('')}</ol></section>`;
   }
   K.keyFindings = keyFindings;
-  // the tiles of some questions as the Overview draws them (a page that shows the same tests, Disease variants): the same
+  // the tiles of some questions as the Overview draws them (a page that shows the same tests, Mutations): the same
   // tile(), so the effect and q are the Overview's; without the Test switch's note, which only the Overview carries
   K.tilesOf = (ids, rows = 2) => {
     REG = [];

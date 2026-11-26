@@ -189,7 +189,7 @@
     ['h-filters', 'Filters'],
     ['h-read', 'Reading a figure'],
     ['h-terms', 'Badges and terms'],
-    ...(D.propensity ? [['h-mutations', 'Disease variants']] : []),
+    ...(D.propensity ? [['h-mutations', 'Mutations']] : []),
   ];
   // The kit's shared glossary: a term the site's own words use gets its entry here, in every site that uses it. The site's
   // own glossary (website.front.glossary) adds terms and takes the place of a shared one of the same name.
@@ -361,7 +361,7 @@
               `Ring: q < 0.05. ClinVar's observed/expected has no ring. A protein with no matching coding sequence has no q.</p>` +
               `<p>The site card has one line with the site's observed/expected and q in each source.</p>` +
               (K.views.mutations
-                ? `<p><a href="${esc(K.link('mutations'))}">Disease variants</a>: sites of your selection (every ${esc(W.mark)} when nothing is selected).</p><ul>` +
+                ? `<p><a href="${esc(K.link('mutations'))}">Mutations</a>: sites of your selection (every ${esc(W.mark)} when nothing is selected).</p><ul>` +
                   `<li><b>Ranked sites</b>: tumors, cell lines and gnomAD, ranked by p; top 20 per table, the header counts sites with q below 0.05. The download has every tested site.</li>` +
                   `<li><b>Cancer: tumors</b>: oncoprint of the sites with the most changed TCGA tumors, with coding calls per Mb above.</li>` +
                   (D.propensity.cv

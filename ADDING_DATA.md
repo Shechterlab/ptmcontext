@@ -355,7 +355,7 @@ package that offers a `ptmcontext.Layer` under the entry-point group `ptmcontext
 the site names its package under `trusted_plugins`, and the run record keeps its version. Do not copy another
 repository's code into this one without the owner's review; do not run another repository's scripts from here.
 
-One exception is a table of rules kept in a script. The Disease variants page's inherited disease view gives each ClinVar condition the
+One exception is a table of rules kept in a script. The Mutations page's inherited disease view gives each ClinVar condition the
 disease family of the release's own rules (`scripts/disease_families.py` of PTM_Pipeline). That file is a manifest input
 (`website.propensity.disease_families`, with its MD5, so a site's CI plan checks it out with the ClinVar change tables named in
 `clinvar_changes`) and is read as text: `ptmcontext/web/disease_families.py` parses `FAMILY_RULES`, `ADDITIONAL_FAMILY_RULES` and

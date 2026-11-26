@@ -1,4 +1,4 @@
-/* The numbers behind a pasted list of sites (Disease variants page, "Test the sites you chose" > Paste a list). A module of the
+/* The numbers behind a pasted list of sites (Mutations page, "Test the sites you chose" > Paste a list). A module of the
    site kit: K.listTest = { pooled, bh, resolve }.
      pooled(units, k)   the release's site-set test, for a set of sites: units are [n, share, k] per protein and residue type (n =
                         the changes at the protein's residues of that type, share = the listed sites' share of the expected

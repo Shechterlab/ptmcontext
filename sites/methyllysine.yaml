@@ -1723,7 +1723,7 @@ website:                  # the look and words of the website (ptmc web); layout
         items:
         - "Mutation propensity: O/E and q for every lysine in TCGA, DepMap and gnomAD from the release, and a descriptive O/E for ClinVar."
         - "Protein cards: lollipops (stick height: count; circle size: O/E; ring: q < 0.05)."
-        - "A Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), ClinVar pathogenic (variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
+        - "A Mutations page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), ClinVar pathogenic (variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
         - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
         doi: "10.5281/zenodo.24429699"
       - title: PTM_Pipeline v1.6.0 data release (2026-11-20)
@@ -1826,7 +1826,7 @@ website:                  # the look and words of the website (ptmc web); layout
     idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of methylated proteins, and the methyllysines in them.", as: section, question: idr_charge}
     method: {label: Methods, hint: "How each question was tested, every test, the controls, the sources and how to cite."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
-  legacy_links:            # older addresses: a tile that moved to the Interactions or Disease variants page opens there
+  legacy_links:            # older addresses: a tile that moved to the Interactions or Mutations page opens there
     cancer_change: "#mutations"
     clinvar_plp: "#mutations"
     gnomad_variant: "#mutations"
@@ -2089,7 +2089,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: tcga, label: Changes in cancers, menu: "Changes in tumors (TCGA) and cell lines (DepMap)", show: [changes], hide: sm}
   # Mutation propensity (CONTRACTS.md, "Mutation propensity"): for every candidate residue, the changes seen in each source against
   # the changes its codon predicts (PTM_Pipeline v1.7.0 supporting tables, joined on accession and position). It draws the lollipops
-  # on the protein cards, the line on the site card and the Disease variants page (ranked sites, tumors, inherited disease and the waterfall).
+  # on the protein cards, the line on the site card and the Mutations page (ranked sites, tumors, inherited disease and the waterfall).
   propensity:
     residues: [K]
     sources:
@@ -2102,7 +2102,7 @@ website:                  # the look and words of the website (ptmc web); layout
     burden: sample_burden
     changes: [tcga_changes_K]
     germline_changes: [gnomad_changes_K]   # gnomAD change tables: the germline waterfall's tooltip sums each residue's allele frequencies
-    clinvar_changes: [clinvar_changes_K]   # ClinVar change tables: the Disease variants page\'s inherited view counts the pathogenic and likely pathogenic variants
+    clinvar_changes: [clinvar_changes_K]   # ClinVar change tables: the Mutations page\'s inherited view counts the pathogenic and likely pathogenic variants
     clinvar_pathogenic: {column: germline_classification, matches: &plp "(Pathogenic|Likely pathogenic)([;,/].*)?"}   # which of them count: the same rule as the cards\' P/LP highlight (aliased there)
     disease_families: disease_families   # the release's disease family rules, read as text and never run: a family for each ClinVar condition
     site_sets: site_set_propensity

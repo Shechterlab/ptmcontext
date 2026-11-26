@@ -21,7 +21,7 @@ Four kinds of file, all read only when something asks for them:
                     of the other residues of the same type
   data/onco.json    the oncoprint's numbers: every TCGA sample (project, hypermutated or not, coding calls per Mb) and, for each
                     known site, the samples with a change at it
-  data/cv.json      the Disease variants page's inherited view: the ClinVar pathogenic and likely pathogenic variants at the known
+  data/cv.json      the Mutations page's inherited view: the ClinVar pathogenic and likely pathogenic variants at the known
                     sites, each with its conditions, and the disease family of each condition (the release's own rules)
 
 A protein whose changes sit mostly at a few enriched residues (TP53 R175, R248, R273) inflates the expected count at its other residues of the
