@@ -879,16 +879,24 @@
       ),
     }));
   }
-  function setsHtml(pg, sec, b) {
-    const rows = setRows(b);
+  const SETS_TOP = 25; // sets a long table shows before "Show all"
+  function setsHtml(pg, sec, b, bi) {
+    const rows = setRows(b),
+      key = bkey(pg, sec, bi),
+      s = st(key, {}),
+      shown = s.all ? rows : rows.slice(0, SETS_TOP),
+      ceil = K.ceilingLine(
+        A[b.analysis] || {},
+        rows.map((x) => x.site)
+      );
     const meter = (k, n, K2, N) =>
       `<span class="ix-meter" title="${int(k)} of ${int(n)} (${pcS(k, n)}) vs ${int(K2)} of ${int(N)} (${pcS(K2, N)})"><i style="width:${((100 * k) / (n || 1)).toFixed(1)}%"></i><b ` +
       `style="left:${((100 * K2) / (N || 1)).toFixed(1)}%"></b></span>`;
-    return (
+    const table =
       `<div class="tbl-card"><table class="tbl ix-sets"><thead><tr><th>Set</th><th>${esc(cap(W.marked))} proteins</th>` +
       `<th class="num">In the set</th><th class="num">All proteins</th><th class="num">Fold</th><th class="num">` +
       `q</th></tr></thead><tbody>` +
-      rows
+      shown
         .map((x) => {
           const r = selOn() && x.mine ? x.mine : x.site,
             d = dirOf(r);
@@ -912,8 +920,16 @@
           : ''
       }The meter: ` +
         `the share of ${esc(W.marked)} proteins in the set (bar) against that of all proteins of the background ` +
-        `(tick). ${esc(A[b.analysis]?.sub || '')}</p>`)
-    );
+        `(tick). ${esc(A[b.analysis]?.sub || '')}</p>`) +
+      (rows.length > SETS_TOP
+        ? `<p><button type="button" class="linkish" data-ix-all="${esc(key)}">${
+            s.all ? `Show the first ${SETS_TOP}` : `Show all ${int(rows.length)} sets`
+          }</button></p>`
+        : '');
+    return ceil && !selOn()
+      ? ceil +
+          `<details class="ix-fold" data-ix-open="${esc(key)}"${OPEN.has(key) ? ' open' : ''}><summary>Show the sets</summary>${table}</details>`
+      : table;
   }
   function setsTsv(b) {
     return (
@@ -2262,7 +2278,7 @@
       case 'lines':
         return linesHtml(pg, sec, b, bi);
       case 'sets':
-        return setsHtml(pg, sec, b);
+        return setsHtml(pg, sec, b, bi);
       case 'shares':
         return sharesHtml(b);
       case 'combinations':
@@ -2381,7 +2397,12 @@
     if (!ready() && !['text', 'example', 'pointer'].includes(b.kind)) return loading();
     switch (b.kind) {
       case 'forest': {
-        const pickR = b.rows.slice(0, 6),
+        // the rows the page's answer line and its highlights use (the rest of the block's rows are behind the tile), so a
+        // tile quotes the same rows and counts as they do; a page with no answer line shows the block's first six
+        const inAnswer = (b.rows || []).filter((r) =>
+            (pg.answer?.rows || []).some((x) => x.analysis === r.analysis && x.category === r.category)
+          ),
+          pickR = inAnswer.length ? inAnswer : b.rows.slice(0, 6),
           rs = rowsFor(pickR, b.method || 'mantel_haenszel')
             .map(shown)
             .filter(Boolean),
@@ -2399,7 +2420,7 @@
             rs.length > 1 && (more.length || less.length)
               ? ` <span class="muted">· ` +
                 `${int(more.length || less.length)} of ${int(rs.length)} tests differ` +
-                `${b.rows.length > 6 ? `, ${int(b.rows.length)} in all` : ''}</span>`
+                `${b.rows.length > pickR.length ? `, ${int(b.rows.length)} in all` : ''}</span>`
               : ''
           }</p>`
         );
@@ -2591,7 +2612,7 @@
       esc(t).replace('{list}', esc(list)).replace('{marks}', esc(theMarks())).replace('{residues}', esc(W.residues));
     return `<p class="ix-answer">${
       phrases.length
-        ? fill(pg.answer.more) + (rs.length > 1 ? ` Folds ${range(rs.map(shown))}.` : '')
+        ? fill(pg.answer.more)
         : fill(pg.answer.none || `{marks} are not ` + `enriched at these contacts.`).replace(/^./, (c) =>
             c.toUpperCase()
           )

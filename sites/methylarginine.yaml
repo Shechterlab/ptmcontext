@@ -2104,6 +2104,7 @@ website:                  # the look and words of the website (ptmc web); layout
     pdb_interface: "#interactions/ixs-pdb"
     predicted_interface: "#interactions/ixs-predicted"
     intact: "#interactions/ixs-intact"
+    ix_cells: "#interactions/ixs-cells"
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
     title: Network

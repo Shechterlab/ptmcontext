@@ -2125,6 +2125,7 @@ website:                  # the look and words of the website (ptmc web); layout
     gnomad_variant: "#mutations"
     complex: "#interactions/ixs-complexes"
     pdb_interface: "#interactions/ixs-pdb"
+    pdb_interface_na: "#interactions/ixs-pdb"
     predicted_interface: "#interactions/ixs-predicted"
     intact: "#interactions/ixs-intact"
   proteins:                # the Proteins page: the preset sorts above its table (chips)
