@@ -6057,7 +6057,7 @@
       sel.innerHTML = K.sel.loading?.()
         ? `<span class="dock-sel-w">Loading…</span>` +
           (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '')
-        : `Filters <b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)}</span><span class="dock-sel-p"> · <b>${int(
+        : `<b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)}</span><span class="dock-sel-p"> · <b>${int(
             K.sel.nProteins()
           )}</b> ${K.sel.nProteins() === 1 ? 'protein' : 'proteins'}</span>` +
           (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');
