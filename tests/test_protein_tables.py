@@ -517,7 +517,7 @@ def test_an_evidence_row_names_a_partner_without_a_gene_by_its_accession_never_b
 def test_the_record_groups_and_their_summary_use_the_site_files_labels_with_the_code_last():
     card = {'evidence': _CARD_EV, 'records': {**_CARD_REC, 'labels': {'binds_one': 'Binds it as modified'}}}
     rec = _card(card, {}, [], _REC_ROWS)['rec']
-    assert '<b>Binds it as modified</b>' in rec and 'binds it as modified 2' in rec  # heading and summary
+    assert '<b>Binds it as modified</b>' in rec and 'binds it as modified: 2' in rec  # heading and summary
     assert '<b>Binds two</b>' in rec and 'binds two 1' in rec  # no label: the code, underscores replaced
 
 
@@ -526,7 +526,7 @@ def test_the_record_groups_keep_the_attributes_labels_over_the_site_files():
     specs = {'cls': {'values': {'binds_one': 'Attribute word'}}}
     plain = {'evidence': _CARD_EV, 'records': {**_CARD_REC, 'groups': 'cls'}}
     rec = _card(plain, specs, [], _REC_ROWS)['rec']
-    assert '<b>Attribute word</b>' in rec and 'attribute word 2' in rec
+    assert '<b>Attribute word</b>' in rec and 'attribute word: 2' in rec
     assert '<b>Binds_two</b>' in rec  # as before: a value the attribute lacks shows its code
     both = {
         'evidence': _CARD_EV,
@@ -551,7 +551,7 @@ def test_record_groups_can_roll_up_under_two_headings_with_one_summary_phrase_ea
     }
     rec = _card(card, {}, [], _REC_ROWS)['rec']
     assert '<h5 class="sp-roll">Binds it modified' in rec and '<h5 class="sp-roll">Binds the residue' in rec
-    assert 'binds it modified 2 · binds the residue 1' in rec  # the summary line reads the headings
+    assert 'binds it modified: 2 · binds the residue: 1' in rec  # the summary line reads the headings
 
 
 @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
