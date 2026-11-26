@@ -1413,6 +1413,55 @@
     if (D.overview?.cell_first !== true) return out; // website.overview.cell_first: true opens the Overview with the cell; otherwise the section stays in the shared order, under its heading
     return first.length ? [...first.map((x) => ({ ...x, cell: true })), ...out.filter((x) => !first.includes(x))] : out;
   }
+  // the questions in the Overview's order (its sections, then the cards in them), the controls of a question last: the order
+  // Methods lists them in
+  const methodOrder = () => {
+    const rank = new Map();
+    const add = (id) => {
+      if (id && !rank.has(id)) rank.set(id, rank.size);
+    };
+    // a question no card of the first sections holds goes after the first one of its Filters group that has one
+    let placed = false;
+    const place = () => {
+      if (placed) return;
+      placed = true;
+      const cards = new Map(rank);
+      D.analyses.forEach((a) => {
+        if (cards.has(a.id)) return;
+        const g = (D.filters || []).find((f) => (f.analyses || []).includes(a.id)),
+          at = (g?.analyses || []).filter((x) => cards.has(x)).map((x) => cards.get(x));
+        if (at.length) rank.set(a.id, Math.min(...at) + 0.5);
+      });
+    };
+    // the sections that close every Overview ("More questions") hold what the others do not: they rank last
+    const closing = new Set(D.overview_groups?.last || []),
+      secs = ovSections();
+    [...secs.filter((x) => !closing.has(x.name)), ...secs.filter((x) => closing.has(x.name))].forEach((x) => {
+      if (closing.has(x.name)) place();
+      x.cards.forEach((c) => {
+        add(c.analysis);
+        (c.views || []).forEach((v) => add(v.analysis)); // the other vocabularies of one tile
+        (c.rows_from || []).forEach(add);
+        // the drawing of the cell stands for its maps' questions, map by map
+        if (c.drawing === true && c.analysis === D.cell?.id)
+          (D.cell.maps || []).forEach((m) => [m.analysis, m.regions].forEach(add));
+      });
+    });
+    place();
+    // a question made from another (a control, or the same question on a subset of the marks) follows it
+    const base = (a) =>
+      A[a.control_of] ||
+      (a.family_label &&
+        D.analyses.find((x) => !x.family_label && !x.control_of && (x.family || x.title) === a.family)) ||
+      a;
+    const key = (a) =>
+      (a.control_of ? 2e6 : 0) +
+      (rank.has(a.id) ? rank.get(a.id) : rank.has(base(a).id) ? rank.get(base(a).id) + 0.5 : 1e6);
+    return D.analyses
+      .map((a, i) => [a, i])
+      .sort((u, v) => key(u[0]) - key(v[0]) || u[1] - v[1])
+      .map((u) => u[0]);
+  };
   // against other marks the attributes are questions too: about the sites, and (last, as a caveat) how they were found
   const wholeTile = (c) => A[c.analysis]?.anySize || !(A[c.analysis]?.tile || K.questions[c.analysis]?.tile); // a tile that reads the whole dataset: for a selection too small to test
   const secList = () =>
@@ -3358,7 +3407,7 @@
       ['m-questions', 'How each question was made', 1],
       ['m-parity', 'Checked against the release', 1],
       ['m-gq', 'Each question', 0],
-      ...D.analyses.map((a) => [`m-q-${a.id}`, a.title, 1]),
+      ...methodOrder().map((a) => [`m-q-${a.id}`, a.title, 1]),
       ...K.methods.map((x) => [`m-q-${x.id}`, x.title, 1]),
       ['m-g2', 'The data', 0],
       ['m-controls', 'Controls', 1],
@@ -3695,12 +3744,12 @@
         `File</th><th>MD5</th></tr></thead><tbody>${inputs}</tbody></table></div></section>`) +
       `<span id="m-gq"></span><section id="m-questions"><h3>How each question was made</h3>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th></tr></thead><tbody>` +
-      D.analyses
+      methodOrder()
         .map((a) => `<tr><td>${esc(a.title)}</td><td ` + `class="wrapok">${esc(madeByText(a.id))}</td></tr>`)
         .join('') +
       `</tbody></table></div></section>` +
       controlsMethod() +
-      D.analyses.map(questionMethod).join('') +
+      methodOrder().map(questionMethod).join('') +
       (K.methodParts || []).map((f) => f()).join('') +
       K.methods.map((x) => x.html()).join('') +
       par +
