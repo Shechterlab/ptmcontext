@@ -81,7 +81,7 @@ def test_a_long_peptide_shows_its_stretch_and_all_of_it():
 const e = K.card.peptideList('capri_xl_peptide', '1-200 {seq}')[0];
 console.log(JSON.stringify(K.card.peptideHtml(e, 100, q => q)));"""
     )
-    assert '…' in out and 'all 200 residues' in out and seq[:20] in out
+    assert '…' in out and 'full peptide (200 residues)' in out and seq[:20] in out
 
 
 def test_rbdmap_and_pclap_peptides_stay_out():
