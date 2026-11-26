@@ -31,3 +31,8 @@ def test_search_suggestion_counts_pluralize_through_one_helper():
     assert 'const plural = (n, one, many)' in src('kit.js')
     assert 'K.plural(t.n, noun())' in src('kit-terms.js')
     assert 'K.plural(n, `${W.marked} protein`)' in src('kit-search.js')
+
+
+def test_the_bar_charts_value_column_wraps_the_shares_instead_of_overflowing():
+    css = src('kit.css')
+    assert 'minmax(9rem, 2fr) 6rem;' in css and '.qrow .val .sh {\n  white-space: normal;' in css

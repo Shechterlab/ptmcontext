@@ -3301,7 +3301,7 @@ a.exp-btn {
 /* ---- a question's chart: each class with its counts, a bar from 1× on an axis fitted to the values (its 95% CI, the
    whole dataset's value as a tick), the value; group headings, the axis's title and a legend; it spans the card ---- */
 .qchart {
-  --qcols: minmax(10rem, 1.7fr) 6.4rem 6.4rem minmax(9rem, 2fr) 5rem;
+  --qcols: minmax(10rem, 1.7fr) 6.4rem 6.4rem minmax(9rem, 2fr) 6rem;
   display: grid;
   margin-top: 0.2rem;
 }
@@ -3398,6 +3398,9 @@ a.exp-btn {
 }
 .qrow .val .muted {
   font-weight: 500;
+}
+.qrow .val .sh {
+  white-space: normal; /* the shares and their group wrap inside the column instead of running past the page */
 }
 .qrow .dm {
   display: inline-block;
