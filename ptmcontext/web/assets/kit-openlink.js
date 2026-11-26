@@ -40,6 +40,7 @@
     'ixg-partners-and-complexes': 'ixg-protein-partners-and-complexes',
     'ixg-partners': 'ixg-binding-proteins',
     'p-score': 'p-sitetab', // the list of counts was removed; its sentence sits under the Sites table
+    'p-depmap': 'p-mutations', // the card that held the dependency and the mutations became two cards
     'site-glance': 'p-sitetab', // the site table that briefly sat under the map is the Sites table
   };
   // a page's own renamed sections and folds (website.pages[].aliases: {old id: current id}) say the same

@@ -2021,7 +2021,7 @@ website:                  # the look and words of the website (ptmc web); layout
       values: [source, source_id, gene, source_ref, canonical_ref, alt, reason]
       include: [{column: source, in: [clinvar, gnomad_v4_1]}]
       include_any: [{column: source_ref, in: [S, T, Y]}, {column: canonical_ref, in: [S, T, Y]}]
-    dependency:            # the Cancer cell lines and tumors card
+    dependency:            # the Cancer cell dependency (DepMap) card, and the Mutations in tumors and cell lines card
       input: depmap_gene_effect
       format: protein_records
       columns: {accession: canonical_UniProtAC, lines: lines, dependent: dependent_lines, median: median, common_essential: common_essential, histogram: histogram, lineages: most_dependent_lineages}
@@ -2200,11 +2200,11 @@ website:                  # the look and words of the website (ptmc web); layout
       logo: true
       logo_mode: freq      # the logo's first stack is residue frequency, as the explorer's; bits is a switch
     open_partners: true
-    order: [p-map, p-sitetab, p-sites, p-cell, p-cond, p-dis, p-depmap, p-germline, p-kinds, p-cc, p-ix, p-na, p-ptm, p-cluster, p-regions, p-seq, p-pert, p-exp, p-cons, p-struct]   # the page's order, as the Overview's sections
+    order: [p-map, p-sitetab, p-sites, p-cell, p-cond, p-dis, p-dependency, p-mutations, p-germline, p-kinds, p-cc, p-ix, p-na, p-ptm, p-cluster, p-regions, p-seq, p-pert, p-exp, p-cons, p-struct]   # the page's order, as the Overview's sections
     groups:                # the headings in the Overview's order: location, disease, classes, interactions, other modifications, position, then the experiments (website.protein.groups)
       - {id: g-overview, title: Map and summary, folds: [p-map, p-sitetab, p-sites]}
       - {id: g-location, title: Localization, switch: true, folds: [p-cell, p-cond]}
-      - {id: g-disease, title: Disease associations and mutations, switch: true, folds: [p-dis, p-depmap, p-germline]}
+      - {id: g-disease, title: Disease associations and mutations, switch: true, folds: [p-dis, p-dependency, p-mutations, p-germline]}
       - {id: g-classes, title: Classes and pathways, switch: true, folds: [p-kinds]}
       - {id: g-binding, title: Interactions, folds: [p-cc, p-ix, p-na]}
       - {id: g-modifications, title: Other modifications, folds: [p-ptm]}
@@ -2213,7 +2213,7 @@ website:                  # the look and words of the website (ptmc web); layout
     headings:              # the cards front end's folds under labeled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
       - {id: h-ix, title: Interactions, folds: [p-cc, p-na]}
       - {id: h-sites, title: Sites and structure, folds: [p-pert, p-exp]}
-      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-depmap, p-germline, p-kinds, p-regions, p-cons]}
+      - {id: h-context, title: Protein context, switch: true, folds: [p-cond, p-dis, p-dependency, p-mutations, p-germline, p-kinds, p-regions, p-cons]}
       - {id: h-seq, title: Sequence features, folds: [p-cluster, p-ptm, p-seq]}
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
@@ -2330,7 +2330,7 @@ website:                  # the look and words of the website (ptmc web); layout
           evidence: {in_vivo: in vivo, in_cellulo: in cellulo, in_vitro: in vitro, frap: FRAP, colocalization: colocalization, mass_spectrometry: mass spectrometry,
                      emergent properties: emergent properties, others: other}
       dependency:
-        title: Cancer cell lines and tumors
+        title: Cancer cell dependency (DepMap)
         excluded: cancer
         table: dependency
         unit: cancer cell lines

@@ -839,7 +839,7 @@ in the module. Live parts are asked by accession and fall back to a line saying 
 | Card (fold) | Table(s) and their columns | What it shows |
 |---|---|---|
 | `location` (`p-cond`) | `hpa.table`: `location`, `main` (`1` or `true`), `reliability`; `condensates.members`: `condensate` (id), `score` (0 to `max_score`), `roles`, `evidence`, `pmids` (`; `-separated); `condensates.names` (a `lookup` with `name`, `condensate_type`) | its locations, main first, each linking to the proteins at it (`hpa.analysis`); `maps: true` draws it in `website.cell`'s drawings, a part colored when a map places it, and lists each map's compartments; every condensate membership, most confident first, with stars, role, evidence, papers (named live when `pubmed` gives the summary service's address) |
-| `dependency` (`p-depmap`) | `table`: `lines`, `dependent`, `median`, `common_essential`, `histogram` (bin counts, `; `-separated, over `histogram.from` to `.to`), `lineages` (`name|lines|mean`, `; `-separated) | how many lines depend on the gene, the histogram, the lineages; the marks' changes are `website.protein.card.changes` (the attributes and counts of the site card), listed per mark |
+| `dependency` (`p-dependency`, and `p-mutations` for the marks' changes; `p-depmap` opens `p-mutations`) | `table`: `lines`, `dependent`, `median`, `common_essential`, `histogram` (bin counts, `; `-separated, over `histogram.from` to `.to`), `lineages` (`name|lines|mean`, `; `-separated) | how many lines depend on the gene, the histogram, the lineages (`p-dependency`, "Cancer cell dependency (DepMap)"); the marks' changes are `website.protein.card.changes` (the attributes and counts of the site card), listed per mark (`p-mutations`, "Mutations in tumors and cell lines") |
 | `germline` (`p-germline`) | none of its own: `website.protein.card.variant_counts` (above), with the card's `title`, `sub`, `limit` and `note` | one section a source: the variants at the known sites, or at every candidate residue, with the count beside the protein's average per residue of that kind, the variants listed with their fields and a link |
 | `perturbations` (`p-pert`) | none of its own: `website.protein.card.calls` (its `tables`, `attributes`, `conditions`, `marks`, `words`) | a mark per call, a row per mark, a column per experiment the protein has |
 | `experiments` (`p-exp`) | `table`: `position`, `region`, `perturbation`, `system`, `species`, `readout`, `direction` (`decreased`, `increased`, `no_change`), `finding`, `figure`, `reference`, `doi`, `read_from`, `in_release` | the curated experiments on the protein |
@@ -854,7 +854,7 @@ questions of the card, that gather them; a term in none is "Other / unassigned")
 
 `website.protein.order` lists the folds, first to last, by id; a fold the list lacks follows the one before it, one the page
 lacks is skipped. Without it the folds keep the page's own order. `sites/methylarginine.yaml` lists the explorer's order:
-`p-map`, `p-cc`, `p-ix`, `p-na`, `p-sites`, `p-score`, `p-pert`, `p-exp`, `p-struct`, `p-cond`, `p-dis`, `p-depmap`, `p-kinds`,
+`p-map`, `p-cc`, `p-ix`, `p-na`, `p-sites`, `p-score`, `p-pert`, `p-exp`, `p-struct`, `p-cond`, `p-dis`, `p-dependency`, `p-mutations`, `p-kinds`,
 `p-regions`, `p-cons`, `p-cluster`, `p-ptm`, `p-seq`.
 `website.protein.groups` gathers the folds under a few headings: a list of `{id: g-..., title, folds: [p-...]}`. Each group is a
 fold of its own that holds its folds in `order`, and "Open all" and "Close all" sit above them. A group starts open when one of its

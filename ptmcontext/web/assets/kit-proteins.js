@@ -1104,7 +1104,8 @@
     'p-na',
     'p-cond',
     'p-dis',
-    'p-depmap',
+    'p-dependency',
+    'p-mutations',
     'p-pert',
     'p-exp',
     'p-cluster',
@@ -1131,6 +1132,7 @@
     ...Object.fromEntries(FOLDS.map((f) => [f, f])),
     ...NAME_TO_FOLD,
     'site-glance': 'p-sitetab', // the first site table sat under this name
+    'p-depmap': 'p-mutations', // the old card is two: the dependency card and this one
     'p-score': 'p-sitetab', // the list of counts is gone; the sentence that replaced it sits under the site table
     ...(D.legacy_routes || {}),
   };
