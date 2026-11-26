@@ -3,10 +3,11 @@
    folded with a one-line summary each. A tab hands over its own sites and sections; this module knows no mark, source or
    page by name. A module of the site kit: K.few.
      K.few.active(n)        true when the selection is small: some selection of at most K.few.MAX sites, or one too small to test
-     K.few.html({ title, note, sites, more })
+     K.few.html({ title, note, sites, more, lead, legend })
         sites: [{ key, head (html), facts: [{ text (html), to? (a section id of this site) }],
                   sections: [{ id, title, sum (a plain-text line), body (html; a section without one is left out) }] }]
-        more: how many selected sites are not listed */
+        more: how many selected sites are not listed; lead: html above the sites (a control); legend: html of one line
+        that holds for every site, shown once */
 (window.PTMC_MODULES ||= []).push((K) => {
   'use strict';
   const { D, esc, int, W } = K;
@@ -39,6 +40,8 @@
       (o.more
         ? `<p class="small muted"${o.note ? ` title="${esc(o.note)}"` : ''}>Showing the first ${int(sites.length)} of ${int(sites.length + o.more)}.</p>`
         : '') +
+      (o.lead || '') +
+      (o.legend ? `<p class="muted small">${o.legend}</p>` : '') +
       sites.map(siteHtml).join('') +
       '</section>'
     );

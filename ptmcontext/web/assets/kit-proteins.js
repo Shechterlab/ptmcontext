@@ -459,6 +459,8 @@
     // the listed protein a gene symbol (current, previous or alternative) names, else ''; never a free-text alias
     byName: (name) => P_SYM[String(name || '').toUpperCase()] || '',
     summaryAt,
+    loadUni,
+    uniLoaded: (acc) => !!UNI[acc]?.done,
     shownPos: (acc, pos) => shownPos(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), pos),
     siteLabel: (acc, pos) => siteOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null) || { acc }, pos),
     numbering: (acc) => numOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
@@ -489,11 +491,11 @@
   // ---- the site card: one mark, everything the site knows about it, from its attributes and tables ----------------
   const CC = D.protein_view?.card || {},
     TC = D.protein_view?.table || null;
-  const cardCtx = (p, rec, m) => ({
+  const cardCtx = (p, rec, m, tb = PV.tb) => ({
     p,
     rec,
     m,
-    tb: PV.tb || {},
+    tb: tb || {},
     acc: p.acc,
     pos: m[0],
     gene: p.gene || p.acc,
@@ -1244,28 +1246,44 @@
     return r ? r[f.column] : '';
   };
   // ---- the summary items of one site (the site card's own, through K.card.summaryItems), read by the site table (kit-sitetable.js) ----
-  let uniIdx = null;
+  const UNI = {}; // accession -> UniProt's answer, for the proteins of a small selection's cards (the open protein's is PV.uniJson)
+  const uniOf = (acc) => (acc === PV.acc && PV.uniJson) || UNI[acc]?.j || null;
+  function loadUni(acc) {
+    return ((UNI[acc] ||= {}).p ||= getJson(`https://rest.uniprot.org/uniprotkb/${acc}.json`).then(
+      (j) => ((UNI[acc].done = true), (UNI[acc].j = j)),
+      () => ((UNI[acc].done = true), null)
+    ));
+  }
   // the UniProt "Modified residue" features by position, built once per UniProt answer
-  const uniAtPos = () => {
-    if (uniIdx?.j !== PV.uniJson) {
+  const uniIdx = new WeakMap();
+  const uniAtPos = (j) => {
+    if (!j) return new Map();
+    if (!uniIdx.has(j)) {
       const by = new Map();
-      for (const f of PV.uniJson?.features || []) {
+      for (const f of j.features || []) {
         const a = f.location?.start?.value;
         if (f.type === 'Modified residue' && a != null && a === f.location?.end?.value) {
           if (!by.has(a)) by.set(a, []);
           by.get(a).push(f);
         }
       }
-      uniIdx = { j: PV.uniJson, by };
+      uniIdx.set(j, by);
     }
-    return uniIdx.by;
+    return uniIdx.get(j);
   };
   // the summary items (writer, variants, conservation) of one site of the open protein, or null until its tables are in
-  function summaryAt(acc, pos) {
-    const p = byAcc[acc],
-      m = PV.acc === acc && PV.rec?.marks.find((x) => x[0] === pos);
+  // For a protein that is not open (a small selection's cards), the caller gives the mark's row and the protein's tables;
+  // its UniProt entry is read once (loadUni) and the items are the same.
+  function summaryAt(acc, pos, other) {
+    const p = byAcc[acc];
+    if (other) {
+      if (!p || !other.tb || !other.m) return null;
+      if (!uniOf(acc)) loadUni(acc);
+      return K.card.summaryItems(cardCtx(p, {}, other.m, other.tb), { uni: uniAtPos(uniOf(acc)).get(pos) || [] });
+    }
+    const m = PV.acc === acc && PV.rec?.marks.find((x) => x[0] === pos);
     if (!p || !m || !PV.tb) return null;
-    return K.card.summaryItems(cardCtx(p, PV.rec, m), { uni: uniAtPos().get(pos) || [] });
+    return K.card.summaryItems(cardCtx(p, PV.rec, m), { uni: uniAtPos(PV.uniJson).get(pos) || [] });
   }
   (K.afterUni ||= []).push(() => K.siteTable?.refresh());
 

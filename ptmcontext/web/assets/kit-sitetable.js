@@ -42,6 +42,20 @@
     return tb;
   };
 
+  // the site's writers as the site card's summary names them; '' when it has none, null while its tables are not read
+  const writerAt = (acc, pos, vtb, m) => {
+    if (!K.prot.summaryAt) return null;
+    const other = m && vtb ? { m, tb: vtb } : null;
+    if (other && !K.prot.uniLoaded(acc)) {
+      K.prot.loadUni(acc).then(() => asked && again()); // the cards wait for UniProt's names, as the table's cells do
+      return null;
+    }
+    return K.prot.summaryAt(acc, pos, other)?.writer?.[1] ?? (vtb ? '' : null);
+  };
+  // the chip that leads the sites with a writer, for the table and for a small selection's cards
+  const writerChip = () =>
+    `<div class="seg" role="group" aria-label="Sites with a ${esc(WRITER)}"><button type="button" data-stwriter aria-pressed="${ST.writerFirst}">With a ${esc(WRITER)}</button></div>`;
+
   // ---- the rows ------------------------------------------------------------------------------------------------------------------
   const disorderKinds = new Set((D.tracks || []).filter((t) => t.style === 'disorder').map((t) => t.kind));
   const inDisorder = (rec, pos) => (rec.units || []).some((u) => disorderKinds.has(u[0]) && pos >= u[1] && pos <= u[2]);
@@ -94,7 +108,7 @@
           src,
           vars: vtb ? K.card.vc.siteVariants(vtb, pos) : null, // the site card's counts
           names,
-          writer: K.prot.summaryAt ? (K.prot.summaryAt(acc, pos)?.writer?.[1] ?? (vtb ? '' : null)) : null,
+          writer: writerAt(acc, pos, vtb),
           hot: loaded ? SRC.filter((s) => src[s.id]?.hot).map((s) => ({ s, tip: src[s.id].hot })) : null,
           dis: inDisorder(rec, pos),
           am: K.prot.am?.(acc, pos),
@@ -394,9 +408,7 @@
           `q: corrected for the sites tested; a ring is q below ${RING} with more than expected${
             SRC.some((s) => s.lower_tail) ? ', a dashed ring with fewer' : ''
           }. Click a column to sort.</p>`;
-    const withWriter = M.rows.some((r) => r.writer)
-      ? `<div class="seg" role="group" aria-label="Sites with a ${esc(WRITER)}"><button type="button" data-stwriter aria-pressed="${ST.writerFirst}">With a ${esc(WRITER)}</button></div>`
-      : '';
+    const withWriter = M.rows.some((r) => r.writer) ? writerChip() : '';
     return (
       `<div class="st-bar">${K.prop.hyperSwitch('Samples')}${withWriter}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'stexp', 'the table of sites', null)}</div>` +
       note +
@@ -449,7 +461,7 @@
     const P = K.few.picked();
     if (!P || !K.few.active(P.all)) return '';
     asked = true;
-    const sites = P.list.map((m) => {
+    const list = P.list.map((m) => {
       const pi = m[0],
         pos = m[1],
         acc = D.proteins[pi][0];
@@ -477,10 +489,9 @@
           .map(
             ({ x, c }) => `<div><span class="muted">${esc(x.label)}</span> ${srcCell(x, { src: { [x.id]: c } })}</div>`
           )
-          .join('')}</div><p class="muted small">k: ${esc(
-          SRC.map(kName).join(', ')
-        )} with a change at the site. O/E: observed/expected, the observed changes over those expected from the residue’s codon. A ring means q below ${RING}.</p>`;
+          .join('')}</div>`;
       return {
+        writer: writerAt(acc, pos, vtb, m),
         key: `${pi}-${pos}`,
         head: `${K.few.siteLink(pi, pos)} <span class="muted">${esc(D.proteins[pi][2] || '')}</span>`,
         facts,
@@ -497,7 +508,15 @@
               ],
       };
     });
+    const withWriter = mode !== 'variants' && list.some((s) => s.writer);
+    if (withWriter && ST.writerFirst) list.sort((a, b) => !!b.writer - !!a.writer); // stable: the position order stays within each group
+    const sites = list.map(({ writer, ...s }) => s);
     return K.few.html({
+      lead: withWriter ? writerChip() : '',
+      legend:
+        mode !== 'variants' && sites.some((s) => s.sections.length)
+          ? `k: ${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected, the observed changes over those expected from the residue’s codon. A ring means q below ${RING}.`
+          : '',
       title: `Your selected ${P.all === 1 ? W.mark : W.marks}: ${mode === 'variants' ? 'variants' : 'changes and variants'}`,
       note: `Each ${W.mark}'s variants are counted by its site card; the link opens the card at its variants.`,
       sites,
@@ -522,7 +541,8 @@
       '[data-stwriter]',
       () => {
         ST.writerFirst = !ST.writerFirst;
-        refresh();
+        if (cur()) refresh();
+        else again();
         document.querySelector('[data-stwriter]')?.focus({ preventScroll: true });
       },
     ],
