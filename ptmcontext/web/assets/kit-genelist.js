@@ -103,7 +103,7 @@
     const ans = SITE_Q.map((id) => K.selAnswer?.(id)).filter(Boolean);
     return (
       head +
-      `<p class="muted small">Each ${esc(W.mark)} of these proteins against the other ${esc(W.residues)} of the same proteins.</p>` +
+      `<p class="muted small">Against other ${esc(W.residues)} of these proteins.</p>` +
       (ans.length
         ? `<ul class="gl-sites">${ans
             .map((x) => `<li><a href="${esc(K.link('overview', x.id))}">${esc(x.title)}</a>: ${x.line}</li>`)
@@ -171,8 +171,8 @@
     ].join('');
     const nT = rows.length;
     const table =
-      `<div class="tbl-card"><table class="tbl gl-tbl"><caption class="vh">Sets shared by your list: ` +
-      `one-sided hypergeometric test within each source’s ${esc(W.marked)} proteins (vs the ${int(D.counts.proteins)} ${esc(W.marked)} proteins)</caption><thead><tr>` +
+      `<div class="tbl-card"><table class="tbl gl-tbl"><caption class="vh">Sets shared by your list ` +
+      `(one-sided hypergeometric; background ${int(D.counts.proteins)} ${esc(W.marked)} proteins)</caption><thead><tr>` +
       (`<th scope="col">Set</th><th scope="col">Kind</th><th scope="col" class="num">In list</th><th scope="col" ` +
         `class="num">In set / background (${esc(W.marked)})</th><th scope="col" class="num">Fold</th>`) +
       (`<th scope="col" class="num">p (one-sided hypergeometric)</th><th scope="col" class="num">q ` +
