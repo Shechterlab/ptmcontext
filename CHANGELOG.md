@@ -318,7 +318,7 @@
 > Overview tiles are small forest plots that show the fold.
 > A row counts as more or less often at q of 0.05 or less and a fold of at least 1.1.
 > Cell maps show the fold in each map.
-> The site switcher keeps the open protein. American spelling throughout.
+> The site switcher keeps the open protein.
 
 What changed for readers:
 
@@ -590,7 +590,6 @@ and the link audit of each site side by side.
 > Methyllysine and phosphosite explorers read PTM_Pipeline v1.5.0.
 > Statistic rows say "each protein analyzed separately".
 > Protein map labels wrap instead of ending in "...".
-> Citation and license notes state only the source, the citation and the license.
 
 What changed for readers of the three sites (methylarginine, methyllysine, phosphosites):
 

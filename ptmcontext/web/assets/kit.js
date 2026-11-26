@@ -782,8 +782,7 @@
     const nf = K.sel ? K.sel.nFilters() : 0,
       fbtn = K.sel
         ? `<button type="button" class="btn small filter-btn${nf ? ' on' : ''}" data-rail-open="filters" ` +
-          `title="Open the filters: narrow every page to the ${esc(W.marks)} that match"><span aria-hidden="true">` +
-          `⏚</span> ${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}</button>`
+          `title="Open the filters: narrow every page to the ${esc(W.marks)} that match">${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}</button>`
         : '';
     const hs = K.hl?.summary?.() || ''; // "Highlighted: FUS, TAF15 +1 ×", only while something is highlighted
     $('#scope').innerHTML =
@@ -5300,7 +5299,7 @@
   // (K.sel.prewarm, which gives the browser back between questions), then the page. A draw asked meanwhile waits for it.
   let drawnSel = null,
     holding = false;
-  function busy(on, done, total) {
+  function busy(on) {
     let el = document.getElementById('sel-busy');
     if (!on) {
       if (el) el.hidden = true;
@@ -5315,10 +5314,7 @@
       el.setAttribute('aria-live', 'polite');
       document.body.appendChild(el);
     }
-    const n = K.sel.nMarks();
-    el.innerHTML =
-      `<span class="spin" aria-hidden="true"></span>Updating: testing ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} ` +
-      `again${total ? ` (${int(done)} of ${int(total)} questions)` : '…'}`;
+    el.innerHTML = `<span class="spin" aria-hidden="true"></span>Updating…`;
     el.hidden = false;
     document.body.setAttribute('aria-busy', 'true');
   }
@@ -6059,9 +6055,9 @@
     if (sel && K.sel?.nMarks) {
       const on = K.sel.active?.();
       sel.innerHTML = K.sel.loading?.()
-        ? `<span aria-hidden="true">⏚</span> <span class="dock-sel-w">Loading…</span>` +
+        ? `<span class="dock-sel-w">Loading…</span>` +
           (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '')
-        : `<span aria-hidden="true">⏚</span> <b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)}</span><span class="dock-sel-p"> · <b>${int(
+        : `Filters <b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)}</span><span class="dock-sel-p"> · <b>${int(
             K.sel.nProteins()
           )}</b> ${K.sel.nProteins() === 1 ? 'protein' : 'proteins'}</span>` +
           (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');

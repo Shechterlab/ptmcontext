@@ -22,7 +22,7 @@ def test_the_site_scan_has_no_time_limit_that_ends_in_none_and_reads_listed_entr
 def test_the_small_selection_cards_share_the_writer_chip_and_say_the_legend_once():
     st, few = src('kit-sitetable.js'), src('kit-few.js')
     assert st.count('function writerChip') + st.count('const writerChip') == 1 and st.count('writerChip()') == 2
-    assert st.count('Ring: q < ${RING}') == 2 and st.count('A ring means') == 0  # the cards' single legend
+    assert st.count('Ring: q < ${RING}') == 3 and st.count('A ring means') == 0  # the cards' single legend
     assert 'o.legend' in few and 'o.lead' in few
     assert 'loadUni' in src('kit-proteins.js')
 

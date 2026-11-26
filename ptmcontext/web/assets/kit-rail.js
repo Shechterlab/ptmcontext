@@ -942,7 +942,7 @@
       );
     }
     const nf = K.sel.nFilters();
-    fab.innerHTML = `⏚ ${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}`;
+    fab.innerHTML = `${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}`;
     fab.setAttribute('aria-label', `Filters${nf ? `, ${nf} in use` : ''}`);
     document.body.classList.toggle('rail-open', open);
     if (open) {
@@ -967,7 +967,7 @@
       (secs
         ? `<button type="button" data-rail-tab="sections" aria-pressed="${tab === 'sections'}">☰ Sections</button>`
         : '') +
-      `<button type="button" data-rail-tab="filters" aria-pressed="${tab === 'filters'}">⏚ ${K.ACT.filters}${
+      `<button type="button" data-rail-tab="filters" aria-pressed="${tab === 'filters'}">${K.ACT.filters}${
         Object.keys(S.f).length ? ` <span class="badge">${Object.keys(S.f).length}</span>` : ''
       }</button></span>` +
       (innerWidth >= PIN_MIN

@@ -285,28 +285,23 @@
       appChanges() +
       sec(
         'h-search',
-        `<p>The search box takes a protein (gene name, UniProt accession or entry name), a list of proteins separated by ` +
-          `spaces or commas, one ${esc(W.mark)} as a gene and a position${
-            EX.find(isSite) ? ` (<span class="mono">${esc(EX.find(isSite))}</span>)` : ''
-          }, or a term written <span class="mono">key:value</span>${
+        `<p>Protein: gene, UniProt accession or entry name.</p>` +
+          `<p>List: separated by spaces or commas.</p>` +
+          `<p>Site: gene and position${EX.find(isSite) ? ` (<span class="mono">${esc(EX.find(isSite))}</span>)` : ''}.</p>` +
+          `<p>Field: <span class="mono">key:value</span>${
             terms.length
               ? ` (${terms
                   .map((t) => `<button type="button" ` + `class="linkish mono" data-try="${esc(t)}">${esc(t)}</button>`)
                   .join(', ')})`
               : ''
-          }. Separate values with <span class="mono">|</span> to match any; several terms must all hold. Naming one ` +
-          `protein opens its page. The line under the box counts what matches. ${mlink('search', 'Methods › Sources')} lists every key.</p>` +
-          (D.term_index
-            ? `<p>A pathway, GO term, protein class, condensate or disease can be typed by name or ID. The matching terms ` +
-              `are listed by source with their number of ${esc(W.marked)} proteins, and choosing one filters to those proteins.</p>`
-            : '')
+          }. Separate values with <span class="mono">|</span> to match any; several terms must all hold. ` +
+          `${mlink('search', 'Methods › Sources')} lists every key.</p>` +
+          (D.term_index ? `<p>Pathway, GO term, class, condensate or disease: by name or ID.</p>` : '')
       ) +
       sec(
         'h-filters',
-        `<p>The sidebar (☰ or Filters) holds one button per class or value, with its count of ${esc(W.marks)}. A ` +
-          `${esc(W.mark)} stays when it matches the search and every filter group. Every page then shows what matches, and the ` +
-          `Overview tests its questions again on it. Clicking a row in a tile does the same as ticking its button. ` +
-          `Clear all removes the selection.</p>`
+        `<p>Sidebar (☰ or Filters): one button per class or value, with its count.</p>` +
+          `<p>A ${esc(W.mark)} stays when it matches the search and every filter group.</p>`
       ) +
       sec(
         'h-read',
@@ -314,7 +309,7 @@
           `<p>Dot and number: fold, on a log scale.</p>` +
           `<p>Line under a row: odds ratio, 95% interval, q.</p>` +
           `<p>Hover or tap a row for the counts.</p>` +
-          (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and an odds ratio (or fold, where the test gives one) of at least 1.1×</li><li><i ` +
+          (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05, odds ratio or fold ≥ 1.1×</li><li><i ` +
             `class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: q ≤ 0.05, but ` +
             `within 1.1×</li><li><i class="kd ns"></i> no difference (q > 0.05), or too few to test</li></ul>`) +
           `<p>The Test switch applies to residue questions only. ${mlink('tests', 'Methods › Tests')} describes each test.</p>`
@@ -331,14 +326,11 @@
             'q',
             'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and an odds ratio (or fold, where the test gives one) of at least 1.1×.'
           ) +
-          term(
-            'Effect',
-            'The size of a difference between two shares, used on the cell maps and written effect +0.6: 0.2 is small, 0.5 medium and 0.8 large (Cohen’s h).'
-          ) +
+          term('Effect', 'Difference between two shares (Cohen’s h); 0.2 small, 0.5 medium, 0.8 large.') +
           (D.propensity
             ? term(
                 'Observed/expected',
-                `Observed changes over expected changes (observed/expected), from the residue's codons and base-change rates. 1 is as expected, above 1 more, below 1 fewer.`
+                'Observed over expected changes, from codons and base-change rates. 1 = as expected.'
               )
             : '') +
           term(
@@ -346,23 +338,15 @@
             `Each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein.`
           ) +
           term('Across all proteins', `All the ${esc(W.residues)} of all the proteins are compared as one group.`) +
-          (SETQ
-            ? term(
-                'Abundance deciles',
-                'Proteins sorted by measured abundance into ten equal groups. The test compares proteins only within a group, so abundant proteins do not drive the result. The dots on a row are the test within each group.'
-              )
-            : '') +
-          term(
-            'Not robust (badge)',
-            'The result disappears or reverses when the question is asked again with one change, such as only high-confidence sites. The badge names the control.'
-          ) +
+          (SETQ ? term('Abundance deciles', 'Ten equal groups by measured abundance; test within each group.') : '') +
+          term('Not robust (badge)', 'Result disappears or reverses under the control named on the badge.') +
           term(
             'Controls',
             `The same question repeated with one change each. ${mlink('controls', 'Methods › Controls')} lists them.`
           ) +
           term(
             'AlphaMissense',
-            `A model's score from 0 to 1 for how likely a missense change is to be harmful (0.564 and above: likely pathogenic). Cards and the 3D view show a residue's mean over its substitutions. It is less reliable in disordered regions (<a href="https://doi.org/10.1186/s12864-025-11534-9" target="_blank" rel="noopener">Luppino et al., BMC Genomics 2025</a>), and a card or the 3D view says so when a site lies in one.`
+            `A model's score from 0 to 1 for how likely a missense change is to be harmful (0.564 and above: likely pathogenic). Cards and the 3D view show a residue's mean over its substitutions. Less reliable in disordered regions (<a href="https://doi.org/10.1186/s12864-025-11534-9" target="_blank" rel="noopener">Luppino et al., BMC Genomics 2025</a>).`
           ) +
           glossaryTerms()
             .map(([t, d]) => term(esc(t), esc(cap(d))))
@@ -373,26 +357,21 @@
       (D.propensity
         ? sec(
             'h-mutations',
-            `<p>On a protein's cancer and germline cards, each source is drawn along the protein. ` +
-              `Stick height is the count: tumors, cell lines or variants at the residue. Circle size is observed/expected, the ` +
-              `observed changes over those expected from the residue's codon, among the protein's residues of the same type. A ring ` +
-              `means q is below 0.05. Hover or tap a circle for the numbers. ClinVar's observed/expected is descriptive, with no ring, because its ` +
-              `variants reflect clinical testing more than how often residues change. A protein with no matching coding sequence has no q, and ` +
-              `its observed/expected assumes every residue of the type is equally likely.</p>` +
-              `<p>The site card has one line with the site's observed/expected and q in each source. ` +
+            `<p>Protein cards: each source drawn along the protein. Stick height: count. Circle size: observed/expected. ` +
+              `Ring: q < 0.05. ClinVar's observed/expected has no ring. A protein with no matching coding sequence has no q.</p>` +
+              `<p>The site card has one line with the site's observed/expected and q in each source.</p>` +
               (K.views.mutations
-                ? `The <a href="${esc(K.link('mutations'))}">Disease variants</a> page shows the sites of your selection (every ${esc(W.mark)} when nothing is selected) in three views and one chart.</p><ul>` +
-                  `<li><b>Ranked sites</b> lists the sites for tumors, cell lines and gnomAD, ranked by p. Tumors and cell lines rank sites with more changes than expected. gnomAD ranks sites with fewer inherited variants than expected. Each table shows the top 20 whether or not q is below 0.05, and its header counts the sites that are. A row at or above 0.05 is lighter and shows its q. Show opens the sites with q below 0.05 (at least 100 rows). The download has every tested site. A protein dominated by a few enriched residues (TP53 R273, R248 and R175, for example) carries a note, because the expected count at its other residues is inflated.</li>` +
-                  `<li><b>Cancer: tumors</b> is an oncoprint. It shows the sites with the most changed TCGA tumors against the tumors that carry them, with each tumor's coding calls per Mb above it.</li>` +
+                ? `<p><a href="${esc(K.link('mutations'))}">Disease variants</a>: sites of your selection (every ${esc(W.mark)} when nothing is selected).</p><ul>` +
+                  `<li><b>Ranked sites</b>: tumors, cell lines and gnomAD, ranked by p; top 20 per table, the header counts sites with q below 0.05. The download has every tested site.</li>` +
+                  `<li><b>Cancer: tumors</b>: oncoprint of the sites with the most changed TCGA tumors, with coding calls per Mb above.</li>` +
                   (D.propensity.cv
-                    ? `<li><b>ClinVar pathogenic</b> counts ClinVar pathogenic and likely pathogenic variants by disease family, one row per site and one column per family. A cell is the number of variants. Click it to list them with their conditions, review stars and ClinVar links. A variant counts once in each of its families. Families come from the release's name rules for its DisGeNET disease families, applied to ClinVar condition names, so a few conditions can land in a broader family. A cell's list shows ClinVar's own condition names. A name that no rule matches is listed as Other / unassigned, and a variant with no condition is not shown. The review filter keeps variants with at least 1 or 2 ClinVar review stars. The counts reflect clinical testing and are not tested against expectation.</li>`
+                    ? `<li><b>ClinVar pathogenic</b>: pathogenic and likely pathogenic variants by disease family, a row per site and a column per family. Click a cell to list its variants. A variant counts once in each of its families. A condition no rule matches is Other / unassigned. Counts are not tested against expectation.</li>`
                     : '') +
-                  `<li><b>Show all sites as a chart</b> ranks every site from most above to most below the expected count (signed −log10 p, up for more changes than expected). A solid ring marks q below 0.05 for more, a dashed ring for fewer. Highlight genes takes a pasted list of genes and outlines their sites. The default labels skip sites of flagged proteins.</li>` +
-                  `<li><b>Paste genes</b>, UniProt accessions or sites, one per line or separated by commas or spaces. A gene or accession adds all its ${esc(W.marks)}, and a site adds that site. The box says how many genes and sites it read and which names it did not find. For each source the page tests the whole list: the changes at the listed sites against the expected count, summed over their proteins. This is the release's site-set test with your sites in place of a site set. The p is the exact tail of a sum of binomials, one per protein and residue type, so it can go below the release's smallest p of 1e−4. A table then lists each site with its own p and a q that is Benjamini–Hochberg across the sites of your list, not across the release. q is across the list's sites only. A protein flagged as dominated by a few enriched residues has an inflated expected count at its other residues, so those sites can look depleted. Lists of up to 5,000 sites work. The link holds the list, and the download has every site.</li></ul><p>`
+                  `<li><b>Show all sites as a chart</b>: sites ranked by signed −log10 p. Ring: q < 0.05; dashed: fewer than expected. Highlight genes outlines the sites of a pasted list.</li>` +
+                  `<li><b>Paste genes</b>, UniProt accessions or sites, one per line or separated by commas or spaces. The list is tested as a whole for each source; q is across the list's sites only. Up to 5,000 sites.</li></ul>`
                 : '') +
-              `Hypermutated tumors (more than ${D.propensity.hypermutated.per_mb} coding calls per Mb) are left out unless you choose ` +
-              `With hypermutated. ` +
-              `${mlink('propensity', 'Methods › Changes vs expected')} has the test and its sources.</p>`
+              `<p>Hypermutated tumors (more than ${D.propensity.hypermutated.per_mb} coding calls per Mb) are left out unless you choose ` +
+              `With hypermutated. ${mlink('propensity', 'Methods › Changes vs expected')} has the test and its sources.</p>`
           )
         : '') +
       '</div>'
