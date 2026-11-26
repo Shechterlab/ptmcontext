@@ -1325,7 +1325,10 @@
           const sd = K.sel?.pdata(p.i),
             ps = sd?.protein_sets?.[f.analysis];
           if (!ps) return '';
-          const names = ps.sets.map(([s]) => s).filter((s) => K.sel.setHas(f.analysis, s, p.i));
+          const want = f.branches ? K.branchClasses(f.analysis) : null,
+            names = ps.sets
+              .map(([s]) => s)
+              .filter((s) => (!want || want.includes(s)) && K.sel.setHas(f.analysis, s, p.i));
           if (!names.length) return '';
           const best = f.best ? bestRow(f.analysis, names) : null,
             setLab = (s) => (A[f.analysis].labels || {})[s] || s;

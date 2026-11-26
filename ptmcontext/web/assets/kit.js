@@ -1568,6 +1568,8 @@
   const cardHas = (c, aid) =>
     c.analysis === aid || (c.rows_from || []).includes(aid) || (c.views || []).some((v) => v.analysis === aid);
   const cardOf = (aid) => allCards().find((c) => c.analysis === aid) || {};
+  // the classes an Overview card lists for a question (card.classes): the protein page lists a protein's own among them
+  const branchClasses = (aid) => allCards().find((c) => c.analysis === aid && c.classes)?.classes || null;
   // a row's evidence: its reading's q (a set's test within abundance deciles where it has one)
   const qOf = (r) => r.q ?? 1;
   const byOrder = (card) =>
@@ -5258,6 +5260,7 @@
     fkeyOf,
     allCards,
     cardOf,
+    branchClasses,
     byOrder,
     methodLink,
     setWords,

@@ -1489,11 +1489,18 @@
   }
 
   // ---- the live parts of the Disease card: UniProt's diseases, Open Targets' scores -----------------------------------
+  // the protein's disease classes: its Disease Ontology branches (the card's `branches`), else its families
   const famNames = (c, p) => {
-    const aid = c.term_groups?.families?.[0],
+    const aid = c.branches || c.term_groups?.families?.[0],
+      want = c.branches ? K.branchClasses(aid) : null,
       sd = K.sel.pdata(p.i),
       ps = sd?.protein_sets?.[aid];
-    return ps ? ps.sets.map((x) => x[0]).filter((s) => K.sel.setHas(aid, s, p.i)) : [];
+    return ps
+      ? ps.sets
+          .map((x) => x[0])
+          .filter((s) => (!want || want.includes(s)) && K.sel.setHas(aid, s, p.i))
+          .map((s) => (c.branches ? (D.analyses.find((a) => a.id === aid)?.labels || {})[s] || s : s))
+      : [];
   };
   function liveBuild(p, rec, tb, el) {
     const c = LIVE[+el.dataset.pcLive],
@@ -1595,7 +1602,13 @@
                 )
               : 'none curated in UniProt'
             : '',
-          K.sel.pdata(p.i) ? (fam.length ? 'families: ' + sumList(fam, 2) : 'in no disease family') : '',
+          K.sel.pdata(p.i)
+            ? fam.length
+              ? (c.branches ? 'branches: ' : 'families: ') + sumList(fam, 2)
+              : c.branches
+                ? 'in no Disease Ontology branch'
+                : 'in no disease family'
+            : '',
         ]
           .filter(Boolean)
           .join(' · ') ||
@@ -1605,7 +1618,13 @@
     if (fold0?.id && K.sel.pdata(p.i))
       K.pfolds?.set(
         fold0.id,
-        fam.length ? K.pfolds.bigN([[int(fam.length), fam.length === 1 ? 'disease family' : 'disease families']]) : ''
+        fam.length
+          ? K.pfolds.bigN([
+              c.branches
+                ? [int(fam.length), fam.length === 1 ? 'disease branch' : 'disease branches']
+                : [int(fam.length), fam.length === 1 ? 'disease family' : 'disease families'],
+            ])
+          : ''
       );
     return { html, wait: u === undefined || (ot && u && u.ensg[0] && OT[u.ensg[0]] === undefined) };
   }

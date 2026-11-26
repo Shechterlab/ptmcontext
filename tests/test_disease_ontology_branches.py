@@ -48,3 +48,24 @@ def test_a_card_with_classes_draws_exactly_those_rows():
     src = (ROOT / 'ptmcontext/web/assets/kit.js').read_text()
     assert 'function pickListed(rows, card)' in src
     assert 'const choose = (rs) => (card.classes ? pickListed(rs, card) : pick(rs, max, card));' in src
+
+
+@pytest.mark.parametrize('name', SITES)
+def test_the_protein_page_lists_the_proteins_branches_and_keeps_disgenet_behind_a_heading(name):
+    _, site = _card(name)
+    card = next(c for c in site['website']['protein']['sets'] if c['id'] == 'p-dis')
+    assert card['branches'] == 'disease_ontology'
+    assert set(card['behind']['analyses']) == {'disease_term', 'disease_family', 'disease_family_additional'}
+    assert set(card['behind']['analyses']) <= set(card['analyses'])
+    fact = next(f for f in site['website']['protein']['facts'] if f.get('analysis') == 'disease_ontology')
+    assert fact['branches'] is True
+    assert site['website']['protein']['context']['p-dis'] == ['disease_ontology']
+
+
+def test_compare_lists_branches_of_the_overview_list():
+    land = yaml.safe_load((ROOT / 'sites/landing.yml').read_text())
+    grp = next(g for g in land['compare']['groups'] if g['id'] == 'disease')
+    (q,) = grp['questions']
+    assert q['analysis'] == 'disease_ontology'
+    ids = [c['class'] for c in q['classes']]
+    assert len(ids) == len(set(ids)) and set(ids) <= set(_card('methylarginine')[0]['classes'])

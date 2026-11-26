@@ -2162,7 +2162,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: h-seq, title: Sequence features, folds: [p-cluster, p-ptm, p-seq]}
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
-      p-dis: [disease_family]
+      p-dis: [disease_ontology]
     open: [p-map]   # the map opens, every other fold is shut
     map:
       combined_marks: {default: folded}   # one "All modifications" block (a thin lane for each modification, the site's own first); the rows of the context marks fold behind it
@@ -2292,13 +2292,15 @@ website:                  # the look and words of the website (ptmc web); layout
         summary: "UniProt, Open Targets, Disease Ontology, DisGeNET terms and disease families"
         analyses: [disease_ontology, disease_term, disease_family, disease_family_additional]
         term_groups: {terms: disease_term, families: [disease_family, disease_family_additional]}
+        branches: disease_ontology
+        behind: {label: "DisGeNET terms and families", analyses: [disease_term, disease_family, disease_family_additional]}
         live: {uniprot: true, open_targets: {graphql: "https://api.platform.opentargets.org/api/v4/graphql", size: 12, page: "https://platform.opentargets.org/target/{id}/associations"}}
     facts:                 # the headline cards under the map: each opens its section, with a hover
       - {count: marks, of: candidates, label: "{residues} methylated", kind: Sites, glyph: pins, opens: p-seq}
       - {analysis: motif, best: true, label: "in {class} motifs", kind: Sequence motif, glyph: letters, opens: p-score}
       - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
-      - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
+      - {analysis: disease_ontology, branches: true, label: Disease Ontology branches, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
     card:                  # the site card: its blocks, each reading a table above (a block without its data is absent)
       hide_questions: [cancer_change, clinvar_plp, gnomad_variant]   # their counts are the blocks above (Changes, Germline variants)
       primary_questions: [motif, disorder, domain_class, idr_charge]   # the rest are behind "Other questions"

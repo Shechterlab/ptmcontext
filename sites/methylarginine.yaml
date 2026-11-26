@@ -2601,7 +2601,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {id: h-seq, title: Sequence features, folds: [p-cluster, p-ptm, p-seq]}
     context:               # the sets a fold lists for the protein, each tested across the dataset (the Dataset context view)
       p-cond: [condensate_proteome, hpa_location]
-      p-dis: [disease_family]
+      p-dis: [disease_ontology]
     open: [p-map]   # the map opens, every other fold is shut
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
@@ -2768,6 +2768,8 @@ website:                  # the look and words of the website (ptmc web); layout
         summary: "UniProt, Open Targets, Disease Ontology, DisGeNET terms and disease families"
         analyses: [disease_ontology, disease_term, disease_family, disease_family_additional]
         term_groups: {terms: disease_term, families: [disease_family, disease_family_additional]}
+        branches: disease_ontology
+        behind: {label: "DisGeNET terms and families", analyses: [disease_term, disease_family, disease_family_additional]}
         live: {uniprot: true, open_targets: {graphql: "https://api.platform.opentargets.org/api/v4/graphql", size: 12, page: "https://platform.opentargets.org/target/{id}/associations"}}
     genes:                 # one accession several genes encode: a short name for labels and titles, the full list on the page, every gene searchable
       input: uniprot_entries
@@ -2793,7 +2795,7 @@ website:                  # the look and words of the website (ptmc web); layout
          label: in RNA-bound fragments or peptides, kind: "In cells; not a direct contact", glyph: squiggle, opens: p-sites,
          tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RNA-contact peptide (RBR-ID). This shows where RNA binds in cells, not a structural contact. The RNA and DNA interactions section counts sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
-      - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
+      - {analysis: disease_ontology, branches: true, label: Disease Ontology branches, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
     card:                  # the site card: its blocks, each reading an attribute or a table above (a block without its data is absent)
       labels: {states: Methylation state, calls: PRMT inhibitors, knockouts and knockdowns, changes: In cancers, reported: Reported by}
       hide: [perturbation, nucleic_acid, nucleic_acid_type, n_studies, partner_class]   # attributes the blocks show in full (calls, bound sequences; the study count the Reported by list gives; the partner classes the Writer and reader block gives)
