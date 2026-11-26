@@ -38,6 +38,110 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
     - "Not tested: no test, or too few."
     - "Download gives the rows as a table (TSV) or a figure (SVG, PNG, PDF), with each explorer's data release and DOI."
   groups:
+    - id: cell
+      title: Cell compartments
+      questions:
+        - id: hpa
+          analysis: hpa_location
+          title: Human Protein Atlas locations
+          classes:
+            - {class: Nucleoplasm, label: "Nucleoplasm"}
+            - {class: Nucleoli, label: "Nucleoli"}
+            - {class: Nuclear speckles, label: "Nuclear speckles"}
+            - {class: Nuclear bodies, label: "Nuclear bodies"}
+            - {class: Cytosol, label: "Cytosol"}
+            - {class: Mitochondria, label: "Mitochondria"}
+            - {class: Endoplasmic reticulum, label: "Endoplasmic reticulum"}
+            - {class: Golgi apparatus, label: "Golgi apparatus"}
+            - {class: Plasma membrane, label: "Plasma membrane"}
+        - id: hcm
+          analysis: cell_hcm_compartment
+          title: Human Cell Map compartments
+          classes:
+            - {class: nucleolus, label: "Nucleolus"}
+            - {class: nuclear body, label: "Nuclear body"}
+            - {class: chromatin, label: "Chromatin"}
+            - {class: cytoplasmic ribonucleoprotein granule, label: "Cytoplasmic RNP granule"}
+            - {class: plasma membrane, label: "Plasma membrane"}
+    - id: disease
+      title: Disease Ontology branches
+      questions:
+        - id: disease
+          analysis: disease_ontology
+          title: Disease classes (Disease Ontology)
+          classes:
+            - {class: "DOID:14566", label: "disease of cellular proliferation"}
+            - {class: "DOID:0014667", label: "disease of metabolism"}
+            - {class: "DOID:630", label: "genetic disease"}
+            - {class: "DOID:150", label: "disease of mental health"}
+            - {class: "DOID:0050117", label: "disease by infectious agent"}
+            - {class: "DOID:225", label: "syndrome"}
+            - {class: "DOID:0080015", label: "physical disorder"}
+            - {class: "DOID:863", label: "nervous system disease"}
+            - {class: "DOID:1287", label: "cardiovascular system disease"}
+            - {class: "DOID:17", label: "musculoskeletal system disease"}
+            - {class: "DOID:2914", label: "immune system disease"}
+            - {class: "DOID:1579", label: "respiratory system disease"}
+            - {class: "DOID:77", label: "gastrointestinal system disease"}
+            - {class: "DOID:18", label: "urinary system disease"}
+            - {class: "DOID:15", label: "reproductive system disease"}
+            - {class: "DOID:16", label: "integumentary system disease"}
+            - {class: "DOID:28", label: "endocrine system disease"}
+            - {class: "DOID:74", label: "hematopoietic system disease"}
+    - id: panther
+      title: Protein classes (PANTHER)
+      questions:
+        - id: panther
+          analysis: panther_group
+          title: Protein classes (PANTHER), grouped
+          classes:
+            - {class: RNA processing and translation, label: "RNA processing and translation"}
+            - {class: "Transcription, chromatin and DNA", label: "Transcription, chromatin and DNA"}
+            - {class: Protein-modifying enzymes, label: "Protein-modifying enzymes"}
+            - {class: Metabolic enzymes, label: "Metabolic enzymes"}
+            - {class: "Scaffolds, adaptors and chaperones", label: "Scaffolds, adaptors and chaperones"}
+            - {class: "Cytoskeleton, adhesion and matrix", label: "Cytoskeleton, adhesion and matrix"}
+            - {class: "Signalling: receptors, ligands and modulators", label: "Signaling: receptors, ligands and modulators"}
+            - {class: Transport and membrane traffic, label: "Transport and membrane traffic"}
+            - {class: Immunity and defence, label: "Immunity and defense"}
+            - {class: Other PANTHER classes, label: "Other PANTHER classes"}
+    - id: condensates
+      title: Condensates, stress granules and P-bodies
+      questions:
+        - id: condensate
+          analysis: condensate_proteome
+          title: Biomolecular condensates
+          classes:
+            - {class: DEE660B4, label: "Stress granule (CD-CODE)"}
+            - {class: A40D6D0A, label: "DHX9 stress granule (CD-CODE)"}
+            - {class: 232F8A39, label: "P-body"}
+            - {class: 81D2A7B6, label: "Nuclear stress body"}
+        - id: organelle_ip
+          analysis: cell_organelle_ip
+          title: Organelle IP
+          classes:
+            - {class: stress_granule, label: "Stress granule (organelle IP)"}
+            - {class: p-body, label: "P-body"}
+            - {class: translation, label: "Translation machinery"}
+            - {class: proteasome, label: "Proteasome"}
+    - id: nucleic
+      title: RNA and DNA binding
+      questions:
+        - id: go_binding
+          analysis: go_binding
+          title: RNA and DNA binding (GO)
+          classes:
+            - {class: rna_binding, label: "RNA binding"}
+            - {class: rna_binding_experimental, label: "RNA binding, experimental evidence"}
+            - {class: dna_binding, label: "DNA binding"}
+            - {class: dna_binding_experimental, label: "DNA binding, experimental evidence"}
+        - id: crosslink
+          analysis: crosslink
+          title: RNA and DNA crosslinks in cells
+          classes:
+            - {class: rna_crosslink, label: "RNA-crosslinked residue"}
+            - {class: rbrid_residue, label: "RBR-ID positive residue"}
+            - {class: dna_crosslink, label: "DNA-crosslinked residue"}
     - id: disorder
       title: Disorder and structure
       questions:
@@ -77,110 +181,6 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
             - {class: R_before, label: "Arg at −1"}
             - {class: KK, label: "Another Lys at −1 or +1"}
             - {class: basic_neighbours, label: "Lys or Arg within ±3"}
-    - id: condensates
-      title: Condensates, stress granules and P-bodies
-      questions:
-        - id: condensate
-          analysis: condensate_proteome
-          title: Biomolecular condensates
-          classes:
-            - {class: DEE660B4, label: "Stress granule (CD-CODE)"}
-            - {class: A40D6D0A, label: "DHX9 stress granule (CD-CODE)"}
-            - {class: 232F8A39, label: "P-body"}
-            - {class: 81D2A7B6, label: "Nuclear stress body"}
-        - id: organelle_ip
-          analysis: cell_organelle_ip
-          title: Organelle IP
-          classes:
-            - {class: stress_granule, label: "Stress granule (organelle IP)"}
-            - {class: p-body, label: "P-body"}
-            - {class: translation, label: "Translation machinery"}
-            - {class: proteasome, label: "Proteasome"}
-    - id: cell
-      title: Cell compartments
-      questions:
-        - id: hpa
-          analysis: hpa_location
-          title: Human Protein Atlas locations
-          classes:
-            - {class: Nucleoplasm, label: "Nucleoplasm"}
-            - {class: Nucleoli, label: "Nucleoli"}
-            - {class: Nuclear speckles, label: "Nuclear speckles"}
-            - {class: Nuclear bodies, label: "Nuclear bodies"}
-            - {class: Cytosol, label: "Cytosol"}
-            - {class: Mitochondria, label: "Mitochondria"}
-            - {class: Endoplasmic reticulum, label: "Endoplasmic reticulum"}
-            - {class: Golgi apparatus, label: "Golgi apparatus"}
-            - {class: Plasma membrane, label: "Plasma membrane"}
-        - id: hcm
-          analysis: cell_hcm_compartment
-          title: Human Cell Map compartments
-          classes:
-            - {class: nucleolus, label: "Nucleolus"}
-            - {class: nuclear body, label: "Nuclear body"}
-            - {class: chromatin, label: "Chromatin"}
-            - {class: cytoplasmic ribonucleoprotein granule, label: "Cytoplasmic RNP granule"}
-            - {class: plasma membrane, label: "Plasma membrane"}
-    - id: nucleic
-      title: RNA and DNA binding
-      questions:
-        - id: go_binding
-          analysis: go_binding
-          title: RNA and DNA binding (GO)
-          classes:
-            - {class: rna_binding, label: "RNA binding"}
-            - {class: rna_binding_experimental, label: "RNA binding, experimental evidence"}
-            - {class: dna_binding, label: "DNA binding"}
-            - {class: dna_binding_experimental, label: "DNA binding, experimental evidence"}
-        - id: crosslink
-          analysis: crosslink
-          title: RNA and DNA crosslinks in cells
-          classes:
-            - {class: rna_crosslink, label: "RNA-crosslinked residue"}
-            - {class: rbrid_residue, label: "RBR-ID positive residue"}
-            - {class: dna_crosslink, label: "DNA-crosslinked residue"}
-    - id: panther
-      title: Protein classes (PANTHER)
-      questions:
-        - id: panther
-          analysis: panther_group
-          title: Protein classes (PANTHER), grouped
-          classes:
-            - {class: RNA processing and translation, label: "RNA processing and translation"}
-            - {class: "Transcription, chromatin and DNA", label: "Transcription, chromatin and DNA"}
-            - {class: Protein-modifying enzymes, label: "Protein-modifying enzymes"}
-            - {class: Metabolic enzymes, label: "Metabolic enzymes"}
-            - {class: "Scaffolds, adaptors and chaperones", label: "Scaffolds, adaptors and chaperones"}
-            - {class: "Cytoskeleton, adhesion and matrix", label: "Cytoskeleton, adhesion and matrix"}
-            - {class: "Signalling: receptors, ligands and modulators", label: "Signaling: receptors, ligands and modulators"}
-            - {class: Transport and membrane traffic, label: "Transport and membrane traffic"}
-            - {class: Immunity and defence, label: "Immunity and defense"}
-            - {class: Other PANTHER classes, label: "Other PANTHER classes"}
-    - id: disease
-      title: Disease Ontology branches
-      questions:
-        - id: disease
-          analysis: disease_ontology
-          title: Disease classes (Disease Ontology)
-          classes:
-            - {class: "DOID:14566", label: "disease of cellular proliferation"}
-            - {class: "DOID:0014667", label: "disease of metabolism"}
-            - {class: "DOID:630", label: "genetic disease"}
-            - {class: "DOID:150", label: "disease of mental health"}
-            - {class: "DOID:0050117", label: "disease by infectious agent"}
-            - {class: "DOID:225", label: "syndrome"}
-            - {class: "DOID:0080015", label: "physical disorder"}
-            - {class: "DOID:863", label: "nervous system disease"}
-            - {class: "DOID:1287", label: "cardiovascular system disease"}
-            - {class: "DOID:17", label: "musculoskeletal system disease"}
-            - {class: "DOID:2914", label: "immune system disease"}
-            - {class: "DOID:1579", label: "respiratory system disease"}
-            - {class: "DOID:77", label: "gastrointestinal system disease"}
-            - {class: "DOID:18", label: "urinary system disease"}
-            - {class: "DOID:15", label: "reproductive system disease"}
-            - {class: "DOID:16", label: "integumentary system disease"}
-            - {class: "DOID:28", label: "endocrine system disease"}
-            - {class: "DOID:74", label: "hematopoietic system disease"}
 footer:
   links:
     - {label: Cite, url: "https://github.com/Shechterlab/ptmcontext/blob/main/CITATION.cff"}

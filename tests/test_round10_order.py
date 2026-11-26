@@ -35,3 +35,8 @@ def test_every_explorer_lists_the_filter_groups_in_the_owner_order():
         assert 'Disease associations and variants' not in names
         assert names.index('Other modifications') < names.index('Sequence motif'), n
         assert names.index('Sequence motif') < names.index('Structural context'), n
+
+
+def test_compare_lists_its_groups_in_the_owner_order():
+    ids = [g['id'] for g in yaml.safe_load((ROOT / 'sites' / 'landing.yml').read_text())['compare']['groups']]
+    assert ids == ['cell', 'disease', 'panther', 'condensates', 'nucleic', 'disorder', 'motifs']
