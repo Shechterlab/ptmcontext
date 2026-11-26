@@ -48,3 +48,9 @@ def test_a_variant_word_with_a_site_opens_the_card_at_its_variants_from_one_word
     assert names.count('VARIANT_WORD') == 2 and 'mutations?|variants?|cancer' in names
     assert "open: 'sc-variants'" in src('kit.js') and "open: 'sc-variants'" in src('land-search.js')
     assert src('kit.js').count('asksVariants') == 1 and src('land-search.js').count('asksVariants') == 1
+
+
+def test_the_writer_and_reader_rows_read_name_class_and_partners_or_none():
+    js = src('kit-pix.js')
+    assert 'const classOne' in js and '<span class="muted">none</span>' in js
+    assert 'binds none of the other' not in js

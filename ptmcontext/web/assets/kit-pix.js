@@ -22,6 +22,11 @@
       .replace(/^an? /, '')
       .replace(/\s+associated with \{gene\}$/, '')
       .replace(/\{gene\}/g, '');
+  // the class as one partner's label: "PRMTs" -> "PRMT", "Tudor proteins" -> "Tudor"
+  const classOne = (c) =>
+    classWord(c)
+      .replace(/\s+proteins$/i, '')
+      .replace(/([A-Z])s$/, '$1');
 
   // ---- the complexes the protein is in: the page table of the Interactions page, read once, when the tab is on --------------
   let CX = null,
@@ -89,14 +94,13 @@
       ? `<ul class="pix-paths">${xs
           .map(
             (x) =>
-              `<li>${link(x.acc, x.name)} <span class="tag">${esc(classWord(x.cls))}</span> ${
+              `<li>${link(x.acc, x.name)} <span class="muted">(${esc(classOne(x.cls))}):</span> ${
                 x.also.length
-                  ? `<span class="muted">` +
-                    `also binds</span> ${x.also
+                  ? `<span class="muted">also binds</span> ${x.also
                       .slice(0, 8)
                       .map(([a, n]) => link(a, n))
                       .join(', ')}${x.also.length > 8 ? ` <span class="muted">+${x.also.length - 8}</span>` : ''}`
-                  : '<span class="muted">binds none of the other protein partners that have the modification</span>'
+                  : '<span class="muted">none</span>'
               }</li>`
           )
           .join('')}</ul>`
