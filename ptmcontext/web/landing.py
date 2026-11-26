@@ -397,7 +397,7 @@ def page(
 <span class="theme-switch" role="group" aria-label="Color theme"><button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button></span>
 {f'<p>{html.escape(note)}</p>' if note else ''}
 <p>{built_with}</p>
-<p id="privacy">Searches stay in the browser; protein pages fetch public data by accession.</p></footer><script>{THEME_JS}</script>{f'<script>{SEARCH_JS}</script>' if search else ''}</body></html>
+<p id="privacy">No cookies, no tracking. Statistics are precomputed in the data release, and tests on your selection run in your browser. A protein page asks UniProt, AlphaFold DB, PDBe and STRING for that protein’s public data, by accession only.</p></footer><script>{THEME_JS}</script>{f'<script>{SEARCH_JS}</script>' if search else ''}</body></html>
 """
 
 
