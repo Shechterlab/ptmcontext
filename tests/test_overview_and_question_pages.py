@@ -86,7 +86,7 @@ def test_figures_come_before_tables_and_text_on_the_interactions_and_disease_var
     ix = (ROOT / 'ptmcontext/web/assets/kit-interactions.js').read_text()
     assert '!FIG[x[0].kind] - !FIG[y[0].kind] || x[1] - y[1]' in ix and 'blocksHtml(pg, s), s.open' in ix
     mu = (ROOT / 'ptmcontext/web/assets/kit-mutations.js').read_text()
-    assert '`${lead}${tilesHtml()}${note}${bar}${body}' in mu
+    assert '`${lead}${answer}${tilesHtml()}${note}${bar}${body}' in mu
     assert mu.index('<h3>Top TCGA sites</h3>') < mu.index('whyCommon(o);')
 
 

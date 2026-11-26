@@ -96,3 +96,10 @@ def test_the_site_card_has_a_mutations_block_then_an_interactions_block():
     assert src.index('id="sc-variants"') < src.index('id="sc-interactions"') < src.index('${wr}${recs}${ev}')
     assert "group('records', 'Sources'" in src and 'UniProt and sources' not in src
     assert '<summary>Key</summary>' not in card
+
+
+def test_the_mutations_page_leads_with_one_tile_per_source():
+    mu = (ROOT / 'ptmcontext/web/assets/kit-mutations.js').read_text()
+    assert '`${lead}${answer}${tilesHtml()}' in mu and 'sourceTiles(lists)' in mu
+    assert 'Single sites with q' not in mu and 'Sites changed more often than expected' not in mu
+    assert "TILE_IDS = ['cancer_change', 'clinvar_plp', 'gnomad_variant']" in mu  # ClinVar before gnomAD among germline

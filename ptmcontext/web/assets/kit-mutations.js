@@ -2008,12 +2008,19 @@
     const h = K.tilesOf?.(TILE_IDS, 2) || '';
     return h ? `<div class="tiles mu-tiles">${h}</div>` : '';
   };
-  // the sites of this page's tables with q < 0.05, per source, as one line under the tiles
-  function sigLine(lists) {
+  // the answer of each source's table, one tile each: the sites with q < 0.05 of those tested, somatic sources first and the
+  // germline ones after them
+  function sourceTiles(lists) {
     if (!lists?.length) return '';
-    return `<p class="small mu-sig">Single sites with q &lt; 0.05: ${lists
-      .map((l) => `${esc(l.s.label)}${l.g ? ' (fewer)' : ''} <b>${int(l.sig)}</b> of ${int(l.rows.length)} tested`)
-      .join(' · ')}.</p>`;
+    const ordered = [...lists.filter((l) => !l.g), ...lists.filter((l) => l.g)];
+    return `<div class="tiles mu-tiles mu-src-tiles">${ordered
+      .map(
+        (l) =>
+          `<article class="tile mu-src"><header><h3>${esc(l.s.label)}</h3></header><p class="mu-src-n"><b>${int(l.sig)}</b> of ${int(
+            l.rows.length
+          )} sites</p><p class="small muted">q &lt; 0.05${l.g ? ', fewer than expected' : ''}</p></article>`
+      )
+      .join('')}</div>`;
   }
   const CHART_LINK = `<p class="small muted mu-more">Every site in one chart: <button type="button" class="mu-linkbtn" data-mu-view="waterfall">All sites as a chart</button></p>`;
   function view() {
@@ -2056,11 +2063,13 @@
     const few = K.siteFew?.('variants');
     const lead = few || '';
     let line = '',
+      answer = '',
       body = '';
     if (V === 'ranked') {
-      line = `Sites changed more often than expected (${K.srcName('TCGA')}, ${K.srcName('DepMap')}); sites with fewer variants than expected in ${K.srcName('gnomAD')}.`;
+      line = `Per-site tests: ${SRC.map((s) => esc(s.label)).join(', ')}`;
       const lists = rankedLists();
-      body = lists ? sigLine(lists) + lists.map(rankSection).join('') : null;
+      answer = sourceTiles(lists);
+      body = lists ? lists.map(rankSection).join('') : null;
       if (body === null)
         return page(
           line,
@@ -2132,7 +2141,7 @@
     const extra = V === 'waterfall' ? (model() ? zeroSection(model()) : '') + setSummary() : '';
     return page(
       line,
-      `${lead}${tilesHtml()}${note}${bar}${body}${V === 'clinvar' ? '' : chosenSection()}${extra}${V === 'waterfall' ? '' : CHART_LINK}`
+      `${lead}${answer}${tilesHtml()}${note}${bar}${body}${V === 'clinvar' ? '' : chosenSection()}${extra}${V === 'waterfall' ? '' : CHART_LINK}`
     );
   }
   // the oncoprint's first site is the one with the most changed tumors; when its q is not below 0.05, say why it is common

@@ -12233,3 +12233,16 @@ details.controls[open] > summary::before {
     order: 5;
   }
 }
+
+/* the Mutations page: one tile per source's table, not a link */
+.mu-src {
+  cursor: default;
+}
+.mu-src-n {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.mu-src-n b {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+}
