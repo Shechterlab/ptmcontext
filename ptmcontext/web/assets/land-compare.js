@@ -143,16 +143,17 @@
     html += ts.length
       ? `<td colspan="${cols.length}"><span class="q-line">${esc(line.join(' · '))}</span></td></tr>`
       : `<td colspan="${cols.length}" class="nt">not tested</td></tr>`;
+    const onlyGroup = diff && same('test') && same('note') && !same('group');
     if (diff)
       html +=
-        '<tr class="q q-d"><th scope="row" aria-label="Where the explorers differ"></th>' +
+        `<tr class="q q-d"><th scope="row"${onlyGroup ? '' : ' aria-label="Where the explorers differ"'}>${onlyGroup ? 'Compared with' : ''}</th>` +
         cols
           .map((e) => {
             const t = q.tests[e.id];
             if (!t) return '<td class="nt">not tested</td>';
             const o = [];
             if (!same('test')) o.push(`Test: ${t.test}`);
-            if (!same('group')) o.push(`Compared with: ${t.group}`);
+            if (!same('group')) o.push(onlyGroup ? t.group : `Compared with: ${t.group}`);
             if (!same('note') && inlineNote(t)) o.push(inlineNote(t));
             return `<td>${o.map((x) => `<span class="q-group">${esc(x)}</span>`).join('')}</td>`;
           })

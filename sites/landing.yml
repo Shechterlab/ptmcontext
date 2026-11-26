@@ -28,7 +28,7 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
   columns:                 # each explorer's short name here (default: its landing label)
     methylarginine: Methylarginine
     methyllysine: Methyllysine
-    lysine: Modified lysines
+    lysine: Lysine modifications
     phospho: Phosphosites
   how:
     - "Published results per explorer, by class."
