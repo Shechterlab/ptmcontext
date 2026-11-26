@@ -413,7 +413,7 @@
     const note =
       M.loaded === null
         ? `<p class="muted small">The changes observed at each site could not be read.</p>`
-        : `<p class="muted small st-note">k: ${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected, the observed changes over those expected from the residue’s codon. ` +
+        : `<p class="muted small st-note">k: ${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected changes (from codons). ` +
           `q: corrected for the sites tested; a ring is q below ${RING} with more than expected${
             SRC.some((s) => s.lower_tail) ? ', a dashed ring with fewer' : ''
           }. Click a column to sort.</p>`;
@@ -524,7 +524,7 @@
       lead: withWriter ? writerChip() : '',
       legend:
         mode !== 'variants' && sites.some((s) => s.sections.length)
-          ? `k: ${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected, the observed changes over those expected from the residue’s codon. A ring means q below ${RING}.`
+          ? `k: ${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected changes (from codons). Ring: q < ${RING}.`
           : '',
       title: `Your selected ${P.all === 1 ? W.mark : W.marks}: ${mode === 'variants' ? 'variants' : 'changes and variants'}`,
       note: `Each ${W.mark}'s variants are counted by its site card; the link opens the card at its variants.`,
