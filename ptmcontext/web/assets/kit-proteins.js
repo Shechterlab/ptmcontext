@@ -532,7 +532,7 @@
     states: 'State by source',
     calls: 'Perturbations',
     changes: 'Changes',
-    germline: 'Germline variants',
+    germline: 'Inherited variants (ClinVar, gnomAD)',
     reported: 'Reported by',
     ...(CC.labels || {}),
   };

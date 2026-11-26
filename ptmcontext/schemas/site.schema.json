@@ -5188,7 +5188,7 @@
               "additionalProperties": false,
               "description": "the folded table of a protein's sites and their variants (fold p-sitetab; CONTRACTS.md, Table of sites): drawn when website.propensity is set, from the propensity files, the ClinVar file and the map rows that name entities",
               "properties": {
-                "title": {"type": "string", "description": "the fold's title (default: Sites and their variants)"}
+                "title": {"type": "string", "description": "the fold's title (default: Sites and mutations)"}
               }
             },
             "order": {

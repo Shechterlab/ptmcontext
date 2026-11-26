@@ -13,7 +13,7 @@
   const PR = D.propensity;
   if (!PR || !K.prop || !K.prot) return;
   const CFG = D.protein_view?.site_table || {},
-    TITLE = CFG.title || 'Sites and their variants',
+    TITLE = CFG.title || 'Sites and mutations',
     RING = K.prop.ring;
   const SRC = PR.sources.filter((s) => !K.prop.desc(s.id)); // sources with a test: k, observed/expected and q
   const OPEN_MAX = 40; // up to this many sites the table is open
@@ -526,7 +526,7 @@
         mode !== 'variants' && sites.some((s) => s.sections.length)
           ? `k: ${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected changes (from codons). Ring: q < ${RING}.`
           : '',
-      title: `Your selected ${P.all === 1 ? W.mark : W.marks}: ${mode === 'variants' ? 'variants' : 'changes and variants'}`,
+      title: `Your selected ${P.all === 1 ? W.mark : W.marks}: ${mode === 'variants' ? 'variants' : 'mutations'}`,
       note: `Each ${W.mark}'s variants are counted by its site card; the link opens the card at its variants.`,
       sites,
       more: P.all - P.list.length,

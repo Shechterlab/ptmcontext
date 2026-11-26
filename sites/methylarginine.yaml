@@ -2655,7 +2655,7 @@ website:                  # the look and words of the website (ptmc web); layout
         near: 10
         note: "Not exhaustive: only what the cross-PTM table holds (an iPTMnet export of HPRD, literature mining and other curated sources, plus UniProt)."
       germline:
-        title: Germline variants
+        title: Inherited variants (ClinVar, gnomAD)
         excluded: germline
         sub: "Variants in ClinVar (clinical classifications) and gnomAD v4.1 (population frequencies) at the protein's arginines, against the protein's average for an arginine. A variant at a residue does not show an effect on methylation, and a variant observed in the population is not necessarily benign."
         note: "Data: ClinVar (NCBI; public domain; submitters may claim rights in what they submitted) and gnomAD v4.1 exomes (CC0 1.0; Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0). A variant counts only at an arginine of the canonical UniProt sequence."

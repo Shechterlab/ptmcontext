@@ -2283,7 +2283,7 @@ website:                  # the look and words of the website (ptmc web); layout
         sub: "Other modifications recorded on this protein, as in the map legend."
         near: 10
       germline:
-        title: Germline variants
+        title: Inherited variants (ClinVar, gnomAD)
         excluded: germline
         sub: "Variants in ClinVar (clinical classifications) and gnomAD v4.1 (population frequencies) at the protein's lysines, against the protein's average for the same residue type. A variant at a residue does not show an effect on the mark, and a variant observed in the population is not necessarily benign."
         note: "Data: ClinVar (NCBI; public domain; submitters may claim rights in what they submitted) and gnomAD v4.1 exomes (CC0 1.0; Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0). A variant counts only at a lysine of the canonical UniProt sequence."
