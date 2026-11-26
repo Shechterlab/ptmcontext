@@ -1726,7 +1726,9 @@
   const tileHref = (id) => {
     const ids = K.sel?.proteinIds?.(),
       fold = ids?.size === 1 ? K.proteinHome?.(id) : '';
-    return fold ? link('protein', D.proteins[[...ids][0]][0], { open: fold }) : link('overview', id);
+    return fold
+      ? link('protein', D.proteins[[...ids][0]][0], { open: fold })
+      : K.questionHome?.(id) || link('overview', id);
   };
   const detailsLink = (id) =>
     `<a class="tdetails" href="${esc(tileHref(id))}" title="Open the question: ` +
@@ -2509,21 +2511,17 @@
             ? t.charAt(0).toLowerCase() + t.slice(1)
             : t,
         where = /^(in|at|near|next to|within|inside|on)\s/i.test(label) ? low(label) : `in ${low(label)}`;
-      // a protein set reads as its plural noun: "P-body proteins", "Chromodomain proteins (reader)"
+      // a protein set reads "Proteins in <set>"; a name that already says "proteins" keeps its own noun
       const noun = (t) => {
-        const [head, ...rest] = t.replace(/^(an?|the)\s+/i, '').split(/(?=\s\()/),
-          h = /\bproteins?$/i.test(head)
-            ? head.replace(/protein$/i, 'proteins')
-            : /\bproteome$/i.test(head)
-              ? head.replace(/proteome$/i, 'proteins')
-              : `${head} proteins`;
-        return cap(h) + rest.join('');
+        const [head, ...rest] = t.replace(/^(an?|the)\s+/i, '').split(/(?=\s\()/);
+        if (!/\bproteins?$|\bproteome$/i.test(head)) return `Proteins in ${t}`;
+        return cap(head.replace(/protein$/i, 'proteins').replace(/proteome$/i, 'proteins')) + rest.join('');
       };
       return SETS(a.id)
-        ? `<b>${esc(noun(label))}</b> are ${esc(W.marked)} at ${f} the share of all proteins tested.`
-        : `${esc(cap(W.marks))} are more common <b>${esc(where)}</b> (${f} the share of other ${esc(W.residues)}).`;
+        ? `<b>${esc(noun(label))}</b> are ${esc(W.marked)} ${f} as often as all proteins tested.`
+        : `${esc(cap(W.marks))} are more often <b>${esc(where)}</b> (${f} as often as other ${esc(W.residues)}).`;
     };
-    return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings${
+    return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Strongest results${
       D.variant
         ? ` <span class="muted small">(${esc(D.variant.label.charAt(0).toLowerCase() + D.variant.label.slice(1))})</span>`
         : ''
@@ -2548,6 +2546,11 @@
   };
   function overview() {
     REG = [];
+    const home = S.arg && K.questionHome?.(S.arg);
+    if (home) {
+      location.replace(home); // a question whose home is another page (an old #overview/<id> address)
+      return '';
+    }
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
     if (selOn() && !K.sel.data()) return lead() + K.loading('Loading the selection…');
     // a selection too small to test: its proteins drawn and the counts that hold for any selection; one that can be

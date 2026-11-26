@@ -1601,7 +1601,9 @@
   const goTo = (acc, pos) => (location.hash = K.link('protein', `${acc}/${pos}`).replace(/^[^#]*#/, ''));
   const rankTitle = (s) => {
     const u = s.unit?.[1] || (s.kind === 'germline' ? 'variants' : 'samples');
-    return `${s.kind === 'germline' ? 'Inherited ' + u : u.charAt(0).toUpperCase() + u.slice(1)} (${s.label}), ranked by p`;
+    return s.kind === 'germline'
+      ? `${s.label} ${u}, ranked by p`
+      : `${u.charAt(0).toUpperCase() + u.slice(1)} (${s.label}), ranked by p`;
   };
   // the lists, one per source with a test: somatic sources by the upper tail, the germline source with a lower tail by its lower
   // tail (the dashed-ring rows of the waterfall); null while a file is being read
@@ -1887,7 +1889,7 @@
       .join('');
     return (
       `<div class="mu-bar">${stars}${order}</div>` +
-      `<section class="mu-card mu-cv"><div class="mu-top"><p class="small muted">${int(g.nSites)} ${g.nSites === 1 ? esc(W.mark) : esc(W.marks)} with ${int(g.nVar)} ${g.nVar === 1 ? 'variant' : 'variants'}, in ${int(g.cols.length)} disease ${g.cols.length === 1 ? 'family' : 'families'}.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mucv', 'inherited disease', 'propensity')}</div>` +
+      `<section class="mu-card mu-cv"><div class="mu-top"><p class="small muted">${int(g.nSites)} ${g.nSites === 1 ? esc(W.mark) : esc(W.marks)} with ${int(g.nVar)} pathogenic or likely pathogenic ClinVar ${g.nVar === 1 ? 'variant' : 'variants'}, in ${int(g.cols.length)} disease ${g.cols.length === 1 ? 'family' : 'families'}.</p>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'mucv', 'inherited disease', 'propensity')}</div>` +
       `<div class="mu-cvh" aria-hidden="true"><span>Site</span><span class="num">All</span><span>Disease families, with the number of variants</span></div>` +
       `<ul class="mu-cvl" aria-label="Sites with their disease families">${tr}</ul>` +
       (g.rows.length > shown.length
@@ -1935,7 +1937,7 @@
     const g = clinvarModel(),
       f = clinvarSvg(g, LIGHT, 720);
     return K.figureFrame({
-      title: 'Inherited disease: ClinVar pathogenic variants',
+      title: 'ClinVar pathogenic variants',
       sub: `${K.sel.describe() || 'every ' + W.mark}: ${int(g.nSites)} ${W.marks}, ${int(g.nVar)} variants`,
       body: `<g transform="translate(20,0)">${f.svg}</g>`,
       bodyH: f.H,
@@ -1947,7 +1949,7 @@
     const g = clinvarModel();
     return (
       K.preamble(
-        'Inherited disease: ClinVar pathogenic and likely pathogenic variants by disease family',
+        'ClinVar pathogenic and likely pathogenic variants by disease family',
         `${K.sel.describe() || 'every ' + W.mark}; ${M.stars ? `${M.stars}+ review stars` : 'any review status'}; a variant is listed once for each family; conditions are ClinVar's, families the release's rules`
       ) +
       'site\taccession\tuniprot_position\tdisease_family\tvariation_id\tclinvar_protein_change\treview_stars\tconditions\tdisordered\tdisorder_class\n' +
@@ -1997,6 +1999,9 @@
 
   // the page's answer: the Overview's tiles of the three within-protein tests (one computation, K.tilesOf)
   const TILE_IDS = ['cancer_change', 'clinvar_plp', 'gnomad_variant'];
+  // this page is the one home of these questions: a tile's Details and an old #overview/<id> address both lead here
+  K.questionHome = (id) =>
+    TILE_IDS.includes(id) ? K.link('mutations', '', id === 'clinvar_plp' && PR.cv ? { mv: 'clinvar' } : null) : '';
   const tilesHtml = () => {
     const h = K.tilesOf?.(TILE_IDS, 2) || '';
     return h ? `<div class="tiles mu-tiles">${h}</div>` : '';
@@ -2020,7 +2025,7 @@
         [
           ['ranked', 'Ranked sites'],
           ['oncoprint', 'Cancer: tumors'],
-          ...(PR.cv ? [['clinvar', 'Inherited disease']] : []),
+          ...(PR.cv ? [['clinvar', 'ClinVar pathogenic']] : []),
         ],
         M.view
       )}</div>`;
@@ -2040,7 +2045,7 @@
       [
         ['ranked', 'Ranked sites'],
         ['oncoprint', 'Cancer: tumors'],
-        ...(PR.cv ? [['clinvar', 'Inherited disease']] : []),
+        ...(PR.cv ? [['clinvar', 'ClinVar pathogenic']] : []),
       ],
       V
     );
@@ -2362,7 +2367,7 @@
       `<p><b>Disease variants page.</b> The tiles at the top are the Overview's tests of changes in tumors and cell lines, ClinVar pathogenic variants and gnomAD variants against the other ${esc(W.residues)} of the same proteins. Below them are three views of the sites of your selection, or of every ${esc(W.mark)} when nothing is selected, and a chart of all sites. Hypermutated tumors are left out unless you choose With hypermutated. Cancer types are pooled, so p and q do not change with them.</p>` +
       `<p><b>Ranked sites.</b> Each table lists the sites of one source with q &lt; 0.05, ranked by p (at most 100; the download has every tested site). The header gives how many of the tested sites that is. For TCGA and DepMap, tested means the ${esc(W.marks)} with a change in at least one sample that the release gives a test; a site with no change cannot be above expectation and is not listed. Show the top 20 by p adds the next rows, lighter, with their q. The first two (tumors, cell lines) hold sites with more changes than expected (q is the release's, for the upper tail). The third holds sites with fewer inherited gnomAD variants than expected (q for the lower tail, the dashed-ring sites of the chart). k is the count, expected the count the residue's codon predicts, and observed/expected their ratio. A protein flagged as dominated by a few enriched residues (see above) says so in its row. A row opens the site's card.</p>` +
       `<p><b>Cancer: tumors.</b> This is an oncoprint. The ${esc(W.marks)} with the most changed TCGA tumors are the rows, the tumors that carry them are the columns, and the bar above each tumor is its coding calls per Mb from the release's sample_burden (capped at 40; the dashed line is the hypermutated threshold). A tumor with two changes at one site counts once, so a table that counts changes can show a higher number. The oncoprint counts the sites changed in at least one tumor of the chosen cohort, which is not the tested set of the ranked table (it leaves out sites changed only in hypermutated tumors, and includes a few changed sites the release has no test for).</p>` +
-      `<p><b>Inherited disease.</b> Each row is a ${esc(W.mark)} with at least one ClinVar variant classified pathogenic or likely pathogenic in the release's ClinVar change tables (the same rule as the site card; conflicting classifications are not counted). A chip is a disease family, with its number of variants. Each condition name of a variant (split at | and ;; "not specified", "not provided" and "see cases" dropped) gets the family of the first rule it matches in the release's name rules for its DisGeNET disease families (PTM_Pipeline scripts/disease_families.py), applied here to ClinVar condition names and read as text when the explorer is built, so a few conditions can land in a broader family than a specialist would choose; the detail of a cell always lists ClinVar's own condition names; a name no rule matches goes to Other / unassigned, which is listed first, right after All. A variant counts once in each of its families, so a row's chips can add up to more than its All count. A chip is shaded from light (one variant) to full (the most in any chip); click it to list the variants, their conditions and review stars, with links to ClinVar. The review filter keeps variants with at least that many ClinVar review stars. A variant that names no condition is not shown. These counts come from clinical testing and submission, not from a test against expectation, so they carry no p or q.</p>` +
+      `<p><b>ClinVar pathogenic.</b> Each row is a ${esc(W.mark)} with at least one ClinVar variant classified pathogenic or likely pathogenic in the release's ClinVar change tables (the same rule as the site card; conflicting classifications are not counted). A chip is a disease family, with its number of variants. Each condition name of a variant (split at | and ;; "not specified", "not provided" and "see cases" dropped) gets the family of the first rule it matches in the release's name rules for its DisGeNET disease families (PTM_Pipeline scripts/disease_families.py), applied here to ClinVar condition names and read as text when the explorer is built, so a few conditions can land in a broader family than a specialist would choose; the detail of a cell always lists ClinVar's own condition names; a name no rule matches goes to Other / unassigned, which is listed first, right after All. A variant counts once in each of its families, so a row's chips can add up to more than its All count. A chip is shaded from light (one variant) to full (the most in any chip); click it to list the variants, their conditions and review stars, with links to ClinVar. The review filter keeps variants with at least that many ClinVar review stars. A variant that names no condition is not shown. These counts come from clinical testing and submission, not from a test against expectation, so they carry no p or q.</p>` +
       `<p><b>All sites as a chart.</b> The chart ranks the sites from most above to most below the expected count. Height is the signed −log10 p: −log10 of the upper-tail p for a site with observed/expected above 1, log10 of the lower-tail p for a site with observed/expected below 1. A site with no change has observed/expected 0 and sits on the lower side; one with a small expected count has no stored test and is drawn at 0. The release gives the lower tail for gnomAD only. For TCGA and DepMap this explorer computes it at build time with the release's own model, P(X ≤ k) for Binomial(n, expected / n), after checking that this model gives back the release's p_upper for every row; it has no q. Circles are colored by observed/expected and a solid ring marks q &lt; 0.05; a dashed ring marks q &lt; 0.05 for fewer variants than expected (gnomAD). The gray curve is the same score for ${esc(W.residues)} that are not ${esc(W.marks)}, with ranks scaled to the number of ${esc(W.marks)}. The top and bottom sites are labeled, except those of a flagged protein; click a point to label it too (up to 20, saved in the link). Highlight genes outlines every site of the genes you paste and labels each one's most extreme site; it changes no statistic. The header counts the sites with a score and, of them, the sites with a q (the tested sites of the ranked tables). Under the chart, a table lists the ${esc(W.marks)} with no change, most expected first, with the raw lower-tail p. Whole list against expectation is the release's own test for the site set.</p>` +
       `<p>The page counts the sites this explorer counts, so a count can be lower than the release table's, which also holds sites the explorer shows without counting (UniProt records by similarity, for example).</p>` +
       (ctl.length

@@ -16,7 +16,7 @@
   const CV = D.protein_view?.conservation;
   if (!CV || !(CV.species || []).length || !CV.ensembl) return;
   const RES = D.residues || [];
-  const KEPT = RES.length === 1 ? RES[0] : 'the same residue'; // "still R"
+  const KEPT = RES.length === 1 ? RES[0] : 'the same residue'; // "conserved as R"
   const REF = CV.reference || 'Reference',
     REF_WORD = REF.replace(/^([A-Z])([a-z])/, (m, a, b) => a.toLowerCase() + b); // the source organism's name, from the site file (website.protein.conservation.reference)
   const CATALOGUE = CV.species,
@@ -264,7 +264,7 @@
   const say = (ck) =>
     ck.me == null
       ? ''
-      : `still ${KEPT}: ${W.marks} ${PCT(ck.me)}%, other ${W.residues} ${
+      : `conserved as ${KEPT}: ${W.marks} ${PCT(ck.me)}%, other ${W.residues} ${
           ck.other == null ? '–' : PCT(ck.other) + '%'
         } of species` + (ck.other == null ? '' : ck.p == null ? ' (too few to test)' : ` (rank-sum p ${K.fq(ck.p)})`);
 
@@ -407,7 +407,7 @@
       .map((s) => s.label);
     const test =
       ck.me != null && ck.other != null
-        ? `<p class="cv-test"><b>${esc(W.marks)} against the other ${esc(W.residues)} of ${g}:</b> on average a ${esc(W.mark)} is still ${esc(KEPT)} in <b>${PCT(ck.me)}%</b> of ` +
+        ? `<p class="cv-test"><b>${esc(W.marks)} against the other ${esc(W.residues)} of ${g}:</b> on average a ${esc(W.mark)} is conserved as ${esc(KEPT)} in <b>${PCT(ck.me)}%</b> of ` +
           `the species that align it, ` +
           `the other ${esc(W.residues)} in <b>${PCT(ck.other)}%</b> (${int(ck.n1)} and ${int(ck.n2)} ${esc(W.residues)}; ${
             ck.p == null ? 'too few to test' : 'Wilcoxon rank-sum p = ' + K.fq(ck.p)
@@ -454,7 +454,7 @@
       (absent.length ? ` <span class="muted small">No ortholog in Ensembl: ${esc(absent.join(', '))}.</span>` : '') +
       '</div>' +
       table +
-      (`<p class="small muted">Dark: still ${esc(KEPT)}; pale: a conservative change; gray: another residue; – a ` +
+      (`<p class="small muted">Dark: conserved as ${esc(KEPT)}; pale: a conservative change; gray: another residue; – a ` +
         `gap; · not mapped (the Ensembl protein differs here). The percentage is the ortholog’s identity to ${g}. `) +
       (`<a href="https://www.ensembl.org/${esc(
         String(ENS.source).replace(/^./, (c) => c.toUpperCase())
@@ -548,7 +548,7 @@
         .join('\n') +
       '\n# orthologs: ' +
       rows.map((r) => `${r.name} ${r.prot} (${Math.round(r.pid)}% identity)`).join('; ') +
-      `\n# ${W.marks} still ${KEPT}: ${say(st.ck)}\n`
+      `\n# ${W.marks} conserved as ${KEPT}: ${say(st.ck)}\n`
     );
   };
 
@@ -574,7 +574,7 @@
     if (!body.hasAttribute('data-later')) body.innerHTML = bodyHtml(acc); // else drawn when the section is opened
     chip(acc);
   }
-  // the chip among the protein's chips: loading, then "82% still R in orthologs" (it opens the card)
+  // the chip among the protein's chips: loading, then "82% conserved as R in orthologs" (it opens the card)
   function chip(acc) {
     const host = document.querySelector('.prot-chips');
     if (!host) return;
@@ -586,7 +586,7 @@
         ? 'orthologs…'
         : st.phase === 'ok' && ck.me != null
           ? RES.length === 1
-            ? `${PCT(ck.me)}% still ${KEPT} in orthologs`
+            ? `${PCT(ck.me)}% conserved as ${KEPT} in orthologs`
             : `${PCT(ck.me)}% conserved ` + `in orthologs`
           : '';
     if (!text) {
@@ -626,8 +626,8 @@
         `<span class="hl-glyph"><svg viewBox="0 0 64 22" aria-hidden="true"><path d="M4 11 h14 M18 11 ` +
         `l10 -6 h28 M18 11 l10 6 h28 M40 5 v12"/><circle class="g-f" cx="58" cy="5" r="3"/></svg></span><b ` +
         `class="hl-big">${PCT(ck.me)}%</b><span class="hl-lab">${esc(
-          RES.length === 1 ? `still ${KEPT} in orthologs` : 'conserved in orthologs'
-        )}${ck.other != null ? ` (others ${PCT(ck.other)}%)` : ''}</span><span ` +
+          RES.length === 1 ? `conserved as ${KEPT} in orthologs` : 'conserved in orthologs'
+        )}${ck.other != null ? ` (other ${esc(W.residues)} ${PCT(ck.other)}%)` : ''}</span><span ` +
         `class="hl-kind">Conservation</span>`;
       return;
     }
@@ -1195,7 +1195,7 @@
             ? `. ${esc([...SIMILAR].join(', '))} is shown ` + `as a conservative change and not counted as kept`
             : ''
         }.</p>`) +
-      (`<p>The chip (“${RES.length === 1 ? 'still ' + esc(KEPT) : 'conserved'} in orthologs”) is the mean, over the ` +
+      (`<p>The chip (“${RES.length === 1 ? 'conserved as ' + esc(KEPT) : 'conserved'} in orthologs”) is the mean, over the ` +
         `protein’s ${esc(W.marks)}, of the share of species that align the ${esc(W.mark)} and keep it. It is ` +
         `compared with the protein’s other ${esc(W.residues)} (${esc(
           RES.join(', ') || 'the profile’s residues'

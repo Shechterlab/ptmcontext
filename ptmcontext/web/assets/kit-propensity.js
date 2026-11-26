@@ -388,12 +388,12 @@
   }
 
   // k and O/E in words, for a row of sites: "3 changes (k) · O/E 22". One change says little (O/E is the count over a small
-  // expectation), so a single change reads "1 change" with its O/E muted; none reads "none seen". Plain HTML, escaped.
+  // expectation), so a single change reads "1 change" with its O/E muted; none reads "none observed". Plain HTML, escaped.
   const KTIP =
-    'k: the count of changes seen at this residue (samples with a change, or variants). observed/expected: that count over the count its codon predicts';
+    'k: the count of changes observed at this residue (samples with a change, or variants). observed/expected: that count over the count its codon predicts';
   function kOE(id, v) {
     if (!v || v.k == null) return '–';
-    if (v.k === 0) return `<span title="${esc(KTIP)}">none seen</span>`;
+    if (v.k === 0) return `<span title="${esc(KTIP)}">none observed</span>`;
     const o =
       v.o == null
         ? ''
