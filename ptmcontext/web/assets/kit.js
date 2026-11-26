@@ -827,7 +827,7 @@
   const follows = (v) => ['overview', 'proteins', 'sites', 'idrs'].includes(v) || !!K.views[v]?.follows;
   K.followsSelection = follows;
   function selLine() {
-    if (!K.sel?.active()) return '';
+    if (!K.sel?.active() || K.sel.loading()) return ''; // the selection's proteins are not known until its data loads
     const v = S.view;
     if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return ''; // a protein of the selection: its page fades the sites outside it, and says so
     if (follows(v)) return ''; // the bar above says what is selected and how many; its Clear all removes it
