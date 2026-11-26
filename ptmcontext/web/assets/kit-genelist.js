@@ -205,8 +205,7 @@
           table +
           more +
           `<p class="muted small gl-foot">One-sided hypergeometric test of your proteins against each of the ${int(nT)} sets, ` +
-          `with q over all of them. Your list was chosen, not drawn at random, so p and q describe the overlap, not ` +
-          `${esc(W.marks)}. <a href="${esc(K.link('method', 'list'))}">Method</a></p>` +
+          `with q over all of them. p and q describe the overlap only. <a href="${esc(K.link('method', 'list'))}">Method</a></p>` +
           `<p class="actions"><button type="button" class="btn small" data-gl-tsv>${esc(K.exp.label('tsv'))}</button></p>`
         : `<p>None of ` + `the names is a ${esc(W.marked)} protein here, so there is nothing to test.</p>`)
     );

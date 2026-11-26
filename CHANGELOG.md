@@ -5,7 +5,7 @@
 > A Disease variants page: ranked sites, tumors, inherited disease, and a chart of all sites.
 > Paste a list of genes, accessions or sites to test it, with the result in one sentence.
 > A small selection gets an "about these sites" block on every tab; Compare marks sets the explorers side by side.
-> Link previews, plainer wording and UniProt numbering for proteins that papers number differently.
+> Link previews and UniProt numbering for proteins that papers number differently.
 > Two labeled versions everywhere: App: PTMcontext 0.6.0 and Data: PTM_Pipeline v1.7.0.
 
 - Versioning: the app version is one number for the whole website (`pyproject.toml`, `ptmcontext/__init__.py`, `CITATION.cff` and every site's citation file). Pages and downloads read "App: PTMcontext 0.6.0" and "Data: PTM_Pipeline v1.7.0 (doi:...)". `VERSIONING.md` has the rules (MAJOR, MINOR, PATCH), the release checklist and the 1.0.0 deploy plan. Help has a "What changed in the site" section, made from the headings of this file when the explorer is built. `.zenodo.json` gives Zenodo the software's metadata. `tests/test_release_version_consistency.py` fails when the versions, this file and the documents disagree.
@@ -171,7 +171,6 @@
 
 ## 0.5.0 (2026-11-15)
 
-> Key findings and tile answers read as plain sentences.
 > The same tabs in one order on every explorer, and one footer.
 > One Download menu for every figure: PDF, SVG, PNG and TSV.
 > A Network tab and an Overlap page.

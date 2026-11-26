@@ -693,7 +693,7 @@
             ? doiA(lookupRow(s.source).doi, esc(s.label))
             : esc(s.label);
         return compact
-          ? `<span class="tag" title="${esc(s.label)}">${esc(vals.join('/'))} <span class="muted">${esc(s.label.split(/[ ,(]/)[0])}</span></span>`
+          ? `<span class="tag" title="${esc(s.label)}">${esc(vals.join('/'))} <span class="muted">${esc(s.label.replace(/^\(/, '').split(/[ ,(]/)[0])}</span></span>`
           : `${esc(vals.join(', '))} <span class="muted">${lab}</span>`;
       })
       .filter(Boolean);
@@ -963,7 +963,7 @@
           (cond === null
             ? '<br><span class="muted small">Loading conditions…</span>'
             : cond.length
-              ? `<br><span class="small">${esc(x.highlight.label)} conditions: ${cond.map(esc).join('; ')}</span>`
+              ? `<br><span class="small">${esc(cap((x.highlight.title || x.highlight.label).replace(/\s*\([^)]*\)\s*$/, '')))} conditions: ${cond.map(esc).join('; ')}</span>`
               : '') +
           '</div>'
         );
@@ -1536,7 +1536,7 @@
           dl(
             esc(sg.label || 'Suggested'),
             `<b>${esc(who.join(' and '))}</b> <span ` +
-              `class="muted">(indirect) · ${esc(hits.map((r) => r.because).join('; '))}${refs ? ` (${refs})` : ''}</span>`
+              `class="muted">(indirect; ${esc(hits.map((r) => r.because).join('; '))}${refs ? `, ${refs}` : ''})</span>`
           )
         );
     }

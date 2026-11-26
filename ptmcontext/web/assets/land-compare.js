@@ -221,7 +221,7 @@
       ['more', 3, '▲ more often (q ≤ 0.05, fold at least 1.1)'],
       ['less', 0.4, '▼ less often (q ≤ 0.05, fold at most 1/1.1)'],
       ['same', 1.05, 'about the same (q ≤ 0.05, fold within 1.1)'],
-      ['ns', 1.5, 'hollow: no difference (q above 0.05), or the fold and the test point different ways'],
+      ['ns', 1.5, 'hollow: q > 0.05, or fold and test disagree'],
     ]
       .map(([d, f, t]) => `<li>${marker(d, f, false, 20)}<span>${esc(t)}</span></li>`)
       .join('') +

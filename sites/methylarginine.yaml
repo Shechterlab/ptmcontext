@@ -2789,7 +2789,7 @@ website:                  # the look and words of the website (ptmc web); layout
       - {analysis: motif, best: true, label: "in {class} motifs", kind: Sequence motif, glyph: letters, opens: p-score}
       - {analysis: disorder, classes: [disordered], label: in disordered regions, kind: Position in the protein, glyph: wave, opens: p-regions}
       - {attribute: evidence, values: [rna_crosslink, rbdmap_fragment, capri_xl_peptide, capri_adj_peptide, pclap_peptide, pclap_lysc_region, rbrid_residue, rbrid_residue_published_rule, rbrid_region],
-         label: in RNA-bound fragments or peptides, kind: "Observed in cells; not shown to be a direct contact", glyph: squiggle, opens: p-sites,
+         label: in RNA-bound fragments or peptides, kind: "In cells; not a direct contact", glyph: squiggle, opens: p-sites,
          tip: "Methylarginines crosslinked to RNA in living cells, or inside an RNA-bound peptide or fragment (RBDmap, CAPRI, pCLAP) or an RNA-contact peptide (RBR-ID). This shows where RNA binds in cells, not a structural contact. The RNA and DNA interactions section counts sites whose side chain is within 4 Å of a nucleic acid in a PDB structure"}
       - {analysis: condensate_proteome, best: true, label: "CD-CODE condensates, with {class}", kind: Condensates, glyph: drops, opens: p-kinds}
       - {analysis: disease_family, label: disease families, kind: Disease, glyph: cross, opens: p-kinds, hide_in: cards}
@@ -2869,7 +2869,7 @@ website:                  # the look and words of the website (ptmc web); layout
         - {table: site, column: maron2021_s2_states, label: Maron 2021 Table S2, source: Maron2021}
         - {table: site, column: uniprot_states, label: UniProt, url: "https://www.uniprot.org/uniprotkb/{acc}/entry#ptm_processing"}
         - {attribute: neutral_loss, label: "Hartel 2019, neutral loss", source: Hartel2019}
-        - {table: site, column: states_by_study_design, label: a study that looked for one state only}
+        - {table: site, column: states_by_study_design, label: (single-state study)}
       change_counts:       # changes at each candidate residue from residue_changes tables, beside the protein's average for that residue (the toggle: known sites only, or every arginine)
         - {id: tcga, label: TCGA, unit: [tumor, tumors], tables: [tcga_changes_R], background: cancer_background, count: tcga_changes, gene: gene}
         - {id: depmap, label: DepMap, unit: [cell line, cell lines], tables: [depmap_changes_R], background: cancer_background, count: depmap_changes, gene: gene}
@@ -2966,8 +2966,8 @@ website:                  # the look and words of the website (ptmc web); layout
         suggest:
           label: Writer from PRMT perturbation data
           rules:
-            - {attribute: methyl_ip, has: [SDMA], suggests: PRMT5, because: "a peptide containing it was recovered by the SDMA antibody (symmetric dimethylation, made by PRMT5)"}
-            - {attribute: methyl_ip, has: [ADMA], suggests: type I PRMTs, because: "a peptide containing it was recovered by the ADMA antibody (asymmetric dimethylation, made by type I PRMTs such as PRMT1 and CARM1)"}
+            - {attribute: methyl_ip, has: [SDMA], suggests: PRMT5, because: SDMA antibody}
+            - {attribute: methyl_ip, has: [ADMA], suggests: type I PRMTs, because: ADMA antibody}
             - {attribute: gsk591, has: [decreased], suggests: PRMT5, because: "a peptide containing it decreased with the PRMT5 inhibitor GSK591, and none increased"}
             - {attribute: ms023, has: [decreased], suggests: type I PRMTs, because: "a peptide containing it decreased with the type I PRMT inhibitor MS023, and none increased"}
             - {attribute: perturbation, has: ["carm1_ko_mcf7:decreased", "carm1_ko_mdamb231:decreased"], suggests: CARM1, replaces: type I PRMTs,

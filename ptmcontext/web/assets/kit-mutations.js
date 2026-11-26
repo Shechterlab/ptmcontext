@@ -2056,7 +2056,7 @@
     let line = '',
       body = '';
     if (V === 'ranked') {
-      line = `Which ${esc(W.marks)} are changed in tumors and cell lines more often than expected, or carry fewer inherited variants than expected?`;
+      line = `Sites changed more often than expected (TCGA, DepMap); sites with fewer gnomAD variants than expected.`;
       const lists = rankedLists();
       body = lists ? sigLine(lists) + lists.map(rankSection).join('') : null;
       if (body === null)

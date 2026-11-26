@@ -195,7 +195,7 @@
         id: 'variants',
         tsvName: 'variants',
         label: 'Variants',
-        help: `Variants at the site, from the site card: every variant at the residue, then those classified pathogenic or likely pathogenic (${K.card.vc.entries.map((x) => x.highlight?.label).filter(Boolean)[0] || 'highlighted'}). Click for the site card's variants`,
+        help: `Variants at the site, from the site card: every variant at the residue, then those classified pathogenic or likely pathogenic. Click for the site card's variants`,
         cell: (r) => (r.vars ? K.card.vc.line(M.vtb, M.p.acc, r.pos) : '…'),
         val: (r) => (r.vars ? r.vars.reduce((a, v) => a + v.hot, 0) * 1e6 + r.vars.reduce((a, v) => a + v.n, 0) : null),
         tsv: (r) => (r.vars ? K.card.vc.text(M.vtb, r.pos) : ''),
@@ -310,8 +310,11 @@
             x,
             M.rows.map((r) => r.pos)
           ).hot;
+          const full = (x.highlight.title || '').replace(/\s*\([^)]*\)\s*$/, '');
           parts.push(
-            `${esc(`${int(n)} with ${x.label}`)} <abbr title="${esc(x.highlight.title || x.highlight.label)}">${esc(x.highlight.label)}</abbr> variants`
+            full
+              ? esc(`${int(n)} with ${full} ${x.label} variants`)
+              : `${esc(`${int(n)} with ${x.label}`)} <abbr title="${esc(x.highlight.label)}">${esc(x.highlight.label)}</abbr> variants`
           );
         });
     return (

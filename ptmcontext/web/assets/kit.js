@@ -882,7 +882,7 @@
   // a mark that is a glyph says its meaning in hidden text as well
   // the line for a question none of whose rows differs: under 1.1× when some row passes the test, else not significant
   const noneDiffers = (rows) =>
-    rows.some((r) => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'No row reaches q ≤ 0.05';
+    rows.some((r) => r.q != null && r.q <= PADJ) ? 'None ≥ 1.1×' : 'No row reaches q ≤ 0.05';
   const am = (d) =>
     `<span class="am ${d}"><span aria-hidden="true">${d === 'more' ? '▲' : d === 'less' ? '▼' : '○'}</span>` +
     `<span class="vh">${d === 'more' ? 'more often: ' : d === 'less' ? 'less often: ' : 'no difference: '}</span></span>`;
@@ -1264,7 +1264,10 @@
   K.whyShown = whyShown;
   K.whyOf = whyOf;
   // a class label after "in": the label's own leading "In" would double it ("in In an IDR")
-  const afterIn = (t) => String(t ?? '').replace(/^in\s+(?=\S)/i, '');
+  const afterIn = (t) =>
+    String(t ?? '')
+      .replace(/^in\s+(?=\S)/i, '')
+      .replace(/^(\d+) or more\b/, '≥$1');
   // a row's effect for the one-line summary: the fold, or the counts when the fold is huge or nil (almost no comparison
   // residues in the class), read from the row's own counts
   const foldOrCounts = (r) => {
@@ -1294,10 +1297,10 @@
         .replace('{fold}', foldOrCounts(top));
     if (top)
       return (
-        `More often in <b>${esc(afterIn(top.label))}</b> (${foldOrCounts(top)})` +
-        (low ? `. Less often in <b>${esc(afterIn(low.label))}</b> (${foldOrCounts(low)})` : '')
+        `<b>${esc(afterIn(top.label))}</b>: ${foldOrCounts(top)}` +
+        (low ? `. <b>${esc(afterIn(low.label))}</b>: ${foldOrCounts(low)}` : '')
       );
-    if (low) return `Least often in <b>${esc(afterIn(low.label))}</b> (${foldOrCounts(low)})`;
+    if (low) return `<b>${esc(afterIn(low.label))}</b>: ${foldOrCounts(low)}`;
     return 'None differs (q ≤ 0.05 and at least 1.1×)';
   }
   const EXCL = /^(no |not |unknown|unassigned|other\b)/i;
@@ -2605,13 +2608,13 @@
       return why
         .map(
           (w) =>
-            `<p class="ov-empty muted">${w}: ${list
+            `<p class="ov-empty muted">${list
               .filter((e) => e[1] === w)
               .map(
                 ([c]) =>
                   `<a id="tile-${esc(c.analysis)}" href="${esc(link('overview', c.analysis))}">${esc(tileTitle(c))}</a>`
               )
-              .join(', ')}.</p>`
+              .join(', ')}: ${w.replace(/^./, (ch) => ch.toLowerCase())}</p>`
         )
         .join('');
     };
@@ -6160,7 +6163,7 @@
         }`
       : '') +
     ` · code: ${esc(hlicence(D.kit.licence || 'MIT'))}${CIT.licence ? ` · data: ${esc(hlicence(CIT.licence))}` : ''}` +
-    ` · no cookies, no tracking; nothing you search leaves your browser`;
+    ` · No cookies, no tracking. Protein pages fetch public data from UniProt, AlphaFold DB, PDBe and STRING by accession.`;
   // one footer on every page: Cite · Download · Methods · Keyboard shortcuts · Source code · Data DOI · Privacy, then the theme
   $('#foot-links').innerHTML = [
     ['Cite', link('method', 'cite')],
