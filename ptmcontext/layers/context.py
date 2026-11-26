@@ -131,7 +131,7 @@ DOMAIN_TRACK = Track(
     needs=('disorder',),
     title='Disorder context',
     labels={
-        'disordered': 'Disordered region',
+        'disordered': 'Disordered',
         'disorder_boundary': 'Ordered, ≤<window> aa from a disordered region',
         'ordered': 'Ordered, ><window> aa from a disordered region',
         'no_disorder_annotation': 'No disorder data',

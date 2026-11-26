@@ -1619,7 +1619,7 @@ website:                  # the look and words of the website (ptmc web); layout
       condensate: {DEE660B4: "Stress granule (CD-CODE)", A40D6D0A: "DHX9 stress granule (CD-CODE)"}
       condensate_proteome: {DEE660B4: "Stress granule (CD-CODE)", A40D6D0A: "DHX9 stress granule (CD-CODE)"}
       panther_group: {"RNA processing and translation": "RNA processing", "Scaffolds, adaptors and chaperones": "Scaffolds", "Transcription, chromatin and DNA": "Transcription", "Protein-modifying enzymes": "Modifying enzymes", "Cytoskeleton, adhesion and matrix": "Cytoskeleton"}
-      disorder: {"disordered": "In a disordered region", "ordered": "Ordered"}
+      disorder: {"disordered": "Disordered", "ordered": "Ordered"}
       crosslink: {"capri_adj_peptide": "Next to RNA (CAPRI), among all arginines", "rbrid_residue": "RNA contact (RBR-ID), among all arginines", "rna_crosslink": "RNA crosslink", "dna_binding_region": "DNA-binding region"}
       pdb_interface: {"protein": "Protein interface (PDB)"}
       reactome_top_level: {"R-HSA-8953854": "RNA metabolism", "R-HSA-4839726": "Chromatin", "R-HSA-74160": "Transcription", "R-HSA-1640170": "Cell cycle"}
@@ -3427,7 +3427,7 @@ website:                  # the look and words of the website (ptmc web); layout
                     - {filter: "a:motif", value: GAR, label: GAR, group: Motif}
                     - {filter: "a:motif", value: RXR, label: RXR, group: Motif}
                     - {filter: "a:motif", value: CARM1_proline_rich, label: Pro ±5, group: Motif}
-                    - {filter: "a:disorder", value: disordered, label: In a disordered region, group: Context}
+                    - {filter: "a:disorder", value: disordered, label: Disordered, group: Context}
                     - {filter: "a:domain_context", value: in_domain, label: In a domain, group: Context}
                 - {kind: checker, title: Check one site, attributes: [interaction, evidence, nucleic_acid, nucleic_acid_type, partner_class], tables: [interactions]}
         - name: RNA and DNA
