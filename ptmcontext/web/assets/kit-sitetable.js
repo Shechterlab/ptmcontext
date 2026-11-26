@@ -211,7 +211,7 @@
           sub: 'q',
           num: 1,
           help:
-            `${s.long || s.label}: q of the binomial test, Benjamini–Hochberg corrected. A ring means q below ${RING}, more than expected` +
+            `${s.long || s.label}: q of the binomial test, Benjamini–Hochberg corrected. Ring: q < ${RING}, more than expected` +
             (s.lower_tail ? '; a dashed ring means fewer than expected (the q shown is for fewer)' : ''),
           val: (r) => src(r)?.q,
           tie: (r) => src(r)?.p,
@@ -414,9 +414,9 @@
       M.loaded === null
         ? `<p class="muted small">The changes observed at each site could not be read.</p>`
         : `<p class="muted small st-note">k: ${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected changes (from codons). ` +
-          `q: corrected for the sites tested; a ring is q below ${RING} with more than expected${
-            SRC.some((s) => s.lower_tail) ? ', a dashed ring with fewer' : ''
-          }. Click a column to sort.</p>`;
+          `q: adjusted for the sites tested. Ring: q < ${RING}, more than expected${
+            SRC.some((s) => s.lower_tail) ? '; dashed: fewer' : ''
+          }.</p>`;
     const withWriter = M.rows.some((r) => r.writer) ? writerChip() : '';
     return (
       `<div class="st-bar">${K.prop.hyperSwitch('Samples')}${withWriter}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'stexp', 'the table of sites', null)}</div>` +

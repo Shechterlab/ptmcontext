@@ -24,7 +24,7 @@ groups:                    # a card goes in the group its site file names (websi
   - {id: other, title: Other organisms, compact: true}
 compare:                   # the Compare marks page (compare/index.html): CONTRACTS.md, "Compare marks"
   title: Compare marks
-  intro: "Published results of each explorer, by class; not recomputed or pooled."
+  intro: "Published results per explorer, by class."
   columns:                 # each explorer's short name here (default: its landing label)
     methylarginine: Methylarginine
     methyllysine: Methyllysine

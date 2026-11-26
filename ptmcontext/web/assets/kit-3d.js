@@ -2959,9 +2959,7 @@
             T.homAll ? 'Show the first 12 sites' : `Show all ${int(sites.length)} sites`
           }</button></p>`
         : '') +
-      ('<p class="src">RCSB sequence search (MMseqs2) and entry descriptions, read ' +
-        'live. Entries with another protein, RNA or DNA come first, then higher ' +
-        'identity; only residues modeled in the deposited chain are listed.</p>');
+      '<p class="src">RCSB sequence search (MMseqs2), live. Entries with other molecules first, then by identity.</p>';
   }
   function showHomolog(h, focus) {
     const acc = T.acc,
@@ -4185,7 +4183,6 @@
           `title="${esc(t)}">${l}</button>`
       )
       .join('');
-    const hasTables = Object.keys(SD.inputs || {}).length > 0;
     return (
       `<div class="s3d" id="s3d"><div class="s3d-head card-head">` +
       (`<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}${
@@ -4219,12 +4216,7 @@
       sub('s3d-pdb', 'Experimental structures (PDB)', '<div id="s3d-pdb-list"></div>') +
       sub('s3d-hom', 'Homologous experimental structures', '<div id="s3d-hom-list"></div>') +
       sub('s3d-pred', 'Predicted complexes', `<div id="s3d-pred-list"></div>`) +
-      `<p class="src">Live: AlphaFold DB, PDBe, RCSB${SD.predicted ? ', ProtVar' : ''}. Viewer: ${esc(LIB_CITE)}.${
-        hasTables
-          ? ` What the ${esc(NOUNS)} touch: the ` +
-            `tables of this explorer (${esc([...new Set(Object.keys(SD.inputs).map(tableWords))].join('; '))}).`
-          : ''
-      }</p></div>`
+      `<p class="src">Live: AlphaFold DB, PDBe, RCSB${SD.predicted ? ', ProtVar' : ''}. Viewer: ${esc(LIB_CITE)}.</p></div>`
     );
   }
   function reset(p, rec) {

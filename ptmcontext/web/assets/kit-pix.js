@@ -136,7 +136,7 @@
       out +=
         `<section class="pix-sec"><h4 id="pix-sites">Proteins at the sites</h4>` +
         (who.n
-          ? `<p class="sub">Proteins that bind or write each ${esc(W.mark)}, from the records: ${int(who.n)} of ${int(rec.marks.length)} ${esc(W.marks)} have one on record.</p><div class="tbl-card"><table class="tbl compact stackable pix-who"><thead><tr><th>` +
+          ? `<p class="sub">Writers or readers on record: ${int(who.n)} of ${int(rec.marks.length)} ${esc(W.marks)}.</p><div class="tbl-card"><table class="tbl compact stackable pix-who"><thead><tr><th>` +
             `Site</th><th>Binding and writing proteins</th><th class="num">Papers</th></tr></thead><tbody>${who.rows
               .slice(0, UI.all ? 999 : UI.rows)
               .join('')}</tbody></table>` +
@@ -165,13 +165,9 @@
         )}</div>`;
       if (UI.tab === 'partners') {
         out +=
-          `<p class="pix-head"><b>${int(marked)} of ${int(parts.length)} protein partners (${pc(marked, parts.length)})</b> have ${esc(W.marks)} themselves${
-            base != null
-              ? `, against ${pc(D.counts.proteins, D.run.snapshot.entries)} of the reviewed ` + `proteome`
-              : ''
-          }. <span class="muted small">STRING physical associations of the whole protein, score ${esc(
-            String(D.partners?.min_score ?? 0.7)
-          )} or more.</span>` +
+          `<p class="pix-head"><b>${int(marked)} of ${int(parts.length)} partners (${pc(marked, parts.length)})</b> have ${esc(W.marks)}${
+            base != null ? `; reviewed proteome ${pc(D.counts.proteins, D.run.snapshot.entries)}` : ''
+          }. <span class="muted small">STRING physical, score ≥ ${esc(String(D.partners?.min_score ?? 0.7))}.</span>` +
           `</p>` +
           (`<div class="tbl-card"><table class="tbl compact pix-parts"><thead><tr><th>Protein</th><th class="num">` +
             `STRING score</th><th>${esc(cap(W.marks))}</th><th>Class</th></tr></thead><tbody>`) +

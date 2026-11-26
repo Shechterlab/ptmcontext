@@ -1430,12 +1430,10 @@
               (first
                 ? `<h5 class="sp-roll">${esc(cap(roll.label))} <span class="muted small">${nPartnersTxt(rollWho)}</span></h5>`
                 : '') +
-              `<details class="sp-group" id="${esc(recFold(g))}"${
+              `<details class="sp-group" id="${esc(recFold(g))}"${(RC.help || {})[g] ? ` title="${esc(RC.help[g])}"` : ''}${
                 !span && ((RC.open || []).includes(g) || all.length === 1) ? ' open' : ''
               }><summary><b>${esc(cap(span ? (RC.span.label || '').replace('{site}', c.label) : grpLabel(g)))}</b> <span ` +
-              `class="muted small">${nPartnersTxt(who.size)}${
-                (RC.help || {})[g] ? ' — ' + esc(RC.help[g]) : ''
-              }</span></summary>` +
+              `class="muted small">${nPartnersTxt(who.size)}</span></summary>` +
               (`<div class="tbl-card"><table class="tbl compact sp-tbl stackable"><thead><tr><th>Partner</th><th>` +
                 `Evidence</th><th>Method</th><th>Site in it</th><th>Paper</th></tr></thead><tbody>${xs.slice(0, 8).map(row).join('')}</tbody>`) +
               (xs.length > 8 ? `<tbody class="sp-rest" hidden>${xs.slice(8).map(row).join('')}</tbody>` : '') +

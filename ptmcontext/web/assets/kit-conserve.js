@@ -407,11 +407,8 @@
       .map((s) => s.label);
     const test =
       ck.me != null && ck.other != null
-        ? `<p class="cv-test"><b>${esc(W.marks)} against the other ${esc(W.residues)} of ${g}:</b> on average a ${esc(W.mark)} is conserved as ${esc(KEPT)} in <b>${PCT(ck.me)}%</b> of ` +
-          `the species that align it, ` +
-          `the other ${esc(W.residues)} in <b>${PCT(ck.other)}%</b> (${int(ck.n1)} and ${int(ck.n2)} ${esc(W.residues)}; ${
-            ck.p == null ? 'too few to test' : 'Wilcoxon rank-sum p = ' + K.fq(ck.p)
-          }).</p>`
+        ? `<p class="cv-test">Conserved as ${esc(KEPT)}: ${esc(W.marks)} <b>${PCT(ck.me)}%</b>, other ${esc(W.residues)} <b>${PCT(ck.other)}%</b> ` +
+          `(${int(ck.n1)} and ${int(ck.n2)}; ${ck.p == null ? 'too few to test' : 'rank-sum p ' + K.fq(ck.p)}).</p>`
         : '';
     const row = (name, sub, vals) =>
       `<tr><th>${esc(name)}${sub ? ` <span class="muted">${esc(sub)}</span>` : ''}</th>${vals}</tr>`;
@@ -455,7 +452,7 @@
       '</div>' +
       table +
       (`<p class="small muted">Dark: conserved as ${esc(KEPT)}; pale: a conservative change; gray: another residue; – a ` +
-        `gap; · not mapped (the Ensembl protein differs here). The percentage is the ortholog’s identity to ${g}. `) +
+        `gap; · not mapped. The percentage is the ortholog’s identity to ${g}. `) +
       (`<a href="https://www.ensembl.org/${esc(
         String(ENS.source).replace(/^./, (c) => c.toUpperCase())
       )}/Gene/Compara_Ortholog?g=${encodeURIComponent(st.ensg)}" target="_blank" ` +

@@ -919,10 +919,10 @@
       g = c.self.gene || c.acc;
     if (src)
       src.textContent =
-        `STRING${st.ver ? ' v' + st.ver : ''} ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more (${CITE}), retrieved ${today()}. Partners ` +
-        `are matched to this dataset’s proteins by UniProt accession` +
-        (`${st.mapped ? '' : ' (UniProt did not answer, so none could be matched)'}, isoforms by their canonical ` +
-          `accession. An association is to the whole protein and does not show that a partner binds or modifies a ${W.mark}.`) +
+        `STRING${st.ver ? ' v' + st.ver : ''} ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more (${CITE}), retrieved ${today()}. ` +
+        `Matched by UniProt accession` +
+        (`${st.mapped ? '' : ' (UniProt did not answer, so none could be matched)'}; isoforms by canonical ` +
+          `accession.`) +
         `${
           allCh()
             ? ''
