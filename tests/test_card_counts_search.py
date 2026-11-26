@@ -60,7 +60,7 @@ def test_the_card_leads_with_residue_evidence_and_keeps_the_structures_closed():
 
 def test_the_sites_table_opens_in_position_order_and_the_writer_header_marks_no_source():
     st = _src('kit-sitetable.js')
-    assert "const ST = { key: 'site', dir: 1 }" in st
+    assert "const ST = { key: 'site', dir: 1, writerFirst: false }" in st
     for name in ('kit-sitetable.js', 'kit-sites.js'):
         assert "role_labels?.writer || 'Writer'" in _src(name)
     ph = yaml.safe_load((SITES / 'phospho.yaml').read_text())

@@ -1014,7 +1014,7 @@ formats, gets the same pages with no code (`kit-tables.js`, `kit-sites.js`; `ptm
 `site.table_view_problems`; `tests/test_tables_pages.py`). A block a site does not write is replaced by a default; a
 column whose data a site lacks is left out.
 
-**`website.proteins`** (the Proteins page). `presets`: sort chips above the table, `[{title, by: marks | <number attribute>, order: desc | asc, where: {attribute, max, min}, show, n, help}]`, with the fields and the rule of an Overview starting-points list (a protein passes `where`, ties go to the protein with more marks); a chip whose attribute the site lacks is left out, and a click on the chip again, or on a column heading, returns to the default order. `columns`: the table's columns after the protein and its count of marks (of
+**`website.proteins`** (the Proteins page). `presets`: sort chips above the table, `[{title, by: marks | share | <number attribute>, order: desc | asc, where: {attribute, max, min}, show, n, help}]`, with the fields and the rule of an Overview starting-points list (a protein passes `where`, ties go to the protein with more marks); a chip whose attribute the site lacks is left out, and a click on the chip again, or on a column heading, returns to the default order. `columns`: the table's columns after the protein and its count of marks (of
 the selection, "/ total" when that differs), offered in the Columns menu (`default: true` shows at first; the reader's
 choice is kept in the browser). Each `{id, label, menu?, default?, fixed? (always shown, not in the menu), help? (the header's hover), hide? (xs: dropped below
 36rem; sm: below 56rem)}` and one of:

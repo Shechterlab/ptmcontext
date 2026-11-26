@@ -250,8 +250,10 @@
   const PS = { sort: 'marks', desc: true, n: 50, key: null, preset: null };
   // the preset sorts (website.proteins.presets, the chips above the table): proteins ranked by their count of marks or a
   // number attribute, only those that pass the preset's `where`, ties by marks; one whose attribute the site lacks is left out
-  const pHas = (n) => n === 'marks' || PA.values?.[n] != null;
-  const pVal = (p, n) => (n === 'marks' ? p.marks : K.proteinAttr(p.acc, n));
+  // `share` is the table's own Share column: marks over the protein's candidate residues
+  const pHas = (n) => n === 'marks' || n === 'share' || PA.values?.[n] != null;
+  const pVal = (p, n) =>
+    n === 'marks' ? p.marks : n === 'share' ? (p.cand ? p.marks / p.cand : null) : K.proteinAttr(p.acc, n);
   const presets = () => (PCFG.presets || []).filter((l) => pHas(l.by) && (!l.where || pHas(l.where.attribute)));
   const presetOk = (l, p) => {
     const v = pVal(p, l.by);

@@ -2471,9 +2471,15 @@ def pages(
         if lab
         else ''
     )
+    commit = code_commit()  # the explorers' footers show the same short form (kit.js shortCommit)
+    build = (
+        f' (build {html.escape(commit.removesuffix("-dirty")[:7])}{"+changes" if commit.endswith("-dirty") else ""})'
+        if commit
+        else ''
+    )
     built_with = (
         f'Updated {html.escape(human_date(_now()))}. App: <a href="{html.escape(kit["url"])}">PTMcontext '
-        f'{html.escape(kit["version"])}</a>, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
+        f'{html.escape(kit["version"])}</a>{build}, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
         "Each explorer's data are under the license its page states."
     )
     text = LP.page(

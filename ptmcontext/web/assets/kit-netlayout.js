@@ -529,7 +529,10 @@
         let lines, cnt, w, h;
         if (!phone) {
           lines = wrap2(term, 22);
-          cnt = full && labels[c].k != null ? `${labels[c].k} of ${size[c]} proteins` : `${size[c]} proteins`;
+          cnt =
+            full && labels[c].k != null
+              ? `${labels[c].k} of ${size[c]} carry this term`
+              : `${size[c]} protein${size[c] === 1 ? '' : 's'}`;
           w = Math.max(Math.max(...lines.map((s) => textW(s, fs, 600))) + 14, textW(cnt, fs - 1.5) + 14);
           h = fs * 1.32 * lines.length + (fs - 1.5) * 1.3;
         } else {

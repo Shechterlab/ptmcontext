@@ -1432,7 +1432,9 @@
   const isSetRow = (r) => SETS(r.analysis) && r.method === 'enricher';
   const share2Of = (r) => (isSetRow(r) ? (r.a + r.c) / (r.a + r.b + r.c + r.d) : share2(r));
   const sharePair = (r) =>
-    r && r.a != null && r.a + r.b > 0 && r.c + r.d > 0 ? `${pcD(share1(r))} vs ${pcD(share2Of(r))}` : '';
+    r && r.a != null && r.a + r.b > 0 && r.c + r.d > 0
+      ? `${pcD(share1(r))} vs ${pcD(share2Of(r))}${isSetRow(r) ? ' (all proteins)' : ''}`
+      : '';
   const shareSpan = (r) =>
     sharePair(r) && !r.vs
       ? `<span class="sh" title="${
@@ -3076,7 +3078,7 @@
           ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}${
               K.sel.testable() ? ', tested in this browser (exploratory).' : ', shown, not tested: it is too small.'
             }`
-          : esc(a.question || a.describe || '')
+          : esc(a.kind === 'protein_sets' && a.sub ? '' : a.question || a.describe || '') // a set's own sub line under the card title leads
       }${
         selOn() && !vsOn()
           ? mod
@@ -5338,7 +5340,12 @@
         ? D.site.name
         : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`; // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg) && D.header?.compact === true); // the full header band on every page unless website.header.compact: true
-    document.body.classList.toggle('compact-phone', S.view !== 'overview' || !!S.arg); // CSS: under 700 px the header is one row on these pages
+    // CSS: under 700 px the header is one row on these pages, and on a phone's Overview too (the cell drawing starts on the first screen)
+    const phone = matchMedia('(max-width: 700px)');
+    const compactPhone = () =>
+      document.body.classList.toggle('compact-phone', S.view !== 'overview' || !!S.arg || phone.matches);
+    compactPhone();
+    if (!K.phoneWatch) (K.phoneWatch = phone).addEventListener?.('change', compactPhone);
     document.body.classList.remove('bar-hidden');
     document.querySelector('.toolbar')?.removeAttribute('inert');
     K.barReset?.();

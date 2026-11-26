@@ -802,7 +802,7 @@ def website_problems(site: dict) -> list[str]:
     ):
         for lst in lists:
             for n in [lst['by'], (lst.get('where') or {}).get('attribute')]:
-                if n and n != 'marks' and (n not in pattrs or pattrs[n].get('kind') != 'number'):
+                if n and n not in ('marks', 'share') and (n not in pattrs or pattrs[n].get('kind') != 'number'):
                     out.append(
                         f'{where}: {lst["title"]!r} reads {n!r}, which is not a number attribute of proteins (proteins.attributes)'
                     )

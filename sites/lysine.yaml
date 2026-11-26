@@ -2074,6 +2074,7 @@ website:                  # the look and words of the website (ptmc web); layout
   proteins:                # the Proteins page: the preset sorts above its table (chips)
     presets:
       - {title: Most sites, by: marks, n: 6, help: Proteins with the most modified lysine sites}
+      - {title: Most modified for their lysine count, by: share, n: 6, help: "Highest share of the protein's lysines that are modified"}
   sites:                   # the Sites tab
     quick: [acyl_type]                     # the quick filter above the table: the modification type
     table:                 # the optional columns (the Columns menu): the same set on every site, where the data has it

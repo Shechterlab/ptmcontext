@@ -262,7 +262,7 @@
           .map((aid) => (D.analyses.find((a) => a.id === aid) || {}).title)
           .filter(Boolean)
       ),
-    ].map((t) => t.toLowerCase());
+    ].map((t) => (/[A-Z]/.test(t.slice(1)) ? t : t.toLowerCase())); // a name with its own capitals keeps them
     return ts.length
       ? K.cap(ts.length > 1 ? `${ts.slice(0, -1).join(', ')} and ${ts[ts.length - 1]}` : ts[0])
       : 'These sets';

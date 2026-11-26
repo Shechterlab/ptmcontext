@@ -72,6 +72,11 @@
       .map((id) => (want[id] ? id : '-' + id));
     if (ids.length) p.set('open', ids.join(','));
   });
+  // the first section a link opened that lies inside `root` (an element), or null: a landing on the root goes to it
+  K.openedIn = (root) => {
+    const id = Object.keys(want).find((k) => want[k] && root?.querySelector(`[id="${k}"]`));
+    return id ? document.getElementById(id) : null;
+  };
   const save = () => {
     clearTimeout(timer);
     timer = setTimeout(() => K.writeHash(false), 150);

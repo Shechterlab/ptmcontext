@@ -1072,19 +1072,35 @@
     const acc = T.acc,
       pos = siteNow();
     if (pos != null && T.rec?.marks?.some((m) => m[0] === pos)) {
-      placeholder(`Finding the experimental entry that resolves ${esc(rl(pos))}…`);
-      return scanSite(acc, pos).then(
-        (list) => {
-          if (T.acc !== acc || (T.mol && T.mol.acc === acc)) return;
-          if (!list.length)
-            return showAf().then(() => {
-              if (!T.msg) message(`No PDB entry resolves ${rl(pos)}; the AlphaFold model is shown.`);
-            });
-          const e = list[0];
-          return showPdb(e, resolvesAt(e.id, pos), pos);
-        },
-        () => showAf()
-      );
+      // the AlphaFold model is drawn first; the experimental entry that resolves the site replaces it once one is found,
+      // unless the reader has changed the model by then (the entries list is asked for while the model loads; the site
+      // scan starts after it, so its 10 s read is not shared with the model's download)
+      loadPdb(acc).catch(() => {});
+      (T.scanning ||= {})[`${acc}:${pos}`] = true;
+      return showAf()
+        .then(
+          () => T.mol,
+          () => T.mol
+        )
+        .then((shown) =>
+          scanSite(acc, pos).then(
+            (list) => {
+              delete T.scanning[`${acc}:${pos}`];
+              if (T.acc !== acc) return;
+              if (!list.length) {
+                (T.noneAt ||= {})[`${acc}:${pos}`] = true;
+                if (!T.msg) message(`No PDB entry resolves ${rl(pos)}; the AlphaFold model is shown.`);
+                return paintSrc();
+              }
+              if (T.mol !== shown || (shown && shown.mode !== 'af')) return;
+              const e = list[0];
+              return showPdb(e, resolvesAt(e.id, pos), pos);
+            },
+            () => {
+              delete T.scanning[`${acc}:${pos}`];
+            }
+          )
+        );
     }
     placeholder(`Finding the experimental chain that models most of ${esc(T.p.gene || T.acc)}…`);
     return bestPdb(acc).then(
@@ -1939,19 +1955,25 @@
     const target = own ? own.e : best && !best.failed ? best.e : null;
     const list = res ? pdbMenu(res) : [];
     const chains = own ? own.e.maps.map((m) => m.chain).filter((c, k, a) => a.indexOf(c) === k) : [];
-    const lab = target
-      ? `Experimental · PDB ${UP(target.id)}`
-      : best?.failed || res?.failed
-        ? 'Experimental (PDBe did not answer; retry)'
-        : !res
-          ? 'Experimental (looking…)'
-          : list.length
-            ? 'Experimental'
-            : 'Experimental (none)';
+    const none = !own && siteNow() != null && !!T.noneAt?.[`${acc}:${siteNow()}`];
+    const looking = !own && siteNow() != null && !!T.scanning?.[`${acc}:${siteNow()}`];
+    const lab = none
+      ? `Experimental (none at ${rl(siteNow())})`
+      : looking
+        ? 'Experimental (looking…)'
+        : target
+          ? `Experimental · PDB ${UP(target.id)}`
+          : best?.failed || res?.failed
+            ? 'Experimental (PDBe did not answer; retry)'
+            : !res
+              ? 'Experimental (looking…)'
+              : list.length
+                ? 'Experimental'
+                : 'Experimental (none)';
     box.innerHTML =
       `<div class="seg" role="group" aria-label="Structure shown"><span class="seg-l">Show</span>` +
       `<button type="button" data-s3d-src="pdb" aria-pressed="${mode === 'pdb'}"${
-        !res && !best ? ' disabled' : res && !list.length && !res.failed ? ' disabled' : ''
+        none || (!res && !best) ? ' disabled' : res && !list.length && !res.failed ? ' disabled' : ''
       }>${esc(lab)}</button>` +
       `<button type="button" data-s3d-src="af" aria-pressed="${mode === 'af'}">AlphaFold model</button></div>` +
       (list.length > 1 || (list.length && !own)

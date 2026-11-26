@@ -517,7 +517,11 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
         if not phone:
             lines = wrap2(term, 22)
             k_t = labels[c].get('k') if full else None
-            cnt = f'{k_t} of {size[c]} proteins' if k_t is not None else f'{size[c]} proteins'
+            cnt = (
+                f'{k_t} of {size[c]} carry this term'
+                if k_t is not None
+                else f'{size[c]} protein{"" if size[c] == 1 else "s"}'
+            )
             w = max(max(text_w(s, fs, 600) for s in lines) + 14, text_w(cnt, fs - 1.5) + 14)
             h = fs * 1.32 * len(lines) + (fs - 1.5) * 1.3
         else:  # a numbered badge: the list under the figure names the clusters

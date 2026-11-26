@@ -19,7 +19,8 @@
   const OPEN_MAX = 40; // up to this many sites the table is open
   const TOP = SRC.find((s) => s.kind === 'somatic') || SRC[0]; // the source the summary reads
   if (!SRC.length) return;
-  const ST = { key: 'site', dir: 1 };
+  const ST = { key: 'site', dir: 1, writerFirst: false }; // writerFirst: the sites with a writer lead, then the sort
+  const WRITER = (D.protein_view?.card?.role_labels?.writer || 'Writer').toLowerCase();
   const numOf = (v) => (v == null || Number.isNaN(+v) ? null : +v);
 
   // ---- the files: the protein's propensity shard (K.prop.load) and its tables (K.card.load, for the variant counts) ----------------
@@ -44,6 +45,11 @@
   // ---- the rows ------------------------------------------------------------------------------------------------------------------
   const disorderKinds = new Set((D.tracks || []).filter((t) => t.style === 'disorder').map((t) => t.kind));
   const inDisorder = (rec, pos) => (rec.units || []).some((u) => disorderKinds.has(u[0]) && pos >= u[1] && pos <= u[2]);
+  // the cohort the k columns count: the same switch as the Mutations page
+  const cohortTag = () => `${K.prop.state.hyper ? 'with' : 'without'} hypermutated`;
+  // a source's name in the k legend: a somatic source (tumors, cell lines) says which cohort its k counts
+  const kName = (s) =>
+    `${s.label} ${(s.unit || ['sample', 'samples'])[1]}${s.kind === 'somatic' ? ` (${cohortTag()})` : ''}`;
   const sourceCells = (acc, pos, s) => {
     const v = K.prop.at(acc, s.id, pos);
     if (!v) return { k: null, o: null, q: null, p: null, fewer: false, text: '' };
@@ -143,7 +149,7 @@
         id: 'writer',
         tsvName: 'writer_uniprot',
         label: D.protein_view?.card?.role_labels?.writer || 'Writer',
-        help: 'Enzymes that write the mark at the site: the records’ writers, then those UniProt names for the residue',
+        help: 'Enzymes that write the mark at the site: the records’ writers, then those UniProt names for the residue; (indirect): suggested by perturbation data',
         cell: (r) => (r.writer == null ? '…' : r.writer || '<span class="muted">–</span>'),
         val: (r) => (r.writer ? r.writer.replace(/<[^>]*>/g, '') : null),
         tsv: (r) => (r.writer ? r.writer.replace(/<[^>]*>/g, '') : ''),
@@ -159,7 +165,7 @@
           label: `${s.label} k`,
           sub: 'k',
           num: 1,
-          help: `${s.long || s.label}: ${unit} with a change at the site`,
+          help: `${s.long || s.label}: ${unit} with a change at the site${s.kind === 'somatic' ? ` (${cohortTag()})` : ''}`,
           val: (r) => src(r)?.k,
           tsv: (r) => src(r)?.k ?? '',
         },
@@ -284,6 +290,7 @@
     const c = cols.find((x) => x.id === ST.key) || cols[0];
     const cmp = (a, b) => (typeof a === 'string' || typeof b === 'string' ? String(a).localeCompare(String(b)) : a - b);
     return [...M.rows].sort((x, y) => {
+      if (ST.writerFirst && !!x.writer !== !!y.writer) return x.writer ? -1 : 1;
       const a = c.val(x),
         b = c.val(y);
       if ((a == null) !== (b == null)) return a == null ? 1 : -1;
@@ -380,12 +387,15 @@
     const note =
       M.loaded === null
         ? `<p class="muted small">The changes observed at each site could not be read.</p>`
-        : `<p class="muted small st-note">k: ${esc(SRC.map((s) => `${s.label} ${(s.unit || ['sample', 'samples'])[1]}`).join(', '))} with a change at the site. O/E: observed/expected, the observed changes over those expected from the residue’s codon. ` +
+        : `<p class="muted small st-note">k: ${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected, the observed changes over those expected from the residue’s codon. ` +
           `q: corrected for the sites tested; a ring is q below ${RING} with more than expected${
             SRC.some((s) => s.lower_tail) ? ', a dashed ring with fewer' : ''
           }. Click a column to sort.</p>`;
+    const withWriter = M.rows.some((r) => r.writer)
+      ? `<div class="seg" role="group" aria-label="Sites with a ${esc(WRITER)}"><button type="button" data-stwriter aria-pressed="${ST.writerFirst}">With a ${esc(WRITER)}</button></div>`
+      : '';
     return (
-      `<div class="st-bar">${K.prop.hyperSwitch('Samples')}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'stexp', 'the table of sites', null)}</div>` +
+      `<div class="st-bar">${K.prop.hyperSwitch('Samples')}${withWriter}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'stexp', 'the table of sites', null)}</div>` +
       note +
       wait +
       table(M)
@@ -465,7 +475,7 @@
             ({ x, c }) => `<div><span class="muted">${esc(x.label)}</span> ${srcCell(x, { src: { [x.id]: c } })}</div>`
           )
           .join('')}</div><p class="muted small">k: ${esc(
-          SRC.map((x) => `${x.label} ${(x.unit || ['sample', 'samples'])[1]}`).join(', ')
+          SRC.map(kName).join(', ')
         )} with a change at the site. O/E: observed/expected, the observed changes over those expected from the residue’s codon. A ring means q below ${RING}.</p>`;
       return {
         key: `${pi}-${pos}`,
@@ -503,6 +513,14 @@
         ST.key = id;
         refresh(false);
         document.querySelector(`[data-stsort="${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
+      },
+    ],
+    [
+      '[data-stwriter]',
+      () => {
+        ST.writerFirst = !ST.writerFirst;
+        refresh();
+        document.querySelector('[data-stwriter]')?.focus({ preventScroll: true });
       },
     ],
     [

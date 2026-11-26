@@ -3586,7 +3586,7 @@
                       },
                       "by": {
                         "type": "string",
-                        "description": "marks (the protein's count), or a number attribute of proteins"
+                        "description": "marks (the protein's count), share (marks over its candidate residues), or a number attribute of proteins"
                       },
                       "order": {
                         "enum": [
@@ -7145,7 +7145,7 @@
                   },
                   "by": {
                     "type": "string",
-                    "description": "marks (the protein's count), or a number attribute of proteins"
+                    "description": "marks (the protein's count), share (marks over its candidate residues), or a number attribute of proteins"
                   },
                   "order": {
                     "enum": [

@@ -1501,6 +1501,18 @@
 
   // ---- writer and reader --------------------------------------------------------------------------------------------
   const WR = C.writer || {};
+  // the writers the site's perturbation attributes suggest (the site file's writer.suggest rules): the block below gives
+  // the reasons, the summary's writer line the names marked indirect
+  function suggestedWriters(c) {
+    const sg = WR.suggest,
+      hits = sg
+        ? (sg.rules || []).filter(
+            (r) => SPECS[r.attribute] && attrVals(c, r.attribute).some((v) => (r.has || []).includes(v))
+          )
+        : [],
+      drop = new Set(hits.map((r) => r.replaces).filter(Boolean));
+    return { hits, who: [...new Set(hits.map((r) => r.suggests))].filter((x) => !drop.has(x)) };
+  }
   function writerBlock(c) {
     if (!WR.who && !WR.suggest && !WR.partners) return '';
     const dl = (dt, dd) => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`;
@@ -1524,17 +1536,12 @@
       }
     }
     if (WR.suggest) {
-      const sg = WR.suggest,
-        hits = (sg.rules || []).filter(
-          (r) => SPECS[r.attribute] && attrVals(c, r.attribute).some((v) => (r.has || []).includes(v))
-        );
-      const drop = new Set(hits.map((r) => r.replaces).filter(Boolean)),
-        who = [...new Set(hits.map((r) => r.suggests))].filter((x) => !drop.has(x));
-      const refs = (sg.sources || []).map(sourceLink).join('; ');
+      const { who, hits } = suggestedWriters(c),
+        refs = (WR.suggest.sources || []).map(sourceLink).join('; ');
       if (who.length)
         lines.push(
           dl(
-            esc(sg.label || 'Suggested'),
+            esc(WR.suggest.label || 'Suggested'),
             `<b>${esc(who.join(' and '))}</b> <span ` +
               `class="muted">(indirect) · ${esc(hits.map((r) => r.because).join('; '))}${refs ? ` (${refs})` : ''}</span>`
           )
@@ -1612,6 +1619,10 @@
         seen.add(key);
         uni.push(protRef(acc, n, { listed: !!(acc && c.isListed?.(acc)), byName: true }));
       }
+    const ind = suggestedWriters(c).who,
+      indHtml = ind.length ? `${esc(ind.join(' and '))} <span class="muted">(indirect)</span>` : '';
+    if (!wx.size && !uni.length && indHtml)
+      lines.push((lines.writer = [lab(RL.writer || 'Writer', '', 'Open the card'), indHtml]));
     if (wx.size || uni.length) {
       const wxs = [...wx.values()],
         folded = !!uni.length && !!wxs.length && wxs.every((x) => x.species), // UniProt names human writers: the other species only fold
@@ -1623,7 +1634,8 @@
         uniHtml = uni.length ? `${uni.join(', ')} <span class="muted">(UniProt)</span>` : '';
       lines.writer = [
         lab(RL.writer || 'Writer', wx.size ? open(wg).join(',') : 'sc-uniprot', 'Open the records, or UniProt'),
-        folded ? `${uniHtml}\u00a0· ${recs}` : recs + (recs && uni.length ? '\u00a0· ' : '') + uniHtml,
+        (folded ? `${uniHtml}\u00a0· ${recs}` : recs + (recs && uni.length ? '\u00a0· ' : '') + uniHtml) +
+          (indHtml ? `\u00a0· ${indHtml}` : ''),
       ];
       lines.push(lines.writer);
     }

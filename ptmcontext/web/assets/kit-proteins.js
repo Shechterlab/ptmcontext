@@ -720,7 +720,10 @@
   };
   const landOnCard = () =>
     landOn(
-      () => document.getElementById('site-card'),
+      () => {
+        const card = document.getElementById('site-card');
+        return K.openedIn?.(card) || card;
+      },
       () => PV.site
     );
   // a module whose facts arrive after the card is drawn (conservation) draws the card again
