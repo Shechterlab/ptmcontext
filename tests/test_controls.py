@@ -339,7 +339,8 @@ def test_a_failed_control_keeps_its_row_with_a_badge_in_the_kit():
     assert 'class="ctl-fail"' in js and 'class="ctl-badge" href="${esc(link(\'method\', \'controls\'))}"' in js
     assert 'id="q-controls"' in js
     assert 'Not robust ${' in js and 'badge: fails.map(failText)' in js
-    assert '<span class="vh">, ${esc(x.badge)}</span>' in (ASSETS / 'kit-tile.js').read_text()
+    tile = (ASSETS / 'kit-tile.js').read_text()
+    assert 'x.badge, x.sub' in tile and '<span class="vh"> (${esc(spoken)})</span>' in tile
     css = (ASSETS / 'kit.css').read_text()
     badge = css[css.index('.ctl-badge {') :]
     badge = badge[: badge.index('}')]

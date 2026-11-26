@@ -524,7 +524,7 @@
       lead: withWriter ? writerChip() : '',
       legend:
         mode !== 'variants' && sites.some((s) => s.sections.length)
-          ? `k: ${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected changes (from codons). Ring: q < ${RING}.`
+          ? `${esc(SRC.map(kName).join(', '))} with a change at the site. O/E: observed/expected changes (from codons). Ring: q < ${RING}.`
           : '',
       title: `Your selected ${P.all === 1 ? W.mark : W.marks}: ${mode === 'variants' ? 'variants' : 'mutations'}`,
       note: `Each ${W.mark}'s variants are counted by its site card; the link opens the card at its variants.`,

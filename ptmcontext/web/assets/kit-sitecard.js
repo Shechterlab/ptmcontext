@@ -1922,7 +1922,7 @@
     const pref = K.CIT?.preferred;
     return (
       `<button type="button" class="btn small" data-ris="${esc(JSON.stringify(refs))}" data-ris-name="${esc(`${c.gene}_${c.label}_references`)}" title="These ` +
-      `references as an RIS file, for EndNote, Zotero, Mendeley or Papers">RIS</button>` +
+      `references as an RIS file, for EndNote, Zotero, Mendeley or Papers">Download RIS</button>` +
       `<ul class="sc-refs">${vals
         .map((v) => {
           const r = lookupRow(v);
