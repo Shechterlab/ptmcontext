@@ -376,12 +376,14 @@ def expand(site: dict) -> dict:
     marks, prots = specs(site)
     # the Filters panel: one group, only where the site lists groups itself
     if web.get('filters') is not None:
-        web['filters'].append(
-            {
-                'name': web.get('context_group', 'Other modifications'),
-                'attributes': [n for n in marks if marks[n].get('filter')],
-            }
-        )
+        gname = web.get('context_group', 'Other modifications')
+        attrs = [n for n in marks if marks[n].get('filter')]
+        # a group of that name in the site file's list holds the place; otherwise the group goes last
+        held = next((g for g in web['filters'] if g.get('name') == gname), None)
+        if held is not None:
+            held['attributes'] = [*held.get('attributes', []), *attrs]
+        else:
+            web['filters'].append({'name': gname, 'attributes': attrs})
     sites = web.setdefault('sites', {})
     if isinstance(sites.get('table'), list):
         sites['table'].append(

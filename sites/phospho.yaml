@@ -1718,17 +1718,18 @@ website:                  # the look and words of the website (ptmc web); layout
       note: "The score is a model's estimate of how likely a site is to matter for the cell, not a measurement of its function. It is highest for sites that are conserved, in structured regions, or have a known kinase."
       method: "The functional_score column of the sites table (Ochoa et al. 2020), cut at 0.2 and 0.5."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
+    - {name: Localization, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]}
+    - {name: Disease associations and mutations, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
+    - {name: Classes and pathways, analyses: [panther_group, panther_class, reactome_top_level], proteins: [marks]}
     - {name: Kinase motifs, analyses: [kinase_motifs]}
     - {name: Reader motifs, analyses: [reader_motifs]}
+    - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
+    - {name: RNA and DNA, analyses: [go_binding, binding_protein, crosslink, sequence_proximity]}
+    - {name: Other modifications}
     - {name: Residue and evidence, attributes: [residue, evidence_class]}
     - {name: Functional score, attributes: [functional_score, functional_band]}
-    - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context, sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]}
-    - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex], keys: ["b:class", "b:gene", "b:score"]}
-    - {name: Protein class, analyses: [panther_group, panther_class, reactome_top_level], proteins: [marks]}
-    - {name: Localization, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]}
-    - {name: Disease associations and variants, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
-    - {name: RNA and DNA, analyses: [go_binding, binding_protein, crosslink, sequence_proximity]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
+    - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context, sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]}
     - {name: Databases, attributes: [sources, iptmnet_sources]}
   dataset: {label: PTM_Pipeline, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
   methods_note: "Sequences use UniProt 2026_03 and the other modifications UniProt 2026_04. The later release's positions are mapped onto the 2026_03 sequences the tests use, so each site keeps the position it was analyzed at."

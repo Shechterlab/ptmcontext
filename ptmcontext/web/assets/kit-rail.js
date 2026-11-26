@@ -396,13 +396,15 @@
   // the groups: from the site file, or one per section of residue questions, protein-set questions and attributes
   function groups() {
     if (D.filters && D.filters.length)
-      return D.filters.map((g) => ({
-        ...g,
-        analyses: (g.analyses || []).filter((a) => A[a]),
-        attributes: (g.attributes || []).filter((k) => SPECS[k]),
-        proteins: (g.proteins || []).filter((k) => RSPEC(k)),
-        keys: (g.keys || []).filter((k) => validKey(k)),
-      }));
+      return D.filters
+        .map((g) => ({
+          ...g,
+          analyses: (g.analyses || []).filter((a) => A[a]),
+          attributes: (g.attributes || []).filter((k) => SPECS[k]),
+          proteins: (g.proteins || []).filter((k) => RSPEC(k)),
+          keys: (g.keys || []).filter((k) => validKey(k)),
+        }))
+        .filter((g) => keysOf(g).length); // a group a site holds a place for, with no filters, is not shown
     const out = [],
       seen = {};
     D.analyses.forEach((a) => {

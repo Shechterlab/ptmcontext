@@ -455,7 +455,7 @@ Other modifications shown beside a site's own mark, declared in the site file as
 | `sources` | no | each value of `columns.sources` with its paper, as `website.protein.map.sources` |
 
 `website.context_window` (default 7) is how many residues on either side count as near; `website.context_after` is the
-map row the context rows follow (default `ptm`), `website.context_group` the Filters group's name.
+map row the context rows follow (default `ptm`), `website.context_group` the Filters group's name (a group of that name in `website.filters` holds its place; otherwise it goes last).
 
 What follows from the entries, with nothing else written: the input role; a protein-map row per entry (ticks, hover
 with state, evidence and sources); in the run, per mark `a.ctx_near` ("Other modifications nearby": the marks within the

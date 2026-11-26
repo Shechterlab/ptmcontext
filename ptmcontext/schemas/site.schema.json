@@ -2002,7 +2002,7 @@
           },
           "context_group": {
             "type": "string",
-            "description": "the Filters panel group the context marks' filters go in (default 'Other modifications')"
+            "description": "the Filters panel group the context marks' filters go in (default 'Other modifications'); a group of that name in website.filters holds its place in the list, else it goes last"
           },
         "name": {
           "type": "string"

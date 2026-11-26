@@ -1779,16 +1779,17 @@ website:                  # the look and words of the website (ptmc web); layout
       note: "iPTMnet contains a copy of UniProt, so both databases agreeing is not always two measurements. In the main view of the pinned release, the 107,927 lysine-and-type records are mostly from two proteome-wide studies: Akimov et al. 2018 reports 62,871 ubiquitination sites (62,522 that no database reports) and Hendriks et al. 2017 39,858 SUMOylation sites (34,709 that no database reports). The other 5,198 records come from UniProt or iPTMnet, among them most glutaryl, lactyl, benzoyl, methacryl and isonicotinyl records."
       method: "Each lysine lists the databases and studies that report it (the release's sources column). A database or study's count is the lysines it reports."
   filters:                 # the Filters panel: groups in order, from the questions and the sites' attributes
-    - {name: Studies and databases, attributes: [sources, evidence_class, hendriks_cell_lines, akimov_cell_lines, iptmnet_score, iptmnet_sources]}
-    - {name: Modification, attributes: [acyl_type]}
-    - {name: Histone and protein class, analyses: [histone, panther_group, panther_class, reactome_top_level], proteins: [marks]}
-    - {name: Same lysine, analyses: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]}
-    - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex]}
     - {name: Localization, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]}
-    - {name: Disease associations and variants, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
+    - {name: Disease associations and mutations, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
+    - {name: Classes and pathways, analyses: [histone, panther_group, panther_class, reactome_top_level], proteins: [marks]}
+    - {name: Protein interactions, analyses: [pdb_interface, predicted_interface, intact, complex]}
+    - {name: RNA and DNA, analyses: [pdb_interface_na, go_binding, binding_protein, crosslink, sequence_proximity]}
+    - {name: Other modifications}
+    - {name: Modification, attributes: [acyl_type]}
+    - {name: Same lysine, analyses: [same_ac_ub, same_ac_su, same_ub_su, same_ac_methyl, same_ub_methyl, same_su_methyl]}
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context, sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]}
-    - {name: RNA and DNA, analyses: [pdb_interface_na, go_binding, binding_protein, crosslink, sequence_proximity]}
+    - {name: Studies and databases, attributes: [sources, evidence_class, hendriks_cell_lines, akimov_cell_lines, iptmnet_score, iptmnet_sources]}
   dataset: {label: PTM_Pipeline, version: v1.7.0, date: "2026-11-21", doi: "10.5281/zenodo.24429699", url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0/releases/v1.7.0"}
   methods_note: "Sequences use UniProt 2026_03 and the other modifications UniProt 2026_04. The later release's positions are mapped onto the 2026_03 sequences the tests use, so each site keeps the position it was analyzed at."
   license: "Data: CC BY-NC-SA 4.0 (non-commercial, share-alike); UniProt data CC BY 4.0. For commercial use, contact info@shechterlab.org."
