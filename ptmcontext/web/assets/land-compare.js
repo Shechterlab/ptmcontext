@@ -226,7 +226,7 @@
       .map(([d, f, t]) => `<li>${marker(d, f, false, 20)}<span>${esc(t)}</span></li>`)
       .join('') +
     (legendNote ? `<li><span>† ${esc(legendNote)}</span></li>` : '') +
-    '<li><span>Circle size grows with the fold.</span></li><li><span><i>Not tested</i> means the explorer does not test the class, or has too few.</span></li></ul>';
+    '<li><span>Circle size grows with the fold.</span></li><li><span><i>Not tested</i>: no test, or too few.</span></li></ul>';
 
   // ---- the controls ------------------------------------------------------------------------------------------------------
   function frame() {
@@ -560,7 +560,7 @@
     body += text(
       pad,
       y,
-      'Circle size grows with the fold. Not tested: the explorer does not test the class, or has too few. Each cell is that explorer’s own number; nothing is pooled.',
+      'Circle size grows with the fold. Not tested: no test, or too few. Each cell is that explorer’s own number; nothing is pooled.',
       10.5,
       MUTED
     );
