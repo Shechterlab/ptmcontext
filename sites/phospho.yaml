@@ -2451,10 +2451,10 @@ website:                  # the look and words of the website (ptmc web); layout
         open: [binds_modified]
         summary:             # the one line that names partners (Interactions page, Sites table): its groups' names, the other partners counted
           - {label: binds phosphorylated, groups: [binds_modified], role: reader}
-        span: {group: binds_unmodified, label: "In a structure whose peptide spans {site}"}   # a group drawn closed under this label (the site's own name)
+        span: {group: binds_unmodified, label: "Structure with a peptide containing {site}"}   # a group drawn closed under this label (the site's own name)
         rollup:              # the groups under two headings: the residue in the site's state, against in any other
           - {label: Binds the modified residue, groups: [binds_modified]}
-          - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
+          - {label: "Binds the unmodified residue", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
         kinds: {self: another copy, rna: RNA, dna: DNA}
         species: Homo sapiens                # partners of another species are named with theirs
         urls: {PDB: "https://www.rcsb.org/structure/{id}"}
@@ -2558,7 +2558,7 @@ website:                  # the look and words of the website (ptmc web); layout
               question: Which proteins bind these sites, in which state of the residue, and how was each found?
               sub: phosphosites with a record
               blocks:
-                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the modified residue, values: [binds_modified]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the modified residue, values: [binds_modified]}, {label: "Binds the unmodified residue", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
             - id: ixs-complexes
               title: Protein complexes
               question: Which complexes have more phosphorylated members than expected?

@@ -2952,10 +2952,10 @@ website:                  # the look and words of the website (ptmc web); layout
           - {label: Writes, groups: [writes], role: writer}
           - {label: erases, groups: [removes], role: eraser}
           - {label: binds methylated, groups: [binds_methylated], role: reader}
-        span: {group: binds_unmodified, label: "In a structure whose peptide spans {site}"}   # a group drawn closed under this label (the site's own name)
+        span: {group: binds_unmodified, label: "Structure with a peptide containing {site}"}   # a group drawn closed under this label (the site's own name)
         rollup:              # the groups under two headings: the residue in the site's state, against in any other
           - {label: Binds the methylated residue, groups: [binds_methylated]}
-          - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
+          - {label: "Binds the unmodified residue", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
         not_papers: [predicted]              # groups whose records are not counted among the papers
         kinds: {self: another copy, rna: RNA, dna: DNA, gene: Gene locus, small_molecule: Small molecule, peptide: Peptide or complex}
         species: Homo sapiens                # partners of another species are named with theirs
@@ -3478,7 +3478,7 @@ website:                  # the look and words of the website (ptmc web); layout
               question: Which proteins methylate these sites, demethylate them, bind them methylated, or bind the residue in another state, and in which experiments?
               sub: methylarginines with a record
               blocks:
-                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the methylated residue, values: [binds_methylated]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the methylated residue, values: [binds_methylated]}, {label: "Binds the unmodified residue", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40,
                    where: [{column: group, in: [writes, removes, binds_methylated, binds_unmodified, binds_other_residue, binds_state_not_read, mutation_changes_binding]}]}
             - id: ixs-partners
               title: Protein partners (STRING)
