@@ -2323,7 +2323,7 @@
       `<div class="card-head"><p class="sub">${int(seq.length - d)} residues (${esc(
         (D.run.snapshot || {}).release || ''
       )}), the ${esc(W.marks)} in color ` +
-      `as on the map; tap or hover one for its name, click it for its card.${d ? ' The initiator methionine is not shown or counted.' : ''}</p>` +
+      `as on the map. Hover for name, click for card.${d ? ' Initiator Met not counted.' : ''}</p>` +
       (`<span class="exp"><button class="btn small" type="button" data-fasta="copy">Copy FASTA</button><button ` +
         `class="btn small" type="button" data-fasta="dl">Download FASTA</button></span></div><pre class="seq">${lines.join('\n')}</pre>`)
     );
