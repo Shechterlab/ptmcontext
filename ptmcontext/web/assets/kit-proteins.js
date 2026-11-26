@@ -915,7 +915,7 @@
     const nMore = qrows.length + qmore.length + rest.length + (K.shown?.on && K.shown.counted(m) ? 1 : 0),
       moreHtml = group(
         'questions',
-        `Questions and other attributes (${nMore})`,
+        `Other attributes (${nMore})`,
         qrows.join('') + qmore.join('') + restRows,
         false
       );
@@ -2198,7 +2198,7 @@
         )}; the decile ` + `of the estimate within abundance deciles)</span></p>`
       : '';
     // names only: a set's test is for every mark in it, not for this protein, so its numbers stay on the question's page
-    const across = `<p class="muted small kinds-note">Sets ${esc(p.gene || p.acc)} is in; each name opens its question.</p>`;
+    const across = `<p class="muted small kinds-note">Sets containing ${esc(p.gene || p.acc)}</p>`;
     const noneLine = none.length ? `<p class="muted small kinds-none">Not in: ${none.join('; ')}.</p>` : '';
     return covLine + across + `<div class="kinds kinds-chips">${blocks}</div>` + noneLine;
   }

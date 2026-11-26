@@ -101,7 +101,7 @@ def test_the_card_order_in_the_source():
     assert "SC_OPEN.get('variants') === true ? ' open' : ''" in src and 'id="sc-variants"' in src
     # one closed list for the questions and the attributes
     assert "group('more-questions'" not in src and "group('attributes'" not in src
-    assert '`Questions and other attributes (${nMore})`' in src
+    assert '`Other attributes (${nMore})`' in src
     # UniProt and sources, then the records, then the closed lists
     assert src.index("group('records'") < src.index("group('site'")
     assert (

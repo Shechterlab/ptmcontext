@@ -268,7 +268,7 @@
                 ? `<b>Found in:</b> ${esc(sets.join(' · '))}${grades.length ? `; ${esc(grades.join(', '))}` : ''}`
                 : `<span class="muted">` + `No map finds ${esc(gene(p))} in a compartment.</span>`
             }</p>`) +
-        `<details class="pc-mapsfold"><summary>Cell maps table <span class="muted">· each map's words on ${esc(gene(p))}</span></summary>${mapsTable(p, ms)}</details>`,
+        `<details class="pc-mapsfold"><summary>Cell maps <span class="muted">(terms on ${esc(gene(p))})</span></summary>${mapsTable(p, ms)}</details>`,
       sum:
         sets.length || grades.length
           ? `Located in ${nPl} of ${ms.length} maps: ${sumList(sets, 3)}${
