@@ -285,7 +285,7 @@ def specs(site: dict) -> tuple[dict, dict]:
     if not entries(site):
         return marks, prots
     marks['ctx_near'] = {
-        'label': 'Other marks nearby',
+        'label': 'Other modifications nearby',
         'kind': 'list',
         'separator': '; ',
         'help': f'Other modifications within ±{w} residues of the site, with the distance in residues '
@@ -378,7 +378,7 @@ def expand(site: dict) -> dict:
     if web.get('filters') is not None:
         web['filters'].append(
             {
-                'name': web.get('context_group', 'Other marks'),
+                'name': web.get('context_group', 'Other modifications'),
                 'attributes': [n for n in marks if marks[n].get('filter')],
             }
         )

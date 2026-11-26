@@ -57,7 +57,7 @@ def test_clustering_is_one_sentence_with_the_picture_behind_a_toggle():
     assert 'no more bunched than its' in body and 'more than the spacing of its' in body
     assert '<details class="pc-more">' in body and 'Most significant cluster' not in body
     ma = (ROOT / 'sites' / 'methylarginine.yaml').read_text()
-    assert 'label: Dense stretch' in ma and 'label: Most significant cluster' not in ma
+    assert 'label: Densest cluster' in ma and 'label: Most significant cluster' not in ma
 
 
 def test_nearby_marks_have_one_function_with_window_and_cutoff():

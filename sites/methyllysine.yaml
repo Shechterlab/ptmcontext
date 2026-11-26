@@ -161,7 +161,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   # row reports those counts (counting: every_candidate).
   - id: pdb_interface
     new: true
-    title: PDB interfaces
+    title: Interfaces in PDB structures
     question: "Are methyllysines at interfaces in experimental structures?"
     sub: "Methyllysines against the other lysines of the same proteins observed in a PDB structure, at a PDBe-KB interface with RNA, DNA, a protein or any partner; all, ordered (outside UniProt disordered regions) and in domains"
     section: Protein interactions
@@ -195,7 +195,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       - {stratum: disordered, covered_by: uniprot_disorder, suffix: ", disordered regions"}
   - id: intact
     new: true
-    title: IntAct mutations and binding regions
+    title: IntAct binding regions and mutations
     question: "Are methyllysines where IntAct maps interactions?"
     sub: "Methyllysines whose mutation changes an interaction, against the other mutated lysines; and inside an IntAct binding region of at most 20 residues, against the other lysines of the proteins with one (all, and in UniProt disordered regions)"
     section: Protein interactions
@@ -235,7 +235,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: partner_class_test
     test: protein_sets
     new: true
-    title: Partner classes
+    title: Enzyme and reader partners, tested
     question: "Are methylated proteins more often partners of writers, erasers and readers than other proteins that have physical partners?"
     sub: "Methylated proteins against the proteins with a STRING physical partner (score 0.7 or more), by whether one of their partners is in each writer, eraser or reader class (one-sided hypergeometric test). A protein with a partner in several classes is in each. The partner is a partner of the whole protein, so a class says what the protein binds, not what acts on the site; and well-studied proteins have more partners and more sites, so every class is expected to look enriched to some degree"
     section: Writers, erasers and readers
@@ -339,7 +339,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: reactome_top_level
     new: true
     test: protein_sets
-    title: Reactome pathways, top level
+    title: Reactome pathways (top level)
     question: "Which top-level Reactome pathways hold more methylated proteins than expected?"
     sub: "Methylated proteins against the other proteins with a Reactome pathway, by top-level pathway (one-sided hypergeometric test)"
     section: Histones, protein classes and pathways
@@ -350,7 +350,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: reactome_pathway
     new: true
     test: protein_sets
-    title: Reactome pathways
+    title: Reactome pathways (all levels)
     question: "Which Reactome pathways, at any level, hold more methylated proteins than expected?"
     sub: "Methylated proteins against the other proteins with a Reactome pathway, every pathway of 10 to 500 proteins (one-sided hypergeometric test)"
     section: Histones, protein classes and pathways
@@ -385,7 +385,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
         - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
       history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
     names: {input: cdcode_condensates, set: uid, name: name}
-    labels: {DEE660B4: "Stress granule proteome (CD-CODE list)"}   # told apart from the cell-map and organelle-IP stress granules
+    labels: {DEE660B4: "Stress granule (CD-CODE)", A40D6D0A: "DHX9 stress granule (CD-CODE)"}   # told apart from the cell-map and organelle-IP stress granules
     universe: snapshot
     whole_universe: true
     min_size: 5
@@ -398,7 +398,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: condensate
     new: true
     test: protein_sets
-    title: Biomolecular condensates, compared with other condensate proteins
+    title: Biomolecular condensates, against other condensate proteins
     question: "Which biomolecular condensates stand out among condensate proteins (CD-CODE)?"
     sub: "CD-CODE condensates with a higher fraction of methylated members than all condensate proteins: every human condensate (not synthetic) with at least five members, its members against the proteins in any of these condensates, about half of which are methylated (one-sided hypergeometric test)"
     section: Location, chromatin and condensates
@@ -411,7 +411,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
         - {column: condensate_id, input: cdcode_condensates, key: uid, include: [{column: species_name, equals: Homo sapiens}], exclude: [{column: condensate_type, equals: synthetic}]}
       history: {input: accession_history, from: key, to: accession, include: [{column: kind, equals: secondary}]}
     names: {input: cdcode_condensates, set: uid, name: name}
-    labels: {DEE660B4: "Stress granule proteome (CD-CODE list)"}   # told apart from the cell-map and organelle-IP stress granules
+    labels: {DEE660B4: "Stress granule (CD-CODE)", A40D6D0A: "DHX9 stress granule (CD-CODE)"}   # told apart from the cell-map and organelle-IP stress granules
     universe: annotated            # the proteins in any of these condensates
     min_size: 5
     order: [{by: fold_enrichment, descending: true}, {by: a, descending: true}]
@@ -552,7 +552,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     whole_universe: true
     min_size: 5
     background: the other proteins organelle IP classifies (HEK293T)
-    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granules (organelle IP),
+    labels: {nucleus: Nucleus, nucleolus: Nucleolus, cytosol: Cytosol, translation: Translation, stress_granule: Stress granule (organelle IP),
              p-body: P-body, actin_cytoskeleton: Actin cytoskeleton, centrosome: Centrosome, proteasome: Proteasome,
              14-3-3_scaffold: 14-3-3 scaffold, ER: ER, ERGIC: ERGIC, Golgi: Golgi, trans-Golgi: Trans-Golgi,
              early_endosome: Early endosome, recycling_endosome: Recycling endosome, lysosome: Lysosome,
@@ -591,7 +591,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     question: "Which disease gene sets are over-represented?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by disease family: the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
     set_note: "A family of DisGeNET disease terms gathered by name; one of the eight whose rules were checked by hand."
-    section: Disease and cancer
+    section: Disease associations
     identifiers:
       noun: gene
       nouns: genes
@@ -609,11 +609,11 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: disease_family_additional
     new: true
     test: protein_sets
-    title: Disease families, additional
+    title: More disease families
     question: "Which of the additional disease families, mostly clinical signs, are over-represented?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, by additional disease family: grouped automatically by matching words in the disease terms, not checked by hand, mostly clinical signs; tested apart from the eight families checked by hand (one-sided hypergeometric test). Association, not causation"
     set_note: "A family of DisGeNET disease terms grouped automatically by matching words; not checked by hand."
-    section: Disease and cancer
+    section: Disease associations
     identifiers:
       noun: gene
       nouns: genes
@@ -639,7 +639,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Disease Ontology
     question: "Which Disease Ontology terms hold more genes of methylated proteins than expected?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a Disease Ontology term, every term of at least 10 genes; a term includes the genes of its child terms (one-sided hypergeometric test, as DOSE's enrichDO). Association, not causation"
-    section: Disease and cancer
+    section: Disease associations
     identifiers:
       noun: gene
       nouns: genes
@@ -663,7 +663,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: DisGeNET terms
     question: "Which DisGeNET disease terms hold more genes of methylated proteins than expected?"
     sub: "Genes of methylated proteins vs all reviewed human genes with a DisGeNET term, every term of 10 to 300 genes (one-sided hypergeometric test, as DOSE's enrichDGN). Association, not causation"
-    section: Disease and cancer
+    section: Disease associations
     identifiers:
       noun: gene
       nouns: genes
@@ -685,7 +685,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     title: Cancer cell dependency
     question: "Do cancer cell lines depend on these proteins more than on others? (DepMap CRISPR screens)"
     sub: "DepMap Public 24Q4 dependency classes, methylated proteins vs all screened reviewed proteins (one per gene); the dependency of 1,178 cancer cell lines on them in CRISPR knockout screens. Cancer genetics, not evidence about methylation (one-sided hypergeometric test)"
-    section: Disease and cancer
+    section: Disease associations
     sets:
       input: depmap_genes
       protein: canonical_UniProtAC
@@ -714,7 +714,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - {id: domain_context, layer: domain_context, new: true}
   - {id: domain_class, layer: domain_class, with: {classes: sites/data/domain_classes.json}, new: true}
   - {id: structure_context, layer: structure_context, new: true}
-  - {id: idr_charge, layer: idr_charge, new: true}   # not in the release: CIDER's charge classes of IDRs
+  - {id: idr_charge, layer: idr_charge, new: true, title: Charge of disordered regions}   # not in the release: CIDER's charge classes of IDRs
   # Changes at the methyllysines in tumors and cell lines: a missense or stop change in at least one TCGA tumor (MC3) or DepMap
   # cell line, against the other lysines of the methylated proteins whose gene DepMap screened (the arginine question's
   # design); every mark of those proteins counts, one on a protein with no other candidate too (it adds nothing within proteins)
@@ -727,7 +727,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       title: Changes in tumors and cell lines
       question: "Is a methyllysine changed in tumors or cancer cell lines more or less often than the other lysines of its protein?"
       sub: "Methyllysines against the other lysines of the methylated proteins whose gene DepMap screened: a missense or stop change in at least one TCGA tumor (MC3) or DepMap 24Q4 cell line. Not adjusted for codon or sequence context, which may differ between the methyllysines and the other lysines"
-      section: Disease and cancer
+      section: Disease associations
       labels: {tcga_tumours: Changed in a TCGA tumor, depmap_cell_lines: Changed in a DepMap cell line}
       help:
         tcga_tumours: "A missense or stop change of the residue in at least one TCGA tumor (MC3 public calls from the GDC, 33 projects; FILTER PASS, and in OV and LAML also wga alone)"
@@ -744,10 +744,10 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
     with:
       flags: {clinvar_plp: clinvar_plp}
       noun: lysine with a pathogenic ClinVar variant
-      title: ClinVar pathogenic variants
+      title: ClinVar pathogenic or likely pathogenic
       question: "Does a methyllysine carry a pathogenic or likely pathogenic ClinVar variant more or less often than the other lysines of its protein?"
       sub: "Methyllysines against the other lysines of the same proteins: a ClinVar single-residue substitution or stop classified pathogenic or likely pathogenic. ClinVar lists the genes and regions that clinical testing covers, so a well-studied protein has more variants at every residue; the comparison within each protein reduces that effect but does not remove it. Not adjusted for codon or sequence context, which may differ between the methyllysines and the other lysines"
-      section: Disease and cancer
+      section: Disease associations
       labels: {clinvar_plp: Pathogenic or likely pathogenic in ClinVar}
       help:
         clinvar_plp: "A single-residue substitution or stop whose ClinVar germline classification is pathogenic or likely pathogenic (including Pathogenic/Likely pathogenic; conflicting classifications are not counted), on a RefSeq protein UniProt assigns to the entry"
@@ -761,8 +761,8 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
       noun: lysine with a gnomAD variant
       title: gnomAD variants
       question: "Does a methyllysine carry a gnomAD variant more or less often than the other lysines of its protein?"
-      sub: "Methyllysines against the other lysines of the same proteins: a missense or stop-gained variant in gnomAD v4.1 exomes (730,947 exomes; FILTER PASS), at any allele frequency. Most are rare. A variant seen in healthy adults does not show that it is harmless, and a residue without one may only be rare in the sample. Not adjusted for codon or sequence context, which may differ between the methyllysines and the other lysines"
-      section: Disease and cancer
+      sub: "Methyllysines against the other lysines of the same proteins: a missense or stop-gained variant in gnomAD v4.1 exomes (730,947 exomes; FILTER PASS), at any allele frequency. Most are rare. A variant observed in healthy adults does not show that it is benign, and a residue without one may only be rare in the sample. Not adjusted for codon or sequence context, which may differ between the methyllysines and the other lysines"
+      section: Disease associations
       labels: {gnomad_variant: Variant in gnomAD}
       help:
         gnomad_variant: "A missense or stop-gained change of the residue in at least one gnomAD v4.1 exome variant that passed the filters (VEP consequence on a transcript UniProt assigns to the entry)"
@@ -865,7 +865,7 @@ analyses:              # each: one statistics row per class, pooled (fisher) and
   - id: which_factor
     test: conditional_logit
     new: true
-    title: Which factors still matter when the others are held fixed?
+    title: Which features remain associated after adjusting for the others?
     question: "Taking all factors together, which ones distinguish a methyllysine from the other lysines of its protein?"
     sub: "One model: each methyllysine against the other lysines of its protein, all four factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
     section: Motif, disorder and structure
@@ -1520,12 +1520,11 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: near_methylarginine_me1}
           - {analysis: near_methylarginine_me2}
           - {analysis: near_methylarginine_me3}
-      - name: Interactions and enzymes
-        about: "The enzymes that add and remove methyl groups, the proteins that read them, the methylated proteins that bind them and the complexes. The interface tests are on the Interactions page."
+      - name: Enzymes and readers
+        about: "The enzymes that add and remove methyl groups, and the proteins that read them. The interface tests and the complexes are on the Interactions page."
         #  the partner classes are counted (website.search.partners), and the test of the same classes is a card of its own
         links: [interactions, network]
         cards:
-          - {analysis: complex, title: Protein complexes}
           - partner_classes
           - {analysis: partner_class_test}
       - name: Classes and pathways
@@ -1540,22 +1539,18 @@ website:                  # the look and words of the website (ptmc web); layout
           - {analysis: panther_group_me2}
           - {analysis: panther_group_me3}
           - {analysis: reactome_top_level, title: Reactome pathways (top level), rows: 4}
-          - {analysis: panther_subclass, title: Protein subclasses}
+          - {analysis: panther_subclass}
           - {analysis: condensate_proteome, title: Biomolecular condensates, order: q}
           - {analysis: condensate_role, title: Driver or client in condensates}
       - name: Localization
-        about: "Where in the cell the methylated proteins localize, and how much is on chromatin."
+        about: "Where in the cell the methylated proteins localize."
         #  the drawing of the cell on the Overview (website.cell: the maps of the cell as one question)
         cards:
           - {analysis: where_in_the_cell, title: Localization, drawing: true, wide: true}
-          - {analysis: cell_chromatin, title: Chromatin probability}
-      - name: Disease and cancer
+      - name: Disease associations
         about: "Diseases linked to the methylated proteins, and cancer cell dependency."
-        show: 1
-        more: More on disease
         cards:
           - analysis: disease_family
-            title: Disease
             views:               # one question, two vocabularies: a switch on its page
               - label: DisGeNET families
                 analysis: disease_family
@@ -1574,18 +1569,15 @@ website:                  # the look and words of the website (ptmc web); layout
                 analysis: disease_ontology
                 ontology: {short: 50, compare: 4, tree: 100, id_label: DOID, noun: term, nouns: terms}
           - {analysis: depmap_dependency, title: Cancer cell dependency}
-          - {analysis: cancer_change, title: Changes in tumors and cell lines}
-          - {analysis: clinvar_plp, title: ClinVar pathogenic variants}
-          - {analysis: gnomad_variant, title: gnomAD variants}
       - name: More questions
-        about: "Further pathways, cell maps, protein classes and complexes, one question each."
+        about: "Further pathways, cell maps, protein classes and domains, one question each."
         cards: [panther_class, {analysis: reactome_pathway, title: Reactome pathways (all levels)}, {analysis: hpa_location, title: Human Protein Atlas locations},
-                cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, {analysis: condensate, title: "Biomolecular condensates (vs other condensates)", order: q},
+                cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, {analysis: condensate, order: q},
                 domain_context]
-      - name: Evidence and studies
-        about: "How well supported the methylation sites are, and which databases they come from."
+      - name: Studies and databases
+        about: "Which studies and databases report the methylation sites."
         #  counted, not tested (website.counts)
-        cards: [evidence]
+        cards: [provenance]
   cell:                    # "Where in the cell" (kit-cell.js): the maps of the cell as one question, as the explorer's
     id: where_in_the_cell
     default_view: average        # what the maps color by on opening: percent (share of proteins with a mark), average (each share against the share among all mapped proteins) or fold
@@ -1669,7 +1661,7 @@ website:                  # the look and words of the website (ptmc web); layout
       kind: values
       attribute: bound_by
       tested_by: partner_class_test        # the table under the bars: is each class enriched among the partners of the proteins?
-      title: Methyllysines on proteins whose STRING partners include writers, erasers or readers
+      title: Enzyme and reader partners (STRING)
       question: "Which methyllysines are on proteins with a STRING partner that is a writer, an eraser or a reader?"
       sub: "Methyllysines on proteins with a STRING physical partner (score 0.7 or more) in each writer, eraser or reader class"
       unit: [class, classes]
@@ -1715,7 +1707,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: Histone and protein class, analyses: [histone, panther_group, panther_class, reactome_top_level], proteins: [marks]}
     - {name: Methylation state, attributes: [state, evidence_class]}
     - {name: Localization, analyses: [cell_region_hpa, cell_region_hcm, cell_region_organelle_ip, hpa_location, cell_hcm_compartment, cell_hcm_domain, cell_organelle_ip, cell_chromatin, condensate_proteome, eclip_rna_apexseq, eclip_gene_tsaseq, eclip_gene_hic]}
-    - {name: Disease and cancer, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
+    - {name: Disease associations and variants, analyses: [disease_family, disease_family_additional, disease_ontology, depmap_dependency, cancer_change, clinvar_plp, gnomad_variant]}
     - {name: Sequence motif, keys: ["m:at", "m:near"], analyses: [motif]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context, sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]}
     - {name: RNA and DNA, analyses: [pdb_interface_na, go_binding, binding_protein, crosslink, sequence_proximity]}
@@ -1731,7 +1723,7 @@ website:                  # the look and words of the website (ptmc web); layout
         items:
         - "Mutation propensity: O/E and q for every lysine in TCGA, DepMap and gnomAD from the release, and a descriptive O/E for ClinVar."
         - "Protein cards now draw lollipops. Stick height is the count, circle size is O/E, and a ring marks q below 0.05. They replace the flag for counts at least 3 times the protein's average."
-        - "A Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), Inherited disease (ClinVar variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
+        - "A Disease variants page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top sites in TCGA tumors), ClinVar pathogenic (variants by disease family), a chart of all sites behind Show all sites as a chart, and a box for pasting a list of sites to test."
         - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
         doi: "10.5281/zenodo.24429699"
       - title: PTM_Pipeline v1.6.0 data release (2026-11-20)
@@ -1834,6 +1826,15 @@ website:                  # the look and words of the website (ptmc web); layout
     idrs: {label: Disordered regions, hint: "Disordered regions (IDRs) of methylated proteins, and the methyllysines in them.", as: section, question: idr_charge}
     method: {label: Methods, hint: "How each question was tested, every test, the controls, the sources and how to cite."}
     help: {label: Help, hint: "Searching, filters, selections and keyboard keys."}
+  legacy_links:            # older addresses: a tile that moved to the Interactions or Disease variants page opens there
+    cancer_change: "#mutations"
+    clinvar_plp: "#mutations"
+    gnomad_variant: "#mutations"
+    complex: "#interactions/ixs-complexes"
+    pdb_interface: "#interactions/ixs-pdb"
+    pdb_interface_na: "#interactions/ixs-pdb"
+    predicted_interface: "#interactions/ixs-predicted"
+    intact: "#interactions/ixs-intact"
   partners: {species: 9606}         # interaction partners on protein pages, live from STRING (human)
   network:                 # the Network view (kit-network.js): the proteins with sites as one network, clustered, each cluster named by its most enriched term
     title: Network
@@ -1973,7 +1974,7 @@ website:                  # the look and words of the website (ptmc web); layout
       input: depmap_gene_effect
       format: protein_records
       columns: {accession: canonical_UniProtAC, lines: lines, dependent: dependent_lines, median: median, common_essential: common_essential, histogram: histogram, lineages: most_dependent_lineages}
-    hpa:                   # the Location and condensates card: Human Protein Atlas locations
+    hpa:                   # the Condensates and HPA location card: Human Protein Atlas locations
       input: hpa_locations
       format: protein_records
       columns: {accession: canonical_UniProtAC, location: location, main: main, reliability: reliability}
@@ -2144,11 +2145,11 @@ website:                  # the look and words of the website (ptmc web); layout
     open_partners: true
     order: [p-map, p-sitetab, p-sites, p-ptm, p-cluster, p-depmap, p-germline, p-cc, p-ix, p-na, p-pert, p-exp, p-cons, p-struct, p-cell, p-cond, p-dis, p-kinds, p-regions, p-seq]   # the page's order: sites, other modifications, variants, binding, experiments, then the details
     groups:                # about seven headings in the page's order: sites, variants, binding, evidence, then the details (website.protein.groups)
-      - {id: g-overview, title: Overview and map, folds: [p-map]}
+      - {id: g-overview, title: Map and summary, folds: [p-map]}
       - {id: g-sites, title: Sites and other modifications, folds: [p-sitetab, p-sites, p-ptm, p-cluster]}
-      - {id: g-variants, title: Cancer and germline variants, folds: [p-depmap, p-germline]}
-      - {id: g-binding, title: Binding and contacts, folds: [p-cc, p-ix, p-na]}
-      - {id: g-evidence, title: Experiments and structure, folds: [p-pert, p-exp, p-cons, p-struct]}
+      - {id: g-variants, title: Disease variants, folds: [p-depmap, p-germline]}
+      - {id: g-binding, title: Interactions, folds: [p-cc, p-ix, p-na]}
+      - {id: g-evidence, title: "Experiments, conservation and structure", folds: [p-pert, p-exp, p-cons, p-struct]}
       - {id: g-context, title: Context, switch: true, folds: [p-cell, p-cond, p-dis, p-kinds]}
       - {id: g-sequence, title: Domains and sequence, folds: [p-regions, p-seq]}
     headings:              # the cards front end's folds under labeled headings, each fold in its group; "switch" adds the This protein / Dataset context switch
@@ -2247,7 +2248,7 @@ website:                  # the look and words of the website (ptmc web); layout
               - {id: self, label: Interface with another copy of the protein, colour: self, where: [{column: kind, equals: "pdb_self; at_residue"}]}
     cards:                 # the context cards (kit-pcards.js; CONTRACTS.md, Protein page cards), each from the tables above
       location:
-        title: Location and condensates
+        title: Condensates and HPA location
         summary: Human Protein Atlas locations, subcellular maps and CD-CODE condensates
         hpa: {table: hpa, analysis: hpa_location, title: Subcellular location, source: Human Protein Atlas 25.1, url: "https://www.proteinatlas.org/search/{acc}", unsure: Uncertain}
         maps: true
@@ -2280,7 +2281,7 @@ website:                  # the look and words of the website (ptmc web); layout
       germline:
         title: Germline variants
         excluded: germline
-        sub: "Variants in ClinVar (clinical classifications) and gnomAD v4.1 (population frequencies) at the protein's lysines, against the protein's average for the same residue type. A variant at a residue does not show an effect on the mark, and a variant seen in a population is not necessarily harmless."
+        sub: "Variants in ClinVar (clinical classifications) and gnomAD v4.1 (population frequencies) at the protein's lysines, against the protein's average for the same residue type. A variant at a residue does not show an effect on the mark, and a variant observed in the population is not necessarily benign."
         note: "Data: ClinVar (NCBI; public domain; submitters may claim rights in what they submitted) and gnomAD v4.1 exomes (CC0 1.0; Chen et al., Nature 625:92 (2024), doi:10.1038/s41586-023-06045-0). A variant counts only at a lysine of the canonical UniProt sequence."
     sets:                  # cards of the protein's own sets, each linked to its page and selecting its proteins
       - id: p-dis
@@ -2365,7 +2366,7 @@ website:                  # the look and words of the website (ptmc web); layout
                    capri_adj_peptide: inside CAPRI RNA-bound peptide (ADJ), rbrid_residue: under an RNA-contact peptide (RBR-ID), rbrid_region: inside an RBR-ID region,
                    dna_binding_region: inside a UniProt DNA-binding region}
       records:             # a site_records table: who binds it, and how it was found
-        title: Who binds it, and how it was found
+        title: Binding proteins and evidence
         table: records
         help:
           binds_modified: "the lysine is methylated or acetylated in the structure (for example Kme3 or Kac), as the entry models it"
@@ -2375,9 +2376,9 @@ website:                  # the look and words of the website (ptmc web); layout
           nucleic_acid: contacts in structures, crosslinks and RNA-bound peptides in cells, UniProt DNA-binding regions
           self: homo-oligomer contacts in structures
         labels:              # the headings of the groups (a group the groups attribute does not label); the summary line reads them too
-          binds_modified: Binds it methylated or acetylated
-          binds_unmodified: Binds it unmodified
-          binds_other_residue: Binds a mutant or variant there
+          binds_modified: Binds the modified residue
+          binds_unmodified: Binds the unmodified residue
+          binds_other_residue: Binds a mutant or variant at this residue
           binds_state_not_read: "At an interface, residue not read"
           nucleic_acid: RNA or DNA
           self: Another copy of the protein
@@ -2386,7 +2387,7 @@ website:                  # the look and words of the website (ptmc web); layout
           - {label: binds methylated or acetylated, groups: [binds_modified], role: reader}
         span: {group: binds_unmodified, label: "In a structure whose peptide spans {site}"}   # a group drawn closed under this label (the site's own name)
         rollup:              # the groups under two headings: the residue in the site's state, against in any other
-          - {label: Binds it modified, groups: [binds_modified]}
+          - {label: Binds the modified residue, groups: [binds_modified]}
           - {label: "Binds the residue, unmodified or in another state", groups: [binds_unmodified, binds_other_residue, binds_state_not_read]}
         kinds: {self: another copy, rna: RNA, dna: DNA}
         species: Homo sapiens                # partners of another species are named with theirs
@@ -2396,9 +2397,10 @@ website:                  # the look and words of the website (ptmc web); layout
     - id: interactions
       tab: Interactions
       title: RNA, DNA and protein contacts
-      aliases:             # the Structures group is now Structures and models
+      aliases:             # the Structures group is now Structures and models; Binding proteins also holds the partners and complexes
         ixg-structures: ixg-structures-and-models
-      sub: "Evidence at each methyllysine: crosslinks and RNA-bound peptides in cells, interfaces and bound RNA or DNA in solved structures, and partners."
+        ixg-binding-proteins: ixg-binding-proteins-and-partners
+      sub: "Evidence at each methyllysine: crosslinks and RNA-bound peptides in cells, interfaces and bound RNA or DNA in experimental structures, and partners."
       method: |
         The interface tests compare the methyllysines with the other lysines of the same proteins that the evidence could reach (the residues a PDB structure observed, or the proteins with an IntAct record): within each protein, a Mantel–Haenszel odds ratio with its 95% CI; pooled, Fisher's exact test; q is Benjamini–Hochberg within each question and test. The tables of this page are the release's supporting tables, read through the site file's mapping. One row is one piece of evidence at one methyllysine: a PDBe-KB interface residue in a PDB entry (with a protein, RNA, DNA or another copy of the protein), a residue UV-crosslinked to RNA or DNA in living cells, a residue inside an RNA-bound peptide (CAPRI) or under an RBR-ID peptide, or a residue inside a UniProt DNA-binding region.
 
@@ -2410,7 +2412,7 @@ website:                  # the look and words of the website (ptmc web); layout
         interactions.ids: {label: Structures}
         partner_accession: {label: Partner}
         partner: {label: Partner gene}
-        records.group: {label: Record, values: {binds_modified: Binds it methylated or acetylated, binds_unmodified: Binds it unmodified, binds_other_residue: Binds a mutant or variant there, binds_state_not_read: Binds it (state not read), nucleic_acid: RNA or DNA, self: Another copy of the protein}}
+        records.group: {label: Record, values: {binds_modified: Binds the modified residue, binds_unmodified: Binds the unmodified residue, binds_other_residue: Binds a mutant or variant at this residue, binds_state_not_read: Binds it (state not read), nucleic_acid: RNA or DNA, self: Another copy of the protein}}
         records.source: {label: Evidence}
         records.partner_kind: {label: Partner kind, values: {protein: Protein, rna: RNA, dna: DNA, self: Another copy}}
         records.state: {label: The site in it, values: {lysine: K (unmodified), Kme1: Kme1, Kme2: Kme2, Kme3: Kme3, Kac: Kac (acetylated), other_residue: Variant, not_recorded: Not recorded, not_read: Not read}}
@@ -2423,18 +2425,18 @@ website:                  # the look and words of the website (ptmc web); layout
         contacts.distance: {label: Closest (Å)}
         contacts.entry: {label: PDB, type: pdb}
       highlights:
-        - {rows: [{analysis: pdb_interface, category: protein}], label: at protein interfaces in PDB structures, tag: Protein · solved structures, section: ixs-pdb, glyph: protein}
-        - {rows: [{analysis: pdb_interface_na, category: rna}, {analysis: pdb_interface_na, category: dna}], label: at RNA or DNA interfaces in PDB structures, tag: RNA and DNA · solved structures, section: ixs-pdb, glyph: structure}
+        - {rows: [{analysis: pdb_interface, category: protein}], label: at protein interfaces in PDB structures, tag: Protein · experimental structures, section: ixs-pdb, glyph: protein}
+        - {rows: [{analysis: pdb_interface_na, category: rna}, {analysis: pdb_interface_na, category: dna}], label: at RNA or DNA interfaces in PDB structures, tag: RNA and DNA · experimental structures, section: ixs-pdb, glyph: structure}
         - {rows: [{analysis: predicted_interface, category: pdockq_0.23}, {analysis: predicted_interface, category: pdockq_0.5}], label: at predicted protein interfaces, tag: Protein · predicted models, section: ixs-predicted, glyph: protein}
         - {rows: [{analysis: intact, category: mutation_changes_interaction}, {analysis: intact, category: binding_region}, {analysis: intact, category: binding_region_disordered}], label: in IntAct binding regions or at mutations that change an interaction, tag: Curated · IntAct, section: ixs-intact, glyph: protein}
       overview:            # the Overview's one pointer to this page: its findings, drawn from the rows above (no tests of its own)
-        section: Interactions and enzymes
+        section: Enzymes and readers
         title: Interactions
         question: Are methyllysines at protein, RNA or DNA interfaces more often than the other lysines of the same proteins?
         rows: []
         findings:
           - {lead: In PDB structures, section: ixs-pdb, rows: [{analysis: pdb_interface, category: protein, label: Protein interface, phrase: at protein interfaces}, {analysis: pdb_interface_na, category: rna, label: RNA interface, phrase: at RNA interfaces}, {analysis: pdb_interface_na, category: dna, label: DNA interface, phrase: at DNA interfaces}]}
-          - {lead: In predicted complexes, section: ixs-predicted, rows: [{analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, phrase: "at the interface (AlphaFold-Multimer models, pDockQ ≥ 0.23)"}]}
+          - {lead: In predicted interfaces, section: ixs-predicted, rows: [{analysis: predicted_interface, category: pdockq_0.23, label: Predicted interface, phrase: "at the interface (AlphaFold-Multimer models, pDockQ ≥ 0.23)"}]}
       groups:
         - name: Structures and models
           open: true          # the first group: the interface tests are in view
@@ -2465,7 +2467,7 @@ website:                  # the look and words of the website (ptmc web); layout
                 - {kind: table, table: interactions, title: The PDB interfaces at each site, chips: kind, columns: [accession, kind, partner_accession, ids, detail], limit: 25,
                    where: [{column: kind, in: [pdb_protein, pdb_rna, pdb_dna, pdb_self]}], partner: partner_accession, label: partner}
             - id: ixs-predicted
-              title: Predicted complexes
+              title: Predicted interfaces
               question: Are methyllysines at the interfaces of AlphaFold-Multimer models of human protein pairs?
               blocks:
                 - kind: forest
@@ -2482,7 +2484,7 @@ website:                  # the look and words of the website (ptmc web); layout
                         - {analysis: predicted_interface, category: pdockq_0.23_disordered, label: "Likely interface", group: Disordered}
                         - {analysis: predicted_interface, category: pdockq_0.5_disordered, label: "Strong interface", group: Disordered}
             - id: ixs-intact
-              title: Curated interaction features (IntAct)
+              title: IntAct binding regions and mutations
               question: Are methyllysines at curated mutation sites and short binding regions more often?
               blocks:
                 - kind: forest
@@ -2493,13 +2495,13 @@ website:                  # the look and words of the website (ptmc web); layout
         - name: RNA and DNA
           sections:
             - id: ixs-cells
-              title: Crosslinks and RNA-bound peptides in cells
+              title: RNA and DNA crosslinks in cells
               question: Which methyllysines are crosslinked to RNA or DNA, lie inside an RNA-bound peptide, or lie in a DNA-binding region?
               blocks:
                 - {kind: table, table: interactions, title: The crosslinks and RNA-bound peptides at each site, chips: kind, columns: [accession, kind, detail], limit: 25,
                    where: [{column: kind, in: [rna_crosslink, dna_crosslink, capri_xl_peptide, capri_adj_peptide, rbrid_residue, dna_binding_region]}]}
             - id: ix-na
-              title: Bound RNA and DNA
+              title: RNA and DNA contacts in structures
               question: Which RNA and DNA do methyllysines contact in structures, and how close do they come?
               blocks:
                 - {kind: table, table: contacts, title: RNA and DNA at methyllysines, sub: "Each PDB chain of RNA or DNA within reach of a site’s side chain, with the bound sequence around the closest nucleotide.", chips: type, columns: [accession, window, type, name, distance, entry], sort: distance, descending: false}
@@ -2512,11 +2514,16 @@ website:                  # the look and words of the website (ptmc web); layout
                 - {kind: table, table: htr_selex, title: RNA in vitro (HTR-SELEX), columns: [accession, consensus, motif_kind, model_id]}
                 - {kind: table, table: ix_eclip, title: RNA in cells (eCLIP), columns: [accession, cell_line, n_peaks, top_target_genes, top_5mers, experiment], sort: n_peaks}
                 - {kind: table, table: ix_dna_motifs, title: DNA (JASPAR), columns: [accession, consensus, name, tf_family, matrix_id]}
-        - name: Binding proteins
+        - name: Binding proteins and partners
           sections:
             - id: ix-who
               title: Proteins that bind the methyllysine
               question: Which proteins bind these sites, in which state of the lysine, and how was each found?
               sub: methyllysines with a record
               blocks:
-                - {kind: table, table: records, group_by: group, rollup: [{label: Binds it modified, values: [binds_modified]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
+                - {kind: table, table: records, group_by: group, rollup: [{label: Binds the modified residue, values: [binds_modified]}, {label: "Binds the residue, unmodified or in another state", values: [binds_unmodified, binds_other_residue, binds_state_not_read]}], columns: [accession, partner_accession, source, method, state_detail, context, pubmed], partner: partner_accession, label: partner, limit: 40}
+            - id: ixs-complexes
+              title: Protein complexes
+              question: Which complexes have more methylated members than expected?
+              blocks:
+                - {kind: sets, analysis: complex, title: Complex Portal complexes}

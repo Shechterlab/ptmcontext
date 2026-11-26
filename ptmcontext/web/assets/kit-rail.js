@@ -818,8 +818,8 @@
     };
     const item = (e) => (e.head ? group(e) : leaf(e.leaf, false));
     // the pages are the tabs above the page (one list of them, drawn by kit.js); the sidebar lists only the sections of the page
-    // that has any (the Overview and Methods), and is empty on the rest
-    return S.view === 'overview' || S.view === 'method'
+    // that has any (the Overview), and is empty on the rest (Methods lists its own parts at its top)
+    return S.view === 'overview'
       ? entries.length
         ? '<nav class="toc flat"><div class="toc-secs">' + entries.map(item).join('') + '</div></nav>'
         : ''

@@ -18,7 +18,7 @@ def _site(name):
 def test_the_site_own_sections_sit_between_position_and_other_modifications():
     cfg = json.loads((ROOT / 'ptmcontext/config/overview_groups.json').read_text())
     assert cfg['shared'][:3] == ['Position in the protein', '*', 'Other modifications']
-    assert cfg['last'] == ['More questions', 'Evidence and studies']
+    assert cfg['last'] == ['More questions', 'Studies and databases']
     # the kit ranks a section the list does not name at the star, not after the closing groups
     assert 'star >= 0 ? star : 1e6' in KIT and "G.shared.indexOf('*')" in KIT
 
@@ -31,8 +31,9 @@ def test_the_overview_asks_the_landing_question_and_repeats_no_other_tab():
         assert 'tile' not in w['network'], name
         names = [s['name'] for s in w['overview']['sections']]
         assert 'RNA and DNA binding' not in names, name
-        links = [s.get('links') for s in w['overview']['sections'] if s['name'] == 'Interactions and enzymes']
-        assert links == [['interactions', 'network']], name
+        links = [s.get('links') for s in w['overview']['sections'] if s['name'] == 'Enzymes and readers']
+        # lysine has no enzymes or readers to show: its complexes and interfaces are on the Interactions page
+        assert links == ([] if name == 'lysine' else [['interactions', 'network']]), name
     assert 'on_overview !== true' in (ROOT / 'ptmcontext/web/assets/kit-start.js').read_text()
 
 
