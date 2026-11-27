@@ -53,7 +53,8 @@ def test_the_figure_panels_page_is_registered_and_gives_the_sites_page_its_butto
     assert 'kit-figures.js' in web.MODULES and web.MODULES.index('kit-figures.js') < web.MODULES.index('kit.js')
     fig, tables, sites = _js('kit-figures.js'), _js('kit-tables.js'), _js('kit-sites.js')
     assert 'K.views.figures = ' in fig and 'if (!K.logoPanel) return;' in fig
-    assert 'K.views.figures ?' in tables and 'Make figures' in tables and 'K.tables.figuresBtn()' in sites
+    assert 'K.views.figures' in tables and '>Sequence logo</a>' in tables and 'K.tables.figuresBtn()' in sites
+    assert 'follows: true' in fig  # the page follows the selection, so no "not filtered" line
     assert 'K.logoPanel = ' in _js('kit-conserve.js')
 
 
@@ -87,9 +88,9 @@ def test_the_sidebar_tabs_keep_the_filter_count_on_one_line():
     assert '.rail-head { display: flex; flex-wrap: wrap;' in css
 
 
-def test_the_sidebar_lists_every_page_with_the_current_ones_sections():
+def test_the_sidebar_lists_sections_only_and_not_the_tabs_again():
     js = _js('kit-rail.js')
-    assert "document.querySelectorAll('#tabs a.tab')" in js and 'toc-secs' in js
+    assert "document.querySelectorAll('#tabs a.tab')" not in js and 'toc-secs' in js
     # a jump from the drawer closes it, and focus goes back to the opener without scrolling the page back up
     assert 'if (R.open && !pinned()) { R.open = false; rail(); }' in js
     assert 'focus({ preventScroll: true })' in js

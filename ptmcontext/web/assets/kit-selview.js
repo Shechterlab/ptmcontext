@@ -449,7 +449,7 @@
       `with the other ${esc(W.marks)}, class by class, for every question about where ${esc(W.marks)} are and ` +
       `every attribute of the ${esc(W.marks)} except how they were found. Test: Fisher’s exact test on the 2×2 ` +
       `table of all proteins, Haldane odds ratio with Woolf’s 95% CI, Benjamini–Hochberg q within each question. A ` +
-      `class differs at q ≤ ${PADJ()} and 1.1× or more, with at least 10 ${esc(W.marks)} in it across both sides. ` +
+      `class differs at q ≤ ${PADJ()} and at least 1.1×, with at least 10 ${esc(W.marks)} in it across both sides. ` +
       `The summary names the three that differ most (by the CI bound nearest 1). The full comparison (Compared ` +
       `with: other ${esc(W.marks)}) adds tests within proteins and within studies. It is exploratory, since the ` +
       `selection was chosen by looking.</p></section>` +

@@ -27,7 +27,8 @@
       (K.sel.active()
         ? `<p>Or <button class="linkish" type="button" data-go-apart>compare the current selection ` +
           `with the other ${esc(W.marks)}</button>.</p>`
-        : '')
+        : '') +
+      `<p class="muted small">Exploratory: not adjusted for other selections tried.</p>`
     );
   }
   K.views.comparesaved = { render: chooser, title: () => 'Compare two selections' };
@@ -41,19 +42,19 @@
           `by question">How does it differ? ›</button>`
         : '') +
       (K.sel.active() && K.views.overlap
-        ? `<button class="btn small" type="button" data-sel-sets title="Open Compare sets with this ` +
-          `selection as set A">Compare with…</button>`
+        ? `<button class="btn small" type="button" data-sel-sets title="Open the overlap of protein sets with this ` +
+          `selection as set A">Overlap with another set ›</button>`
         : '')
   );
   K.clicks.push(
     ['[data-go-apart]', () => K.go('overview', { vs: 'marks' })],
     ['[data-go-compare]', () => K.go('comparesaved')],
-    ['[data-sel-sets]', () => K.go('overlap', { ot: ['sel'], ou: 'proteins', or: '' })],
+    ['[data-sel-sets]', () => K.overlapOpen([K.sel.asSetTerm() || 'sel'])],
     [
       '[data-saved-sets]',
       (el) => {
         const x = K.sel.savedList()[+el.dataset.savedSets];
-        if (x) K.go('overlap', { ot: ['sel', `sv:${x.name}`], ou: 'proteins', or: '' });
+        if (x) K.overlapOpen(['sel', `sv:${x.name}`]);
       },
     ],
     [

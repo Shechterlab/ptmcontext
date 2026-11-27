@@ -371,7 +371,7 @@
     return all.filter((m) => (!sp || sp.has(m[0])) && !(hide && hide.has(stateKey(m))));
   };
   const markAt = (pos) => marks().find((m) => m[0] === pos);
-  const seqAt = (pos) => (T.rec?.seq || '')[pos - 1] || (D.residues || [''])[0];
+  const seqAt = (pos) => (T.rec?.seq || '')[pos - 1] || (D.residues?.length === 1 ? D.residues[0] : '');
   // a residue as the protein page numbers it (K.prot: histones without the initiator methionine)
   const sp = (pos) => (K.prot?.shownPos ? K.prot.shownPos(T.acc, pos) : pos);
   const rl = (pos) => `${seqAt(pos)}${sp(pos)}`;
@@ -411,7 +411,11 @@
     K.S.view === 'protein' && String(K.S.arg).split('/')[0] === acc && !!document.getElementById('s3d');
   const inputsOf = (part) =>
     (SD.inputs?.[part] || []).map((n) => ({ name: n, ...(D.inputs?.[n] || {}), md5: D.run?.inputs?.[n]?.md5 || '' }));
-  const dateWords = (v) => String(v || '').replace(/\b\d{4}-\d{2}-\d{2}\b/g, (m) => K.hdate(m)); // the same date form as the header and footer
+  // the same date form as the header and footer; "<explorer name> release v1.7.0" reads "Data: <dataset> v1.7.0"
+  const dateWords = (v) =>
+    String(v || '')
+      .replace(/^.*? release (?=v\d)/, D.dataset?.label ? `Data: ${D.dataset.label} ` : '$&')
+      .replace(/\b\d{4}-\d{2}-\d{2}\b/g, (m) => K.hdate(m));
   const tableWords = (part) =>
     inputsOf(part)
       .map((x) => dateWords(x.version) || x.name)
@@ -668,19 +672,91 @@
     ),
   ];
 
+  // one mark in a chain of an entry: [position, author residue | null, observed], or null where the chain's mapping misses it
+  function siteIn(e, det, pos) {
+    const m = e.maps.find((x) => x.chain === det.chain && pos >= x.unpStart && pos <= x.unpEnd);
+    if (!m) return null;
+    const rn = m.start + (pos - m.unpStart),
+      seg = det.coverage ? det.coverage.find(([a, b]) => rn >= a && rn <= b) : null;
+    return [pos, seg && seg[2] != null ? seg[2] + (rn - seg[0]) : null, !!seg];
+  }
   // the marks of the protein in a chain of an entry: [position, author residue | null, observed]
   function pdbSites(e, det) {
-    const maps = e.maps.filter((m) => m.chain === det.chain),
-      out = [];
-    for (const m0 of marks()) {
-      const pos = m0[0],
-        m = maps.find((x) => pos >= x.unpStart && pos <= x.unpEnd);
-      if (!m) continue;
-      const rn = m.start + (pos - m.unpStart),
-        seg = det.coverage ? det.coverage.find(([a, b]) => rn >= a && rn <= b) : null;
-      out.push([pos, seg && seg[2] != null ? seg[2] + (rn - seg[0]) : null, !!seg]);
-    }
-    return out;
+    return marks()
+      .map((m0) => siteIn(e, det, m0[0]))
+      .filter(Boolean);
+  }
+  // the site the viewer is read at: the one asked for, else the one selected on the page
+  const siteNow = () => (T.highlight != null ? T.highlight : (K.site?.state?.focus ?? null));
+  // which entries resolve a site (model its residue, PDBe's observed residues): `${acc}:${pos}:${id}` -> the chain that
+  // does, '' where none of the entry's chains does (absent: not read yet)
+  const SITE_AT = {};
+  const resolvesAt = (id, pos) => SITE_AT[`${T.acc}:${pos}:${id}`];
+  // read, for the entries whose construct holds the site (modified-residue entries and those with a contact there first,
+  // then the sharpest; up to 40), which chain of each resolves it. Resolves to the entries read, best first:
+  // the modified residue modeled, then a partner bound there, then any, each by resolution.
+  function scanSite(acc, pos) {
+    const key = `${acc}:${pos}`;
+    return ((scanSite.p ||= {})[key] ||= loadPdb(acc).then((res) => {
+      const te = tableEntries(),
+        chainsOf = (e) => [...new Set(e.maps.filter((m) => pos >= m.unpStart && pos <= m.unpEnd).map((m) => m.chain))],
+        pool = res.entries
+          .filter((e) => chainsOf(e).length)
+          .sort(
+            (a, b) =>
+              res.modified.has(b.id) - res.modified.has(a.id) ||
+              te.has(b.id) - te.has(a.id) ||
+              (a.resolution || 99) - (b.resolution || 99)
+          )
+          .slice(0, 40);
+      // the entries the site card lists for this site are read first, 6 at a time; the list is returned once the first
+      // hit and every entry ahead of it are read (the rest go on in the background and fill SITE_AT)
+      const listed = new Set(entriesAt(pos).flatMap((c) => c[2]));
+      pool.sort((a, b) => listed.has(b.id) - listed.has(a.id));
+      const settled = new Array(pool.length).fill(false);
+      return new Promise((done) => {
+        let next = 0,
+          fin = false;
+        const finish = () => {
+          if (fin) return;
+          fin = true;
+          const yes = pool.filter((e) => SITE_AT[`${acc}:${pos}:${e.id}`]);
+          meta(yes.map((e) => e.id))
+            .catch(() => [])
+            .then(() => {
+              const base = acc.split('-')[0],
+                tier = (e) =>
+                  res.modified.has(e.id) ? 0 : te.has(e.id) || partnersText(META[UP(e.id)], base).length ? 1 : 2;
+              done(yes.sort((a, b) => tier(a) - tier(b) || (a.resolution || 99) - (b.resolution || 99)));
+            });
+        };
+        const check = () => {
+          const lead = settled.indexOf(false);
+          if (lead < 0) return finish();
+          if (pool.slice(0, lead).some((e) => SITE_AT[`${acc}:${pos}:${e.id}`])) finish();
+        };
+        const worker = async () => {
+          while (next < pool.length) {
+            const k = next++,
+              e = pool[k];
+            let hit = '';
+            for (const ch of chainsOf(e).slice(0, 4)) {
+              const det = await loadDetail(e.id, ch, res.modified.has(e.id)).catch(() => null);
+              if (det?.coverage && siteIn(e, det, pos)?.[2]) {
+                hit = ch;
+                break;
+              }
+            }
+            SITE_AT[`${acc}:${pos}:${e.id}`] = hit;
+            if (hit) T.pick[e.id] ||= hit;
+            settled[k] = true;
+            check();
+          }
+        };
+        if (!pool.length) return finish();
+        Array.from({ length: Math.min(6, pool.length) }, worker);
+      });
+    }));
   }
   // the chain that models most of the protein: of the chains whose mapping spans most of it (8), the one PDBe says
   // observes most residues; ties to more marks resolved, then resolution. { failed } when PDBe answered for none.
@@ -914,6 +990,7 @@
       ch = chain || T.pick[id] || (e.maps[0] || {}).chain || null;
     T.pick[id] = ch;
     T.entry = id;
+    T.loadingId = id;
     message(`Loading PDB ${UP(id)}…`);
     if (!(T.mol && T.mol.acc === acc)) placeholder(`Loading PDB ${UP(id)}…`);
     const nmr = /NMR/i.test(e.method || '');
@@ -930,6 +1007,7 @@
       meta([id]),
     ])
       .then(([lib, [text, fmt], det]) => {
+        if (T.loadingId === id) T.loadingId = null;
         if (T.acc !== acc || !viewer(lib)) return;
         const sites = det.coverage ? pdbSites(e, det).filter((x) => x[1] != null && x[2]) : [];
         setModel(text, fmt, {
@@ -978,6 +1056,7 @@
         if (f != null) focusPos(f);
       })
       .catch((err) => {
+        if (T.loadingId === id) T.loadingId = null;
         message(
           `PDB ${UP(id)} could not be loaded (${
             err.message === 'timeout' ? 'RCSB or PDBe did not answer in time' : esc(err.message)
@@ -1015,8 +1094,72 @@
   }
   function startPdbOrAf() {
     if (V.src === 'af') return showAf();
+    const acc = T.acc,
+      pos = siteNow();
+    if (pos != null && T.rec?.marks?.some((m) => m[0] === pos)) {
+      const afFirst = () => {
+        // the AlphaFold model is drawn first; the experimental entry that resolves the site replaces it once one is found,
+        // unless the reader has changed the model by then (the entries list is asked for while the model loads; the site
+        // scan starts after it, so its 10 s read is not shared with the model's download)
+        loadPdb(acc).catch(() => {});
+        (T.scanning ||= {})[`${acc}:${pos}`] = true;
+        return showAf()
+          .then(
+            () => T.mol,
+            () => T.mol
+          )
+          .then((shown) =>
+            scanSite(acc, pos).then(
+              (list) => {
+                delete T.scanning[`${acc}:${pos}`];
+                if (T.acc !== acc) return;
+                if (!list.length) {
+                  (T.noneAt ||= {})[`${acc}:${pos}`] = true;
+                  return paintSrc();
+                }
+                if (T.mol !== shown || (shown && shown.mode !== 'af')) return paintSrc();
+                const e = list[0];
+                return showPdb(e, resolvesAt(e.id, pos), pos);
+              },
+              () => {
+                delete T.scanning[`${acc}:${pos}`];
+                if (T.acc === acc) paintSrc(); // the toggle stops saying it is searching
+              }
+            )
+          );
+      };
+      // an entry the site card lists for this site that PDBe maps over it is opened as the first view: one model is
+      // drawn, and the scan for the other entries (menu only) starts once it is shown
+      const listed = new Set(entriesAt(pos).flatMap((c) => c[2].map(UP)));
+      if (!listed.size) return afFirst();
+      return loadPdb(acc).then(
+        (res) => {
+          const inSite = (m) => pos >= m.unpStart && pos <= m.unpEnd,
+            // the order the scan gives: the modified residue modeled, then the sharpest
+            e = res.entries
+              .filter((x) => listed.has(UP(x.id)) && x.maps.some(inSite))
+              .sort(
+                (x, y) => res.modified.has(y.id) - res.modified.has(x.id) || (x.resolution || 99) - (y.resolution || 99)
+              )[0];
+          if (!e || T.acc !== acc) return afFirst();
+          const ch = e.maps.find(inSite).chain;
+          SITE_AT[`${acc}:${pos}:${e.id}`] ||= ch;
+          V.src = 'pdb';
+          return showPdb(e, ch, pos).then(() => {
+            if (T.acc !== acc) return;
+            if (!T.mol || T.mol.acc !== acc) return afFirst();
+            scanSite(acc, pos).then(() => {
+              if (T.acc === acc) {
+                paintPdbList();
+                paintSrc();
+              }
+            });
+          });
+        },
+        () => afFirst()
+      );
+    }
     placeholder(`Finding the experimental chain that models most of ${esc(T.p.gene || T.acc)}…`);
-    const acc = T.acc;
     return bestPdb(acc).then(
       (b) => {
         if (T.acc !== acc || (T.mol && T.mol.acc === acc)) return;
@@ -1818,7 +1961,9 @@
     });
   }
   function pdbMenu(res) {
-    const inRange = (e) =>
+    const site = siteNow(),
+      at = (e) => (site != null && resolvesAt(e.id, site) ? 1 : 0),
+      inRange = (e) =>
         e.maps.length ? marks().filter((m) => e.maps.some((x) => m[0] >= x.unpStart && m[0] <= x.unpEnd)).length : 0,
       te = tableEntries();
     return res.entries
@@ -1826,6 +1971,7 @@
       .map((e) => ({ e, n: inRange(e), mod: res.modified.has(e.id), r: RESOLVED[e.id], at: te.get(e.id) || [] }))
       .sort(
         (a, b) =>
+          at(b.e) - at(a.e) ||
           b.mod - a.mod ||
           (b.r || 0) - (a.r || 0) ||
           b.at.length - a.at.length ||
@@ -1837,15 +1983,19 @@
     TRIED = new Set();
   function optLabel({ e, n, r, mod }) {
     const title = META[UP(e.id)]?.struct?.title;
-    const sites = mod
-      ? `models a ${NOUN}`
-      : r != null
-        ? r
-          ? `${r} site${r === 1 ? '' : 's'} resolved`
-          : 'no site resolved'
-        : n
-          ? `${n} site${n === 1 ? '' : 's'} in construct`
-          : 'no site in construct';
+    const site = siteNow(),
+      here = site != null && resolvesAt(e.id, site) ? `resolves ${rl(site)}` : '';
+    const sites = here
+      ? here + (mod ? ` · models a ${NOUN}` : '')
+      : mod
+        ? `models a ${NOUN}`
+        : r != null
+          ? r
+            ? `${r} site${r === 1 ? '' : 's'} resolved`
+            : 'no site resolved'
+          : n
+            ? `${n} site${n === 1 ? '' : 's'} in construct`
+            : 'no site in construct';
     return `${UP(e.id)} · ${methodShort(e.method)}${
       e.resolution ? ' ' + Number(e.resolution).toFixed(1) + ' Å' : ''
     } · ${sites}${title ? ' · ' + shorten(title, 52) : ''}`;
@@ -1859,22 +2009,29 @@
       mode = !mol ? null : mol.mode === 'af' ? 'af' : own ? 'pdb' : null;
     const res = T.res,
       best = T.best;
-    const target = own ? own.e : best && !best.failed ? best.e : null;
+    const loading = !own && T.loadingId ? T.loadingId : null,
+      target = own ? own.e : loading ? { id: loading } : best && !best.failed ? best.e : null;
     const list = res ? pdbMenu(res) : [];
     const chains = own ? own.e.maps.map((m) => m.chain).filter((c, k, a) => a.indexOf(c) === k) : [];
-    const lab = target
-      ? `Experimental · PDB ${UP(target.id)}`
-      : best?.failed || res?.failed
-        ? 'Experimental (PDBe did not answer; retry)'
-        : !res
-          ? 'Experimental (looking…)'
-          : list.length
-            ? 'Experimental'
-            : 'Experimental (none)';
+    const none = !own && siteNow() != null && !!T.noneAt?.[`${acc}:${siteNow()}`];
+    const looking = !own && siteNow() != null && !!T.scanning?.[`${acc}:${siteNow()}`];
+    const lab = none
+      ? `No experimental structure at ${rl(siteNow())}`
+      : looking
+        ? 'Experimental (searching…)'
+        : target
+          ? `Experimental · PDB ${UP(target.id)}`
+          : best?.failed || res?.failed
+            ? 'Experimental (PDBe did not answer; retry)'
+            : !res
+              ? 'Experimental (searching…)'
+              : list.length
+                ? 'Experimental'
+                : 'Experimental (none)';
     box.innerHTML =
       `<div class="seg" role="group" aria-label="Structure shown"><span class="seg-l">Show</span>` +
       `<button type="button" data-s3d-src="pdb" aria-pressed="${mode === 'pdb'}"${
-        !res && !best ? ' disabled' : res && !list.length && !res.failed ? ' disabled' : ''
+        none || (!res && !best) ? ' disabled' : res && !list.length && !res.failed ? ' disabled' : ''
       }>${esc(lab)}</button>` +
       `<button type="button" data-s3d-src="af" aria-pressed="${mode === 'af'}">AlphaFold model</button></div>` +
       (list.length > 1 || (list.length && !own)
@@ -1887,8 +2044,8 @@
                 }>${esc(optLabel(x))}</option>`
             )
             .join('')}</select>` +
-          `</label><span class="muted small s3d-optkey"> Each entry: PDB code · method and resolution in Å (lower ` +
-          `is sharper) · what it resolves</span>`
+          `</label><span class="muted small s3d-optkey"> PDB code · method · resolution (Å) · ` +
+          `residues resolved</span>`
         : '') +
       (chains.length > 1
         ? `<label class="s3d-ctl">Chain <select data-s3d-sel="chain" aria-label="Chain of this ` +
@@ -2062,7 +2219,7 @@
         K.link('protein', T.acc + '/' + pos)
       )}">its card</a></p>${contacts}${boundHtml}` +
       (!rows.length && !bound.length && (SD.contacts || SD.bound)
-        ? `<p class="muted small">The tables of this explorer list ` + `no contact for ${esc(rl(pos))} in the PDB.</p>`
+        ? `<p class="muted small">No PDB contact at ${esc(rl(pos))}.</p>`
         : '') +
       (rows.length || bound.length ? `<p class="src">${esc(tableWords('contacts') || tableWords('bound'))}</p>` : '') +
       '</div>'
@@ -2081,6 +2238,7 @@
     }
     if (mol.mode === 'af') {
       const af = mol.af,
+        site = siteNow(),
         e = af.entry,
         inModel = [...siteColours(false).keys()];
       const counts = [0, 0, 0, 0];
@@ -2096,6 +2254,9 @@
         F +
         (`<dl class="kv"><dt>Model</dt><dd><a href="https://alphafold.ebi.ac.uk/entry/${esc(T.acc)}">${esc(e.entryId)} v${esc(e.latestVersion || '')}</a></dd>` +
           `<dt>Mean pLDDT</dt><dd>${e.globalMetricValue != null ? Number(e.globalMetricValue).toFixed(1) : '–'}</dd>`) +
+        (site != null && K.prot?.plddt?.(T.acc, site) != null
+          ? `<dt>pLDDT at ${esc(rl(site))}</dt><dd>${Number(K.prot.plddt(T.acc, site)).toFixed(0)}</dd>`
+          : '') +
         (e.paeImageUrl ? `<dt>PAE</dt><dd><a href="${esc(e.paeImageUrl)}">Predicted aligned error</a></dd>` : '') +
         '</dl>' +
         (n
@@ -2124,11 +2285,14 @@
             .map((m) => am.get(m[0]))
             .filter((a) => a && a.n)
             .map((a) => a.sum / a.n);
+          // AlphaMissense is less reliable in disordered regions: count the sites that lie in one
+          const dis = units(styleKinds('disorder')),
+            nDis = marks().filter((m) => am.get(m[0])?.n && dis.some(([, a, b]) => m[0] >= a && m[0] <= b)).length;
           el.innerHTML = vals.length
-            ? `AlphaMissense: the mean pathogenicity of the substitutions at each ${esc(NOUN)}, averaged over ${int(vals.length)} ${esc(vals.length === 1 ? NOUN : NOUNS)}, is ${(
-                vals.reduce((s, x) => s + x, 0) / vals.length
-              ).toFixed(2)}; ${vals.filter((x) => x >= 0.564).length} of ${vals.length} are at or ` +
-              `above 0.564, AlphaMissense’s cut-off for a likely pathogenic variant.`
+            ? `AlphaMissense mean ${(vals.reduce((s, x) => s + x, 0) / vals.length).toFixed(2)} (${int(vals.length)} ${esc(
+                vals.length === 1 ? NOUN : NOUNS
+              )}); ${vals.filter((x) => x >= 0.564).length} ≥ 0.564` +
+              (nDis ? `; ${nDis} in disordered regions (less reliable)` : '')
             : '';
         });
       return;
@@ -2414,6 +2578,18 @@
           }
         });
     }
+    // the entries that resolve the selected site go first in the menu once they are read
+    const site = siteNow();
+    if (site != null && T.started && !T.loadingId && !scanSite.shown?.has(`${T.acc}:${site}`)) {
+      const acc = T.acc;
+      (scanSite.shown ||= new Set()).add(`${acc}:${site}`);
+      scanSite(acc, site).then(() => {
+        if (T.acc === acc) {
+          paintPdbList();
+          paintSrc();
+        }
+      });
+    }
     const shown = T.pdbAll ? list : list.slice(0, 10);
     const ids = shown.map((x) => x.e.id).filter((id) => !(UP(id) in META));
     if (ids.length)
@@ -2441,7 +2617,9 @@
             na = res.na.get(e.id);
           const r = RESOLVED[e.id];
           return (
-            `<tr class="${e.id === own ? 'on' : ''}"><td class="wrapok"><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}"><b>${esc(UP(e.id))}</b></a>${
+            `<tr class="${e.id === own ? 'on' : ''}"><td class="wrapok"><a href="https://www.rcsb.org/structure/${esc(UP(e.id))}" title="The entry page at RCSB${
+              site != null && resolvesAt(e.id, site) ? `; View here shows ${esc(rl(site))} in it` : ''
+            }"><b>${esc(UP(e.id))}</b></a>${
               mod
                 ? ` <span class="s3d-tag ` +
                   `k-mark" title="A ${esc(NOUN)} is modeled in this protein’s chain">${esc(NOUN)} in model</span>`
@@ -2495,7 +2673,11 @@
                   .join(' ')}</div>`
               : '') +
             '</td>' +
-            `<td><button type="button" class="btn small" data-s3d-entry="${esc(e.id)}">${e.id === own ? 'Shown' : 'View'}</button></td></tr>`
+            `<td><button type="button" class="btn small" data-s3d-entry="${esc(e.id)}"${
+              site != null && resolvesAt(e.id, site)
+                ? ` data-s3d-at="${site}" title="Show PDB ${esc(UP(e.id))} at ${esc(rl(site))}"`
+                : ''
+            }>${e.id === own ? 'Shown' : 'View'}</button></td></tr>`
           );
         })
         .join('') +
@@ -2777,9 +2959,7 @@
             T.homAll ? 'Show the first 12 sites' : `Show all ${int(sites.length)} sites`
           }</button></p>`
         : '') +
-      ('<p class="src">RCSB sequence search (MMseqs2) and entry descriptions, read ' +
-        'live. Entries with another protein, RNA or DNA come first, then higher ' +
-        'identity; only residues modeled in the deposited chain are listed.</p>');
+      '<p class="src">RCSB sequence search (MMseqs2), live. Entries with other molecules first, then by identity.</p>';
   }
   function showHomolog(h, focus) {
     const acc = T.acc,
@@ -2911,8 +3091,10 @@
           (`<p class="src">${esc(tableWords('predicted'))}; models ` + `retrieved from AlphaFold DB.</p>`)
         : `<p class="muted">The tables of this explorer name no predicted complex with a ${esc(NOUN)} at the interface.</p>`;
     // AlphaFold DB answers 404 for a protein with no predicted complex, and the browser logs that as an error: it is asked
-    // at once only where the site's tables name a predicted partner (or it was asked before), else on the reader's request
-    const askNow = pv.length > 0 || !!cache.cx[base];
+    // at once only where the site's tables name a predicted partner and the section is open (or it was asked before), else
+    // when the section opens or on the reader's request
+    const shut = () => !box.isConnected || !!box.closest('details:not([open])');
+    const askNow = (pv.length > 0 && !shut()) || !!cache.cx[base];
     box.innerHTML =
       tableHtml +
       '<div id="s3d-afcx">' +
@@ -2994,6 +3176,20 @@
       });
     T.askAf = ask;
     if (askNow) ask();
+    else if (pv.length > 0 && box.isConnected) {
+      const d = box.closest('details');
+      d?.addEventListener(
+        'toggle',
+        () => {
+          const hold = document.getElementById('s3d-afcx');
+          if (d.open && hold && T.acc === acc && !cache.cx[base]) {
+            hold.innerHTML = '<p class="muted">Asking AlphaFold DB for predicted complexes…</p>';
+            ask();
+          }
+        },
+        { once: true }
+      );
+    }
   }
   // a predicted model: spec() resolves to {url, chain, names, label, method, scores, link, pae}; numbering is UniProt's
   function showModel(spec, focus) {
@@ -3239,7 +3435,7 @@
                 `${k} (${xs.map((x) => `${dateWords(x.version) || x.input}, MD5 ${x.md5.slice(0, 8)}…`).join('; ')})`
             )
             .join('; ')}. `
-        : 'Nothing in this view comes from the tables of this explorer except the modified sites. ') +
+        : 'Uses only this explorer’s modified sites. ') +
       `Drawn with ${LIB_CITE}.`
     );
   }
@@ -3987,14 +4183,20 @@
           `title="${esc(t)}">${l}</button>`
       )
       .join('');
-    const hasTables = Object.keys(SD.inputs || {}).length > 0;
     return (
       `<div class="s3d" id="s3d"><div class="s3d-head card-head">` +
-      (`<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}<span class="s3d-sep">` +
+      (`<div class="exp s3d-tools" role="group" aria-label="Structure controls and downloads">${tools}${
+        // on a phone the four view controls stay and the downloads and links sit behind "More"
+        matchMedia('(max-width: 40rem)').matches
+          ? '<details class="s3d-more"><summary class="exp-btn">More</summary>'
+          : ''
+      }<span class="s3d-sep">` +
         `</span>${exp}<span class="s3d-sep"></span>${files}<a class="exp-btn" href="${esc(K.link('method', 'structure'))}" title="Where ` +
-        `the structures, the placing of the ${esc(NOUNS)} and the colors come from">Method</a><a class="exp-btn" ` +
+        `the structures, the placing of the ${esc(NOUNS)} and the colors come from">Methods</a><a class="exp-btn" ` +
         `id="s3d-newtab" href="${esc(soloHref(p.acc))}" target="_blank" rel="noopener" title="The viewer on a ` +
-        `page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a></div></div>`) +
+        `page of its own, with this entry, chain and ${esc(NOUN)}">Open in a new tab</a>${
+          matchMedia('(max-width: 40rem)').matches ? '</details>' : ''
+        }</div></div>`) +
       `<div class="s3d-src" id="s3d-src"></div>` +
       `<div class="s3d-wrap"><div class="s3d-stage"><div class="s3d-viewer" id="s3d-viewer"></div>` +
       `<div class="s3d-pan" role="group" aria-label="Slide the structure">${[
@@ -4014,12 +4216,7 @@
       sub('s3d-pdb', 'Experimental structures (PDB)', '<div id="s3d-pdb-list"></div>') +
       sub('s3d-hom', 'Homologous experimental structures', '<div id="s3d-hom-list"></div>') +
       sub('s3d-pred', 'Predicted complexes', `<div id="s3d-pred-list"></div>`) +
-      `<p class="src">Live, by accession: AlphaFold DB, PDBe, RCSB${SD.predicted ? ', ProtVar' : ''}; drawn with ${esc(LIB_CITE)}.${
-        hasTables
-          ? ` What the ${esc(NOUNS)} touch: the ` +
-            `tables of this explorer (${esc([...new Set(Object.keys(SD.inputs).map(tableWords))].join('; '))}).`
-          : ''
-      }</p></div>`
+      `<p class="src">Live: AlphaFold DB, PDBe, RCSB${SD.predicted ? ', ProtVar' : ''}. Viewer: ${esc(LIB_CITE)}.</p></div>`
     );
   }
   function reset(p, rec) {
@@ -4047,6 +4244,12 @@
     });
   }
   const foldOpen = () => !!document.getElementById('p-struct')?.open;
+  // the section and the group(s) it sits in, open (a closed group hides it)
+  function openFold() {
+    const d = document.getElementById('p-struct');
+    for (let a = d; a; a = a.parentElement?.closest('details')) if (!a.open) a.open = true;
+    return d;
+  }
   // the marks the view shows changed: draw them again, and the key, summary and buttons that name them
   function refreshMarks() {
     T.sig = marks()
@@ -4082,10 +4285,7 @@
         paintPdbList();
         paintSummary();
       });
-    if (T.want) {
-      const d = document.getElementById('p-struct');
-      if (d && !d.open) d.open = true;
-    }
+    if (T.want) openFold();
     if (
       T.mol &&
       T.mol.acc === acc &&
@@ -4138,33 +4338,11 @@
         }
       });
   }
-  // the viewer at the top of the window, kept there for a few seconds while the page above it is still filling in
-  // (the map's live rows), unless the reader scrolls first
+  // the viewer at the top of the window, held there by the shared landing (K.landOn) while the page above it fills in,
+  // unless the reader scrolls first; its group is opened first so the viewer has a place on the page
   function scrollToViewer() {
-    const place = () => {
-      const t = document.getElementById('s3d');
-      if (!t) return null;
-      const bar = document.querySelector('.toolbar')?.offsetHeight || 0;
-      return t.getBoundingClientRect().top - bar - 8;
-    };
-    const d = place();
-    if (d == null) return;
-    scrollTo({ top: scrollY + d });
-    const until = Date.now() + 4000,
-      stop = () => {
-        T.keep = 0;
-      };
-    T.keep = until;
-    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev0) =>
-      addEventListener(ev0, stop, { once: true, passive: true })
-    );
-    const hold = () => {
-      if (T.keep !== until || Date.now() > until) return;
-      const x = place();
-      if (x != null && Math.abs(x) > 4) scrollTo({ top: scrollY + x });
-      requestAnimationFrame(hold);
-    };
-    requestAnimationFrame(hold);
+    openFold();
+    K.landOn?.(() => document.getElementById('s3d'));
   }
   function apply(w) {
     T.want = null;
@@ -4204,11 +4382,21 @@
       chain: o.chain || null,
     };
     T.scrollTo = true;
+    // the reader acting first ends the landing, here and when the structure arrives
+    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev0) =>
+      addEventListener(
+        ev0,
+        () => {
+          T.scrollTo = false;
+        },
+        { once: true, passive: true }
+      )
+    );
     if (pageOpen(acc) && T.acc === acc) {
       const d = document.getElementById('p-struct');
       if (d && !d.open) {
         T.want = w;
-        d.open = true;
+        scrollToViewer(); // opens the section and its group, then lands on the viewer
         return true;
       } // the toggle starts it
       scrollToViewer();
@@ -4561,6 +4749,13 @@
 .s3d .s3d-head .sub { margin: 0; color: var(--muted); font-size: .88rem; }
 .s3d-tools { border-top: 0; padding-top: 0; }
 .s3d-sep { width: .6rem; }
+.s3d-more { display: inline-block; }
+.s3d-more[open] { flex-basis: 100%; }
+.s3d-more[open] > :not(summary) { margin: .35rem .35rem 0 0; }
+.s3d-more .s3d-sep { display: none; }
+.s3d-more > summary { list-style: none; }
+.s3d-more > summary::-webkit-details-marker { display: none; }
+.s3d-more[open] > summary { background: var(--brand-ink); color: var(--surface); }
 .s3d-tools .exp-btn[aria-pressed="true"] { background: var(--brand-ink); color: var(--surface); border-color: ` +
     `var(--brand-ink); }
 .s3d-src, .s3d-row { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .9rem; margin: .55rem 0; }
@@ -4665,6 +4860,6 @@
 `;
   document.head.appendChild(css);
 
-  K.s3d = { html, after, summary: () => 'AlphaFold DB, PDBe and RCSB', show: show3d };
+  K.s3d = { html, after, summary: () => 'AlphaFold DB, PDBe and RCSB', show: show3d, paintSide };
   K.show3d = show3d;
 });

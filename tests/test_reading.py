@@ -1,7 +1,7 @@
 """website.reading: what the website ranks and colors, the same defaults for every site (two maps agreeing on a part
 of the cell, 20 proteins a side in each, 30 proteins in a ranked set) unless a site file says otherwise. The entry
 pictures choose their findings the way the Overview reads its rows: by the fold, in the direction the test agrees with,
-a set by its test within abundance deciles, and never a small set or one whose every member is marked. A toy site
+a set by its own hypergeometric row (not adjusted for protein abundance), and never a small set or one whose every member is marked. A toy site
 carries the option to its page; the checks name a bad value."""
 
 from __future__ import annotations
@@ -48,12 +48,12 @@ def test_a_small_set_or_one_at_the_ceiling_is_not_chosen_and_the_option_lowers_t
     assert findings(SETS, rows, reading={'min_set': 20})[0]['class'] == 'small'
 
 
-def test_a_set_tested_within_abundance_deciles_is_read_by_that_test():
+def test_a_set_is_read_by_its_own_test_not_the_one_within_abundance_deciles():
     rows = [_set('big', 200, 800, 300, 8700)]
-    strat = {**rows[0], 'method': 'mantel_haenszel', 'or': 1.3, 'fold': None, 'q': 0.2}
-    assert findings(SETS, rows + [strat]) == []
-    assert findings(SETS, rows + [{**strat, 'q': 0.01}])[0]['class'] == 'big'
-    assert findings(SETS, rows + [{**strat, 'q': 0.01, 'or': 0.8}]) == []  # the deciles point the other way
+    strat = {**rows[0], 'method': 'mantel_haenszel', 'or': 0.8, 'fold': None, 'q': 0.2}
+    # the estimate within deciles does not hide, move or reverse a set the hypergeometric row finds
+    assert findings(SETS, rows + [strat])[0]['class'] == 'big'
+    assert findings(SETS, rows + [strat])[0]['eff'] == findings(SETS, rows)[0]['eff']
 
 
 def test_a_residue_finding_is_its_fold_in_the_direction_its_test_agrees_with():

@@ -355,6 +355,13 @@ package that offers a `ptmcontext.Layer` under the entry-point group `ptmcontext
 the site names its package under `trusted_plugins`, and the run record keeps its version. Do not copy another
 repository's code into this one without the owner's review; do not run another repository's scripts from here.
 
+One exception is a table of rules kept in a script. The Mutations page's inherited disease view gives each ClinVar condition the
+disease family of the release's own rules (`scripts/disease_families.py` of PTM_Pipeline). That file is a manifest input
+(`website.propensity.disease_families`, with its MD5, so a site's CI plan checks it out with the ClinVar change tables named in
+`clinvar_changes`) and is read as text: `ptmcontext/web/disease_families.py` parses `FAMILY_RULES`, `ADDITIONAL_FAMILY_RULES` and
+`CURATED_OVERRIDES` and applies the release's rule, and the script is never imported or run. A new release whose file has other table names needs
+the reader changed.
+
 ## 7. Cite it, version it, publish it
 
 - Add the source to the site's citation file (`sites/<site>.citation.cff`, under `references:`), with its DOI checked on
@@ -364,6 +371,23 @@ repository's code into this one without the owner's review; do not run another r
   version, the date and the citation are read from that file everywhere; nothing else needs editing.
 - The kit's own version lives in `pyproject.toml`, `ptmcontext/__init__.py` and `CITATION.cff`; a test fails if they
   differ.
+
+### Adding an explorer
+
+A new published site needs these steps and no edit to a workflow or to a test's list of sites:
+
+1. Write the mark profile (`sites/marks/<mark>.yaml`), the manifest (`sites/<site>.inputs.json`), the site file
+   (`sites/<site>.yaml`) and the citation file (`sites/<site>.citation.cff`).
+2. Add `website.ci` to the site file (`order`, and `lower_confidence`, `audit.*` where they differ from the defaults;
+   CONTRACTS.md, "Site CI parameters"). This is what publishes it: the Pages build, the link and export audits, the
+   sparse checkout of the data repository and the `ptmc pages` list follow from it.
+3. Run `ptmc check sites/<site>.yaml --root <data>`: it reports an unknown layer parameter, an input missing from the
+   manifest and a `marks.attributes` column the marks table does not have.
+4. Run `python tools/ci_plan.py` and read the matrices and file lists it gives for the site.
+5. Add the site to the landing page's `order` in `sites/landing.yml`, and run `pytest -q`: the tests that hold for every
+   published site (`tests/ci_sites.py`, `PUBLISHED`) now run on it.
+6. Update `tests/ci_expected.json` only for a deliberate change to the first four sites' CI lists; a new site does not
+   need it.
 
 ## 8. Write down what you did
 

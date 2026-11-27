@@ -1,5 +1,5 @@
 /* The Interactions view of a protein, site first: who binds each of its marks (the records of
-   website.tables, grouped by what they show), then its partners and the complexes that hold it (the partner table, with the
+   website.tables, grouped by what they show), then its protein partners and the complexes that hold it (the partner table, with the
    share of partners that carry the mark against the dataset's share of all proteins), then the writers and readers among its
    partners and the marks of its other partners that they bind. The network and the interface lists follow (kit-pnet.js).
    Reads website.protein.card.writer.partners (the partner table and its classes) and website.protein.card.records; knows no
@@ -15,15 +15,18 @@
   const pc = (k, n) => (n ? `${Math.round((100 * k) / n)}%` : '–');
   const IDX = new Map((D.proteins || []).map((p) => [p[0], p]));
   const isListed = (a) => IDX.has(a);
-  const link = (acc, name) =>
-    isListed(acc)
-      ? `<a href="${esc(K.link('protein', acc))}"><b>${esc(name || acc)}</b></a>`
-      : `<b title="${esc(acc || '')}">${esc(name || acc)}</b>`;
+  // a protein in a list: gene and accession, linked to its page here or to UniProt (the sitecard's one drawing)
+  const link = (acc, name, show) => K.card.protRef(acc, name, { listed: isListed(acc), show });
   const classWord = (c) =>
     String((PT.classes || {})[c] || c)
       .replace(/^an? /, '')
       .replace(/\s+associated with \{gene\}$/, '')
       .replace(/\{gene\}/g, '');
+  // the class as one partner's label: a plural acronym loses its s, and a trailing "proteins" is dropped
+  const classOne = (c) =>
+    classWord(c)
+      .replace(/\s+proteins$/i, '')
+      .replace(/([A-Z])s$/, '$1');
 
   // ---- the complexes the protein is in: the page table of the Interactions page, read once, when the tab is on --------------
   let CX = null,
@@ -91,37 +94,50 @@
       ? `<ul class="pix-paths">${xs
           .map(
             (x) =>
-              `<li>${link(x.acc, x.name)} <span class="tag">${esc(classWord(x.cls))}</span> ${
+              `<li>${link(x.acc, x.name)} <span class="muted">(${esc(classOne(x.cls))}):</span> ${
                 x.also.length
-                  ? `<span class="muted">` +
-                    `also binds</span> ${x.also
+                  ? `<span class="muted">also binds</span> ${x.also
                       .slice(0, 8)
                       .map(([a, n]) => link(a, n))
                       .join(', ')}${x.also.length > 8 ? ` <span class="muted">+${x.also.length - 8}</span>` : ''}`
-                  : '<span class="muted">binds none of the other partners that have the modification</span>'
+                  : '<span class="muted">none</span>'
               }</li>`
           )
           .join('')}</ul>`
-      : '<p class="muted small">None of its partners is in a writer or reader class.</p>';
+      : '<p class="muted small">None of its protein partners is in a writer or reader class.</p>';
   }
 
+  // a protein's partners in the site's partner table: the one list the protein page, its folds and every pointer count
+  const partnersOf = (tb) => (tb && K.card.has(PT.table) ? K.card.rows(tb, PT.table) : []);
+  // a line for another page (the Network panel): how many partners the protein has in all, linking to this section
+  const countNote = (acc) =>
+    K.card.load(acc).then((tb) => {
+      const n = partnersOf(tb).length;
+      return n
+        ? `${int(n)} protein partners (STRING) in <a href="${esc(K.link('protein', acc + '/interactions'))}">Protein interactions</a>`
+        : '';
+    });
   // ---- the view ---------------------------------------------------------------------------------------------------------
   function html(p, rec, tb) {
     if (!tb) return K.loading('Loading the interaction tables…');
     const gene = p.gene || p.acc,
-      parts = K.card.has(PT.table)
-        ? K.card.rows(tb, PT.table).sort((a, b) => (num(b.score) || 0) - (num(a.score) || 0))
-        : [];
+      parts = partnersOf(tb).sort((a, b) => (num(b.score) || 0) - (num(a.score) || 0));
     const who = K.card.proteinRecords?.(p, tb, (pos) => K.prot.siteLabel(p.acc, pos), isListed);
     let out = '';
+    // a one-line guide to the three lists below (the network is drawn by kit-pnet.js, folded under them)
+    if (parts.length || who?.n) {
+      const go = (id, t) => `<a href="${esc(location.hash)}" data-jump="${id}">${t}</a>`;
+      out +=
+        `<p class="small pix-guide muted">In this section: ${who?.n ? go('pix-sites', 'Proteins at the sites') + ' · ' : ''}` +
+        `${parts.length ? go('pix-string', 'Protein partners (STRING)') + ' · ' : ''}${go('pn-net', 'Protein network')}</p>`;
+    }
     // 1. who binds each mark
     if (who)
       out +=
-        `<section class="pix-sec"><h4>Who binds its ${esc(W.marks)}</h4>` +
+        `<section class="pix-sec"><h4 id="pix-sites">Proteins at the sites</h4>` +
         (who.n
-          ? `<p class="sub">What the records at each ${esc(W.mark)} say, and with whom. ${int(who.n)} of ${int(rec.marks.length)} ${esc(W.marks)} have a protein ` +
-            `partner on record.</p><div class="tbl-card"><table class="tbl compact stackable pix-who"><thead><tr><th>` +
-            `Site</th><th>What the records show</th><th class="num">Papers</th></tr></thead><tbody>${who.rows
+          ? `<p class="sub">Writers or readers on record: ${int(who.n)} of ${int(rec.marks.length)} ${esc(W.marks)}.</p><div class="tbl-card"><table class="tbl compact stackable pix-who"><thead><tr><th>` +
+            `Site</th><th>Binding and writing proteins</th><th class="num">Papers</th></tr></thead><tbody>${who.rows
               .slice(0, UI.all ? 999 : UI.rows)
               .join('')}</tbody></table>` +
             `</div>` +
@@ -130,7 +146,7 @@
                   UI.all ? 'Fewer sites' : `All ${int(who.rows.length)} sites`
                 }</button></p>`
               : '')
-          : `<p class="muted small">No record names a protein partner at a ${esc(W.mark)} of ${esc(gene)}.</p>`) +
+          : K.noData(`No record names a binding or writing protein at a ${W.mark} of ${gene}.`)) +
         '</section>';
     // 2. partners and complexes
     if (parts.length) {
@@ -141,29 +157,25 @@
       const tab = (id, label, n) =>
         `<button type="button" role="tab" data-pix-tab="${id}" aria-pressed="${UI.tab === id}">${esc(label)} <span class="muted">${n == null ? '' : int(n)}</span></button>`;
       out +=
-        `<section class="pix-sec"><h4>Partners and complexes</h4><div class="seg" role="group" ` +
-        `aria-label="Partners or complexes">${tab('partners', 'Partners', parts.length)}${tab(
+        `<section class="pix-sec"><h4 id="pix-string">${UI.tab === 'complexes' ? 'Protein complexes' : 'Protein partners (STRING)'}</h4><div class="seg" role="group" ` +
+        `aria-label="Protein partners or complexes">${tab('partners', 'Protein partners', parts.length)}${tab(
           'complexes',
           'Complexes',
           nCx === '' || nCx == null ? null : +nCx
         )}</div>`;
       if (UI.tab === 'partners') {
         out +=
-          `<p class="pix-head"><b>${int(marked)} of ${int(parts.length)} partners (${pc(marked, parts.length)})</b> have ${esc(W.marks)} themselves${
-            base != null
-              ? `, against ${pc(D.counts.proteins, D.run.snapshot.entries)} of the reviewed ` + `proteome`
-              : ''
-          }. <span class="muted small">STRING physical associations of the whole protein, score ${esc(
-            String(D.partners?.min_score ?? 0.7)
-          )} or more.</span>` +
+          `<p class="pix-head"><b>${int(marked)} of ${int(parts.length)} partners (${pc(marked, parts.length)})</b> have ${esc(W.marks)}${
+            base != null ? `; reviewed proteome ${pc(D.counts.proteins, D.run.snapshot.entries)}` : ''
+          }. <span class="muted small">STRING physical, score ≥ ${esc(String(D.partners?.min_score ?? 0.7))}.</span>` +
           `</p>` +
-          (`<div class="tbl-card"><table class="tbl compact pix-parts"><thead><tr><th>Partner</th><th class="num">` +
+          (`<div class="tbl-card"><table class="tbl compact pix-parts"><thead><tr><th>Protein</th><th class="num">` +
             `STRING score</th><th>${esc(cap(W.marks))}</th><th>Class</th></tr></thead><tbody>`) +
           parts
             .slice(0, UI.all ? 999 : UI.rows)
             .map(
               (r) =>
-                `<tr><td>${link(r.partner_accession, r.partner)}</td><td ` +
+                `<tr><td>${link(r.partner_accession, r.partner, true)}</td><td ` +
                 `class="num">${esc(num(r.score) != null ? num(r.score).toFixed(3) : '')}</td><td>${
                   r.partner_marked === 'true'
                     ? `<span class="yes" ` +
@@ -175,7 +187,7 @@
           `</tbody></table></div>` +
           (parts.length > UI.rows
             ? `<p><button type="button" class="linkish small" ` +
-              `data-pix-all>${UI.all ? 'Fewer partners' : `All ${int(parts.length)} partners`}</button></p>`
+              `data-pix-all>${UI.all ? 'Fewer protein partners' : `All ${int(parts.length)} protein partners`}</button></p>`
             : '');
       } else if (!cx) out += K.loading('Loading the complexes…');
       else
@@ -213,14 +225,25 @@
         askPaths(p.acc, parts);
         out +=
           `<section class="pix-sec"><h4>` +
-          `Writer and reader paths</h4><div data-pix-paths="${esc(p.acc)}"><p class="muted small">Looking up their ` +
+          `Writer and reader proteins</h4><div data-pix-paths="${esc(p.acc)}"><p class="muted small">Looking up their ` +
           `partners…</p></div></section>`;
       }
     }
     return out;
   }
+  // the protein page's header: a button to the STRING protein partners, the one home of that table (this section)
+  (K.protActions ||= []).push(
+    (p, light) =>
+      (!light &&
+        `<a class="btn small" href="${esc(K.link('protein', p.acc + '/interactions', { open: 'pix-string,g-binding,p-ix' }))}" ` +
+          `title="STRING protein partners of ${esc(p.gene || p.acc)}, the proteins at its ${esc(W.marks)} and its protein network">` +
+          `Protein partners (STRING)</a>`) ||
+      ''
+  );
   K.pix = {
     html,
+    partnersOf,
+    countNote,
     fillPaths: () => {
       const el = document.querySelector('[data-pix-paths]');
       if (el) fillPaths(el.dataset.pixPaths);

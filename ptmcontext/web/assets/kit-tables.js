@@ -50,7 +50,7 @@
     if (v == null || v === '' || !isFinite(+v)) return '';
     const x = +v;
     if (f === 'l2') return (x > 0 ? '+' : x < 0 ? MINUS : '') + Math.abs(x).toFixed(2);
-    if (f === 'p') return x === 0 ? '< 1e-300' : x < 1e-3 ? x.toExponential(1) : x.toFixed(3);
+    if (f === 'p') return x === 0 ? '< 1e−300' : x < 1e-3 ? x.toExponential(1).replace('e-', 'e−') : x.toFixed(3);
     if (f === 'pct') return (100 * x).toFixed(0) + '%';
     return Number.isInteger(x) ? int(x) : x.toFixed(2);
   };
@@ -247,12 +247,33 @@
   const hideCls = (c) => (c.hide === 'xs' ? ' hide-xs' : c.hide === 'sm' ? ' hide-sm' : '');
 
   // ---- the Proteins page ---------------------------------------------------------------------------------------------
-  const PS = { sort: 'marks', desc: true, n: 50, key: null };
+  const PS = { sort: 'marks', desc: true, n: 50, key: null, preset: null };
+  // the preset sorts (website.proteins.presets, the chips above the table): proteins ranked by their count of marks or a
+  // number attribute, only those that pass the preset's `where`, ties by marks; one whose attribute the site lacks is left out
+  // `share` is the table's own Share column: marks over the protein's candidate residues
+  const pHas = (n) => n === 'marks' || n === 'share' || PA.values?.[n] != null;
+  const pVal = (p, n) =>
+    n === 'marks' ? p.marks : n === 'share' ? (p.cand ? p.marks / p.cand : null) : K.proteinAttr(p.acc, n);
+  const presets = () => (PCFG.presets || []).filter((l) => pHas(l.by) && (!l.where || pHas(l.where.attribute)));
+  const presetOk = (l, p) => {
+    const v = pVal(p, l.by);
+    if (v == null || Number.isNaN(v)) return false;
+    if (!l.where) return true;
+    const w = pVal(p, l.where.attribute);
+    return w != null && (l.where.max == null || w <= l.where.max) && (l.where.min == null || w >= l.where.min);
+  };
   function proteinRows() {
     const sel = K.sel?.active(),
       cnt = sel ? K.sel.selectedCountByProtein() : null,
       ss = selSet();
     const rows = P.filter((p) => !sel || (cnt[p.i] || 0) > 0).map((p) => ({ p, n: sel ? cnt[p.i] || 0 : p.marks }));
+    const pre = PS.preset != null ? presets()[PS.preset] : null;
+    if (pre) {
+      const dir = pre.order === 'asc' ? 1 : -1,
+        ok = rows.filter((r) => presetOk(pre, r.p));
+      ok.sort((x, y) => dir * (pVal(x.p, pre.by) - pVal(y.p, pre.by)) || y.p.marks - x.p.marks);
+      return K.hl ? K.hl.firstSort(ok, (r) => K.hl.isProt(r.p.i)) : ok;
+    }
     const col = pcols().find((c) => c.id === PS.sort);
     const key =
       PS.sort === 'marks'
@@ -299,9 +320,13 @@
     const on = new Set(K.columns.on(table, cols, defaults)),
       showC = cols.filter((c) => on.has(c.id));
     const nMarks = sel ? K.sel.nMarks() : D.counts.marks;
-    const sorted = (id) => (PS.sort === id ? (PS.desc ? 'descending' : 'ascending') : '');
+    const sorted = (id) => (PS.preset == null && PS.sort === id ? (PS.desc ? 'descending' : 'ascending') : '');
     const head =
-      `<div class="page-head results-head"><div><h2>Proteins</h2><p class="cx">${int(rows.length)} of ${int(P.length)} proteins · ${int(nMarks)} ${esc(nMarks === 1 ? W.mark : W.marks)}</p></div>` +
+      `<div class="page-head results-head"><div><h2>Proteins</h2><p class="cx">${
+        sel && K.sel.loading?.()
+          ? esc(K.sel.loadingText())
+          : `${int(rows.length)} of ${int(P.length)} proteins · ${int(nMarks)} ${esc(nMarks === 1 ? W.mark : W.marks)}`
+      }</p></div>` +
       `<div class="actions">${
         rows.length
           ? `<button class="btn small" type="button" data-copy-genes title="Every ` +
@@ -309,7 +334,18 @@
           : ''
       }${figuresBtn()}${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'ptsv', 'the protein table', 'data')}</div></div>`;
     if (!rows.length) return head + selectionCard() + emptyState();
+    const chips = presets().length
+      ? `<div class="fchips preset-chips" id="proteins-presets" role="group" aria-label="Sort the proteins"><span class="flabel">Sort by</span>` +
+        presets()
+          .map(
+            (l, i) =>
+              `<button type="button" class="fchip" data-tpreset="${i}" aria-pressed="${PS.preset === i}"${l.help ? ` title="${esc(l.help)}"` : ''}>${esc(l.title)}</button>`
+          )
+          .join('') +
+        '</div>'
+      : '';
     const tableHtml =
+      chips +
       `<div class="tbl-card t-card" id="proteins-table"><div class="tbl-tools">${K.columns.menu(table, cols, defaults)}</div>` +
       `<div class="tbl-wrap"><table class="tbl stackable ptbl2"><thead><tr>${th(
         'protein',
@@ -379,8 +415,8 @@
   // a figures page, when a module draws one
   const figuresBtn = () =>
     K.views.figures
-      ? `<a class="btn small" href="${esc(K.link('figures'))}" title="Figure ` +
-        `panels of this selection">Make figures</a>`
+      ? `<a class="btn small" href="${esc(K.link('figures'))}" title="The sequence logo of the ` +
+        `selected ${esc(W.marks)}, aligned at the ${esc(W.mark)}">Sequence logo</a>`
       : '';
 
   function proteinsTsv() {
@@ -482,7 +518,7 @@
       const body = r
         ? `${int(r.a)} of the ${int(r.a + r.c)} ${esc(unit)} in this set (${K.pct(r.a, r.a + r.c)}) are ${esc(W.marked)}${
             a.background ? `; against ${esc(a.background)}` : ''
-          }: ${K.fx(r.eff)}, q ${K.fq(r.q)}.` + (cfg.note ? ` ${esc(cfg.note)}` : '')
+          }: ${K.fx(K.readingOf(r).effect)}, q ${K.fq(K.readingOf(r).q)}.` + (cfg.note ? ` ${esc(cfg.note)}` : '')
         : `Not tested: ${esc(cfg.note || 'the set is outside the question’s tested sizes')}.`;
       return card(
         cfg.eyebrow || a.title,
@@ -973,7 +1009,18 @@
       (el) => {
         const id = el.dataset.tsort,
           c = pcols().find((x) => x.id === id);
+        PS.preset = null;
         sortBy(PS, id, id === 'protein' || (c && textCol(c)));
+        K.render();
+      },
+    ],
+    [
+      '[data-tpreset]',
+      (el) => {
+        const i = +el.dataset.tpreset;
+        PS.preset = PS.preset === i ? null : i;
+        PS.n = 50;
+        if (PS.preset == null) Object.assign(PS, { sort: 'marks', desc: true });
         K.render();
       },
     ],

@@ -96,7 +96,7 @@ def test_the_schema_takes_the_blocks_and_the_bundled_sites_pass():
         jsonschema.validate(site, schema)
         assert pcards.problems(site) == [], name
     ma = yaml.safe_load((ROOT / 'sites' / 'methylarginine.yaml').read_text())['website']['protein']
-    assert set(ma['cards']) == set(pcards.CARDS) and ma['order'][0] == 'p-map' and ma['open'] == ['p-map', 'p-cell']
+    assert set(ma['cards']) == set(pcards.CARDS) and ma['order'][0] == 'p-map' and ma['open'] == ['p-map']
     assert not pcards.config(yaml.safe_load((ROOT / 'sites' / 'yeast_phospho.yaml').read_text())).get(
         'cards'
     )  # no data, no card
@@ -169,7 +169,7 @@ const tb = {{
   cl: [{{ spacing_min: '1', spacing_median: '4', max_3: '2', max_10: '5', window_size: '30', window_start: '10', window_end: '39', window_sites: '6', window_log2: '0.5', window_q: '0.003', architecture: 'spread', clusters: '10,12,14; 30,33' }}],
   ptm: [{{ kind: 'ph', start: 12, end: 12, source: 's' }}, {{ kind: 'ph', start: 90, end: 90, source: 's' }}], ex: [],
   dep: [{{ lines: '100', dependent: '7', median: '-0.5', common_essential: 'False', histogram: '0;1;5;20;30;20;15;5;3;1', lineages: 'Lung|10|-0.2' }}] }};
-const K = {{ D, W: {{ mark: 'site', marks: 'sites', residues: 'serines' }}, A: {{}}, S: {{}}, esc: s => String(s ?? ''), int: n => String(n), cap: s => s, fq: q => q.toExponential(1), PADJ: 0.05,
+const K = {{ D, W: {{ mark: 'site', marks: 'sites', residues: 'serines' }}, A: {{}}, S: {{}}, esc: s => String(s ?? ''), int: n => String(n), cap: s => s, srcName: s => s, fq: q => q.toExponential(1), PADJ: 0.05,
   link: (...a) => '#' + a.join('/'), sections: {{}}, proteinFolds: [], afterRender: [], hasData: {{}},
   card: {{ rows: (t, n) => t[n] || [], at: () => [], load: () => Promise.resolve({{}}) }}, sel: {{ data: () => null, setHas: () => false }} }};
 eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-cols.js'))}, 'utf8'));
@@ -181,7 +181,7 @@ for (const f of K.proteinFolds) out.ids.push((/id="([^"]+)"/.exec(f(p, rec, (id,
 out.loc = K.pcards.location(p, rec, tb); out.cl = K.pcards.clustering(p, rec, tb); out.ptm = K.pcards.other_ptms(p, rec, tb); out.dep = K.pcards.dependency(p, rec, tb); out.ex = K.pcards.experiments(p, rec, tb);
 console.log(JSON.stringify(out));"""
     out = json.loads(subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout)
-    assert [i for i in out['ids'] if i] == ['p-cond', 'p-depmap', 'p-exp', 'p-cluster', 'p-ptm']
+    assert [i for i in out['ids'] if i] == ['p-cond', 'p-dependency', 'p-mutations', 'p-exp', 'p-cluster', 'p-ptm']
     loc = out['loc']
     assert loc['html'].index('Beta granule') < loc['html'].index('Alpha body')  # the more confident membership first
     assert 'Nucleus' in loc['sum'] and '2 Drop condensates, most confident Beta granule (5 of 5 stars)' in loc['sum']
@@ -198,12 +198,13 @@ console.log(JSON.stringify(out));"""
         and '<span class="tag">plain</span>' not in loc['html']
     )
     assert (
-        'median spacing 4 aa' in out['cl']['sum']
-        and 'top window 6 sites in 30 aa' in out['cl']['sum']
+        out['cl']['sum'] == '6 within 30 aa (q 3.0e-3)'
+        and '6 sites within 30 aa (A10–39), more than the spacing' in out['cl']['html']
+        and 'median spacing' not in out['cl']['sum']
         and '10–14 (3)' in out['cl']['html']
         and 'A10–39' in out['cl']['html']
     )
-    assert out['ptm']['sum'] == 'Phospho 2 · 1 within 5 aa of a site'
+    assert out['ptm']['sum'] == 'Phospho 2 · 1 residue within ±5 aa of a site'
     assert out['dep']['sum'] == '7 of 100 lines depend on it'
     assert 'Lung' in out['dep']['html'] and '<svg' in out['dep']['html']
     assert out['ex'] == {'hide': True, 'html': '', 'sum': ''}  # no rows, no card

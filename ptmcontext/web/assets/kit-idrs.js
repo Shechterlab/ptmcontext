@@ -41,7 +41,12 @@
   // the diagram of states (Das & Pappu 2013): each region, its name, the shapes it predicts, its rule, a short name
   const DP = {
     1: ['Weak polyampholytes and polyelectrolytes', 'globules and tadpoles', 'FCR < 0.25', 'weakly charged'],
-    2: ['Janus sequences', 'collapsed or expanded, depending on context', 'FCR 0.25 to 0.35', 'Janus (in between)'],
+    2: [
+      'Janus sequences',
+      'collapsed or expanded, depending on context',
+      'FCR 0.25 to 0.35',
+      'moderately charged, mixed',
+    ],
     3: [
       'Strong polyampholytes',
       'coils, hairpins and chimeras, depending on how their charges are mixed (κ)',
@@ -85,6 +90,8 @@
   const regionNo = (cls) => +(/(\d+)$/.exec(String(cls))?.[1] || 0);
   const colour = (cls) => (TR.colours || {})[cls] || FALLBACK[(regionNo(cls) || 6) - 1] || FALLBACK[5];
   const clsLabel = (cls) => (QA?.labels || {})[cls] || DP[regionNo(cls)]?.[0] || String(cls);
+  // one short name for a class in the table, the figure and the legend
+  const shortCls = (cls) => DP[regionNo(cls)]?.[3] || clsLabel(cls);
   const STK = D.stickers || null; // the profile's sticker residues (Martin et al. 2020: aromatic patterning)
   // one descriptive line per IDR: how many sticker residues, how far apart, the longest stretch without one (no test)
   const patterning = (x) =>
@@ -239,7 +246,7 @@
   const isHl = (x) => HLS.on && (HLS.prots.has(x.p) || siteIn(x).length > 0);
   const resLetter = (t) => {
     const m = K.sel?.data()?.marks.find((k) => k[0] === t.p && k[1] === t.pos);
-    return (m && (m[4] || '')[7]) || (/([A-Z])\d+$/i.exec(t.label) || [])[1]?.toUpperCase() || '';
+    return (m && K.markRes(m)) || (/([A-Z])\d+$/i.exec(t.label) || [])[1]?.toUpperCase() || '';
   };
   const hlName = (x) =>
     `${gene(x)} ${rg(x)}${
@@ -296,7 +303,7 @@
     return (MI[x.p] || [])
       .filter((k) => SD.marks[k][1] >= x.s && SD.marks[k][1] <= x.e)
       .sort((a, b) => SD.marks[a][1] - SD.marks[b][1])
-      .map((k) => [`${(SD.marks[k][4] || '')[7] || ''}${SD.marks[k][1]}`, !SC.on || SC.set.has(k)]);
+      .map((k) => [`${K.markRes(SD.marks[k])}${SD.marks[k][1]}`, !SC.on || SC.set.has(k)]);
   }
 
   // ---- colours: the page's own (CSS variables, so the dark theme works), or a figure's (white) ---------------------
@@ -365,7 +372,7 @@
     let lx = ML,
       ly = 14;
     V.classes.forEach((c) => {
-      const t = `R${regionNo(c)} ${DP[regionNo(c)]?.[3] || clsLabel(c)} (${int(n[c] || 0)})`,
+      const t = `R${regionNo(c)} ${shortCls(c)} (${int(n[c] || 0)})`,
         w = 20 + K.tw(t, 10.5);
       if (lx + w > DW - MR) {
         lx = ML;
@@ -857,6 +864,37 @@
       return {};
     }
   };
+  // a small selection: the region each selected site lies in (its IDR, the class of its charge and the IDR's values)
+  function regionFew() {
+    const P = K.few?.picked();
+    if (!P || !K.few.active(P.all)) return '';
+    if (!V) {
+      load();
+      return '';
+    }
+    const f2 = (v) => (v == null || Number.isNaN(+v) ? '–' : (+v).toFixed(2));
+    const sites = P.list.map((m) => {
+      const hit = V.idrs.filter((x) => x.p === m[0] && m[1] >= x.s && m[1] <= x.e),
+        facts = hit.length
+          ? hit.flatMap((x) => [
+              { text: `IDR ${esc(rg(x))}` },
+              { text: `<b>R${regionNo(x.cls)}</b> ${esc(shortCls(x.cls))}` },
+              { text: `FCR ${f2(x.fcr)} · NCPR ${f2(x.ncpr)}${x.kappa != null ? ` · κ ${f2(x.kappa)}` : ''}` },
+            ])
+          : [{ text: `<span class="muted">not in an IDR</span>` }];
+      return {
+        key: `${m[0]}-${m[1]}`,
+        head: `${K.few.siteLink(m[0], m[1])} <span class="muted">${esc(D.proteins[m[0]]?.[2] || '')}</span>`,
+        facts,
+      };
+    });
+    return K.few.html({
+      title: `Where your selected ${P.all === 1 ? `${W.mark} lies` : `${W.marks} lie`}`,
+      note: `The region each ${W.mark} falls in, from the maps of disordered regions.`,
+      sites,
+      more: P.all - P.list.length,
+    });
+  }
   const DIRW = { more: 'more often', less: 'less often', ns: 'no clear difference', same: 'no clear difference' };
   // the pair under the odds ratio: the two shares the test compares (the marks on proteins with another candidate residue, and
   // the other candidate residues), so its counts are the test's and can differ from the 'of' column
@@ -877,7 +915,9 @@
             ? `<br><span ` + `class="muted small" title="${esc(shareTip)}">${esc(shareText(r))}</span>`
             : ''
         }<br><span class="idr-dir idr-${esc(r.dir)}">${esc(DIRW[r.dir] || r.dir)}</span>`
-      : '<span class="muted">–</span>';
+      : K.sel.active() && !K.sel.testable()
+        ? '<span class="muted small">not tested: the selection is too small</span>'
+        : '<span class="muted">–</span>';
   function regionsHtml() {
     const { rows, all } = regionRows(),
       rate = (r) => (r.cand ? r.marks / r.cand : 0),
@@ -905,8 +945,8 @@
           const d = DP[regionNo(r.cls)];
           return (
             `<tr data-idr-reg="${esc(r.cls)}" tabindex="0" title="List the IDRs of this region"><td ` +
-            `class="idr-rname" data-label=""><i class="idr-sw" style="--c:${colour(r.cls)}"></i><b>R${regionNo(r.cls)}</b> ${esc(clsLabel(r.cls))}${
-              d ? `<br><span ` + `class="muted small">${esc(d[2])}</span>` : ''
+            `class="idr-rname" data-label=""><i class="idr-sw" style="--c:${colour(r.cls)}"></i><b>R${regionNo(r.cls)}</b> ${esc(shortCls(r.cls))}${
+              d ? `<br><span ` + `class="muted small">${esc(clsLabel(r.cls))}; ${esc(d[2])}</span>` : ''
             }</td>${cells(r, true, testCell(TT[r.cls]))}</tr>`
           );
         })
@@ -1012,7 +1052,7 @@
       if (!r.cls) parts.push(`<line x1="20" x2="${X.val}" y1="${y}" y2="${y}" stroke="${P.line}"/>`);
       if (r.cls) {
         parts.push(`<circle cx="${X.lab + 5}" cy="${yc - 1}" r="5" fill="${colour(r.cls)}"/>`);
-        T(X.lab + 15, yc + (d ? -2 : 3), `R${regionNo(r.cls)} ${clsLabel(r.cls)}`, { weight: 'bold' });
+        T(X.lab + 15, yc + (d ? -2 : 3), `R${regionNo(r.cls)} ${shortCls(r.cls)}`, { weight: 'bold' });
         if (d) T(X.lab + 15, yc + 11, d[2], { size: 9.5, fill: P.muted });
       } else T(X.lab, yc + 3, 'All IDRs', { weight: 'bold' });
       if (r.cls)
@@ -1089,7 +1129,7 @@
       row: (x) => [
         gene(x) + (outside(x) ? ' (outside your selection)' : ''),
         rg(x),
-        `R${regionNo(x.cls)} ${DP[regionNo(x.cls)]?.[3] || clsLabel(x.cls)}`,
+        `R${regionNo(x.cls)} ${shortCls(x.cls)}`,
         f2(x.fcr),
         s2(x.ncpr),
         String(hlMarks(x)),
@@ -1214,7 +1254,7 @@
       (x) => x.reg,
       (x) =>
         `<span title="${esc(clsLabel(x.cls))}"><i class="idr-sw" style="--c:${colour(x.cls)}"></i>R${regionNo(x.cls)} <span class="muted ` +
-        `small">${esc(DP[regionNo(x.cls)]?.[3] || clsLabel(x.cls))}</span></span>`,
+        `small">${esc(shortCls(x.cls))}</span></span>`,
       false,
     ],
     [
@@ -1354,7 +1394,7 @@
           : '';
     return (
       `<b>${esc(gene(x))}</b> <span class="muted mono">${esc(pr(x)[0])}</span> ${rg(x)} <span class="muted">(${int(x.len)} aa)</span>` +
-      `<br><i class="idr-sw" style="--c:${colour(x.cls)}"></i>R${regionNo(x.cls)} ${esc(clsLabel(x.cls))}` +
+      `<br><i class="idr-sw" style="--c:${colour(x.cls)}"></i>R${regionNo(x.cls)} ${esc(shortCls(x.cls))}` +
       `<br>FCR ${f2(x.fcr)} · NCPR ${s2(x.ncpr)} · f+ ${f2(x.fp)} · f− ${f2(x.fm)} · κ ${
         x.kappa == null ? 'none (no charged residue)' : f2(x.kappa)
       }` +
@@ -1387,8 +1427,10 @@
       `<div class="${SECTION ? '' : 'page-head '}results-head"><div>${
         SECTION ? `<h3>${esc(K.tabName('idrs', 'IDRs'))}</h3>` : `<h2>${esc(K.tabName('idrs', 'IDRs'))}</h2>`
       }<p class="cx">${int(xs.length)} IDRs on ${int(np)} protein${np === 1 ? '' : 's'}${SC.on ? ' of your selection' : ''}</p></div></div>` +
-      (`<p class="page-sub">By charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. <button ` +
-        `type="button" class="idr-goto" data-idr-goto="idr-refs">Method</button></p>`) +
+      (SECTION ? '' : regionFew()) +
+      (`<p class="page-sub">By charge class, R1 to R5 of the Das–Pappu diagram; test: ${testLink}. Candidate residues are the ` +
+        `${esc(W.residues)} in these IDRs, ${esc(W.marks)} included. <button ` +
+        `type="button" class="idr-goto" data-idr-goto="idr-refs">Methods</button></p>`) +
       (`<section class="idr-card" id="idr-regions"><div class="card-head"><div><h3>${esc(cap(W.marked))} ${esc(W.residues)}, by region</h3>` +
         `</div>${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'idr-rexp', 'the regions')}</div>${regionsHtml()}</section>`) +
       (`<section class="idr-card" id="idr-diagram"><div class="card-head"><div><h3>Charge diagram</h3><p ` +
@@ -1420,7 +1462,7 @@
       `<label><input type="checkbox" id="idr-only"${T.only ? ' checked' : ''}> Only IDRs with ${sw}${esc(W.marks)}</label></div>` +
       (`<div class="quick" id="idr-rchips"><span class="flabel">Region</span>${chips('reg')}</div><div ` +
         `id="idr-list-body">${listHtml()}</div></details>`) +
-      `<details class="idr-card idr-fold idr-refs" id="idr-refs"><summary><h3>Method</h3></summary>` +
+      `<details class="idr-card idr-fold idr-refs" id="idr-refs"><summary><h3>Methods</h3></summary>` +
       (`<p class="sub">Every IDR of the ${esc(W.marked)} proteins${SC.on ? ' in your selection' : ''}, with charge ` +
         `(FCR, fraction of residues charged; NCPR, net charge per residue), how evenly the charges are mixed (κ) ` +
         `and the ${esc(W.marks)} inside it. These are the row “${esc(TR.title)}” of the protein maps: ${esc(TR.help || '')}. The diagram’s ` +
@@ -1458,7 +1500,7 @@
       .map(
         (c) =>
           `<button type="button" class="fchip" data-idr-chip="${key}" data-v="${esc(c)}" aria-pressed="${T[key] === c}"><i class="idr-sw" ` +
-          `style="--c:${colour(c)}"></i>R${regionNo(c)} <span class="muted">${esc(DP[regionNo(c)]?.[3] || clsLabel(c))}</span></button>`
+          `style="--c:${colour(c)}"></i>R${regionNo(c)} <span class="muted">${esc(shortCls(c))}</span></button>`
       )
       .join('');
   const kappaScope = (few) =>
@@ -1510,6 +1552,7 @@
     // the question's own page (its classes, tested), then the charge diagram, κ, the regions and every IDR
     K.questions[SECTION] = {
       ...K.questions[SECTION],
+      few: regionFew, // a small selection: the IDR each selected site lies in, in place of the question's own classes
       page: (card, body) => {
         const first = (own && own(card, body)) ?? body();
         return `${first}<div class="idr-page">${view()}</div>`;
@@ -1540,7 +1583,7 @@
       ['idr-diagram', 'Charge diagram', 1],
       ...(POLY3() ? [['idr-kappa', 'Charge mixing (κ)', 1]] : []),
       ['idr-list', 'Every IDR', 1],
-      ['idr-refs', 'Method', 1],
+      ['idr-refs', 'Methods', 1],
     ];
   }
   K.tips.push(['[data-di]', (el) => (V ? tipHtml(V.idrs[+el.dataset.di]) : '')]);

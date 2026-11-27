@@ -1,5 +1,5 @@
 # Mark profile: lysine modifications (acetylation and other acylations, ubiquitination and SUMOylation), as one set of
-# marks with a type. The site tables are release v1.6.0 of PTM_Pipeline (UniProt, iPTMnet, Hendriks 2017 and Akimov 2018).
+# marks with a type. The site tables are release v1.7.0 of PTM_Pipeline (UniProt, iPTMnet, Hendriks 2017 and Akimov 2018).
 schema_version: 1
 id: lysine
 name: Lysine modifications

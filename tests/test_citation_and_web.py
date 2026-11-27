@@ -39,6 +39,12 @@ def test_reference_format():
     }
     assert C.format_reference(ref) == 'Blum M et al. InterPro in 2025. Nucleic Acids Res 53:D444–D456 (2025).'
     assert C.short_reference(ref) == 'Blum et al. 2025'
+    # two records of one work read differently, and a record with no year gives its version
+    assert C.short_reference({**ref, 'version': 'all versions'}) == 'Blum et al. 2025 (all versions)'
+    assert (
+        C.short_reference({'authors': [{'family-names': 'Carlson', 'given-names': 'M'}], 'version': '3.22.0'})
+        == 'Carlson (v3.22.0)'
+    )
 
 
 def test_white_on_band_contrast():

@@ -1,32 +1,29 @@
-"""Every input the methylarginine site reads (and its variants) is in the reference checkout of both workflows, so a new
-input cannot pass here and fail in CI."""
-
-import json
-from pathlib import Path
+"""Every input a published site reads (and its variants) is in the data-repository checkout of each workflow job that builds or
+tests it, so a new input cannot pass here and fail in CI. The checkouts' file lists come from the site files
+(tools/ci_plan.py), so a new site is covered when it has website.ci."""
 
 import pytest
+from ci_sites import PLAN, PUBLISHED
 
 from ptmcontext import inputs as I
 from ptmcontext import site as S
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = PLAN.ROOT
 
 
-@pytest.mark.parametrize('workflow', ['tests.yml', 'pages.yml'])
-def test_every_reference_input_is_checked_out(workflow):
-    site = S.load_site(REPO / 'sites' / 'methylarginine.yaml')
+@pytest.fixture(scope='module')
+def plan():
+    return PLAN.plan(REPO)
+
+
+@pytest.mark.parametrize('listing', ['build_files', 'audit_files', 'test_files'])
+@pytest.mark.parametrize('site_id', PUBLISHED)
+def test_every_input_of_a_site_is_checked_out(plan, site_id, listing):
+    site = S.load_site(REPO / 'sites' / f'{site_id}.yaml')
     names = set(I.site_input_names(site))
     for v in site.get('variants') or {}:
         names |= set(I.site_input_names(S.with_variant(site, v)))
-    manifest = json.loads((REPO / 'inputs.json').read_text())
-    entries = manifest.get('inputs', manifest)
-    text = (REPO / '.github' / 'workflows' / workflow).read_text()
-    paths = [
-        line.strip() for line in text.splitlines() if line.startswith(' ' * 12) and '/' in line and ':' not in line
-    ]
-    missing = [
-        entries[n]['file']
-        for n in sorted(names)
-        if n in entries and not any(entries[n]['file'].startswith(p) for p in paths)
-    ]
-    assert not missing, f'{workflow}: add to the sparse checkout: {missing}'
+    entries = I.load(S.manifest_of(site))
+    paths = plan[listing]
+    missing = [entries[n]['file'] for n in sorted(names) if not any(entries[n]['file'].startswith(p) for p in paths)]
+    assert not missing, f'{listing}: add to the sparse checkout: {missing}'

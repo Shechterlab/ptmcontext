@@ -22,8 +22,10 @@ from pathlib import Path
 import ptmstats
 
 from .. import __version__
+from .. import context_marks
 from .. import layers as L
 from .. import statistics as ST
+from ..changelog import releases as app_releases
 from ..citation import kit_citation, site_citation
 from ..front import resolve as front_resolve
 from ..inputs import load as load_manifest
@@ -33,6 +35,8 @@ from ..site import card_questions, code_commit, load_site, manifest_of, presence
 from .cellpct import cell_percent, cell_proteome
 from .counts import counts_data
 from .glance import glance
+from .landing import whats_new
+from . import disease_families
 from . import seldata as SEL
 from . import structure as S3D
 from . import nucleic as NUC
@@ -80,12 +84,16 @@ MODULES = (
     'kit-columns.js',
     'kit-tablefit.js',
     'kit-sitecard.js',
+    'kit-few.js',
+    'kit-openlink.js',
+    'kit-propensity.js',
     'kit-pagepdf.js',
     'kit-proteins.js',
     'kit-tables.js',
     'kit-sites.js',
     'kit-idrs.js',
     'kit-compare.js',
+    'kit-cmplink.js',
     'kit-questions.js',
     'kit-start.js',
     'kit-random.js',
@@ -109,6 +117,9 @@ MODULES = (
     'kit-network.js',
     'kit-tile.js',
     'kit-figures.js',
+    'kit-listtest.js',
+    'kit-mutations.js',
+    'kit-sitetable.js',
     'kit.js',
 )
 # scripts a module starts in a worker: copied beside the others, never put in the page
@@ -679,18 +690,23 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         'proteins_view': web.get('proteins'),
         'selection_cards': web.get('selection_cards') or {},
         'protein_view': _protein_view(web.get('protein')),
+        # how many residues either side count as near another modification: the one window the page's counts share
+        **({'context_window': context_marks.window(site)} if context_marks.entries(site) else {}),
         'compare': web.get('compare'),
         **({'reading': web['reading']} if web.get('reading') else {}),
         'legacy_links': web.get('legacy_links') or {},
         'legacy_routes': web.get('legacy_routes') or {},
+        # condition names that name no condition: the site card drops them, as the disease families do
+        'no_condition': sorted(disease_families.NO_CONDITION),
         'tabs': web.get('tabs') or {},
         'export': web.get('export') or {},
         'search_aliases': web.get('search_aliases') or {},
         'legacy_params': web.get('legacy_params') or {},
         'dataset': web.get('dataset'),
         'downloads': web.get('downloads') or [],
-        'whats_new': web.get('whats_new') or None,
+        'whats_new': whats_new(web.get('whats_new')) if web.get('whats_new') else None,
         'download_terms': web.get('download_terms', ''),
+        'license': web.get('license', ''),
         'methods_note': web.get('methods_note', ''),
         # the maps of the cell as one question (kit-cell.js) and the parts of the kit's drawings; protein-set questions
         # drawn with their proteins' numbers (kit-values.js)
@@ -761,6 +777,7 @@ def site_data(site: dict, folder: Path, profile) -> dict:
         ),
         'citation': site_citation(site),
         'kit': {**kit_citation(), 'version': __version__, 'commit': run.get('code_commit') or code_commit()},
+        'app_releases': app_releases(),
         'statistics_tsv': (folder / 'statistics.tsv').read_text(),
     }
 
@@ -771,7 +788,7 @@ NOTE_NUMBER = re.compile(r'\{(or|sig):([a-z0-9_]+):([A-Za-z0-9_]+)\}')
 def note_text(note: str, stats) -> str:
     """A question's note with its numbers read from the statistics, so that they are not typed: {or:<question>:<class>}
     is the odds ratio of that class in the question's within-protein test (Mantel-Haenszel; the pooled test where the
-    question has none), to two decimals and x; {sig:<question>:<class>} says whether that row is significant (q < 0.05).
+    question has none), to two decimals and x; {sig:<question>:<class>} says whether that row is significant (q at most 0.05, the rule of the class tests).
     A question that is not in the statistics is an error."""
 
     def value(m):
@@ -783,7 +800,7 @@ def note_text(note: str, stats) -> str:
         method = 'mantel_haenszel' if 'mantel_haenszel' in methods else sorted(methods)[0]
         row = rows[rows['method'] == method].iloc[0]
         if kind == 'sig':
-            return 'significant' if float(row['q']) < 0.05 else 'not significant'
+            return 'significant' if float(row['q']) <= 0.05 else 'not significant'
         return f'{float(row["odds_ratio"]):.2f}x'
 
     return NOTE_NUMBER.sub(value, note)
@@ -1819,12 +1836,32 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         else ({}, 0)
     )
     data['light_pages'] = light
+    # the mutation propensity (website.propensity): per-protein files read when a card opens, and the frequency and oncoprint files
+    data.pop('propensity', None)
+    if listing and (web.get('propensity') or None):
+        from ..snapshot import parse_fasta as _pf
+        from . import propensity as PR
+
+        pr = PR.build(
+            site,
+            run,
+            listing,
+            {a: r for sh in shards.values() for a, r in sh.items()},
+            _pf(fasta) if fasta and fasta.exists() else {},
+            out,
+            log,
+        )
+        if pr:
+            data['propensity'] = pr
     shown_accs = {r[0] for r in (shown or {}).get('proteins', [])} | {r[0] for r in listing}
     for a, names in other_names.items():  # old and alternative symbols (website.protein.genes.symbols): searchable
         if a in shown_accs:
             al = data.setdefault('protein_aliases', {})
             have = [x for x in str(al.get(a, '')).split('; ') if x]
             al[a] = '; '.join(dict.fromkeys(have + names))
+            data.setdefault('protein_symbols', {})[a] = (
+                names  # gene symbols only (no protein-name text): a writer's name resolves by these
+            )
     if listing:
         # the search's words and the filters that read more than the marks' classes (website.search): windows and
         # distances beside the marks, the partners in their own file
@@ -1944,14 +1981,14 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         links = ''.join(
             f'<a href="{html.escape(x["url"])}">{html.escape(x["label"])}</a>' for x in web.get('links', [])
         )
-        # the header's citation line is one short line; "How to cite" and "Version" open the detail in Method
+        # the header's citation line is one short line; "How to cite" and "App: PTMcontext X" open the detail in Method
         cite_html = ''
         version = ''
         if cit:
             detail = '#method/download' if web.get('downloads') and web.get('dataset') else '#method/cite'
             version = (
                 '<a href="#method/cite">How to cite</a> · '
-                + f'<a href="{detail}">Version {html.escape(cit["version"])}</a>'
+                + f'<a href="{detail}">App: PTMcontext {html.escape(__version__)}</a>'
                 + (f' ({human_date(cit["date"])})' if cit.get('date') else '')
             )
         if inline:
@@ -1993,6 +2030,7 @@ def build(site_path: str | Path, out_root: str | Path | None = None, log=print, 
         for key, value in {
             '{{NAME}}': html.escape(web['name']),
             '{{TAGLINE}}': html.escape(web.get('tagline', '')),
+            '{{SCOPE}}': f'<p class="lede-scope">{html.escape(web["scope"])}</p>' if web.get('scope') else '',
             '{{LOGO_HREF}}': icon_href,
             '{{FAVICON_HREF}}': favicon_href,
             '{{THEME}}': theme,
@@ -2067,6 +2105,11 @@ COLUMN_TYPES = {
 LIST_TYPES = ('list', 'accessions', 'pdb')
 
 
+def _flat_blocks(blocks: list) -> list:
+    """A section's blocks with those inside its folds (kind fold, blocks:) in place of the fold."""
+    return [x for b in blocks for x in (_flat_blocks(b.get('blocks') or []) if b['kind'] == 'fold' else [b])]
+
+
 def page_tables(site: dict, specs: dict, run: dict, listing: list, out: Path, log=print) -> tuple[dict, str]:
     """data/pages/<name>.json for each of the site's tables (website.tables, in a format of CONTRACTS.md) that a page
     (website.pages) reads, whole: {key, columns, rows}, a row's protein an index into the page's protein list (rows of
@@ -2085,7 +2128,7 @@ def page_tables(site: dict, specs: dict, run: dict, listing: list, out: Path, lo
         for pg in pages
         for g in pg['groups']
         for sec in g['sections']
-        for b in sec['blocks']
+        for b in _flat_blocks(sec['blocks'])
         if b.get('table')
     }
     used |= {
@@ -2093,8 +2136,16 @@ def page_tables(site: dict, specs: dict, run: dict, listing: list, out: Path, lo
         for pg in pages
         for g in pg['groups']
         for sec in g['sections']
-        for bl in sec['blocks']
+        for bl in _flat_blocks(sec['blocks'])
         for b in bl.get('tables') or []
+    }
+    used |= {
+        b['modeled']['table']
+        for pg in pages
+        for g in pg['groups']
+        for sec in g['sections']
+        for b in _flat_blocks(sec['blocks'])
+        if b.get('modeled')
     }
     used |= {h['share']['table'] for pg in pages for h in pg.get('highlights') or [] if h.get('share')}
     shown = {}
@@ -2118,15 +2169,27 @@ def page_tables(site: dict, specs: dict, run: dict, listing: list, out: Path, lo
             for pg in pages
             for g in pg['groups']
             for sec in g['sections']
-            for b in sec['blocks']
+            for b in _flat_blocks(sec['blocks'])
             if b.get('table') == name
+        ]
+        blocks += [  # another block's reading of this table (contact_list.modeled): the rows its where holds, the columns it names
+            {
+                'table': name,
+                'columns': [m['entry'], m['state']],
+                'where': [{'column': c, 'in': [v]} for c, v in (m.get('where') or {}).items()],
+            }
+            for pg in pages
+            for g in pg['groups']
+            for sec in g['sections']
+            for m in (b.get('modeled') for b in _flat_blocks(sec['blocks']))
+            if m and m['table'] == name
         ]
         whole = any(
             name in (b.get('tables') or [])
             for pg in pages
             for g in pg['groups']
             for sec in g['sections']
-            for b in sec['blocks']
+            for b in _flat_blocks(sec['blocks'])
         )
         if blocks and not whole and all(b.get('where') for b in blocks):
             keep = None
@@ -2210,6 +2273,24 @@ def _licence_words(spdx: str) -> str:
     )
 
 
+def _marked_sites(folder: Path, ptab, rules: list[dict] | None) -> dict[str, str]:
+    """accession -> the protein's marked sites as its page numbers them ('R3 R15 K120'), from the site's marks.tsv, for the
+    landing page's search to route a typed site to an explorer that holds that exact residue. Empty with no marks.tsv."""
+    import pandas as pd
+
+    f = folder / 'marks.tsv'
+    if not f.exists():
+        return {}
+    mk = pd.read_csv(f, sep='\t', dtype=str, keep_default_na=False, usecols=['accession', 'position', 'residue'])
+    rules = numbering.rules_for_page(rules)
+    who = {a: (g, n) for a, g, n in zip(ptab['accession'], ptab['gene'], ptab['name'])}
+    out: dict[str, list[tuple[int, str]]] = {}
+    for a, pos, res in zip(mk['accession'], mk['position'], mk['residue']):
+        g, n = who.get(a, ('', ''))
+        out.setdefault(a, []).append((int(pos) + numbering.offset(a, g, n, rules), res))
+    return {a: ' '.join(f'{r}{p}' for p, r in sorted(set(v))) for a, v in out.items()}
+
+
 def pages(
     site_paths: list,
     out: str | Path,
@@ -2234,6 +2315,10 @@ def pages(
         str, list
     ] = {}  # accession -> [gene, name, indexes of the listed sites that have it, genes, symbols], for the landing search
     listed_ids: list[dict] = []
+    marked: list[dict[str, str]] = []  # per listed site: accession -> its marked positions as the page numbers them
+    # the explorers' own names for proteins (website.search.shorthand: H4), for the landing search
+    shorthand: dict[str, str] = {}
+    for_compare: list[tuple] = []  # the listed sites built: what the Compare marks page reads (compare.py)
     switcher_label = (cfg.get('switcher') or {}).get('label')
     for sp in site_paths:
         site = load_site(sp)
@@ -2266,11 +2351,15 @@ def pages(
                 or site['id'],  # the name of the landing card
                 'listed': not landing.get('unlisted'),
                 'in_switcher': bool(landing.get('in_switcher')),
+                'residues': list((web.get('propensity') or {}).get('residues') or []),  # the residues its tables cover
             }
         )
         if landing.get('unlisted'):  # its folder is published; its card is not on the landing page
             log(f'  {site["id"]} -> {dest} (unlisted)')
             continue
+        for_compare.append((site, src.parent, web, registry[-1]['label'], profile))
+        for n, a in ((web.get('search') or {}).get('shorthand') or {}).items():
+            shorthand.setdefault(n, a)
 
         # the landing search: the proteins this site has marks on (a site's own protein list, its proteins.tsv)
         plist = src.parent / 'proteins.tsv'
@@ -2279,7 +2368,11 @@ def pages(
 
             k = len(listed_ids)
             listed_ids.append(
-                {'id': site['id'], 'label': landing.get('label') or profile.data.get('name') or site['id']}
+                {
+                    'id': site['id'],
+                    'label': landing.get('label') or profile.data.get('name') or site['id'],
+                    'residues': profile.residues,  # the search offers the explorers whose marks sit on a typed residue
+                }
             )
             ptab = pd.read_csv(plist, sep='\t', dtype=str, keep_default_na=False, usecols=['accession', 'gene', 'name'])
             multi, other = genes_mod.for_site(
@@ -2290,6 +2383,7 @@ def pages(
                 row = found.setdefault(acc, [m['short'] if m else gene, name, [], m['genes'] if m else [], []])
                 row[2].append(k)
                 row[4] = list(dict.fromkeys(row[4] + other.get(acc, [])))
+            marked.append(_marked_sites(src.parent, ptab, (web.get('protein') or {}).get('numbering')))
 
         # the numbers and the striking result are the site's own build; a build without them gives a card without them
         def _read(name):
@@ -2332,8 +2426,17 @@ def pages(
     # the sites' own header menu reads this list (kit-switch.js)
     rank = {k: i for i, k in enumerate(str(x) for x in cfg.get('order') or [])}
     registry.sort(key=lambda r: rank.get(r['id'], len(rank)))  # the menu lists the sites in the landing page's order
+    cmp_data = _compare_data(cfg, for_compare, rank, log)  # the Compare marks page's data (None: no page)
+    cmp_spec = cfg.get('compare') or {}
+    pages_list = (
+        [{'id': 'compare', 'label': cmp_spec.get('title') or 'Compare marks', 'href': 'compare/'}] if cmp_data else []
+    )
     (out / 'sites.json').write_text(
-        json.dumps({'switcher_label': switcher_label, 'brand': cfg.get('title') or '', 'sites': registry}, indent=1)
+        json.dumps(
+            {'switcher_label': switcher_label, 'brand': cfg.get('title') or '', 'sites': registry}
+            | ({'pages': pages_list} if pages_list else {}),
+            indent=1,
+        )
     )
     # the landing page's own logo (landing.yml `logo`: an SVG file, relative to the working directory or the first site's repository)
     logo_href = favicon_href = None
@@ -2352,7 +2455,16 @@ def pages(
                 favicon_href = name
     if found:  # read by the landing page's search box when it is first used (assets/land-search.js)
         rows = [[acc, *v[:3], *([v[3], v[4]] if v[3] or v[4] else [])] for acc, v in sorted(found.items())]
-        (out / 'proteins.json').write_text(json.dumps({'sites': listed_ids, 'p': rows}, separators=(',', ':')))
+        (out / 'proteins.json').write_text(
+            json.dumps(
+                {'sites': listed_ids, 'p': rows} | ({'shorthand': shorthand} if shorthand else {}),
+                separators=(',', ':'),
+            )
+        )
+    if any(
+        marked
+    ):  # where each explorer has marks, so a typed site opens one that holds it (land-search.js, only then)
+        (out / 'proteins-sites.json').write_text(json.dumps(marked, separators=(',', ':')))
     kit = kit_citation()
     lab_html = (
         (
@@ -2362,9 +2474,15 @@ def pages(
         if lab
         else ''
     )
+    commit = code_commit()  # the explorers' footers show the same short form (kit.js shortCommit)
+    build = (
+        f' (build {html.escape(commit.removesuffix("-dirty")[:7])}{"+changes" if commit.endswith("-dirty") else ""})'
+        if commit
+        else ''
+    )
     built_with = (
-        f'Updated {html.escape(human_date(_now()))}. Built with <a href="{html.escape(kit["url"])}">PTMcontext</a> '
-        f'{html.escape(kit["version"])}, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
+        f'Updated {html.escape(human_date(_now()))}. App: <a href="{html.escape(kit["url"])}">PTMcontext '
+        f'{html.escape(kit["version"])}</a>{build}, {html.escape(_licence_words(kit.get("licence", "MIT")))} license. '
         "Each explorer's data are under the license its page states."
     )
     text = LP.page(
@@ -2378,6 +2496,94 @@ def pages(
         favicon=favicon_href,
         search=bool(found),
     )
+    if cmp_data:
+        from . import compare as CP
+
+        text = CP.add_link(text, cmp_spec)
+        skipped = [f'{s} is not built, so it is not in this comparison.' for s in cmp_data.get('skipped', [])]
+        CP.write(
+            out,
+            cmp_data,
+            CP.page(
+                cmp_data,
+                cmp_spec,
+                cfg=cfg,
+                kit_css=f'{first_built}/assets/kit.css' if first_built else None,
+                fonts_css=f'{first_built}/{LOCAL_FONTS}' if first_built else FONTS['stylesheet'],
+                lab_html=lab_html,
+                built_with=built_with,
+                logo=logo_href,
+                favicon=favicon_href,
+                skipped=skipped,
+            ),
+        )
+        log(f'  -> {out / "compare" / "index.html"}')
     (out / 'index.html').write_text(text)
+    from .crawl import crawl_files
+
+    robots, sitemap = crawl_files(cfg, [r['id'] for r in registry], bool(cmp_data))
+    (out / 'robots.txt').write_text(robots)
+    (out / 'sitemap.xml').write_text(sitemap)
+    _link_previews(out, cards, cfg)
     log(f'  -> {out / "index.html"}')
     return out / 'index.html'
+
+
+def _compare_data(cfg: dict, built: list, rank: dict, log) -> dict | None:
+    """The Compare marks page's data (compare.py) from the listed sites built, in the landing page's order: each site's
+    statistics and its analyses' words. Built sites the config does not name are left out; the names of sites it
+    names that are not built go in `skipped`. None without a `compare` block."""
+    from . import compare as CP
+
+    spec = cfg.get('compare')
+    if not spec:
+        return None
+    cols = spec.get('columns') or {}
+    entries = []
+    for site, folder, web_cfg, label, profile in sorted(built, key=lambda b: rank.get(b[0]['id'], len(rank))):
+        if cols and site['id'] not in cols:
+            continue
+        e = CP.explorer_entry(site, folder, web_cfg, label, cols.get(site['id']), f'../{site["id"]}/')
+        e['rows'] = CP.read_rows(folder / 'statistics.tsv')
+        e['analyses'] = site_data(site, folder, profile)['analyses']
+        entries.append(e)
+    data = CP.build_data(cfg, entries, log)
+    if data is not None:
+        data['skipped'] = [c for c in cols if c not in {e['id'] for e in entries}]
+        for s in data['skipped']:
+            log(f'  compare: {s} is not built; left out of the comparison')
+    return data
+
+
+def _link_previews(out: Path, cards: list, cfg: dict) -> None:
+    """The card a shared link gets (preview.py): an image per listed site and one for the landing page, from the landing
+    cards' own numbers, and the Open Graph tags in each page's head. The landing config's `url` (where the folder is
+    published) makes the image addresses absolute, as the services that draw the cards need."""
+    from . import preview as PV
+
+    base = (cfg.get('url') or '').rstrip('/')
+    brand = cfg.get('title') or 'PTMcontext'
+    for c in cards:
+        page = out / c['id'] / 'index.html'
+        if not c.get('href') or not page.exists():
+            continue
+        png = PV.site_image(c, brand)
+        if png:
+            (out / c['id'] / 'preview.png').write_bytes(png)
+        url = f'{base}/{c["id"]}/' if base else None
+        img = f'{url}preview.png' if url and png else None
+        PV.put_in_head(page, PV.tags(c.get('name', ''), c.get('hook', ''), url, img, brand))
+    png = PV.landing_image(cards, brand, cfg.get('lede') or '')
+    if png:
+        (out / 'preview.png').write_bytes(png)
+    url = f'{base}/' if base else None
+    PV.put_in_head(
+        out / 'index.html',
+        PV.tags(
+            brand,
+            cfg.get('description') or cfg.get('lede') or '',
+            url,
+            f'{url}preview.png' if url and png else None,
+            brand,
+        ),
+    )

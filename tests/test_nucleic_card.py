@@ -272,7 +272,7 @@ console.log(JSON.stringify(out));"""
     )  # a crosslinked stretch is not listed: only single residues
     assert (
         '<b class="nt hit">G</b>' in body
-        and 'via i+3' in body
+        and 'via the residue 3 after it' in body
         and 'Flag X' in body
         and 'href="https://example.org/EXP1"' in body
     )

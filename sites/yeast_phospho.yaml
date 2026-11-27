@@ -44,7 +44,7 @@ analyses:
   - id: which_factor
     test: conditional_logit
     new: true
-    title: Which factor matters most?
+    title: Which features remain associated after adjusting for the others?
     question: "Taking all factors together, which ones distinguish a phosphosite from the other serines, threonines and tyrosines of its protein?"
     sub: "One model: each phosphosite against the other serines, threonines and tyrosines of its protein, all five factors at once. Each odds ratio is the factor's effect with the others held fixed; 'on its own' is the same factor in a model by itself"
     section: Position in the protein
@@ -73,7 +73,6 @@ website:
   accent_dark: "#fb923c"
   lab: {name: Shechter Lab, affiliation: Albert Einstein College of Medicine, url: "https://www.shechterlab.org/", logo: sites/art/shechterlab-logo.svg}
   links:
-    - {label: Method, url: "#method"}
     - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
   examples: [SEC16, SEC16 S73, "motif:S/T-P", "disorder:IDR", "idr_charge:Janus"]
   placeholders: {highlight: "SEC16, EDE1, STE2 S310", partners: "SEC13, SEC24", motif: "[ST]P, RRXS, SPXK", motif_either: "SP,TP"}

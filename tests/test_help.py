@@ -85,6 +85,10 @@ def test_the_start_panel_and_help_reach_the_page_and_the_landing_page(tmp_path):
             re.search(r'<script id="site-data" type="application/json">(.*?)</script>', page, re.S).group(1)
         )
         assert data.get('start') == (START if p == a else None)  # absent: the kit chooses from the examples
+        # Help's "What changed in the site" is the CHANGELOG's headings, read at build time
+        from ptmcontext.changelog import releases
+
+        assert data['app_releases'] == releases() and data['app_releases'][0]['version'] == data['kit']['version']
     land = web.pages([a, b], tmp_path / 'site', out_root=root, log=lambda *_: None).read_text()
     assert '<html lang="en">' in land and 'class="skip"' in land and '<main' in land and '<footer' in land
     assert 'How to start' not in land and land.count('class="land-card live"') == 2

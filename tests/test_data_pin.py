@@ -23,16 +23,16 @@ def _copy(tmp_path, tag):
 
 def test_the_repository_pins_one_commit_everywhere():
     assert mod.problems(root=ROOT, offline=True) == []
-    assert json.loads((ROOT / 'data_pin.json').read_text())['tag'] == 'v1.6.0'
+    assert json.loads((ROOT / 'data_pin.json').read_text())['tag'] == 'v1.7.0'
 
 
 def test_a_tag_must_resolve_to_the_pinned_commit(tmp_path):
-    pin = _copy(tmp_path, 'v1.6.0')
-    ok = f'{pin["commit"]}\trefs/tags/v1.6.0\n'
+    pin = _copy(tmp_path, 'v1.7.0')
+    ok = f'{pin["commit"]}\trefs/tags/v1.7.0\n'
     assert mod.problems(root=tmp_path, ls_remote=lambda: ok) == []
     assert any('does not exist' in x for x in mod.problems(root=tmp_path, ls_remote=lambda: ''))
     assert any(
-        'resolves to' in x for x in mod.problems(root=tmp_path, ls_remote=lambda: f'{"0" * 40}\trefs/tags/v1.6.0\n')
+        'resolves to' in x for x in mod.problems(root=tmp_path, ls_remote=lambda: f'{"0" * 40}\trefs/tags/v1.7.0\n')
     )
     assert mod.problems(root=tmp_path, offline=True) == []
 
@@ -40,5 +40,5 @@ def test_a_tag_must_resolve_to_the_pinned_commit(tmp_path):
 def test_a_workflow_at_another_commit_is_named(tmp_path):
     _copy(tmp_path, 'TODO(tag)')
     wf = tmp_path / '.github' / 'workflows' / 'pages.yml'
-    wf.write_text(wf.read_text().replace('f042367da8aac9746559f64a597ce031a2b6c05f', 'a' * 40))
+    wf.write_text(wf.read_text().replace('07e0e88bba86a7b91c30e166d4cd01cffb9400ef', 'a' * 40))
     assert any('pages.yml' in x for x in mod.problems(root=tmp_path))

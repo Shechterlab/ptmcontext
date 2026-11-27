@@ -217,8 +217,7 @@
         s.textContent = n;
       };
     set1('p-sites', int(rec.marks.length));
-    const pt = PRO.card?.writer?.partners?.table,
-      n = pt && tb && K.card.has(pt) ? K.card.rows(tb, pt).length : 0;
+    const n = K.pix?.partnersOf ? K.pix.partnersOf(tb).length : 0;
     set1('p-ix', n ? int(n) : '');
   }
 
@@ -254,29 +253,13 @@
 
   // ---- the context switch: what is recorded for the protein, or the dataset's own tests of the same sets -----------------------
   const CTX = { mode: 'protein' };
-  // the sets the Dataset context view covers, named by their questions' titles (website.protein.context)
-  const ctxNames = () => {
-    const ts = [
-      ...new Set(
-        Object.values(PRO.context || {})
-          .flat()
-          .map((aid) => (D.analyses.find((a) => a.id === aid) || {}).title)
-          .filter(Boolean)
-      ),
-    ].map((t) => t.toLowerCase());
-    return ts.length
-      ? K.cap(ts.length > 1 ? `${ts.slice(0, -1).join(', ')} and ${ts[ts.length - 1]}` : ts[0])
-      : 'These sets';
-  };
   const ctxSwitch = () =>
     `<span class="seg ctx-seg" role="group" aria-label="Context cards"><button type="button" ` +
     `data-pctx="protein" aria-pressed="${CTX.mode === 'protein'}">This protein</button><button type="button" ` +
     `data-pctx="dataset" aria-pressed="${CTX.mode === 'dataset'}">Dataset context</button></span>` +
-    `<span class="muted small ctx-note">${
-      CTX.mode === 'protein'
-        ? `${ctxNames()} show what is recorded for this ` + `protein.`
-        : 'The same sets, as the dataset’s tests rate them across all proteins.'
-    }</span>`;
+    (CTX.mode === 'protein'
+      ? ''
+      : `<span class="muted small ctx-note">The same sets, tested across all proteins.</span>`);
   // for the protein's own sets of an analysis: each with the dataset's test of it
   function datasetPanel(p, aids) {
     const out = [],
@@ -288,12 +271,11 @@
       const lab = (s) => (D.analyses.find((a) => a.id === aid)?.labels || {})[s] || s;
       const rows = names
         .map((s) => {
-          const rs = D.rows.filter((r) => r.analysis === aid && r.category === s && r.dir === 'more');
-          const r = rs.find((x) => x.method === 'enricher') || rs.find((x) => x.method === 'mantel_haenszel') || rs[0];
-          return { s, r };
+          const r = K.setReading(aid, s);
+          return { s, r: r && r.dir === 'more' ? r : null };
         })
         .filter((x) => x.r)
-        .sort((a, b) => b.r.eff - a.r.eff)
+        .sort((a, b) => b.r.effect - a.r.effect)
         .slice(0, 8);
       const title = (D.analyses.find((a) => a.id === aid) || {}).title || aid;
       out.push(
@@ -303,7 +285,7 @@
                 .map(
                   ({ s, r }) =>
                     `<li><b>${esc(lab(s))}</b> <span ` +
-                    `class="muted">${esc(K.fxn(r.eff))}× over-represented among the ${esc(W.marked || 'marked')} proteins, q ${esc(K.fq(r.q))}</span></li>`
+                    `class="muted">${esc(K.fxn(r.effect))}× over-represented among the ${esc(W.marked || 'marked')} proteins, q ${esc(K.fq(r.q))}</span></li>`
                 )
                 .join('')}</ul>`
             : `<p class="muted ` +

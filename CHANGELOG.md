@@ -1,4 +1,48 @@
 ## Unreleased
+
+## 0.6.0 (2026-11-23)
+
+> A Mutations page: ranked sites, tumors, inherited disease, and a chart of all sites.
+> Paste a list of genes, accessions or sites to test it.
+> A small selection gets an "about these sites" block on every tab; Compare marks sets the explorers side by side.
+> Link previews and UniProt numbering for proteins that papers number differently.
+> Two labeled versions everywhere: App: PTMcontext 0.6.0 and Data: PTM_Pipeline v1.7.0.
+
+- One order on every page: Localization, Disease, Classes and pathways, Enzymes and readers, Other modifications, Position in the protein, More questions, Studies and databases. The Overview, sidebar, filter rail, protein page, site card, Compare and Methods follow it. Old links keep working.
+- Disease classes (Disease Ontology): the Overview, Compare and the protein page group diseases by 15 organ-system classes of the Disease Ontology's curated Alliance of Genome Resources subset (DO_AGR_slim), from the existing disease_ontology rows (no new statistics). The DisGeNET family tiles leave the Overview; the protein page keeps them under "DisGeNET terms and families".
+- "Disease variants" is now "Mutations" (the address `#mutations` is unchanged). The protein page has "Cancer cell dependency (DepMap)" and "Mutations in tumors and cell lines" as two cards; `?open=p-depmap` opens the second.
+- Source names: "gnomAD (population variants)", "TCGA tumors", "DepMap cell lines", "ClinVar (clinical variants)". Disorder rows read "Disordered" and "Ordered". Shorter labels, legends and hover text throughout.
+- Show in 3D opens the experimental entry listed on the site card directly, and names no entry before it is loaded. Phone top bar and selection controls fit at 320–430 px.
+- The Mutations page's first view reads one summary file instead of the selection's table shards (lysine build: 5.3 s to 1.7 s).
+- Versioning: the app version is one number for the whole website (`pyproject.toml`, `ptmcontext/__init__.py`, `CITATION.cff` and every site's citation file). Pages and downloads read "App: PTMcontext 0.6.0" and "Data: PTM_Pipeline v1.7.0 (doi:...)". `VERSIONING.md` has the rules (MAJOR, MINOR, PATCH), the release checklist and the 1.0.0 deploy plan. Help has a "What changed in the site" section, made from the headings of this file when the explorer is built. `.zenodo.json` gives Zenodo the software's metadata. `tests/test_release_version_consistency.py` fails when the versions, this file and the documents disagree.
+- Compare marks: a page beside the landing page (`compare/index.html`, data in `compare/compare.json`) that puts each explorer's own published result for the shared questions side by side (disorder and structure, sequence motifs, condensates, cell compartments, RNA and DNA binding, PANTHER classes, disease families). Pick the explorers and a question group, sort by an explorer's fold, download a table or a figure. Nothing is recomputed or pooled. The pairs come from the landing config's `compare` block; each explorer's header and switcher menu link to the page.
+- Usability fixes from four walkthroughs of the live explorers:
+  - While a selection's data load, counts and the "too few to test" verdict give way to "Loading 138,022 phosphosites…" (the rail, the bar, the tab counts, the Overview and Proteins pages).
+  - Site rows say "3 changes (k) · O/E 22 · q 0.03"; one change reads "1 change" with its O/E muted. The protein page's table of sites shows the UniProt position beside a site the page numbers differently, and has readable column names in its TSV (`tcga_tumors_changed`, `tcga_oe`, `clinvar_pathogenic_n`, `hotspot_note`, `disordered` ...) and an AlphaMissense column once AlphaFold DB answers.
+  - A pasted list on Mutations opens with one sentence ("0 of 81 tested sites changed more than expected in TCGA (q < 0.05)") and says why sites were not tested, from the release's rules. Site names carry the UniProt position where the page numbers a protein as papers do (VCP R154 (UniProt R155)), and ClinVar's protein change is shown as ClinVar writes it (R155H). The ranked-site, pasted-list and inherited-disease TSVs gain `uniprot_position`, `disordered` and `disorder_class`, and readable names.
+  - Search: "GENE R3" is a site before any fuzzy name, also while the marks load, and its suggestion shows the UniProt position.
+  - Selection bar: a visible Copy link that says "Link copied", and "Same genes in <other explorer>" in its menu (from `sites.json`). The page behind "Make figures" is now "Sequence logo" and follows the selection. The Sites download names its table "Site table (TSV)"; the logo export is `..._sequence_logo_counts`.
+  - `website.license` (the Download section), and `license` in the landing config.
+  - The gene list page names its comparison ("Compared with: the 4,439 methylated proteins"); the Overview's key findings say when the lower-confidence switch is on; the landing page's `og:image:alt` no longer repeats the title.
+- A selection of a few sites or proteins now leads with an "about these sites" block on each tab that shows it: the question pages (the classes or sets each selected site or protein falls in, then the whole dataset under "All marks, not your selection"), Sites, the disordered regions page, Mutations and a single Interactions section. A question page says "tested in your browser" only when the selection is large enough to test, and an untested cell says why.
+- Open sections in the address: a copied link reopens the sections that are open (`open=` in the hash, the ids of folds that differ from their default, a leading `-` for one closed that starts open). It covers the folds on every page, including the small-selection blocks and the protein page's groups, is kept for the page shown, and ignores ids a page does not have. Old links work as before. Code: `kit-openlink.js`.
+- Table of sites on the protein page: each source is one column (k and O/E on one line, q under them, the ring on the cell) with a small menu to sort by k, O/E or q. The TSV keeps separate columns.
+- Inherited disease grid: "Other / unassigned" follows "All", and the rotated family names show in full.
+- Mutations page: "Paste a list" in "Test the sites you chose" takes gene symbols, UniProt accessions and sites (up to 5,000 sites, kept in the address as `ml=`), says how many genes and sites it read and which names it did not find, and reports for TCGA, DepMap and gnomAD (ClinVar descriptive) the release's site-set test over the list (k against the summed expected count; p from the exact tail of the sum of binomials the release samples), then each site with a Benjamini-Hochberg q across the list. TSV download. Help describes it.
+- Ranked sites: each table shows the top 20 by p whether or not q is below 0.05, counts the sites with q < 0.05 in its header, and shows rows with q at or above 0.05 lighter, with their q. The empty-state text appears only for a source with no tested site.
+- Mutation propensity (PTM_Pipeline v1.7.0). For every known site and every other candidate residue with a change, the release gives the changes seen in TCGA tumors, DepMap cell lines, ClinVar and gnomAD against the changes the residue's codon predicts: O/E, a binomial p and a Benjamini-Hochberg q. The release's [data dictionary](https://github.com/Shechterlab/PTM_Pipeline/blob/v1.7.0/releases/v1.7.0/data_dictionary.tsv) defines every column. TCGA and DepMap use their own mutation spectra. ClinVar and gnomAD use gnomAD's germline rates (mutation_rate_methylation_bins; [Karczewski et al., Nature 581:434 (2020)](https://doi.org/10.1038/s41586-020-2308-7)). ClinVar is descriptive, because its variants reflect clinical testing more than mutation.
+- New `website.propensity` block in the four site files. `ptmcontext/web/propensity.py` writes `data/m` (per protein, read when a card opens, like `data/g`), `data/wf.json`, `data/gn.json` and `data/onco.json`.
+- Lollipops on the Cancer cell lines and tumors card and the Germline variants card, one per source. Stick height is the count the card shows, circle size is O/E, and a ring marks q below 0.05. The tooltip gives O/E, expected and q, and for gnomAD the lower tail. ClinVar has no ring. The old "at least 3 times the protein's average" flag, its "Flagged only" chip and `flag_ratio` are removed.
+- Site card: a "Mutation propensity" line with the site's O/E, raw p and q in each source (gnomAD adds the lower tail when O/E is below 1), and an "Add to tested sites" button. The Germline lollipop marks q below 0.05 for fewer variants than expected with a dashed ring.
+- Mutations page (`#mutations`, first called Mutation frequency), for the current selection or the whole list. Views: Ranked sites (the default: the sites with q below 0.05 in tumors, cell lines and, for fewer than expected, gnomAD, top 20 each, with a TSV), Cancer: tumors, Inherited disease (ClinVar pathogenic and likely pathogenic variants by disease family, `mv=clinvar`; the families come from the release's `scripts/disease_families.py`, read as text at build time, with `website.propensity.clinvar_changes` and `disease_families`; writes `data/cv.json`) and the waterfall ("Show all sites as a chart", `mv=waterfall`). Old addresses with `wl`, `wg`, `mz`, `ms` or `mv=waterfall` open the waterfall. AlphaMissense is noted as less reliable in disordered regions.
+  - Waterfall: points ranked from the most enriched to the most depleted, with height the signed -log10 p (up: more than expected, upper-tail p; down: fewer, lower-tail p). Sites with no change sit on the lower side. The release gives the lower tail for gnomAD only; the site computes it for TCGA and DepMap with the release's own binomial, after checking that it reproduces the release's p_upper. Points are colored by O/E and a ring marks q below 0.05 (a dashed ring: fewer, gnomAD). The top and bottom sites and any the reader adds (click a point, or type a site; `wl=` in the address) are labeled without overlap. A gray curve shows the residues that are not sites on the same score. Sources are TCGA, DepMap and gnomAD. Over the whole list, one line gives the release's site set test.
+  - Oncoprint: the top sites against TCGA tumors, with each tumor's coding calls per Mb. Clicking a row opens the site's card.
+  - Under the waterfall, a table of the selection's sites with no change, most expected first, with the raw lower-tail p and a TSV.
+  - "Test the sites you chose": up to 20 sites, added by name (H4 R3) or from a site card, each with k, expected, O/E, the raw p of each tail and a Holm-adjusted p over the sites chosen. Kept in the address; TSV download.
+  - Both figures download as PDF, SVG, PNG and TSV.
+- Hypermutated samples (more than 10 coding calls per Mb; [Campbell et al., Cell 171:1042 (2017)](https://pubmed.ncbi.nlm.nih.gov/29056344/)) are left out by default on the lollipops, the site card and the new page. "With hypermutated" (`hyper=1` in the address) puts them back.
+- Methods › Mutation propensity and Help › Mutation propensity describe the test, its sources, the positive controls (a failed control is reported and does not block the release) and the check against permutation.
+- The sites read and link the v1.7.0 release: manifests, source URLs, download links, citation files, workflows and docs. The tables the sites read before are byte for byte those of v1.6.0 (MD5 checked); the methylarginine parity is unchanged. `data_pin.json` pins the tag v1.7.0 at PTM_Pipeline 07e0e88 (the same files as the release candidate 7fd0c2b). The data DOI is 10.5281/zenodo.24429699 (concept DOI 10.5281/zenodo.22696798, unchanged): the landing page's Data lines and What's new, each site's dataset line and citation file, the README. The dataset date shown is 2026-11-21.
 - The sites read and link the v1.6.0 release they declare: every input path and source URL in the manifests, the site files' marks, notes and `downloads:` (data files, README and What changed, at the v1.6.0 tag), the workflows' sparse-checkout lists, the citation files, the README, CONTRACTS.md and docs/DATA_STANDARD.md name v1.6.0 where they named v1.5.1. The tables are byte for byte those of v1.5.1 (MD5 checked); the data dictionary, README and CHANGES are the v1.6.0 ones. Left on v1.5.1: the methylarginine site's Excel workbook (its document properties differ; the sheets do not), `DECISIONS_v1.5.1.md`, the manifest input ids (`..._v1_5_1`) and the historical tests.
 - `tests/test_release_version_consistency.py` fails when a site's `dataset.version` differs from the release of any input path, source URL, download link or its citation file title, outside a list of historical references; `tests/test_release_v1_6_0_matches_v1_4_3.py` checks the v1.6.0 methylarginine files against v1.4.3 as the v1.5.1 test does (which now reads the manifest's tables under their v1.5.1 names and skips without the v1.5.1 release folder).
 - A protein's Download menu offers the changes not shown (TSV) whenever the protein has at least one such row (one item per list), as well as the card's link.
@@ -132,6 +176,11 @@
 - Figure panels: the site alignment and sequence logo draws with no search or filter set (it showed no marks). Conservation across species is on for the methyllysine, lysine and phosphosite sites too (`website.protein.conservation`).
 
 ## 0.5.0 (2026-11-15)
+
+> The same tabs in one order on every explorer, and one footer.
+> One Download menu for every figure: PDF, SVG, PNG and TSV.
+> A Network tab and an Overlap page.
+> Faster loading: selection data in parts, fonts shipped with the site.
 
 - Plain wording: Key findings read as sentences ("Methylarginines are more common in RGG (21× other arginines)"), tile answers read "More often in X (2.1×) and Y (1.8×)", "How to read", "What this explorer is" and "How this explorer is made" became Details, About and Software and build, and "read live" became "when the page opens". Help lists the site's terms and abundance deciles. Ids, keys and search syntax are unchanged.
 - Navigation: the same tabs on every explorer in one order (Overview, Proteins, Sites, Interactions, Compare sets, Network, Methods, Help); a tab whose data a site lacks is greyed out with its reason on hover (`website.tabs.<page>.empty`). Overlap is renamed Compare sets (`#overlap` stays, `#compare` is an alias). The All tests tab is gone: its table is the "Every test" section of Methods, which has five parts with addresses of their own (`#method/tests`, `/controls`, `/sources`, `/cite`, `/download`); `#statistics` redirects to `#method/every`. Badges and the tile popover link to `#method/controls`.
@@ -271,6 +320,11 @@
 - CI: the lint job fails on a commit message with a "Co-Authored-By: Claude" or "Claude-Session:" line (`tools/check_commit_messages.sh`).
 
 ## 0.4.0 (2026-11-13)
+
+> Overview tiles are small forest plots that show the fold.
+> A row counts as more or less often at q of 0.05 or less and a fold of at least 1.1.
+> Cell maps show the fold in each map.
+> The site switcher keeps the open protein.
 
 What changed for readers:
 
@@ -470,6 +524,11 @@ chromatin (probability ≥ 0.8) 1.7× (as published) → none (no part of the ce
 
 ## 0.3.1 (2026-11-13)
 
+> All sites read PTM_Pipeline v1.5.0 with two more SUMO and ubiquitin studies.
+> The lysine site adds those studies to its Databases filter.
+> The Overview opens with its question, color key and test switch.
+> The Methods page lists the 200 sources with the most sites, so it no longer crashes the browser.
+
 What changed for readers:
 
 - All sites read PTM_Pipeline v1.5.0 at commit 5fadf74, whose SUMOylation and ubiquitination tables add two proteome-wide
@@ -498,6 +557,11 @@ budget per site (two workers for the lysine site); in the selection data a quest
 (`only_in`, `marks_where`) has one table for all its classes (`by_test[id].all`, `outside: unclassed`).
 
 ## 0.3.0 (2026-11-12)
+
+> A fourth explorer: lysine acetylation, other acylations, ubiquitination and SUMOylation.
+> Pairs of modifications on the same lysine come right after the cell maps.
+> The protein map opens with a lane for every modification.
+> The cell and nucleus maps name every compartment.
 
 What changed for readers:
 
@@ -528,6 +592,10 @@ kinds. The Pages workflow builds each site in its own job and then assembles the
 and the link audit of each site side by side.
 
 ## 0.2.0 (2026-11-11)
+
+> Methyllysine and phosphosite explorers read PTM_Pipeline v1.5.0.
+> Statistic rows say "each protein analyzed separately".
+> Protein map labels wrap instead of ending in "...".
 
 What changed for readers of the three sites (methylarginine, methyllysine, phosphosites):
 

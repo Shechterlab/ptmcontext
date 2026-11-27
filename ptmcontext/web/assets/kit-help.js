@@ -189,6 +189,7 @@
     ['h-filters', 'Filters'],
     ['h-read', 'Reading a figure'],
     ['h-terms', 'Badges and terms'],
+    ...(D.propensity ? [['h-mutations', 'Mutations']] : []),
   ];
   // The kit's shared glossary: a term the site's own words use gets its entry here, in every site that uses it. The site's
   // own glossary (website.front.glossary) adds terms and takes the place of a shared one of the same name.
@@ -196,14 +197,30 @@
     ['IDR', /\bIDRs?\b/, 'an intrinsically disordered region, a stretch of protein with no fixed fold.'],
     ['aa', /\baa\b/, 'amino acids (residues), as in "within 20 aa".'],
     [
-      'Janus',
-      /\bJanus\b/,
-      'an IDR with a quarter to a third of its residues charged (FCR 0.25 to 0.35), positive and negative mixed so that it is neither clearly acidic nor basic (a Janus sequence in the Das–Pappu diagram of states).',
+      'Moderately charged, mixed',
+      /moderately charged, mixed/i,
+      'a disordered region with a quarter to a third of its residues charged (FCR 0.25 to 0.35), positive and negative mixed, so that it is neither clearly acidic nor basic. The literature calls these Janus sequences (Das–Pappu diagram of states).',
     ],
     [
-      'polyampholyte',
-      /polyampholyte/i,
-      'a region carrying both positive and negative charges. Strong polyampholytes have more than a third of their residues charged, with the charges balanced (FCR > 0.35, |NCPR| < 0.35).',
+      'Strongly charged, balanced',
+      /strongly charged, balanced/i,
+      'a region carrying both positive and negative charges: more than a third of its residues charged, the charges balanced (FCR > 0.35, |NCPR| < 0.35). The literature calls these strong polyampholytes.',
+    ],
+    [
+      'Likely interface',
+      /Likely interface/,
+      'a protein-protein interface predicted by AlphaFold-Multimer with a pDockQ (confidence score) of 0.23 or more, the usual cutoff for a model that is likely real.',
+    ],
+    ['Strong interface', /Strong interface/, 'a predicted interface with a pDockQ (confidence score) of 0.5 or more.'],
+    [
+      'RNA-contact',
+      /RNA-contact/,
+      'a residue or peptide whose signal drops after UV crosslinking to RNA in cells (RBR-ID; Oksuz et al. 2023), a sign that it touches RNA.',
+    ],
+    [
+      'CAPRI',
+      /\bCAPRI\b/,
+      'an RNA crosslinking method (Panhale et al. 2019): peptides crosslinked to RNA in living cells, found by UV crosslinking and mass spectrometry.',
     ],
     ['FCR', /\bFCR\b/, 'fraction of charged residues: positive plus negative.'],
     ['NCPR', /\bNCPR\b/, 'net charge per residue: positive minus negative.'],
@@ -223,6 +240,40 @@
     ];
   }
   K.glossaryTerms = glossaryTerms;
+  // the data releases' notes, newest first, as the landing page lists them; closed when long
+  function whatsNew() {
+    const WN = D.whats_new,
+      rel = WN?.releases || [];
+    if (!rel.length) return '';
+    const n = rel.reduce((t, r) => t + r.items.length, 0);
+    return (
+      `<section id="h-new" class="whats-new"><details${n > 4 ? '' : ' open'}><summary><b>${esc(WN.title)}</b></summary>` +
+      rel
+        .map(
+          (r) =>
+            `<h4>${esc(r.title)}</h4><ul>${r.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` +
+            (r.doi ? `<p class="muted small">Data: doi:${esc(r.doi)}</p>` : '')
+        )
+        .join('') +
+      '</details></section>'
+    );
+  }
+  // the app's releases, newest first, from the headings of CHANGELOG.md (read when the explorer is built); closed
+  function appChanges() {
+    const rel = D.app_releases || [];
+    if (!rel.length) return '';
+    return (
+      `<section id="h-changes" class="whats-new"><details><summary><b>What changed in the site</b></summary>` +
+      `<p class="muted small">Releases of the app (App: PTMcontext). The data releases are listed above.</p>` +
+      rel
+        .map(
+          (r) =>
+            `<h4>PTMcontext ${esc(r.version)} (${esc(K.hdate(r.date))})</h4><ul>${r.lines.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
+        )
+        .join('') +
+      '</details></section>'
+    );
+  }
   function helpPage() {
     const sec = (id, body) =>
       `<section id="${id}"><h3>${esc(SECTIONS.find((s) => s[0] === id)[1])}</h3>${body}</section>`;
@@ -230,48 +281,36 @@
     const term = (t, d) => `<dt>${t}</dt><dd>${d}</dd>`;
     return (
       `<div class="page-head"><h2>Help</h2></div><div class="doc help-doc">` +
-      (D.whats_new?.items?.length
-        ? `<section id="h-new" class="whats-new"><h3>${esc(D.whats_new.title || 'What’s new')}</h3><ul>${D.whats_new.items
-            .map((x) => `<li>${esc(x)}</li>`)
-            .join(
-              ''
-            )}</ul>${D.whats_new.doi ? `<p class="muted small">Data: ${esc(D.whats_new.doi)}</p>` : ''}</section>`
-        : '') +
       sec(
         'h-search',
-        `<p>The search box takes a protein (gene name, UniProt accession or entry name), a list of proteins separated by ` +
-          `spaces or commas, one ${esc(W.mark)} as a gene and a position${
-            EX.find(isSite) ? ` (<span class="mono">${esc(EX.find(isSite))}</span>)` : ''
-          }, or a term written <span class="mono">key:value</span>${
+        `<p>Protein: gene, UniProt accession or entry name.</p>` +
+          `<p>List: separated by spaces or commas.</p>` +
+          `<p>Site: gene and position${EX.find(isSite) ? ` (<span class="mono">${esc(EX.find(isSite))}</span>)` : ''}.</p>` +
+          `<p>Field: <span class="mono">key:value</span>${
             terms.length
               ? ` (${terms
                   .map((t) => `<button type="button" ` + `class="linkish mono" data-try="${esc(t)}">${esc(t)}</button>`)
                   .join(', ')})`
               : ''
-          }. Separate values with <span class="mono">|</span> to match any; several terms must all hold. Naming one ` +
-          `protein opens its page. The line under the box counts what matches. ${mlink('search', 'Methods › Sources')} lists every key.</p>` +
-          (D.term_index
-            ? `<p>A pathway, GO term, protein class, condensate or disease can be typed by name or ID. The matching terms ` +
-              `are listed by source with their number of ${esc(W.marked)} proteins, and choosing one filters to those proteins.</p>`
-            : '')
+          }. Separate values with <span class="mono">|</span> to match any; several terms must all hold. ` +
+          `${mlink('search', 'Methods › Sources')} lists every key.</p>` +
+          (D.term_index ? `<p>Pathway, GO term, class, condensate or disease: by name or ID.</p>` : '')
       ) +
       sec(
         'h-filters',
-        `<p>The sidebar (☰ or Filters) holds one button per class or value, with its count of ${esc(W.marks)}. A ` +
-          `${esc(W.mark)} stays when it matches the search and every filter group. Every page then shows what matches, and the ` +
-          `Overview tests its questions again on it. Clicking a row in a tile does the same as ticking its button. ` +
-          `Clear all removes the selection.</p>`
+        `<p>Sidebar (☰ or Filters): one button per class or value, with its count.</p>` +
+          `<p>A ${esc(W.mark)} stays when it matches the search and every filter group.</p>`
       ) +
       sec(
         'h-read',
-        `<p>Each tile is a question and each row a class. The dot and the number are the fold on a log scale: the share ` +
-          `of ${esc(W.marks)} in the class over the share of the comparison (1× is no difference). The line under it is ` +
-          `the test: odds ratio, 95% interval and q. Hover a row, or tap it, for the counts.</p>` +
-          (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05 and a fold of at least 1.1×</li><li><i ` +
-            `class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: significant, but ` +
+        `<p>Tile: a question. Row: a class.</p>` +
+          `<p>Dot and number: fold, on a log scale.</p>` +
+          `<p>Line under a row: odds ratio, 95% interval, q.</p>` +
+          `<p>Hover or tap a row for the counts.</p>` +
+          (`<ul class="key-list"><li><i class="kd more"></i> more often: q ≤ 0.05, odds ratio or fold ≥ 1.1×</li><li><i ` +
+            `class="kd less"></i> less often</li><li><i class="kd same"></i> about the same: q ≤ 0.05, but ` +
             `within 1.1×</li><li><i class="kd ns"></i> no difference (q > 0.05), or too few to test</li></ul>`) +
-          `<p>The Test switch changes how the tiles marked ⇄ compare ${esc(W.marks)}; the tiles about protein classes keep ` +
-          `their own test. ${mlink('tests', 'Methods › Tests')} describes each test.</p>`
+          `<p>The Test switch applies to residue questions only. ${mlink('tests', 'Methods › Tests')} describes each test.</p>`
       ) +
       sec(
         'h-terms',
@@ -283,30 +322,29 @@
           ) +
           term(
             'q',
-            'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and a fold of at least 1.1×.'
+            'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and an odds ratio (or fold, where the test gives one) of at least 1.1×.'
           ) +
-          term(
-            'h',
-            'The size of a difference between two shares, used on the cell maps: 0.2 is small, 0.5 medium and 0.8 large (Cohen’s h). Unlike a fold, it does not grow just because a share is small.'
-          ) +
+          term('Effect', 'Difference between two shares (Cohen’s h); 0.2 small, 0.5 medium, 0.8 large.') +
+          (D.propensity
+            ? term(
+                'Observed/expected',
+                'Observed over expected changes, from codons and base-change rates. 1 = as expected.'
+              )
+            : '') +
           term(
             'Within each protein',
             `Each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein.`
           ) +
           term('Across all proteins', `All the ${esc(W.residues)} of all the proteins are compared as one group.`) +
-          (SETQ
-            ? term(
-                'Abundance deciles',
-                'Proteins sorted by measured abundance into ten equal groups. The test compares proteins only within a group, so abundant proteins do not drive the result.'
-              )
-            : '') +
-          term(
-            "Doesn't hold (badge)",
-            'The result disappears or reverses when the question is asked again with one change, such as only high-confidence sites. The badge names the control.'
-          ) +
+          (SETQ ? term('Abundance deciles', 'Ten equal groups by measured abundance; test within each group.') : '') +
+          term('Not robust (badge)', 'Result disappears or reverses under the control named on the badge.') +
           term(
             'Controls',
             `The same question repeated with one change each. ${mlink('controls', 'Methods › Controls')} lists them.`
+          ) +
+          term(
+            'AlphaMissense',
+            `A model's score from 0 to 1 for how likely a missense change is to be harmful (0.564 and above: likely pathogenic). Cards and the 3D view show a residue's mean over its substitutions. Less reliable in disordered regions (<a href="https://doi.org/10.1186/s12864-025-11534-9" target="_blank" rel="noopener">Luppino et al., BMC Genomics 2025</a>).`
           ) +
           glossaryTerms()
             .map(([t, d]) => term(esc(t), esc(cap(d))))
@@ -314,6 +352,28 @@
           `</dl><p>More: ${mlink('', 'Methods')} · ${mlink('download', 'Download')} · ${mlink('cite', 'Cite')} · ` +
           `<button type="button" class="linkish" data-keys-open>Keyboard shortcuts</button></p>`
       ) +
+      (D.propensity
+        ? sec(
+            'h-mutations',
+            `<p>Protein cards: each source drawn along the protein. Stick height: count. Circle size: observed/expected. ` +
+              `Ring: q < 0.05. ClinVar's observed/expected has no ring. A protein with no matching coding sequence has no q.</p>` +
+              `<p>The site card has one line with the site's observed/expected and q in each source.</p>` +
+              (K.views.mutations
+                ? `<p><a href="${esc(K.link('mutations'))}">Mutations</a>: sites of your selection (every ${esc(W.mark)} when nothing is selected).</p><ul>` +
+                  `<li><b>Ranked sites</b>: tumors, cell lines and gnomAD, ranked by p; top 20 per table, the header counts sites with q below 0.05. The download has every tested site.</li>` +
+                  `<li><b>Cancer: tumors</b> is an oncoprint of the sites with the most changed TCGA tumors, with coding calls per Mb above.</li>` +
+                  (D.propensity.cv
+                    ? `<li><b>ClinVar pathogenic</b>: pathogenic and likely pathogenic variants by DisGeNET family, a row per site and a column per family. Click a cell to list its variants. A variant counts once in each of its families. A condition no rule matches is Other / unassigned. Counts are not tested against expectation.</li>`
+                    : '') +
+                  `<li><b>Show all sites as a chart</b>: sites ranked by signed −log10 p. Ring: q < 0.05; dashed: fewer than expected. Highlight genes outlines the sites of a pasted list.</li>` +
+                  `<li><b>Paste genes</b>, UniProt accessions or sites, one per line or separated by commas or spaces. The list is tested as a whole for each source; q is across the list's sites only. Up to 5,000 sites.</li></ul>`
+                : '') +
+              `<p>Hypermutated tumors (more than ${D.propensity.hypermutated.per_mb} coding calls per Mb) are left out unless you choose ` +
+              `With hypermutated. ${mlink('propensity', 'Methods › Changes vs expected')} has the test and its sources.</p>`
+          )
+        : '') +
+      whatsNew() +
+      appChanges() +
       '</div>'
     );
   }
@@ -331,7 +391,7 @@
       `<p>Under Compared with, the Overview compares the selection with the other ${esc(W.residues)} of the same proteins, with the other ` +
       `${esc(W.marks)}, or with a saved selection. Each class shows the selection’s share (filled) and the comparison’s (hollow).</p></section>` +
       `<section id="m-share"><h3>Sharing a link</h3><p>The address holds the page, search, filters and comparison, so a copied link ` +
-      `opens what is on screen. Back and Forward return to earlier pages and selections. Figures download as PDF, SVG, PNG or TSV, each with ` +
+      `opens what is on screen. It also keeps the sections that are open. Back and Forward return to earlier pages and selections. Figures download as PDF, SVG, PNG or TSV, each with ` +
       `its test, citation and sources.</p><h4>Keyboard shortcuts</h4><p>Single keys work when the cursor is not in a text box.</p>${keysTable()}</section>` +
       `<section id="m-access"><h3>Accessibility</h3><p>Every control works from the keyboard, and a skip link passes the header. Screen readers ` +
       `announce result counts. The light and dark themes (at the foot of every page) follow the system unless one is picked, and motion follows its ` +

@@ -52,6 +52,16 @@
         return !!TB[b.table] && TB[b.table].n > 0;
       case 'text':
         return !!b.text;
+      case 'tiles':
+        b.tiles = (b.tiles || []).filter((t) => hasRow(t.row));
+        return b.tiles.length > 0;
+      case 'contact_list':
+        return !!TB[b.table] && TB[b.table].n > 0;
+      case 'pointer':
+        return (D.proteins || []).some((p) => p[1] === b.protein);
+      case 'fold':
+        b.blocks = (b.blocks || []).filter(usable);
+        return b.blocks.length > 0;
       default:
         return false;
     }
@@ -196,8 +206,11 @@
           ? -1
           : j + k;
   };
+  // sequence, study and dataset: a peptide table's cells, drawn by the site card's own functions (K.card.peptideHtml)
+  const PEPCOL = (K.card?.peptideColumns && K.card.peptideColumns) || {};
   const colMeta = (t, name) =>
     t.columns.find((c) => c.name === name) ||
+    (PEPCOL[name] ? { name, type: 'peptide', label: PEPCOL[name] } : null) ||
     (name === 'accession'
       ? { name, type: 'protein', label: 'Protein' }
       : name === 'position'
@@ -215,7 +228,50 @@
       return i == null ? others : isSelMark(i);
     });
   }
+  // a peptide table's row: its peptides (K.card.peptideList), their studies, and how a position is numbered here
+  function pepOf(t, r) {
+    const col = (n) => {
+        const i = colIdx(t, n);
+        return i < 0 ? '' : r[i];
+      },
+      kind = col('kind'),
+      acc = prot(r[0])[0];
+    return {
+      acc,
+      pos: r[1],
+      list: K.card.peptideList(kind, col('detail')),
+      st: K.card.studyOf(kind, col('source')),
+      shown: (q) => (K.prot?.shownPos ? K.prot.shownPos(acc, q) : q),
+    };
+  }
+  const pepText = (t, r, name) => {
+    const x = pepOf(t, r);
+    return name === 'sequence'
+      ? x.list.map((e) => `${x.shown(e.start)}-${x.shown(e.end)} ${e.seq}`).join('; ')
+      : name === 'study'
+        ? x.st.map((s) => s.text).join('; ')
+        : x.st
+            .filter((s) => s.data)
+            .map((s) => s.data.label)
+            .join('; ');
+  };
+  const PEPMAX = 3;
+  function pepCell(t, r, name) {
+    const x = pepOf(t, r),
+      dash = '<span class="muted">–</span>';
+    if (name === 'sequence') {
+      const one = (e) => `<div>${K.card.peptideHtml(e, x.pos, x.shown, siteName(x.acc, x.pos))}</div>`;
+      return !x.list.length
+        ? dash
+        : x.list.slice(0, PEPMAX).map(one).join('') +
+            (x.list.length > PEPMAX
+              ? `<details class="pep-more"><summary>+${x.list.length - PEPMAX} more</summary>${x.list.slice(PEPMAX).map(one).join('')}</details>`
+              : '');
+    }
+    return (name === 'study' ? K.card.studyHtml(x.st) : K.card.dataHtml(x.st)) || dash;
+  }
   const cellText = (t, r, name) => {
+    if (colMeta(t, name).type === 'peptide') return pepText(t, r, name);
     const j = colIdx(t, name);
     if (j < 0) return '';
     const v = r[j],
@@ -235,12 +291,15 @@
   };
 
   // ---- links and cells ---------------------------------------------------------------------------------------------
-  const residueLetter = () => (D.residues || [''])[0];
+  // a site's name as the protein page gives it: the row's own residue, numbered as the page numbers it
+  const siteName = (acc, pos) => (K.prot?.siteLabel ? K.prot.siteLabel(acc, pos) : String(pos));
   const siteLink = (p, pos) => {
-    const sh = K.prot?.shownPos ? K.prot.shownPos(prot(p)[0], pos) : pos; // as the protein page numbers it
-    return `<a href="${esc(
-      K.link('protein', `${prot(p)[0]}/${residueLetter()}${sh}`)
-    )}"><b>${esc(gene(p))}</b> ${esc(residueLetter())}${int(sh)}</a>`;
+    const name = siteName(prot(p)[0], pos);
+    return `<a href="${esc(K.link('protein', `${prot(p)[0]}/${name}`))}"><b>${esc(gene(p))}</b> ${esc(name)}</a>`;
+  };
+  const siteOnlyLink = (p, pos) => {
+    const name = siteName(prot(p)[0], pos);
+    return `<a href="${esc(K.link('protein', `${prot(p)[0]}/${name}`))}">${esc(name)}</a>`;
   };
   const protLink = (p) => `<a href="${esc(K.link('protein', prot(p)[0]))}"><b>${esc(gene(p))}</b></a>`;
   const accLink = (acc, label) => {
@@ -255,6 +314,7 @@
       c = colMeta(t, name);
     if (name === 'accession') return t.key === 'residue' ? siteLink(r[0], r[1]) : protLink(r[0]);
     if (name === 'position') return t.key === 'residue' ? siteLink(r[0], r[1]) : '';
+    if (c.type === 'peptide') return pepCell(t, r, name);
     const v = j < 0 ? null : r[j],
       show = (x) => (c.values || {})[x] ?? x;
     if (v == null || (Array.isArray(v) && !v.length)) return '<span class="muted">–</span>';
@@ -369,9 +429,17 @@
     const P = pal(ex),
       rows = rowsFor(b.rows, m),
       sc = scale(rows.flatMap((x) => [x.site, x.mine].filter(Boolean).flatMap((r) => [effOf(r), r.lo, r.hi])));
+    // a row's numbers, right-aligned: the forest ends where the longest of them begins, in any font
+    const rowText = (r) =>
+      r
+        ? `${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}${
+            K.sharePair(r) ? ` · ${K.sharePair(r)}` : ''
+          } · q ${fq(r.q)}`
+        : 'not tested';
     const LW = 250,
       FX = LW + 10,
-      FW = Wd - FX - 220,
+      NW = Math.max(220, Math.ceil(Math.max(0, ...rows.map((x) => K.tw(rowText(shown(x)), 10.5))) * 1.08) + 12),
+      FW = Wd - FX - NW,
       RH = 22,
       parts = [];
     let y = 16,
@@ -409,17 +477,11 @@
           `<circle cx="${(FX + sc.X(effOf(r), FW)).toFixed(1)}" cy="${cy}" r="4.6" fill="${d === 'ns' ? P.bg : dirColour(P, d)}" stroke="${dirColour(P, d)}" stroke-width="1.5"/>`
         );
       parts.push(
-        txt(
-          P,
-          Wd - 4,
-          cy + 4,
-          r
-            ? `${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}${
-                K.sharePair(r) ? ` · ${K.sharePair(r)}` : ''
-              } · q ${fq(r.q)}`
-            : 'not tested',
-          { size: 10.5, anchor: 'end', fill: dirColour(P, d) === P.muted ? P.muted : P.ink }
-        )
+        txt(P, Wd - 4, cy + 4, rowText(r), {
+          size: 10.5,
+          anchor: 'end',
+          fill: dirColour(P, d) === P.muted ? P.muted : P.ink,
+        })
       );
       y += RH;
     });
@@ -524,20 +586,17 @@
   function forestNote(rows, m) {
     if (!selOn())
       return (
-        `<details class="ix-meth"><summary>Method</summary><p class="muted small">${
+        `<details class="ix-meth"><summary>Methods</summary><p class="muted small">${
           m === 'mantel_haenszel'
             ? 'Within each protein: a Mantel–Haenszel odds ratio with its 95% CI ' +
               '(Robins–Breslow–Greenland), each protein analyzed separately'
             : 'Across all proteins: Fisher’s exact test, the Haldane–Anscombe odds ratio'
         }; q: Benjamini–Hochberg ` + `within the question.</p></details>`
       );
-    if (!testable())
-      return (
-        `<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. The rows ` +
-        `are the whole dataset’s.</p>`
-      );
+    if (K.sel.loading?.()) return K.loading(K.sel.loadingText());
+    if (!testable()) return `<p class="note">Too few to test, so the rows are the whole dataset’s.</p>`;
     return (
-      `<p class="muted small">Your selection, tested again in the browser (exploratory; not adjusted for the ` +
+      `<p class="muted small">Your selection, tested in this browser (exploratory; not adjusted for the ` +
       `other selections tried); the gray tick is the whole dataset’s odds ratio. ${
         rows.some((x) => x.mine?.descriptive) ? 'A question the selection was made with is shown, not tested.' : ''
       }</p>`
@@ -686,6 +745,61 @@
     });
     return { body: parts.join(''), H: H0 };
   }
+  // the chart in a sentence made from the same rows (sentence: {residue: the series that is the residue itself, inside: the
+  // phrase for the others}): the evidence's fold where it is at the residue's own place, how far along the sequence it
+  // lasts, and the residue's own fold against it
+  function proximitySentence(b, m) {
+    const sn = b.sentence,
+      ser = linesData(b, m);
+    if (!sn || !ser.length) return '';
+    const near = (x) => x.pts[0],
+      far = (x) => x.pts[x.pts.length - 1],
+      lastX = Math.max(...ser.map((x) => far(x).x)),
+      rs = (xs) => xs.map((x) => x.r);
+    const others = ser.filter((x) => x.c !== sn.residue),
+      own = ser.find((x) => x.c === sn.residue),
+      more = others.filter((x) => dirOf(near(x).r) === 'more');
+    if (selOn() && !testable()) return '';
+    const head = more.length
+      ? `${cap(theMarks())} sit ${sn.inside} ${range(rs(more.map(near)))} more often than the other ${W.residues} of the same proteins`
+      : `${cap(theMarks())} are not significantly more often ${sn.inside} than the other ${W.residues} of the same proteins`;
+    let fade = '';
+    if (more.length) {
+      const still = more.filter((x) => dirOf(far(x).r) === 'more'),
+        keep = more.map((x) => (effOf(far(x).r) - 1) / (effOf(near(x).r) - 1));
+      fade =
+        still.length === more.length
+          ? keep.every((k) => k >= 0.5)
+            ? `, and the excess fades only slowly to ${int(lastX)} residues`
+            : `, and the excess fades with distance but is still there at ${int(lastX)} residues`
+          : still.length
+            ? `, and the excess is gone by ${int(lastX)} residues for some of them`
+            : `, and the excess is gone by ${int(lastX)} residues`;
+    }
+    let tail = '';
+    if (more.length && own && near(own)) {
+      const o = near(own).r,
+        low = Math.min(...more.map((x) => effOf(near(x).r)));
+      tail =
+        dirOf(o) === 'more' && effOf(o) < low
+          ? `: they lie in RNA-bound regions rather than at the crosslinked residue (${fx2(effOf(o))})`
+          : dirOf(o) === 'ns'
+            ? `: not more often at the crosslinked residue itself (${fx2(effOf(o))}, not significant)`
+            : '';
+    }
+    const odd = ser.filter((x) => x.pts.some((p) => dirOf(p.r) === 'less')),
+      shortLabel = (x) => x.label.replace(/\s*\(.*$/, ''),
+      from = (x) => x.pts.find((p) => dirOf(p.r) === 'less').x;
+    const exception = odd.length
+      ? ` ${odd
+          .map(
+            (x) =>
+              `${shortLabel(x)} is the exception: less often than the other ${W.residues} from ${int(from(x))} residues out`
+          )
+          .join('; ')}.`
+      : '';
+    return `<p class="ix-prox">${esc(head + fade + tail)}.${esc(exception)}</p>`;
+  }
   function linesHtml(pg, sec, b, bi) {
     const s = st(bkey(pg, sec, bi), { m: b.method || 'mantel_haenszel' }),
       L = linesBody(b, s.m, false);
@@ -698,11 +812,16 @@
         return `${esc(x.label)}: ${fx2(effOf(at0.r))} at ${int(at0.x)}, ${fx2(effOf(far.r))} at ${int(far.x)}`;
       })
       .join('; ');
-    return (
+    const chart =
       seg(bkey(pg, sec, bi), s.m) +
       (`<div class="ix-plot"><svg viewBox="0 0 760 ${L.H}" role="img" ` +
-        `aria-label="${esc(sec.title)}">${L.body}</svg></div><p class="muted small">${say}. Filled: q ≤ 0.05; the ` +
-        `band is the 95% CI (within each protein). Hover a point for its test.</p>`)
+        `aria-label="${esc(b.title || sec.title)}">${L.body}</svg></div><p class="muted small">${say}. Filled: q ≤ 0.05; the ` +
+        `band is the 95% CI (within each protein). Tap, hover or focus a point for its test.</p>`);
+    if (!b.sentence) return chart;
+    const key = `${bkey(pg, sec, bi)}.fold`;
+    return (
+      proximitySentence(b, 'mantel_haenszel') +
+      `<details class="ix-fold ix-rows" data-ix-open="${esc(key)}"${OPEN.has(key) ? ' open' : ''}><summary>${esc(b.fold || 'Show by distance')}</summary>${chart}</details>`
     );
   }
   function linesTsv(b, m) {
@@ -762,45 +881,30 @@
       ),
     }));
   }
-  function setsHtml(pg, sec, b) {
-    const rows = setRows(b);
+  const SETS_TOP = 25; // sets a long table shows before "Show all"
+  function setsHtml(pg, sec, b, bi) {
+    const rows = setRows(b),
+      key = bkey(pg, sec, bi),
+      s = st(key, {}),
+      shown = s.all ? rows : rows.slice(0, SETS_TOP),
+      ceil = K.ceilingLine(
+        A[b.analysis] || {},
+        rows.map((x) => x.site)
+      );
     const meter = (k, n, K2, N) =>
       `<span class="ix-meter" title="${int(k)} of ${int(n)} (${pcS(k, n)}) vs ${int(K2)} of ${int(N)} (${pcS(K2, N)})"><i style="width:${((100 * k) / (n || 1)).toFixed(1)}%"></i><b ` +
       `style="left:${((100 * K2) / (N || 1)).toFixed(1)}%"></b></span>`;
-    const hold = (x) => {
-      const h = K.holdStatus(x.site);
-      const s2 = x.strat;
-      return s2
-        ? `<span class="ix-hold ${h || ''}" title="Within ` +
-            `abundance deciles: OR ${fxn(s2.or ?? s2.eff)}${
-              s2.lo != null ? ` [${fxn(s2.lo)}–${fxn(s2.hi)}]` : ''
-            }, q ${fq(s2.q)}"><span aria-hidden="true">${
-              h === 'holds' ? '✓' : h === 'weaker' ? '◌' : h === 'lost' ? '○' : dirOf(s2) === 'less' ? '▼' : '·'
-            }</span><span class="vh">${
-              h === 'holds'
-                ? 'holds within deciles'
-                : h === 'weaker'
-                  ? 'same direction within deciles, not significant'
-                  : h === 'lost'
-                    ? 'lost within deciles'
-                    : dirOf(s2) === 'less'
-                      ? 'fewer within deciles'
-                      : 'no reading within deciles'
-            }:</span> ${fxn(s2.or ?? s2.eff)}</span>`
-        : '–';
-    };
-    return (
+    const table =
       `<div class="tbl-card"><table class="tbl ix-sets"><thead><tr><th>Set</th><th>${esc(cap(W.marked))} proteins</th>` +
       `<th class="num">In the set</th><th class="num">All proteins</th><th class="num">Fold</th><th class="num">` +
-      `q</th><th class="num" title="The same test within protein abundance deciles: ✓ holds, ◌ same direction ` +
-      `but not significant, ○ lost">Within deciles</th></tr></thead><tbody>` +
-      rows
+      `q</th></tr></thead><tbody>` +
+      shown
         .map((x) => {
           const r = selOn() && x.mine ? x.mine : x.site,
             d = dirOf(r);
           return (
             `<tr data-f="p:${esc(b.analysis)}" data-v="${esc(x.site.category)}" title="Select the ${esc(W.marks)} on proteins ` +
-            `in it"><td class="wrapok">${esc(x.site.label)}</td><td>${meter(
+            `in it${!selOn() && K.estLine(x.site) ? `. ${esc(K.estLine(x.site))}` : ''}"><td class="wrapok">${esc(x.site.label)}</td><td>${meter(
               r.a,
               r.a + r.b,
               r.a + r.c,
@@ -808,36 +912,30 @@
             )}</td><td ` +
             `class="num">${int(r.a)} <span class="muted">of ${int(r.a + r.b)} (${pcS(r.a, r.a + r.b)})</span></td>` +
             `<td class="num">${int(r.a + r.c)} <span class="muted">of ${int(r.a + r.b + r.c + r.d)} (${pcS(r.a + r.c, r.a + r.b + r.c + r.d)})</span></td>` +
-            `<td class="num ixf-or ${d}">${fxn(r.fold ?? r.eff)}×</td><td class="num">${fq(r.q)}</td><td ` +
-            `class="num">${selOn() ? '<span class="muted">–</span>' : hold(x)}</td></tr>`
+            `<td class="num ixf-or ${d}">${fxn(r.fold ?? r.eff)}×</td><td class="num">${fq(r.q)}</td></tr>`
           );
         })
         .join('') +
       (`</tbody></table></div><p class="muted small">${
         selOn()
-          ? 'Your selection’s proteins, tested again in the browser (one-sided hypergeometric over the same sets). '
+          ? 'Your selection’s proteins, tested in this browser (one-sided hypergeometric over the same sets). '
           : ''
       }The meter: ` +
         `the share of ${esc(W.marked)} proteins in the set (bar) against that of all proteins of the background ` +
-        `(tick). ${esc(A[b.analysis]?.sub || '')}</p>`)
-    );
+        `(tick). ${esc(A[b.analysis]?.sub || '')}</p>`) +
+      (rows.length > SETS_TOP
+        ? `<p><button type="button" class="linkish" data-ix-all="${esc(key)}">${
+            s.all ? `Show the first ${SETS_TOP}` : `Show all ${int(rows.length)} sets`
+          }</button></p>`
+        : '');
+    return ceil && !selOn()
+      ? ceil +
+          `<details class="ix-fold" data-ix-open="${esc(key)}"${OPEN.has(key) ? ' open' : ''}><summary>Show the sets</summary>${table}</details>`
+      : table;
   }
   function setsTsv(b) {
     return (
-      [
-        'set',
-        'label',
-        'rows',
-        'a',
-        'b',
-        'c',
-        'd',
-        'fold_enrichment',
-        'p',
-        'q',
-        'within_deciles_or',
-        'within_deciles_q',
-      ].join('\t') +
+      ['set', 'label', 'rows', 'a', 'b', 'c', 'd', 'fold_enrichment', 'p', 'q', 'est_odds_ratio', 'est_q'].join('\t') +
       '\n' +
       setRows(b)
         .flatMap((x) =>
@@ -1036,8 +1134,8 @@
       `<div class="tbl-card ix-upset"><table class="tbl"><thead>${head}</thead><tbody>${totals}${rows}</tbody></table>` +
       `</div>` +
       (`<p class="small">${int(c.none)} ${esc(marksWord(c.none))} (${pcS(c.none, c.total)}) have none of these. ` +
-        `Most are in proteins never crystallized, modeled with a partner or crosslinked, and absence of evidence ` +
-        `is not evidence of no contact.`) +
+        `Most are on proteins never crystallized, modeled with a partner or crosslinked. ` +
+        `No evidence is not evidence of no contact.`) +
       (c.list.length > (b.top || 15)
         ? ` <button type="button" class="linkish" data-ix-all="${esc(bkey(pg, sec, bi))}">${
             s.all ? 'Show the commonest' : `Show all ${int(c.list.length)} combinations`
@@ -1170,8 +1268,8 @@
           s.m === 'fisher'
             ? 'across all proteins, Haldane–Anscombe odds ratio, Fisher’s exact test'
             : 'within each protein, Mantel–Haenszel'
-        }), and below ` +
-        `it how many have both. Red: more often, slate: less often (q ≤ 0.05 over the matrix and at least 1.1×); ` +
+        }); below ` +
+        `it, how many have both. Red: more often, slate: less often (q ≤ 0.05 over the matrix and at least 1.1×); ` +
         `pale: not significant. Descriptive: evidence and features come from the same studies or databases for some ${esc(W.marks)}.</p>`)
     );
   }
@@ -1251,7 +1349,7 @@
     const one = ([p, pos, i]) => {
       if (i == null)
         return (
-          `<div class="ix-card"><b>${esc(gene(p))} ${esc(residueLetter())}${int(pos)}</b> <span ` +
+          `<div class="ix-card"><b>${esc(gene(p))} ${int(pos)}</b> <span ` +
           `class="muted">is not a ${esc(W.mark)} in this explorer.</span></div>`
         );
       const m = sd.marks[i],
@@ -1309,8 +1407,8 @@
           .map(
             ([m]) =>
               `<a href="${esc(
-                K.link('protein', `${prot(p)[0]}/${residueLetter()}${m[1]}`)
-              )}">${esc(residueLetter())}${m[1]}</a>`
+                K.link('protein', `${prot(p)[0]}/${siteName(prot(p)[0], m[1])}`)
+              )}">${esc(siteName(prot(p)[0], m[1]))}</a>`
           )
           .join(' ')}</p></div>`;
       })
@@ -1455,7 +1553,7 @@
       rows = rows.filter((r) => {
         const h =
           (t.key !== 'none'
-            ? `${gene(r[0])} ${prot(r[0])[0]} ${t.key === 'residue' ? residueLetter() + r[1] : ''} `
+            ? `${gene(r[0])} ${prot(r[0])[0]} ${t.key === 'residue' ? siteName(prot(r[0])[0], r[1]) : ''} `
             : '') + cols.map((c) => cellText(t, r, c)).join(' ');
         const hl = h.toLowerCase();
         return toks.every((x) => hl.includes(x));
@@ -1517,7 +1615,7 @@
               colMeta(t, c).help ? ` title="${esc(colMeta(t, c).help)}"` : ''
             }${s.sort === c ? ` aria-sort="${s.desc ? 'descending' : 'ascending'}"` : ''} class="${
               colMeta(t, c).type === 'number' ? 'num' : ''
-            }">${esc(colMeta(t, c).label)}${s.sort === c ? (s.desc ? ' ▾' : ' ▴') : ''}</th>`
+            }">${esc((b.labels || {})[c] ?? colMeta(t, c).label)}${s.sort === c ? (s.desc ? ' ▾' : ' ▴') : ''}</th>`
         )
         .join('')}</tr></thead>` +
       `<tbody>` +
@@ -1531,7 +1629,7 @@
                   `<td class="${
                     colMeta(t, c).type === 'number'
                       ? 'num'
-                      : ['list', 'text', 'sequence'].includes(colMeta(t, c).type)
+                      : ['list', 'text', 'sequence', 'peptide'].includes(colMeta(t, c).type)
                         ? 'wrapok'
                         : ''
                   }">${cellHtml(t, r, c, b.label && c === b.partner ? (rr) => cellText(t, rr, b.label) : null)}</td>`
@@ -1558,7 +1656,7 @@
             .map(
               ([g, rs]) =>
                 rollHead(g, groupsOf) +
-                `<details class="ix-fold"${groupsOf.length <= 4 ? ' open' : ''}><summary><b>${esc(
+                `<details class="ix-fold" id="ixf-${esc(bkey(pg, sec, bi))}-${esc(String(g).replace(/[^\w]+/g, '-'))}"${groupsOf.length <= 4 ? ' open' : ''}><summary><b>${esc(
                   (colMeta(t, b.group_by).values || {})[g] ?? (g || 'none')
                 )}</b> <span ` +
                 `class="muted">${int(rs.length)} row${rs.length === 1 ? '' : 's'}${
@@ -1571,7 +1669,12 @@
         (rows.length ? tbl(rows) : `<p class="muted">No rows${selOn() ? ' for your selection' : ''}.</p>`);
     // the summary line, one short count per kind or group, then the rows behind "Show all rows" (ten at a time)
     const total = blockRows(t, b).length;
-    if (total <= PAGE) return inner;
+    // a visible download of every row of the block, with its sequences (b.download is the button's words)
+    const dl = b.download
+      ? `<p class="ix-dl"><button type="button" class="btn small" data-ixexp="${esc(bkey(pg, sec, bi))}" data-k="tsv">${esc(b.download)}</button> ` +
+        `<span class="muted small">${int(total)} rows${b.peptides ? ', one line a peptide, with its start, end, sequence, study and dataset' : ''}</span></p>`
+      : '';
+    if (total <= PAGE) return dl + inner;
     const vl = (g) => (colMeta(t, b.group_by).values || {})[g] ?? (g || 'none');
     const rolled = new Map();
     (groupsOf || []).forEach(([g, rs]) => {
@@ -1584,8 +1687,9 @@
           .sort((x, y) => y[1] - x[1])
           .map(([v, n]) => `${vlab(v)} ${int(n)}`);
     return (
+      dl +
       (parts.length ? `<p class="ix-tsum">${esc(parts.join(' · '))}</p>` : '') +
-      `<details class="ix-fold ix-rows" data-ix-open="${esc(bkey(pg, sec, bi))}"${OPEN.has(bkey(pg, sec, bi)) ? ' open' : ''}><summary>Show all rows ` +
+      `<details class="ix-fold ix-rows" data-ix-open="${esc(bkey(pg, sec, bi))}"${OPEN.has(bkey(pg, sec, bi)) || b.peptides ? ' open' : ''}><summary>Show all rows ` +
       `<span class="muted">${int(total)}</span></summary>${inner}</details>`
     );
   }
@@ -1606,11 +1710,77 @@
         ps = protSet();
       rows = rows.filter((r) => (r[j] || []).some((a) => ps.has(byAcc[a])));
     }
-    return rows;
+    return b.peptides ? collapse(t, rows) : rows;
+  }
+  // rows alike in protein, site, kind and every peptide (start, end, sequence) are one row; NREC holds how many records it stands for
+  const NREC = new WeakMap();
+  function collapse(t, rows) {
+    const by = new Map();
+    rows.forEach((r) => {
+      const x = pepOf(t, r),
+        key = [r[0], r[1], cellText(t, r, 'kind'), ...x.list.map((e) => `${e.start}-${e.end}:${e.seq}`)].join('|');
+      if (by.has(key)) NREC.set(by.get(key), NREC.get(by.get(key)) + 1);
+      else {
+        by.set(key, r);
+        NREC.set(r, 1);
+      }
+    });
+    return [...by.values()];
+  }
+  // a peptide table's download: one line a peptide (a row of several peptides is several lines), with the study's DOI
+  function peptideTsv(b, t) {
+    const head = [
+        'accession',
+        'gene',
+        'site',
+        'evidence',
+        'start',
+        'end',
+        'sequence',
+        'study',
+        'doi',
+        'dataset',
+        'dataset_url',
+        'n_records',
+      ],
+      plain = (x) => String(x ?? '').replace(/[\t\r\n]+/g, ' ');
+    const lines = [];
+    blockRows(t, b).forEach((r) => {
+      const x = pepOf(t, r),
+        base = [x.acc, gene(r[0]), siteName(x.acc, r[1]), cellText(t, r, 'kind')],
+        study = [x.st.map((s) => s.text).join('; '), x.st.map((s) => s.doi).join('; ')],
+        data = [
+          x.st
+            .map((s) => s.data?.label || '')
+            .filter(Boolean)
+            .join('; '),
+          x.st
+            .map((s) => s.data?.url || '')
+            .filter(Boolean)
+            .join('; '),
+        ];
+      (x.list.length ? x.list : [null]).forEach((e) =>
+        lines.push(
+          [
+            ...base,
+            e ? x.shown(e.start) : '',
+            e ? x.shown(e.end) : '',
+            e ? e.seq : '',
+            ...study,
+            ...data,
+            NREC.get(r) || 1,
+          ]
+            .map(plain)
+            .join('\t')
+        )
+      );
+    });
+    return head.join('\t') + '\n' + lines.join('\n') + '\n';
   }
   function tableTsv(b) {
     const t = table(b.table);
     if (!t) return '';
+    if (b.peptides) return peptideTsv(b, t);
     const cols = b.columns && b.columns.length ? b.columns : t.columns.map((c) => c.name);
     const keys =
       t.key === 'residue' ? ['accession', 'gene', 'position'] : t.key === 'protein' ? ['accession', 'gene'] : [];
@@ -1890,18 +2060,227 @@
     );
   };
 
+  // ---- tiles: one test's reading as a card (the fold, its q, the marks counted), each from a row of the statistics --------
+  function statTile(t) {
+    const x = rowsFor([t.row], 'mantel_haenszel')[0],
+      r = shown(x),
+      d = dirOf(r);
+    const n = r ? r.a + r.b : 0;
+    return (
+      `<div class="ix-hl ${d}"><b>${r && effOf(r) != null ? esc(fx2(effOf(r))) : '–'}</b><span>${esc(t.label)}</span>` +
+      `<em class="ix-hq">${
+        r
+          ? `${d === 'ns' ? 'not significant · ' : ''}q ${esc(fq(r.q))} · n ${int(n)} ${esc(n === 1 ? W.mark : W.marks)}${
+              r.strata ? ` in ${int(r.strata)} proteins` : ''
+            }`
+          : 'not tested'
+      }</em>${t.tag ? `<small>${esc(t.tag)}</small>` : ''}</div>`
+    );
+  }
+  // the same counts tested across all proteins at once, against within each protein: said from the two rows
+  function pooledLine(b) {
+    const t = b.tiles[0].row,
+      fi = rowOf(t.analysis, t.category, 'fisher'),
+      mh = rowOf(t.analysis, t.category, 'mantel_haenszel');
+    if (!fi || !mh || effOf(fi) == null || effOf(mh) == null) return '';
+    return (
+      `<p class="muted small">Counting all the ${esc(W.residues)} together, the fold is ${esc(fx2(effOf(fi)))} (q ${esc(fq(fi.q))}); ` +
+      `within each protein it is ${esc(fx2(effOf(mh)))} (q ${esc(fq(mh.q))}).</p>`
+    );
+  }
+  function tilesHtml(b) {
+    return (
+      `${b.sub ? `<p class="muted small">${esc(b.sub)}</p>` : ''}<div class="ix-hls">${b.tiles.map(statTile).join('')}</div>` +
+      (b.pooled && !selOn() ? pooledLine(b) : '')
+    );
+  }
+
+  // ---- the marks in contact with RNA or DNA in a structure: one row a site, its closest contact -----------------------
+  // the records' state of a site in an entry (records table: entry id and state, on the rows its where keeps)
+  function modeledIndex(b) {
+    const m = b.modeled,
+      t = m && table(m.table);
+    if (!t) return null;
+    if (t._ix) return t._ix;
+    const ei = colIdx(t, m.entry),
+      si = colIdx(t, m.state),
+      w = Object.entries(m.where || {}).map(([c, v]) => [colIdx(t, c), v]);
+    const ix = new Map();
+    t.rows.forEach((r) => {
+      if (w.some(([j, v]) => r[j] !== v)) return;
+      const k = `${r[0]}:${r[1]}`;
+      (ix.get(k) || ix.set(k, new Map()).get(k)).set(String(r[ei]).toLowerCase(), r[si]);
+    });
+    return (t._ix = ix);
+  }
+  function contactSites(b) {
+    const t = table(b.table);
+    if (!t || (b.modeled && !modeledIndex(b))) return null;
+    const j = Object.fromEntries(['kind', 'type', 'name', 'entry', 'distance'].map((c) => [c, colIdx(t, c)]));
+    const by = new Map();
+    tableRows(t).forEach((r) => {
+      const k = `${r[0]}:${r[1]}`;
+      (by.get(k) || by.set(k, []).get(k)).push(r);
+    });
+    const mi = b.modeled ? modeledIndex(b) : null,
+      m = b.modeled || {};
+    const say = (st) =>
+      st == null
+        ? 'unknown'
+        : (m.unmodified || []).includes(st)
+          ? 'no'
+          : (m.unknown || []).includes(st)
+            ? 'unknown'
+            : 'yes';
+    const out = [];
+    by.forEach((rs, k) => {
+      const best = K.card.contact.best(
+        rs.map((r) => ({
+          kind: r[j.kind],
+          type: r[j.type],
+          name: r[j.name],
+          entry: r[j.entry],
+          distance: r[j.distance],
+        }))
+      );
+      if (!best) return;
+      const states = mi?.get(k),
+        mine = say(states?.get(best.entry.toLowerCase()));
+      const other =
+        mine === 'yes'
+          ? ''
+          : [...new Set(rs.flatMap((r) => (Array.isArray(r[j.entry]) ? r[j.entry] : [r[j.entry]])))].find(
+              (id) => id && say(states?.get(String(id).toLowerCase())) === 'yes'
+            ) || '';
+      out.push({ p: rs[0][0], pos: rs[0][1], best, modeled: other ? 'other' : mine, other });
+    });
+    return out.sort((x, y) => x.best.dist - y.best.dist || gene(x.p).localeCompare(gene(y.p)) || x.pos - y.pos);
+  }
+  const contactKinds = (b) => ({ rna: 'RNA', dna: 'DNA', hybrid: 'RNA-DNA hybrid', ...(b.kinds || {}) });
+  const contactType = (b, x) => {
+    const t = table(b.table),
+      lab = (colMeta(t, 'type').values || {})[x.best.type] ?? x.best.type;
+    const word = K.card.contact.word(x.best, contactKinds(b));
+    return !lab ? word : String(lab).includes(word) ? lab : `${word} · ${lab}`; // "rRNA", not "RNA · rRNA"
+  };
+  const MODELED = { yes: 'Yes', no: 'No', unknown: '–' };
+  const modeledWord = (x) => (x.modeled === 'other' ? `Only in PDB ${x.other.toUpperCase()}` : MODELED[x.modeled]);
+  function contactListHtml(pg, sec, b, bi) {
+    const list = contactSites(b);
+    if (!list) return TERR[b.table] ? `<p class="muted">${esc(TERR[b.table])}</p>` : loading();
+    const s = st(bkey(pg, sec, bi), { all: false }),
+      limit = b.limit || 25,
+      shownRows = s.all ? list : list.slice(0, limit);
+    if (!list.length) return `<p class="muted">None${selOn() ? ' for your selection' : ''}.</p>`;
+    const kinds = contactKinds(b),
+      three = typeof K.show3d === 'function';
+    return (
+      `${b.sub ? `<p class="muted small">${esc(b.sub)}</p>` : ''}` +
+      `<div class="tbl-card"><table class="tbl ix-tbl"><thead><tr><th>Protein</th><th>Site</th><th>RNA or DNA</th><th class="num">Closest (Å)</th>` +
+      `<th>PDB entry</th><th title="Whether that structure has the methyl group modeled on the residue">Methyl group modeled</th></tr></thead><tbody>` +
+      shownRows
+        .map((x) => {
+          const acc = prot(x.p)[0],
+            id = x.best.entry,
+            phrase = K.card.contact.phrase(x.best, kinds);
+          return (
+            `<tr title="${esc(phrase)}"><td>${protLink(x.p)}</td><td>${siteOnlyLink(x.p, x.pos)}</td>` +
+            `<td>${esc(contactType(b, x))}</td><td class="num">${x.best.dist.toFixed(1)}${
+              K.card.contact.clash(x.best)
+                ? ` <span class="tag t-flag" title="${esc(K.card.contact.clashTip)}">${esc(K.card.contact.clashWord)}</span>`
+                : ''
+            }</td>` +
+            `<td><a class="mono" href="https://www.ebi.ac.uk/pdbe/entry/pdb/${encodeURIComponent(id.toLowerCase())}" title="PDBe entry ${esc(id)}">PDB ${esc(id.toUpperCase())}</a>` +
+            (three
+              ? ` <button type="button" class="linkish small" data-entry3d="${esc(id)}" data-acc="${esc(acc)}" data-pos="${x.pos}">Show in 3D at site</button>`
+              : '') +
+            `</td><td>${esc(modeledWord(x))}</td></tr>`
+          );
+        })
+        .join('') +
+      `</tbody></table></div><p class="muted small">${int(list.length)} ${esc(W.marks)} in contact with RNA or DNA in at least one structure, closest first${
+        s.all || list.length <= limit ? '' : `; the first ${int(limit)} are shown`
+      }. ${esc(b.note || '')}</p>` +
+      (list.length > limit
+        ? `<p><button type="button" class="linkish" data-ix-all="${esc(bkey(pg, sec, bi))}">${
+            s.all ? `Show the first ${int(limit)}` : `Show all ${int(list.length)}`
+          }</button></p>`
+        : '')
+    );
+  }
+  function contactTsv(b) {
+    const list = contactSites(b) || [],
+      kinds = contactKinds(b),
+      t = table(b.table);
+    return (
+      [
+        'protein',
+        'gene',
+        'site',
+        'nucleic_acid',
+        'type',
+        'molecule',
+        'closest_distance_a',
+        'pdb_entry',
+        'methyl_modeled',
+        'contact',
+      ].join('\t') +
+      '\n' +
+      list
+        .map((x) =>
+          [
+            prot(x.p)[0],
+            gene(x.p),
+            siteName(prot(x.p)[0], x.pos),
+            kinds[x.best.kind] || x.best.kind,
+            (colMeta(t, 'type').values || {})[x.best.type] ?? x.best.type,
+            x.best.name || '',
+            x.best.dist.toFixed(2),
+            x.best.entry.toUpperCase(),
+            modeledWord(x),
+            K.card.contact.phrase(x.best, kinds),
+          ].join('\t')
+        )
+        .join('\n') +
+      '\n'
+    );
+  }
+  // ---- a line that points to another page (a protein's map), and a fold that holds other blocks ------------------------
+  function pointerHtml(b) {
+    const i = (D.proteins || []).findIndex((p) => p[1] === b.protein);
+    return i < 0
+      ? ''
+      : `<p class="ix-links">${esc(b.text || '')} <a href="${esc(K.link('protein', D.proteins[i][0]))}">${esc(b.protein)} ›</a></p>`;
+  }
+  function foldHtml(pg, sec, b, bi) {
+    const key = `${bkey(pg, sec, bi)}.fold`;
+    return (
+      `<details class="ix-fold ix-rows" data-ix-open="${esc(key)}"${OPEN.has(key) ? ' open' : ''}><summary>${esc(b.label || 'Show')}</summary>` +
+      b.blocks
+        .map(
+          (sb, j) =>
+            `<div class="ix-block" id="ix-${esc(sec.id)}-${bi}-${j}">${
+              sb.title ? `<div class="card-head"><div><h4>${esc(sb.title)}</h4></div></div>` : ''
+            }${blockHtml(pg, sec, sb, `${bi}.${j}`)}${exportsOf(pg, sec, sb, `${bi}.${j}`)}</div>`
+        )
+        .join('') +
+      (b.caption ? `<p class="muted small">${esc(b.caption)}</p>` : '') +
+      '</details>'
+    );
+  }
+
   // ---- a block, its exports, and a section ---------------------------------------------------------------------------
   const loading = () => K.loading('Loading…');
   const FIG = { forest: 1, lines: 1, shares: 1, matrix: 1, bars: 1, histogram: 1, example: 1 };
   function blockHtml(pg, sec, b, bi) {
-    if (!ready() && !['text', 'example'].includes(b.kind)) return loading();
+    if (!ready() && !['text', 'example', 'pointer'].includes(b.kind)) return loading();
     switch (b.kind) {
       case 'forest':
         return forestHtml(pg, sec, b, bi);
       case 'lines':
         return linesHtml(pg, sec, b, bi);
       case 'sets':
-        return setsHtml(pg, sec, b);
+        return setsHtml(pg, sec, b, bi);
       case 'shares':
         return sharesHtml(b);
       case 'combinations':
@@ -1922,6 +2301,14 @@
         return histHtml(pg, sec, b);
       case 'text':
         return `<p>${esc(b.text)}</p>`;
+      case 'tiles':
+        return tilesHtml(b);
+      case 'contact_list':
+        return contactListHtml(pg, sec, b, bi);
+      case 'pointer':
+        return pointerHtml(b);
+      case 'fold':
+        return foldHtml(pg, sec, b, bi);
       default:
         return '';
     }
@@ -1933,8 +2320,8 @@
         ? b.analysis
         : null;
   function exportsOf(pg, sec, b, bi) {
-    if (b.kind === 'text' || b.kind === 'checker') return '';
-    const kinds = ['pdf', 'svg', 'png', 'tsv']; // a block without a drawing of its own is drawn as the table on the page (K.tableFigure)
+    if (['text', 'checker', 'pointer', 'tiles', 'fold'].includes(b.kind)) return '';
+    const kinds = b.kind === 'contact_list' ? ['tsv'] : ['pdf', 'svg', 'png', 'tsv']; // a block without a drawing of its own is drawn as the table on the page (K.tableFigure)
     const m = methodOf(b);
     return K.expBar(
       b.kind === 'example' ? ['pdf', 'svg', 'png'] : kinds,
@@ -1948,11 +2335,16 @@
       b.title ? `<div class="card-head"><div><h4>${esc(b.title)}</h4></div></div>` : ''
     }${blockHtml(pg, sec, b, bi)}${exportsOf(pg, sec, b, bi)}</div>`;
   }
+  // a section's figures (FIG) come before its other blocks, each keeping its index (its address and downloads)
+  const blocksHtml = (pg, sec) =>
+    sec.blocks
+      .map((b, bi) => [b, bi])
+      .sort((x, y) => !FIG[x[0].kind] - !FIG[y[0].kind] || x[1] - y[1])
+      .map(([b, bi]) => blockCard(pg, sec, b, bi))
+      .join('');
   const sectionCard = (pg, sec) =>
     `<section class="pcard ix-sec" id="ix-${esc(sec.id)}"><div class="card-head">` +
-    `<div><h3>${esc(sec.title)}</h3></div></div>${sec.blocks
-      .map((b, bi) => blockCard(pg, sec, b, bi))
-      .join('')}</section>`;
+    `<div><h3>${esc(sec.title)}</h3></div></div>${blocksHtml(pg, sec)}</section>`;
 
   // ---- tiles: a section at a glance --------------------------------------------------------------------------------
   function miniForest(refs, m, all = refs) {
@@ -2004,10 +2396,15 @@
   };
   function tileBody(pg, sec) {
     const b = sec.blocks[Math.min(sec.tile ?? 0, sec.blocks.length - 1)];
-    if (!ready() && !['text', 'example'].includes(b.kind)) return loading();
+    if (!ready() && !['text', 'example', 'pointer'].includes(b.kind)) return loading();
     switch (b.kind) {
       case 'forest': {
-        const pickR = b.rows.slice(0, 6),
+        // the rows the page's answer line and its highlights use (the rest of the block's rows are behind the tile), so a
+        // tile quotes the same rows and counts as they do; a page with no answer line shows the block's first six
+        const inAnswer = (b.rows || []).filter((r) =>
+            (pg.answer?.rows || []).some((x) => x.analysis === r.analysis && x.category === r.category)
+          ),
+          pickR = inAnswer.length ? inAnswer : b.rows.slice(0, 6),
           rs = rowsFor(pickR, b.method || 'mantel_haenszel')
             .map(shown)
             .filter(Boolean),
@@ -2024,8 +2421,8 @@
           }${
             rs.length > 1 && (more.length || less.length)
               ? ` <span class="muted">· ` +
-                `${int(more.length || less.length)} of ${int(rs.length)} tests significant` +
-                `${b.rows.length > 6 ? `, ${int(b.rows.length)} in all` : ''}</span>`
+                `${int(more.length || less.length)} of ${int(rs.length)} tests differ` +
+                `${b.rows.length > pickR.length ? `, ${int(b.rows.length)} in all` : ''}</span>`
               : ''
           }</p>`
         );
@@ -2111,11 +2508,15 @@
             : t.key === 'protein'
               ? new Set(rs.map((r) => r[0])).size
               : rs.length;
-        const lab =
-          (b.columns || []).filter((c) => c !== 'accession')[1] || (b.columns || []).find((c) => c !== 'accession');
-        const groups = b.group_by
+        // counted by the table's grouping, or by its chips when they are few (curated and predicted complexes, say)
+        const by =
+          b.group_by ||
+          (b.chips && colIdx(t, b.chips) >= 0 && new Set(rs.map((r) => r[colIdx(t, b.chips)])).size <= 4
+            ? b.chips
+            : '');
+        const groups = by
           ? (() => {
-              const j = colIdx(t, b.group_by),
+              const j = colIdx(t, by),
                 g = {};
               rs.forEach((r) => {
                 const k = r[j];
@@ -2125,7 +2526,7 @@
               const rolled = new Map(); // a rollup counts the sites of its groups together
               Object.entries(g).forEach(([k, v]) => {
                 const roll = (b.rollup || []).find((x) => (x.values || []).includes(k)),
-                  key = roll ? roll.label : ((colMeta(t, b.group_by).values || {})[k] ?? k);
+                  key = roll ? roll.label : ((colMeta(t, by).values || {})[k] ?? k);
                 const set = rolled.get(key) || new Set();
                 v.forEach((x) => set.add(x));
                 rolled.set(key, set);
@@ -2135,13 +2536,7 @@
           : '';
         return `<p class="ix-big"><b>${int(n)}</b> <span>${esc(
           sec.sub || (t.key === 'residue' ? W.marks : t.key === 'protein' ? 'proteins' : 'rows')
-        )}</span></p>${
-          groups
-            ? `<p class="small">${groups}</p>`
-            : rs.length && lab && String(cellText(t, rs[0], lab) ?? '').trim()
-              ? `<p class="tfoot">` + `Top: ${esc(cellText(t, rs[0], lab))}</p>`
-              : ''
-        }`;
+        )}</span></p>${groups ? `<p class="small">${groups}</p>` : ''}`;
       }
       case 'bars': {
         const gs = barsData(b);
@@ -2179,8 +2574,23 @@
           `<div class="ix-plot ` + `ix-mini"><svg viewBox="0 0 330 ${L.H}" aria-hidden="true">${L.body}</svg></div>`
         );
       }
+      case 'tiles':
+        return `<div class="trows ix-stiles">${b.tiles
+          .slice(0, 2)
+          .map((t) => {
+            const r = shown(rowsFor([t.row], 'mantel_haenszel')[0]);
+            return (
+              `<p class="ix-stile ${dirOf(r)}"><b>${r && effOf(r) != null ? esc(fx2(effOf(r))) : '–'}</b> <span>${esc(t.label)}</span>${
+                t.tag ? ` <span class="muted small">${esc(t.tag.toLowerCase())}</span>` : ''
+              }` + `<br><em class="muted small">q ${r ? esc(fq(r.q)) : '–'} · n ${r ? int(r.a + r.b) : '–'}</em></p>`
+            );
+          })
+          .join('')}</div>`;
       case 'example':
       case 'checker':
+      case 'pointer':
+      case 'contact_list':
+      case 'fold':
         return '';
       default:
         return b.text ? `<p class="small">${esc(b.text)}</p>` : '';
@@ -2193,29 +2603,39 @@
   // ---- the page's head: its question, the answer, highlights ---------------------------------------------------------
   function answerHtml(pg) {
     if (!pg.answer || !pg.answer.rows.length) return '';
+    if (selOn() && !ready()) return ''; // the selection's data are still coming: no counts to state yet
     if (selOn() && !testable())
-      return (
-        `<p class="ix-answer">Too few to compare with the other ${esc(W.residues)}: the tests ` +
-        `need at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}, and this selection ` +
-        `has ${int(K.sel.nProteins())} protein${K.sel.nProteins() === 1 ? '' : 's'} and ${int(K.sel.nMarks())} ${esc(marksWord(K.sel.nMarks()))}. The counts ` +
-        `below hold for any selection.</p>`
-      );
+      return `<p class="ix-answer">Too few to compare: the tests need at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}.</p>`;
     const rs = rowsFor(pg.answer.rows, 'mantel_haenszel').filter((x) => dirOf(shown(x)) === 'more');
     const phrases = [...new Set(rs.map((x) => x.ref.phrase || x.label))];
     const list =
       phrases.length <= 1 ? phrases.join('') : phrases.slice(0, -1).join(', ') + ' and ' + phrases[phrases.length - 1];
     const fill = (t) =>
       esc(t).replace('{list}', esc(list)).replace('{marks}', esc(theMarks())).replace('{residues}', esc(W.residues));
-    return `<p class="ix-answer">${
-      phrases.length
-        ? fill(pg.answer.more)
-        : fill(pg.answer.none || `{marks} are not ` + `enriched at these contacts.`).replace(/^./, (c) =>
-            c.toUpperCase()
-          )
-    }</p>`;
+    // the tiles state what is enriched; the head says only when nothing is
+    if (phrases.length) return '';
+    return `<p class="ix-answer">${fill(pg.answer.none || `{marks} are not ` + `enriched at these contacts.`).replace(
+      /^./,
+      (c) => c.toUpperCase()
+    )}</p>`;
+  }
+  // a page with no answer sentence and no highlight cards: one line on the evidence it has, and that nothing is tested
+  function evidenceLine(pg) {
+    if ((pg.answer && pg.answer.rows.length) || pg.highlights.length) return '';
+    const titles = pg.sections.map((x) => x.title.replace(/^./, (ch) => ch.toLowerCase()));
+    if (!titles.length) return '';
+    const tested = pg.sections.some((x) =>
+      x.blocks.some((b) => ['forest', 'lines', 'matrix', 'checker'].includes(b.kind))
+    );
+    const list =
+      titles.length < 2 ? titles.join('') : titles.slice(0, -1).join(', ') + ' and ' + titles[titles.length - 1];
+    return `<p class="ix-answer" title="${tested ? '' : 'No test is run on this page for this explorer.'}">Evidence: ${esc(list)}.</p>`;
   }
   function highlightValue(h) {
     if (h.rows && h.rows.length) {
+      // a selection under the test minimums ran no test: say so, not "n.s." with no q
+      if (selOn() && ready() && !testable())
+        return ['Not tested', 'ns', `needs ${K.sel.MIN.proteins}+ proteins and ${K.sel.MIN.marks}+ ${W.marks}`];
       const rs = rowsFor(h.rows, 'mantel_haenszel').map(shown).filter(Boolean),
         d = rs.filter((r) => dirOf(r) === 'more' || dirOf(r) === 'less');
       // a tile of several tests quotes the significant ones only, and says how many of them that is
@@ -2224,8 +2644,8 @@
         d.length ? range(d) : 'n.s.',
         d.length && d.every((r) => dirOf(r) === 'more') ? 'more' : d.length ? 'less' : 'ns',
         d.length
-          ? `${rs.length > 1 ? `${int(d.length)} of ${int(rs.length)} tests · ` : ''}q ${d.length > 1 ? '≤ ' : ''}${fq(qmax)}`
-          : `${rs.length > 1 ? `none of ${int(rs.length)} tests` : 'q'}${rs.length > 1 ? '' : ' ' + fq(rs[0]?.q)}`,
+          ? `${rs.length > 1 ? `${int(d.length)} of ${int(rs.length)} tests differ · ` : ''}q ${d.length > 1 && !fq(qmax).startsWith('<') ? '≤ ' : ''}${fq(qmax)}`
+          : `${rs.length > 1 ? `none of ${int(rs.length)} tests differ` : 'q'}${rs.length > 1 ? '' : ' ' + fq(rs[0]?.q)}`,
       ];
     }
     if (h.counts) {
@@ -2262,6 +2682,12 @@
       '<ellipse cx="10" cy="10" rx="8" ry="6" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="19" cy="10" rx="8" ry="6" fill="none" stroke="currentColor" stroke-width="2"/>',
     structure: '<path d="M2 14 l6 -8 l6 8 l6 -8 l6 8" fill="none" stroke="currentColor" stroke-width="2"/>',
   };
+  // the comparison the tile's tests share, in the words of their labels (each ends ", among <residues> <study> measured":
+  // "among <residues> measured"); '' when the rows do not all say it
+  function compareOf(h) {
+    const ms = rowsFor(h.rows || [], 'mantel_haenszel').map((x) => /, among (\w+) .*\bmeasured$/.exec(x.label || ''));
+    return ms.length && ms.every((m) => m && m[1] === ms[0][1]) ? `among ${ms[0][1]} measured` : '';
+  }
   function highlightsHtml(pg) {
     if (!pg.highlights.length) return '';
     return `<div class="ix-hls">${pg.highlights
@@ -2287,7 +2713,7 @@
           (h.glyph
             ? `<svg class="ix-glyph" viewBox="0 0 28 20" aria-hidden="true">${GLYPH[h.glyph] || ''}</svg>`
             : '') +
-          `<b>${esc(v)}</b><span>${esc(h.label)}</span>${note ? `<em class="ix-hq">${esc(note)}</em>` : ''}${h.tag ? `<small>${esc(h.tag)}</small>` : ''}</a>`
+          `<b>${esc(v)}</b><span>${esc(h.label)}${compareOf(h) ? `, ${esc(compareOf(h))}` : ''}</span>${note ? `<em class="ix-hq">${esc(note)}</em>` : ''}${h.tag ? `<small>${esc(h.tag)}</small>` : ''}</a>`
         );
       })
       .join('')}</div>`;
@@ -2304,10 +2730,149 @@
             `href="${esc(K.link('protein', prot(+pi)[0]))}">${esc(gene(+pi))} <span>${int(k)}</span></a>`
         )
         .join('');
+    if (K.sel.loading?.())
+      return `<p class="sel-lead">Your selection: ${esc(K.sel.describe())} · ${esc(K.sel.loadingText())}</p>`;
     return (
       `<p class="sel-lead">Your selection: ${esc(K.sel.describe())} · <b>${int(K.sel.nMarks())}</b> ${esc(marksWord(K.sel.nMarks()))} on <b>${int(K.sel.nProteins())}</b> protein${K.sel.nProteins() === 1 ? '' : 's'}</p><div ` +
       `class="ppills">${pills}</div>`
     );
+  }
+  // ---- a small selection: each selected site's own interaction evidence (the site card's block) ---------------------
+  const OWN_TB = {},
+    OWN_WAIT = new Set();
+  let ownRedraw = 0;
+  const ownOn = (pg) =>
+    pg.id === 'interactions' &&
+    selOn() &&
+    ready() &&
+    !!K.card?.evidenceBlock &&
+    !!K.few &&
+    K.few.active(K.sel.nMarks());
+  function ownNeed(acc) {
+    if (OWN_TB[acc] !== undefined || OWN_WAIT.has(acc)) return;
+    OWN_WAIT.add(acc);
+    K.card.load(acc).then((tb) => {
+      OWN_TB[acc] = tb || {};
+      OWN_WAIT.delete(acc);
+      if (!ownRedraw)
+        ownRedraw = requestAnimationFrame(() => {
+          ownRedraw = 0;
+          if (S.view === 'interactions') {
+            const y = scrollY;
+            K.render();
+            scrollTo(0, y);
+          }
+        });
+    });
+  }
+  const ownCtx = (m, tb) => {
+    const p = K.tables?.P?.[m[0]] || { acc: prot(m[0])[0], gene: gene(m[0]) },
+      label = siteName(p.acc, m[1]);
+    return {
+      p,
+      m,
+      tb,
+      acc: p.acc,
+      pos: m[1],
+      gene: p.gene || p.acc,
+      label,
+      seq: '',
+      window: m[4],
+      rec: { marks: [] },
+      shown: (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, q) : q),
+      attr: (n) => K.tables.attrStr(m, n),
+      attrHtml: (n, v) => K.sel.listHtml(n, [v], [], p.acc, true),
+      isListed: () => true,
+    };
+  };
+  // the first parts of a one-line summary, whole parts only
+  const lead = (t, max = 80) => {
+    if (t.length <= max) return t;
+    const k = t.lastIndexOf(' · ', max);
+    return (k > 0 ? t.slice(0, k) : t.slice(0, max)) + ' …';
+  };
+  const plain = (h) =>
+    h
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  // one site's sections, from the site card's own blocks, and the key facts that open them
+  function ownSite(m, tb) {
+    const c = ownCtx(m, tb),
+      K2 = K.card,
+      entries = K2.entries(c, 1e9),
+      tags = K2.tags(c),
+      cont = K2.sequences(c),
+      pep = K2.peptides(c),
+      nPep = K2.peptidesAt(c).reduce((a, k) => a + k.list.length, 0),
+      near = K2.around(c),
+      whole = K2.wholeProtein(c),
+      ids = new Set([...entries.matchAll(/data-entry3d="([^"]+)"/g)].map((x) => x[1])),
+      hidden = [...entries.matchAll(/class="muted" title="[^"]*">\+(\d+)</g)].reduce((a, x) => a + +x[1], 0),
+      nStruct = ids.size + hidden,
+      nTags = (tags.match(/class="tag t-/g) || []).length,
+      who = K2.summary(c.acc, c.pos, 'records', { tb, label: c.label }),
+      nWin = K2.windowsOf(c).length,
+      nNear = K2.aroundRows(c).length,
+      n = (k, w) => `${int(k)} ${w}${k === 1 ? '' : 's'}`;
+    const badge = K2.badge(c);
+    return {
+      key: `${m[0]}-${m[1]}`,
+      head: `${siteLink(m[0], m[1])} <span class="muted">${esc(prot(m[0])[2] || '')}</span>`,
+      facts: [
+        badge ? { text: badge } : null,
+        who ? { text: who } : null, // the site card's own line: who writes, erases and reads it, from its records
+        nTags ? { text: n(nTags, 'evidence type'), to: 'partners' } : null,
+        nStruct ? { text: n(nStruct, 'solved structure'), to: 'partners' } : null,
+        nWin ? { text: n(nWin, 'bound window'), to: 'contacts' } : null,
+        nPep ? { text: n(nPep, 'bound peptide'), to: 'peptides' } : null,
+        nNear ? { text: n(nNear, 'feature') + ' nearby', to: 'near' } : null,
+        whole ? { text: 'whole protein', to: 'protein' } : null,
+      ].filter(Boolean),
+      sections: [
+        {
+          id: 'partners',
+          title: 'Partners and structures',
+          sum: [nTags && n(nTags, 'evidence type'), nStruct && n(nStruct, 'structure')].filter(Boolean).join(', '),
+          body: tags + entries,
+        },
+        { id: 'contacts', title: 'RNA and DNA contacts', sum: n(nWin, 'bound window'), body: cont },
+        { id: 'peptides', title: 'RNA- and DNA-bound peptides', sum: n(nPep, 'peptide'), body: pep },
+        { id: 'near', title: 'Around the site', sum: lead(plain(near)), body: near },
+        {
+          id: 'protein',
+          title: 'Whole protein',
+          sum: lead(plain(whole.replace(/<span class="flabel">.*?<\/span>/, ''))),
+          body: whole,
+        },
+      ],
+    };
+  }
+  function ownHtml(pg) {
+    if (!ownOn(pg)) return '';
+    const sd = SD(),
+      all = [...(K.sel.compute().marks || [])]
+        .map((i) => sd.marks[i])
+        .filter(Boolean)
+        .sort((a, b) => a[0] - b[0] || a[1] - b[1]),
+      ms = all.slice(0, K.few.MAX),
+      sites = ms.map((m) => {
+        const acc = prot(m[0])[0];
+        ownNeed(acc);
+        return OWN_TB[acc]
+          ? ownSite(m, OWN_TB[acc])
+          : {
+              key: `${m[0]}-${m[1]}`,
+              head: siteLink(m[0], m[1]),
+              sections: [{ id: 'w', title: 'Loading', body: K.loading('Loading…') }],
+            };
+      });
+    return K.few.html({
+      title: `Your selected ${marksWord(all.length)}: interaction evidence`,
+      note: `Partners, solved structures and contacts of each ${W.mark}, as on its site card. The whole-protein line does not describe the ${W.mark}.`,
+      sites,
+      more: all.length - ms.length,
+    });
   }
   const keyLine = () =>
     `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>` +
@@ -2321,19 +2886,11 @@
     return (
       `<div class="page-head"><h2>${esc(pg.title)}</h2><span class="tools">${K.exp.pageMenu()}</span></div>` +
       selLine() +
+      ownHtml(pg) +
       answerHtml(pg) +
+      evidenceLine(pg) +
       highlightsHtml(pg) +
-      top
-        .map((s) =>
-          K.fold(
-            `ix-${esc(s.id)}`,
-            esc(s.title),
-            '',
-            s.blocks.map((b, bi) => blockCard(pg, s, b, bi)).join(''),
-            s.open === true
-          )
-        )
-        .join('') +
+      top.map((s) => K.fold(`ix-${esc(s.id)}`, esc(s.title), '', blocksHtml(pg, s), s.open === true)).join('') +
       (links.length
         ? `<p class="ix-links">${links
             .map((s) => `<a href="${esc(K.link(pg.id, s.id))}">${esc(s.title)} ›</a>`)
@@ -2367,6 +2924,7 @@
         next ? `<a href="${esc(K.link(pg.id, next.id))}">${esc(next.title)} · Next ›</a>` : ''
       }</span></div>` +
       selLine() +
+      ownHtml(pg) +
       sectionCard(pg, sec)
     );
   }
@@ -2473,8 +3031,9 @@
   }
   function view(pg, arg) {
     if (arg === 'overview' && pg.overview) return ovQuestion(pg);
-    const sec = arg && pg.sections.find((s) => s.id === arg);
-    return sec ? focus(pg, arg) : hub(pg);
+    const id = arg && K.foldId(arg), // a section that moved (website.pages[].aliases) opens where it is now
+      sec = id && pg.sections.find((s) => s.id === id);
+    return sec ? focus(pg, id) : hub(pg);
   }
 
   // ---- the Overview's tile -------------------------------------------------------------------------------------------
@@ -2517,8 +3076,9 @@
         })()
       : '';
     const fs = ready() && ov.findings ? findingsList(pg, 3) : '';
+    // a tile with no tests of its own (rows: []) points at the page, where its findings are drawn from the same rows
     return (
-      `<article class="tile ix-tile" data-ix-tile="${esc(K.link(pg.id, 'overview'))}" tabindex="0"><header>` +
+      `<article class="tile ix-tile" data-ix-tile="${esc(ov.rows.length ? K.link(pg.id, 'overview') : K.link(pg.id))}" tabindex="0"><header>` +
       `<h3>${esc(ov.title || pg.tab)}</h3><span class="chev" aria-hidden="true">›</span></header>${bar}${forest}${
         fs ? `<div class="ix-tile-findings">${fs}</div>` : ''
       }<p class="tfoot">` +
@@ -2526,12 +3086,19 @@
     );
   }
   (K.ovTiles ||= []).push(
-    ...PAGES.filter((pg) => pg.overview).map((pg) => ({ section: pg.overview.section, html: () => ovTile(pg) }))
+    ...PAGES.filter((pg) => pg.overview).map((pg) => ({ section: pg.overview.section, html: () => ovTile(pg) })),
+    // more of the page's sections as tiles of their own (website.pages[].overview.tiles): each the section's tile, as on the page
+    ...PAGES.flatMap((pg) =>
+      (pg.overview?.tiles?.sections || [])
+        .map((id) => pg.sections.find((s) => s.id === id))
+        .filter(Boolean)
+        .map((sec) => ({ section: pg.overview.tiles.section, html: () => sectionTile(pg, sec) }))
+    )
   );
 
   // ---- figures and tables for the downloads -------------------------------------------------------------------------
   function findBlock(key) {
-    const [pid, sid, bi] = key.split('.'),
+    const [pid, sid, bi, bj] = key.split('.'),
       pg = PAGES.find((p) => p.id === pid);
     if (!pg) return null;
     if (sid === 'overview')
@@ -2542,7 +3109,10 @@
         bi,
       };
     const sec = pg.sections.find((s) => s.id === sid);
-    return sec ? { pg, sec, b: sec.blocks[+bi], bi } : null;
+    if (!sec) return null;
+    return bj == null
+      ? { pg, sec, b: sec.blocks[+bi], bi }
+      : { pg, sec, b: sec.blocks[+bi]?.blocks?.[+bj], bi: `${bi}.${bj}` }; // a block inside a fold
   }
   function figureOf(x) {
     const { pg, sec, b, bi } = x,
@@ -2613,7 +3183,9 @@
                         ? pairsTsv(b)
                         : b.kind === 'histogram'
                           ? histTsv(b)
-                          : '';
+                          : b.kind === 'contact_list'
+                            ? contactTsv(b)
+                            : '';
     const src = b.table
       ? ` From ${
           D.inputs?.[(D.run.inputs && Object.keys(D.run.inputs).find((k) => k === b.table)) || '']
@@ -2664,12 +3236,23 @@
   );
 
   // ---- registration ------------------------------------------------------------------------------------------------
+  let landed = ''; // the section address last landed on (forgotten once another page is shown)
+  (K.afterRender ||= []).push(() => {
+    if (!PAGES.some((pg) => pg.id === S.view)) landed = '';
+  });
   PAGES.forEach((pg) => {
     K.views[pg.id] = {
       follows: true,
       render: (arg) => view(pg, arg),
-      title: (arg) => (arg && pg.sections.find((s) => s.id === arg)?.title) || pg.tab,
-      after: () => drawExample(),
+      title: (arg) => (arg && pg.sections.find((s) => s.id === K.foldId(arg))?.title) || pg.tab,
+      after: (arg) => {
+        drawExample();
+        // a section's address lands on its card, below the toolbar (once for an address, not at each redraw of it)
+        const sid = arg && K.foldId(arg),
+          at = sid && pg.sections.some((s) => s.id === sid) ? `${pg.id}/${sid}` : '';
+        if (at && at !== landed) K.landOn?.(() => document.getElementById(`ix-${sid}`));
+        landed = at;
+      },
     };
     K.tabs.push(() => [pg.id, pg.tab, selOn() ? 'selection' : null]);
     (K.tabIcons ||= {})[pg.id] =
@@ -2889,7 +3472,6 @@
     `{ position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
 .ix-mrow2 { display: grid; grid-template-columns: minmax(0, 1fr) 7rem auto; gap: 0.5rem; align-items: center; ` +
     `font-size: 0.84rem; }
-.ix-hold { white-space: nowrap; } .ix-hold.holds { color: var(--more); } .ix-hold.lost { color: var(--muted); }
 .ix-upset th.ix-vh, .ix-matrix th.ix-vh { height: 9rem; vertical-align: bottom; white-space: nowrap; padding: ` +
     `0.3rem 0.2rem; }
 .ix-vh span { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.74rem; ` +

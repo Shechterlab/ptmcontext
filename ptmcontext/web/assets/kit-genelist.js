@@ -55,6 +55,13 @@
   const LABELS = {};
   const setLabel = (aid, c) =>
     F.row_labels?.[aid]?.[c] || (LABELS[aid] ||= labelsOf(aid))[c] || K.sel.classLabel(aid, c);
+  // a set named like a set of another source (a condensate "P-body" and the cell map's P-bodies) carries its source: the one the
+  // question's title names in closing parentheses, "(CD-CODE)", unless the set's own name already holds it
+  const srcOf = (aid) => /\(([A-Za-z][\w-]*)\)\??$/.exec(A[aid]?.question || '')?.[1] || '';
+  const withSrc = (aid, label) => {
+    const src = srcOf(aid);
+    return src && !label.includes(src) ? `${label} (${src})` : label;
+  };
   const kindOf = (aid, ps) => short(aid) + (ps.of ? ' (genes)' : '');
   // the test: kit-stats.js listTest over the questions this site has data for
   function test(prots) {
@@ -76,6 +83,35 @@
   const order = (x, y) => x.p - y.p || y.k - x.k || x.label.localeCompare(y.label);
   const TEST =
     'one-sided hypergeometric test of the listed proteins within the marked proteins each source annotates (its background, per row), fold (k/n)/(M/N), Benjamini–Hochberg q over every set tested';
+
+  // ---- the sites of the list's proteins: the Overview's residue questions, asked of this list --------------------------------
+  // The same retest the Overview runs for a selection (K.sel.rows through K.selAnswer): the list's methylated residues
+  // against the other candidate residues of the same proteins. Not recomputed here.
+  const SITE_Q = ['disorder', 'motif', 'sticker_context_5_idr', 'idr_charge'];
+  function sitesBlock(L) {
+    const n = L.prots.length,
+      open = `<p class="actions"><a class="btn small" href="${esc(K.link('overview'))}">Open these ${int(n)} proteins in the Overview ›</a></p>`;
+    const head = `<h3>At the sites</h3>`;
+    if (!K.sel.active()) return '';
+    if (!K.sel.testable())
+      return (
+        head +
+        `<p class="muted">Too few to test: the ${esc(W.marks)} of the list are shown, not tested, below ` +
+        `${int(K.sel.MIN.proteins)} proteins or ${int(K.sel.MIN.marks)} ${esc(W.marks)}.</p>` +
+        open
+      );
+    const ans = SITE_Q.map((id) => K.selAnswer?.(id)).filter(Boolean);
+    return (
+      head +
+      `<p class="muted small">Against other ${esc(W.residues)} of these proteins.</p>` +
+      (ans.length
+        ? `<ul class="gl-sites">${ans
+            .map((x) => `<li><a href="${esc(K.link('overview', x.id))}">${esc(x.title)}</a>: ${x.line}</li>`)
+            .join('')}</ul>`
+        : '') +
+      open
+    );
+  }
 
   // ---- the page -----------------------------------------------------------------------------------------------------------
   let last = null;
@@ -124,9 +160,9 @@
             .join(', ')}.</p>`
         : '',
       L.notFound.length
-        ? `<p class="gl-note"><b>Not found</b> (no ${esc(W.mark)} in this dataset, or a name it ` +
-          `does not know), left out of the test: ${L.notFound.map((w) => esc(w) + typo(w)).join(', ')}.</p>`
+        ? `<p class="gl-note">${K.sel.leftOut(L.notFound.map((w) => `<b>${esc(w)}</b>` + typo(w)).join(', '))}</p>`
         : '',
+      K.sel.notesOf(L.q).length ? `<p class="gl-note">${K.sel.notesOf(L.q).map(esc).join(' ')}</p>` : '',
       L.terms.length
         ? `<p class="gl-note">Filters in the search (${L.terms
             .map(([k, v, bare]) => esc(bare ? k : k + ':' + v))
@@ -135,8 +171,8 @@
     ].join('');
     const nT = rows.length;
     const table =
-      `<div class="tbl-card"><table class="tbl gl-tbl"><caption class="vh">Sets shared by your list: ` +
-      `one-sided hypergeometric test within each source’s ${esc(W.marked)} proteins</caption><thead><tr>` +
+      `<div class="tbl-card"><table class="tbl gl-tbl"><caption class="vh">Sets shared by your list ` +
+      `(one-sided hypergeometric; background ${int(D.counts.proteins)} ${esc(W.marked)} proteins)</caption><thead><tr>` +
       (`<th scope="col">Set</th><th scope="col">Kind</th><th scope="col" class="num">In list</th><th scope="col" ` +
         `class="num">In set / background (${esc(W.marked)})</th><th scope="col" class="num">Fold</th>`) +
       (`<th scope="col" class="num">p (one-sided hypergeometric)</th><th scope="col" class="num">q ` +
@@ -144,7 +180,7 @@
       (shown
         .map(
           (r) =>
-            `<tr><td class="wrapok"><a href="${esc(K.link('overview', r.question))}">${esc(r.label)}</a></td>` +
+            `<tr><td class="wrapok"><a href="${esc(K.link('overview', r.question))}">${esc(withSrc(r.question, r.label))}</a></td>` +
             `<td class="wrapok">${esc(r.kind)}</td><td class="num">${int(r.k)} of ${int(r.n)}</td>` +
             (`<td class="num">${int(r.M)} / ${int(r.N)}</td><td class="num">${fx(r.fold)}</td><td class="num">${fq(r.p)}</td><td ` +
               `class="num">${fq(r.q)}</td></tr>`)
@@ -162,16 +198,14 @@
       `<p class="page-sub">${int(n)} ${esc(W.marked)} protein${n === 1 ? '' : 's'} from ${int(L.q.nWords)} name${L.q.nWords === 1 ? '' : 's'}.</p>` +
       (chips ? `<p class="gl-chips">${chips}</p>` : '') +
       notes +
+      (n ? sitesBlock(L) : '') +
       `<h3>What they share</h3>` +
-      (`<p class="gl-new" role="note"><b>A new test, not in the release statistics.</b> For each of the ${int(nT)} sets of the ${int(QS.length)} protein-set ` +
-        `questions: a one-sided hypergeometric test of your proteins within the ${esc(W.marked)} proteins that ` +
-        `the set’s source annotates (its background, shown per row; genes for a gene-based source), fold = ` +
-        `(k/n)/(M/N), and q is Benjamini–Hochberg over all ${int(nT)} sets, small sets included. Computed in ` +
-        `your browser. `) +
-      (`Your list was chosen, not drawn at random: p and q say how unusual this overlap would be for the same ` +
-        `number of ${esc(W.marked)} proteins taken at random; they say nothing about ${esc(W.marks)} themselves.</p>`) +
       (n
-        ? table + more + `<p class="actions"><button type="button" class="btn small" data-gl-tsv>TSV</button></p>`
+        ? `<p class="muted small gl-vs">Background: ${int(D.counts.proteins)} ${esc(W.marked)} proteins (per-set background in table).</p>` +
+          table +
+          more +
+          `<p class="muted small gl-foot">p and q describe the overlap only. <a href="${esc(K.link('method', 'list'))}">Method</a></p>` +
+          `<p class="actions"><button type="button" class="btn small" data-gl-tsv>${esc(K.exp.label('tsv'))}</button></p>`
         : `<p>None of ` + `the names is a ${esc(W.marked)} protein here, so there is nothing to test.</p>`)
     );
   }
@@ -222,7 +256,7 @@
     if (e.target.closest?.('[data-gl-tsv]') && last)
       K.download(`${D.site.id || 'site'}_gene_list_test.tsv`, tsv(), 'text/tab-separated-values');
   });
-  K.views.list = { render: view, title: () => 'Your gene list' };
+  K.views.list = { render: view, title: () => 'Your gene list', offNote: '' }; // the selection is the list itself
   K.geneList = { questions: QS, read: readList, test, tsv: () => (last ? tsv() : '') };
   // the search box: Enter on a list of two or more names (and nothing else) opens this page
   K.openList = () => {
@@ -257,6 +291,8 @@
         `Benjamini–Hochberg over every set tested, small sets included. `) +
       (`Names are read as the search reads them; a name matched by another name, or not found, is listed above the ` +
         `table. This is a new test, computed in your browser and not part of the release statistics. A list is ` +
-        `chosen, not drawn at random, so p and q describe the overlap, not ${esc(W.marks)}.</p></section>`)
+        `chosen, not drawn at random, so p and q describe the overlap, not ${esc(W.marks)}. “At the sites” asks the Overview’s ` +
+        `residue questions of the list: its ${esc(W.marks)} against the other ${esc(W.residues)} of the same proteins, within each ` +
+        `protein, with the same tests and the same minimum size as the Overview.</p></section>`)
   );
 });

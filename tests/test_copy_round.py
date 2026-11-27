@@ -65,7 +65,7 @@ def test_american_spelling_is_a_display_mapping():
 
 def test_shared_glossary_is_filtered_by_use():
     js = (ASSETS / 'kit-help.js').read_text()
-    for term in ('IDR', 'aa', 'Janus', 'polyampholyte'):
+    for term in ('IDR', 'aa', 'Moderately charged, mixed', 'Strongly charged, balanced'):
         assert f"['{term}'," in js
     # terms of one mark live in that site's file, not in the kit
     assert "['PRMT'," not in js and "['RGG'," not in js

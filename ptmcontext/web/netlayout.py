@@ -517,7 +517,11 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
         if not phone:
             lines = wrap2(term, 22)
             k_t = labels[c].get('k') if full else None
-            cnt = f'{k_t} of {size[c]} proteins' if k_t is not None else f'{size[c]} proteins'
+            cnt = (
+                f'{k_t} of {size[c]} carry this term'
+                if k_t is not None
+                else f'{size[c]} protein{"" if size[c] == 1 else "s"}'
+            )
             w = max(max(text_w(s, fs, 600) for s in lines) + 14, text_w(cnt, fs - 1.5) + 14)
             h = fs * 1.32 * len(lines) + (fs - 1.5) * 1.3
         else:  # a numbered badge: the list under the figure names the clusters
@@ -604,13 +608,20 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
         ]
         for bx, by, al in cands:
             box = (bx, by, bx + w, by + h)
-            if any(boxes_hit(box, q, 1) for q in placed):
+            if any(boxes_hit(box, q, 3) for q in placed):
                 continue
             if any(circle_box(ox_, oy_, or_ - 1.5, box) for j, (ox_, oy_, or_) in enumerate(obstacles) if j != i):
                 continue
             placed.append(box)
             glabels.append({'i': i, 't': t, 'box': list(box), 'align': al})
             break
+    # the caption of the small gray clusters goes under them: every link ends at a node, so nothing is drawn below the lowest
+    shelf_at = None
+    if other:
+        sw = 190 if phone else 250
+        sy = max(xy[i][1] + r[i] for i in other) + 6 * k + fs
+        shelf_at = (pos['x0'] + 4, sy)
+        placed.append((pos['x0'] + 4, sy - fs, pos['x0'] + 4 + sw * k, sy + 4))
     # the box: nodes, outlines and labels start at a margin
     allb = list(placed) + [(xy[i][0] - r[i], xy[i][1] - r[i], xy[i][0] + r[i], xy[i][1] + r[i]) for i in range(n)]
     for c in shown:
@@ -626,8 +637,8 @@ def finish(view, pos, variant='desktop', fs=None, gfs=None):
         return [round(x - mx0, 1), round(y - my0, 1)]
 
     shelf = None
-    if other:
-        shelf = T(pos['x0'] + 4, y_top)
+    if shelf_at:
+        shelf = T(*shelf_at)
     return {
         'variant': variant,
         'w': round(mx1 - mx0, 1),

@@ -140,6 +140,38 @@ def _split(frame: pd.DataFrame, fields: list[str], sep: str, where: str) -> pd.D
     return pd.DataFrame(out, columns=frame.columns)
 
 
+def with_names(table: pd.DataFrame, cfg: dict, paths: dict, read) -> pd.DataFrame:
+    """The marks table with one more column, cfg['as']: for each entry of its list column cfg['of'] (a change, say), the
+    entities another table lists against it, written 'id|name|group' and separated by cfg['sep'] (default '||'). The
+    other table (role cfg['role'], read per row of an entity: accession, position, a column cfg['change'] naming the
+    entry, and cfg['id']) is joined by protein and entry; cfg['lookup'] ({role, id, name, group}) gives each id its name
+    and group. At most cfg['max'] (default 6) entities are written for an entry, the rest left to the entry's count."""
+    sep, esep, cap = cfg.get('split') or '; ', cfg.get('sep') or '||', int(cfg.get('max') or 6)
+    lk = cfg.get('lookup') or {}
+    info: dict[str, tuple[str, str]] = {}
+    for p in paths[lk['role']][1]:
+        t = read(p)
+        for i, n, g in zip(t[lk['id']], t[lk['name']], t[lk['group']] if lk.get('group') else [''] * len(t)):
+            info[i] = (n, g)
+    at: dict[tuple[str, str], list[str]] = {}
+    acc_col, key_col = cfg.get('accession', 'canonical_UniProtAC'), cfg['change']
+    for p in paths[cfg['role']][1]:
+        t = read(p)
+        for a, c, i in zip(t[acc_col], t[key_col], t[cfg['id']]):
+            at.setdefault((a, c), []).append(i)
+
+    def one(acc: str, cell: str) -> str:
+        out = []
+        for c in str(cell).split(sep) if cell != '' else []:
+            ids = sorted(dict.fromkeys(at.get((acc, c), [])), key=lambda i: (info.get(i, (i, ''))[0].lower(), i))[:cap]
+            out.append(esep.join('|'.join([i, *info.get(i, (i, ''))]) for i in ids))
+        return sep.join(out)
+
+    acc_marks = cfg.get('marks_accession')
+    accs = table[acc_marks] if acc_marks else table['accession']
+    return table.assign(**{cfg['as']: [one(a, c) for a, c in zip(accs, table[cfg['of']])]})
+
+
 def read_items(f: dict, table: pd.DataFrame, row: dict, marks_cols: tuple[str, str] | None = None) -> pd.DataFrame:
     """The items one table gives a row: the map-row format's columns, from its column mapping."""
     cols = dict(f.get('columns') or {})
@@ -190,7 +222,7 @@ def read_items(f: dict, table: pd.DataFrame, row: dict, marks_cols: tuple[str, s
     out = out[out['start'].notna() & out['end'].notna()]
     out = out.astype({'start': int, 'end': int})
     mapped = [k for k in ('class', 'label', 'value', 'ref', 'sources') if cols.get(k)]
-    if mapped:  # a row of the table that says nothing here: no item
+    if mapped and not f.get('keep_empty'):  # a row of the table that says nothing here: no item
         out = out[(out[mapped].astype(str) != '').any(axis=1)]
     for keep in (f.get('classes'), row.get('classes')):  # the table's own classes, then the row's
         if keep:
@@ -230,7 +262,15 @@ def items(
     for row in input_rows(site):
         for f in sources_of(row):
             if f.get('marks'):
-                got = [read_items(f, marks_table, row, (marks['accession'], marks['position']))]
+                mt = marks_table
+                if f.get('names'):
+                    mt = with_names(
+                        marks_table,
+                        {**f['names'], 'split': f.get('split'), 'marks_accession': marks['accession']},
+                        paths,
+                        table,
+                    )
+                got = [read_items(f, mt, row, (marks['accession'], marks['position']))]
             else:
                 rule, files = paths[f['role']]
                 got, seen = [], set()
@@ -330,7 +370,7 @@ def mapping_problems(site: dict, files: dict[str, list[Path]], marks_path: Path 
     for r in input_rows(site):
         for f in sources_of(r):
             paths = [marks_path] if f.get('marks') else files.get(f.get('role'), [])
-            want = named_columns(f)
+            want = named_columns(f) - {(f.get('names') or {}).get('as')}  # a column the build adds
             if f.get('marks'):
                 want |= {site['marks']['accession'], site['marks']['position']} - {None}
             for p in paths:

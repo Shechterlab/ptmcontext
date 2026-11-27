@@ -16,7 +16,7 @@ Landing page: <https://shechterlab.github.io/ptmcontext/>
 | Human lysine modification sites (acetylation and other acylations, ubiquitination, SUMOylation) | <https://shechterlab.github.io/ptmcontext/lysine/> |
 | Human phosphosites | <https://shechterlab.github.io/ptmcontext/phospho/> |
 
-The methylarginine site rebuilds the statistics of release v1.6.0 (its methylarginine data equal v1.4.3) of the
+The methylarginine site rebuilds the statistics of release v1.7.0 (its methylarginine data equal v1.4.3) of the
 [Methylarginine Site Explorer](https://github.com/Shechterlab/PTM_Pipeline) without running its code.
 `tests/test_parity_v1_4_3.py` checks that 4,549 of the release's 4,659 rows are reproduced exactly.
 The methyllysine, phosphosite and lysine modification sites have no earlier release, so all their statistics are new. Each site also shows the
@@ -28,12 +28,14 @@ describes its inputs, tests and caveats.
 ## Data
 
 Every input is in a manifest with its source, release and MD5. Staging is the only step that uses the network.
-The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pipeline) pinned by commit: v1.6.0 for every
-site (the methylarginine data of v1.6.0 are byte for byte those of v1.4.3). The v1.6.0 context tables come from UniProt, iPTMnet, Berryhill et al. 2023, Ochoa et al. 2020, Hendriks et al. 2017 (SUMO-2) and Akimov et al. 2018
+The sites read releases of [PTM_Pipeline](https://github.com/Shechterlab/PTM_Pipeline) pinned by commit: v1.7.0 for every
+site (the methylarginine data of v1.7.0 are byte for byte those of v1.4.3). The v1.7.0 context tables come from UniProt, iPTMnet, Berryhill et al. 2023, Ochoa et al. 2020, Hendriks et al. 2017 (SUMO-2) and Akimov et al. 2018
 (ubiquitination).
 
-To cite the data, use the archive of this release, v1.6.0 (doi:10.5281/zenodo.24406688), and
+To cite the data, use the archive of this release, v1.7.0 (doi:10.5281/zenodo.24429699), and
 the archive of all versions (doi:10.5281/zenodo.22696798). Each site's Methods page (Cite) lists these with the studies and databases behind its sites.
+
+Two versions are always named, each with a label: **App: PTMcontext 0.6.0** (the website's software, one number for every explorer) and **Data: PTM_Pipeline v1.7.0** (the data release it reads). [VERSIONING.md](VERSIONING.md) has the rules.
 
 ## Build a site
 
@@ -81,10 +83,11 @@ Python package, SciPy and statsmodels on random tables.
 
 `.github/workflows/pages.yml` builds every site on each push to `develop` or `main` and publishes them with a landing page on
 GitHub Pages (Settings → Pages → Source: GitHub Actions). The export audits (text overlap, legends) of each site run
-in `.github/workflows/tests.yml`. By hand:
+in `.github/workflows/tests.yml`. Which sites those are, their audit settings and the data files they read come from each site
+file's `website.ci` (`python tools/ci_plan.py` prints them; see "Adding an explorer" in ADDING_DATA.md). By hand:
 
 ```bash
-ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml sites/lysine.yaml --out _site   # after ptmc run and ptmc web for each
+ptmc pages $(python tools/ci_plan.py | python -c "import json,sys; print(json.load(sys.stdin)['pages_sites'])") --out _site   # after ptmc run and ptmc web for each
 ```
 
 ## Read next
@@ -95,6 +98,7 @@ ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml 
 | [CONTRACTS.md](CONTRACTS.md) | the file formats |
 | [ADDING_DATA.md](ADDING_DATA.md) | adding a source, a mark or a site |
 | [docs/DATA_STANDARD.md](docs/DATA_STANDARD.md) | the standard a new source must meet, and what a contributor sends |
+| [VERSIONING.md](VERSIONING.md) | the two versions (App and Data), when each number changes, and how a release is made |
 | [AGENTS.md](AGENTS.md) | the rules for anyone changing this repository |
 
 ## License

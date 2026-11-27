@@ -16,7 +16,7 @@
   const CV = D.protein_view?.conservation;
   if (!CV || !(CV.species || []).length || !CV.ensembl) return;
   const RES = D.residues || [];
-  const KEPT = RES.length === 1 ? RES[0] : 'the same residue'; // "still R"
+  const KEPT = RES.length === 1 ? RES[0] : 'the same residue'; // "conserved as R"
   const REF = CV.reference || 'Reference',
     REF_WORD = REF.replace(/^([A-Z])([a-z])/, (m, a, b) => a.toLowerCase() + b); // the source organism's name, from the site file (website.protein.conservation.reference)
   const CATALOGUE = CV.species,
@@ -123,6 +123,24 @@
       .map((s) => 'target_species=' + s.id)
       .join('&') +
     '&content-type=application/json';
+  // every Ensembl gene UniProt names for the entry (a histone has one per copy: H4 has 14), in UniProt's order
+  const ensgsOf = (j) => [
+    ...new Set(
+      (j.uniProtKBCrossReferences || [])
+        .filter((x) => x.database === ENS.xref)
+        .map((x) => ((x.properties || []).find((pp) => pp.key === 'GeneId') || {}).value || '')
+        .filter(Boolean)
+        .map((g) => g.split('.')[0])
+    ),
+  ];
+  // the first gene, in turn, whose orthologs include the species listed (Compara can place one copy of a gene family
+  // apart from its siblings, so the first copy may have none in these species while the next has them all)
+  const firstOrthologs = (genes, k = 0) =>
+    k >= genes.length || k >= 16
+      ? Promise.resolve({ ensg: genes[0], orthos: [] })
+      : orthologs(genes[k]).then((orthos) =>
+          orthos.length ? { ensg: genes[k], orthos } : firstOrthologs(genes, k + 1)
+        );
   const ensgOf = (j) =>
     [
       ...new Set(
@@ -246,7 +264,7 @@
   const say = (ck) =>
     ck.me == null
       ? ''
-      : `still ${KEPT}: ${W.marks} ${PCT(ck.me)}%, other ${W.residues} ${
+      : `conserved as ${KEPT}: ${W.marks} ${PCT(ck.me)}%, other ${W.residues} ${
           ck.other == null ? '–' : PCT(ck.other) + '%'
         } of species` + (ck.other == null ? '' : ck.p == null ? ' (too few to test)' : ` (rank-sum p ${K.fq(ck.p)})`);
 
@@ -268,14 +286,16 @@
     paint(acc);
     live('uni:' + acc, () => timed(getJson(UNI(acc)), 25000))
       .then((j) => {
-        st.ensg = ensgOf(j);
+        const genes = ensgsOf(j);
+        st.ensg = genes[0] || '';
         if (!st.ensg) {
           st.phase = 'no_gene';
           return paint(acc);
         }
         st.phase = 'ortho';
         paint(acc);
-        return orthologs(st.ensg).then((orthos) => {
+        return firstOrthologs(genes).then(({ ensg, orthos }) => {
+          st.ensg = ensg;
           if (!orthos.length) {
             st.phase = 'none';
             return paint(acc);
@@ -288,6 +308,7 @@
             UI.acc = acc;
           }
           paint(acc);
+          K.redrawSiteCard?.(acc); // the site card's conservation line
           // website.protein.open: a fold the site starts open opens when its orthologs arrive, unless the reader has touched it
           const f = document.getElementById('p-cons');
           if (f && curAcc() === acc && K.foldStarts?.('p-cons') && !K.foldTouched?.('p-cons')) f.open = true;
@@ -299,6 +320,24 @@
         st.who = st.ensg ? 'Ensembl' : 'UniProt';
         paint(acc);
       });
+  }
+  // One site, from the orthologs the lookup holds ('' until they arrive, or where none aligns the site): "Same residue in
+  // mouse, chicken; not in fly". The same residue test as the table (the ortholog's aligned residue against the protein's).
+  const lower = (n) => String(n).replace(/^([A-Z])([a-z])/, (m, a, b) => a.toLowerCase() + b);
+  function siteLine(acc, pos) {
+    const st = ST[acc];
+    if (st?.phase !== 'ok' || !st.model || st.seq[pos - 1] == null) return '';
+    const same = [],
+      diff = [];
+    for (const r of st.model.rows) {
+      const a = r.at(pos);
+      if (a == null || a === '-') continue; // not mapped, or a gap: neither kept nor changed
+      (a === st.seq[pos - 1] ? same : diff).push(lower(r.name));
+    }
+    if (!same.length && !diff.length) return '';
+    return same.length
+      ? `Same residue in ${same.join(', ')}${diff.length ? `; not in ${diff.join(', ')}` : ''}`
+      : `Not the same residue in ${diff.join(', ')}`;
   }
   const sumOf = (st) => {
     if (!st || st.phase === 'idle' || st.phase === 'ens' || st.phase === 'ortho') return 'looking up the orthologs…';
@@ -368,11 +407,8 @@
       .map((s) => s.label);
     const test =
       ck.me != null && ck.other != null
-        ? `<p class="cv-test"><b>${esc(W.marks)} against the other ${esc(W.residues)} of ${g}:</b> on average a ${esc(W.mark)} is still ${esc(KEPT)} in <b>${PCT(ck.me)}%</b> of ` +
-          `the species that align it, ` +
-          `the other ${esc(W.residues)} in <b>${PCT(ck.other)}%</b> (${int(ck.n1)} and ${int(ck.n2)} ${esc(W.residues)}; ${
-            ck.p == null ? 'too few to test' : 'Wilcoxon rank-sum p = ' + K.fq(ck.p)
-          }).</p>`
+        ? `<p class="cv-test">Conserved as ${esc(KEPT)}: ${esc(W.marks)} <b>${PCT(ck.me)}%</b>, other ${esc(W.residues)} <b>${PCT(ck.other)}%</b> ` +
+          `(${int(ck.n1)} and ${int(ck.n2)}; ${ck.p == null ? 'too few to test' : 'rank-sum p ' + K.fq(ck.p)}).</p>`
         : '';
     const row = (name, sub, vals) =>
       `<tr><th>${esc(name)}${sub ? ` <span class="muted">${esc(sub)}</span>` : ''}</th>${vals}</tr>`;
@@ -415,8 +451,8 @@
       (absent.length ? ` <span class="muted small">No ortholog in Ensembl: ${esc(absent.join(', '))}.</span>` : '') +
       '</div>' +
       table +
-      (`<p class="small muted">Dark: still ${esc(KEPT)}; pale: a conservative change; gray: another residue; – a ` +
-        `gap; · not mapped (the Ensembl protein differs here). The percentage is the ortholog’s identity to ${g}. `) +
+      (`<p class="small muted">Dark: conserved as ${esc(KEPT)}; pale: a conservative change; gray: another residue; – a ` +
+        `gap; · not mapped. The percentage is the ortholog’s identity to ${g}. `) +
       (`<a href="https://www.ensembl.org/${esc(
         String(ENS.source).replace(/^./, (c) => c.toUpperCase())
       )}/Gene/Compara_Ortholog?g=${encodeURIComponent(st.ensg)}" target="_blank" ` +
@@ -509,7 +545,7 @@
         .join('\n') +
       '\n# orthologs: ' +
       rows.map((r) => `${r.name} ${r.prot} (${Math.round(r.pid)}% identity)`).join('; ') +
-      `\n# ${W.marks} still ${KEPT}: ${say(st.ck)}\n`
+      `\n# ${W.marks} conserved as ${KEPT}: ${say(st.ck)}\n`
     );
   };
 
@@ -531,10 +567,11 @@
             )
           : ''
       );
-    el.querySelector('.pfold-body').innerHTML = bodyHtml(acc);
+    const body = el.querySelector('.pfold-body');
+    if (!body.hasAttribute('data-later')) body.innerHTML = bodyHtml(acc); // else drawn when the section is opened
     chip(acc);
   }
-  // the chip among the protein's chips: loading, then "82% still R in orthologs" (it opens the card)
+  // the chip among the protein's chips: loading, then "82% conserved as R in orthologs" (it opens the card)
   function chip(acc) {
     const host = document.querySelector('.prot-chips');
     if (!host) return;
@@ -546,7 +583,7 @@
         ? 'orthologs…'
         : st.phase === 'ok' && ck.me != null
           ? RES.length === 1
-            ? `${PCT(ck.me)}% still ${KEPT} in orthologs`
+            ? `${PCT(ck.me)}% conserved as ${KEPT} in orthologs`
             : `${PCT(ck.me)}% conserved ` + `in orthologs`
           : '';
     if (!text) {
@@ -586,8 +623,8 @@
         `<span class="hl-glyph"><svg viewBox="0 0 64 22" aria-hidden="true"><path d="M4 11 h14 M18 11 ` +
         `l10 -6 h28 M18 11 l10 6 h28 M40 5 v12"/><circle class="g-f" cx="58" cy="5" r="3"/></svg></span><b ` +
         `class="hl-big">${PCT(ck.me)}%</b><span class="hl-lab">${esc(
-          RES.length === 1 ? `still ${KEPT} in orthologs` : 'conserved in orthologs'
-        )}${ck.other != null ? ` (others ${PCT(ck.other)}%)` : ''}</span><span ` +
+          RES.length === 1 ? `conserved as ${KEPT} in orthologs` : 'conserved in orthologs'
+        )}${ck.other != null ? ` (other ${esc(W.residues)} ${PCT(ck.other)}%)` : ''}</span><span ` +
         `class="hl-kind">Conservation</span>`;
       return;
     }
@@ -599,9 +636,9 @@
   (K.proteinFolds ||= []).push((p, rec, fold) => {
     if (!rec.seq) return '';
     ST[p.acc] ||= { phase: 'idle', seq: rec.seq, sites: (rec.marks || []).map((m) => m[0]) };
-    return fold('p-cons', 'Conservation across species', sumOf(ST[p.acc]), bodyHtml(p.acc), false);
+    return fold('p-cons', 'Conservation', sumOf(ST[p.acc]), bodyHtml(p.acc), false);
   });
-  (K.proteinFoldSections ||= []).push(['p-cons', 'Conservation across species', 1]);
+  (K.proteinFoldSections ||= []).push(['p-cons', 'Conservation', 1]);
   K.clicks.push(
     [
       '[data-cv-pos]',
@@ -879,53 +916,56 @@
         `drawn; the logo uses all of them</text>`;
     }
     y += 30;
-    head(`Compared with the other ${int(s.oth.length)} ${W.marks}`);
-    y += 18;
-    g += logoSvg(co, x0, y, cw, LH, tips, `The other ${W.marks}`);
-    y += LH + 14;
-    g += offsets(co, x0, y - 2, cw, flank);
-    y += 22;
-    g +=
-      `<text x="20" y="${y + 12}" font-size="12.5" font-weight="700" fill="${K.PAL.ink}">What the selection ` +
-      `gains and loses</text>`;
-    y += 22;
-    [
-      ['up', 'More often'],
-      ['dn', 'Less often'],
-    ].forEach(([key, label]) => {
-      g += `<text x="20" y="${y + 15}" font-size="10.5" fill="${K.PAL.ink}">${label} than the others</text>`;
-      sh.forEach((d, k) => {
-        const [a, v] = d[key],
-          x = x0 + k * cw,
-          big = Math.abs(v) >= 0.02;
-        g += big
-          ? cell(a, x, y + 1, cw, 15, '') +
-            (`<text x="${x + cw / 2}" y="${y + 27}" font-size="8" ` +
-              `text-anchor="middle" fill="${K.PAL.muted}">${fmtDelta(v)}</text>`)
-          : `<text x="${x + cw / 2}" y="${y + 13}" font-size="11" ` +
-            `text-anchor="middle" fill="${K.PAL.muted}">·</text>`;
-        if (tips && cs[k].n && co[k].n)
-          g +=
-            `<rect class="cv-col" x="${x}" y="${y}" width="${cw}" height="30" ` +
-            `fill="transparent"${tipAttr(
-              `<b>Position ${rel(cs[k].rel)}</b><br>${
-                big
-                  ? `${esc(a)} ${key === 'up' ? 'gains' : 'loses'} ${Math.abs(Math.round(100 * v))} points: ${PCT((cs[k].c[a] || 0) / cs[k].n)}% of your ` +
-                    `selection, ${PCT((co[k].c[a] || 0) / co[k].n)}% of the others`
-                  : 'no residue changes by 2 points or more'
-              }`
-            )}/>`;
+    // without other sites to compare with there is no comparison to draw: no heading, logo or gains and losses
+    if (s.oth.length) {
+      head(`Compared with the other ${int(s.oth.length)} ${W.marks}`);
+      y += 18;
+      g += logoSvg(co, x0, y, cw, LH, tips, `The other ${W.marks}`);
+      y += LH + 14;
+      g += offsets(co, x0, y - 2, cw, flank);
+      y += 22;
+      g +=
+        `<text x="20" y="${y + 12}" font-size="12.5" font-weight="700" fill="${K.PAL.ink}">What the selection ` +
+        `gains and loses</text>`;
+      y += 22;
+      [
+        ['up', 'More often'],
+        ['dn', 'Less often'],
+      ].forEach(([key, label]) => {
+        g += `<text x="20" y="${y + 15}" font-size="10.5" fill="${K.PAL.ink}">${label} than the others</text>`;
+        sh.forEach((d, k) => {
+          const [a, v] = d[key],
+            x = x0 + k * cw,
+            big = Math.abs(v) >= 0.02;
+          g += big
+            ? cell(a, x, y + 1, cw, 15, '') +
+              (`<text x="${x + cw / 2}" y="${y + 27}" font-size="8" ` +
+                `text-anchor="middle" fill="${K.PAL.muted}">${fmtDelta(v)}</text>`)
+            : `<text x="${x + cw / 2}" y="${y + 13}" font-size="11" ` +
+              `text-anchor="middle" fill="${K.PAL.muted}">·</text>`;
+          if (tips && cs[k].n && co[k].n)
+            g +=
+              `<rect class="cv-col" x="${x}" y="${y}" width="${cw}" height="30" ` +
+              `fill="transparent"${tipAttr(
+                `<b>Position ${rel(cs[k].rel)}</b><br>${
+                  big
+                    ? `${esc(a)} ${key === 'up' ? 'gains' : 'loses'} ${Math.abs(Math.round(100 * v))} points: ${PCT((cs[k].c[a] || 0) / cs[k].n)}% of your ` +
+                      `selection, ${PCT((co[k].c[a] || 0) / co[k].n)}% of the others`
+                    : 'no residue changes by 2 points or more'
+                }`
+              )}/>`;
+        });
+        y += 34;
       });
-      y += 34;
-    });
+    }
     const lg = legend(20, y + 6, Wd);
     g += lg.svg;
     y += lg.h + 6;
     return K.figureFrame({
       title: 'Selected sites aligned at the modified residue, with their logo',
       sub:
-        `${K.sel.describe()}: ${int(s.sel.length)} ${W.marks} with a sequence ` +
-        `window of ${int(2 * s.span + 1)}, against ${int(s.oth.length)} other ${W.marks}`,
+        `${K.sel.describe() ? K.sel.describe() + ': ' : ''}${int(s.sel.length)} ${W.marks} with a sequence ` +
+        `window of ${int(2 * s.span + 1)}${s.oth.length ? `, against ${int(s.oth.length)} other ${W.marks}` : ''}`,
       body: g,
       bodyH: y,
       W: Wd,
@@ -963,7 +1003,7 @@
       );
     return (
       K.preamble(
-        'Site alignment and sequence logo',
+        'Alignment and sequence logo',
         `the residue counts at each position of the sequence ` +
           `windows of the selection and of the other ${W.marks}; then the selection's aligned windows`
       ) +
@@ -1047,7 +1087,9 @@
       opt = (v, cur, t) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(t)}</option>`;
     return (
       `<div class="cv-card"><div class="cv-top">` +
-      K.expBar(['svg', 'png', 'tsv'], 'lgexp', 'the site alignment and logo', 'logo') +
+      K.expBar(['svg', 'png', 'tsv'], 'lgexp', 'the site alignment and logo', 'logo', {
+        names: { tsv: 'Sequence logo counts (TSV)' },
+      }) +
       '</div>' +
       `<div class="cv-ctl"><label>Flank <select id="lg-flank">${FLANKS.filter((f) => f <= s.span)
         .map((f) => opt(f, LUI.flank, '±' + f))
@@ -1121,7 +1163,7 @@
       K.exportFigure(
         btn.dataset.lgexp,
         () => logoFigure(false),
-        `${D.site.id}_site_alignment_logo_selection`,
+        `${D.site.id}_sequence_logo${btn.dataset.lgexp === 'tsv' ? '_counts' : ''}`,
         btn,
         logoTsv
       ),
@@ -1150,7 +1192,7 @@
             ? `. ${esc([...SIMILAR].join(', '))} is shown ` + `as a conservative change and not counted as kept`
             : ''
         }.</p>`) +
-      (`<p>The chip (“${RES.length === 1 ? 'still ' + esc(KEPT) : 'conserved'} in orthologs”) is the mean, over the ` +
+      (`<p>The chip (“${RES.length === 1 ? 'conserved as ' + esc(KEPT) : 'conserved'} in orthologs”) is the mean, over the ` +
         `protein’s ${esc(W.marks)}, of the share of species that align the ${esc(W.mark)} and keep it. It is ` +
         `compared with the protein’s other ${esc(W.residues)} (${esc(
           RES.join(', ') || 'the profile’s residues'
@@ -1197,7 +1239,7 @@
     return s;
   };
 
-  K.conserve = { modelOf, keepOf, columns, ensgOf, orthoUrl }; // for the tests
+  K.conserve = { modelOf, keepOf, columns, ensgOf, ensgsOf, orthoUrl, siteLine }; // for the tests
 
   // ---- style -----------------------------------------------------------------------------------------------------------------
   const css = document.createElement('style');

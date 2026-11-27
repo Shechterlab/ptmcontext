@@ -18,13 +18,13 @@ import yaml
 
 _COLOUR = re.compile(r'^#[0-9a-fA-F]{3,8}$')
 
-SEARCH_JS = (Path(__file__).parent / 'assets' / 'kit-names.js').read_text() + (
-    Path(__file__).parent / 'assets' / 'land-search.js'
-).read_text()
+SEARCH_JS = ''.join(
+    (Path(__file__).parent / 'assets' / f).read_text() for f in ('kit-names.js', 'land-match.js', 'land-search.js')
+)
 SEARCH_HTML = (
-    '<section class="land-search" role="search" aria-label="Find a protein">'
-    '<label for="land-q">Find a protein</label>'
-    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene, old gene symbol or UniProt accession" '
+    '<section class="land-search" role="search" aria-label="Find a protein, site or topic">'
+    '<label for="land-q">Find a protein, site or topic</label>'
+    '<input id="land-q" type="search" autocomplete="off" spellcheck="false" placeholder="Gene, site (H4 R3), gene list or topic (stress granule)" '
     'aria-controls="land-hits">'
     '<p class="say" id="land-say" role="status"></p><ul id="land-hits" aria-label="Proteins found"></ul></section>'
 )
@@ -44,7 +44,7 @@ THEME_JS = """(function () {
 })();"""
 
 CSS = """
-.land-search { max-width: 46rem; padding-block: 1rem 0; display: grid; gap: 0.4rem; }
+.land-search { max-width: 46rem; padding-block: 1.1rem 0; display: grid; gap: 0.4rem; }
 .land-search label { font-weight: 600; }
 .land-search input { font: inherit; padding: 0.55rem 0.8rem; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); width: 100%; box-sizing: border-box; }
 .land-search .say { margin: 0; color: var(--muted); font-size: 0.88rem; min-height: 1.2em; }
@@ -55,10 +55,23 @@ CSS = """
 .land-search .ld-spin { display: inline-block; vertical-align: -0.15em; width: 0.9rem; height: 0.9rem; margin-right: 0.3rem; border-radius: 50%; border: 2px solid var(--line-strong); border-top-color: var(--accent-l, currentColor); animation: land-spin 0.8s linear infinite; }
 @keyframes land-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .land-search .ld-spin { animation: none; border-top-color: var(--line-strong); background: radial-gradient(circle, currentColor 35%, transparent 40%); } }
+.land-examples { max-width: 46rem; list-style: none; margin: 0; padding: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.2rem 1.1rem; font-size: 0.95rem; }
+.land-examples .muted { color: var(--muted); }
+.land-examples a { display: inline-block; min-height: 24px; }
+.land-fine { max-width: 62rem; padding: 1rem 0 2rem; display: grid; gap: 0.25rem; font-size: 0.82rem; color: var(--muted); }
+.land-fine .land-license { padding: 0; font-size: inherit; color: inherit; }
+.land-fine .land-refs { padding: 0; font-size: inherit; color: inherit; }
 .land-intro { max-width: 46rem; padding-block: 1.5rem 0.25rem; display: grid; gap: 0.5rem; color: var(--ink-2); font-size: 1.02rem; line-height: 1.55; }
 .land-intro p { margin: 0; }
 .land-refs { max-width: 46rem; list-style: none; margin: 0; padding: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.2rem 1.4rem; font-size: 0.9rem; color: var(--ink-2); }
 .land-refs .muted { color: var(--muted); }
+.land-new { max-width: 46rem; margin: 0; padding: 0.5rem 0 2rem; color: var(--ink-2); font-size: 0.95rem; }
+.land-new > summary { cursor: pointer; font-weight: 600; color: var(--ink); padding: 0.3rem 0; }
+.land-new section { padding-top: 0.6rem; }
+.land-new h3 { margin: 0; font-size: 0.98rem; color: var(--ink); }
+.land-new ul { margin: 0.3rem 0 0; padding-left: 1.2rem; display: grid; gap: 0.25rem; }
+.land-new p { margin: 0.3rem 0 0; }
+.land-license { max-width: 46rem; margin: 0; padding: 0.5rem 0 1rem; font-size: 0.9rem; color: var(--ink-2); }
 .land-intro p:first-child { color: var(--ink); font-size: 1.15rem; }
 .sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(26rem, 100%), 1fr)); gap: 1.25rem; padding: 1rem 0 1.5rem; list-style: none; margin: 0; }
 .sites > li { display: flex; }
@@ -67,6 +80,19 @@ CSS = """
 .land-group > h2 { margin: 0.5rem 0 0; font-size: 1.15rem; }
 .land-group > p { margin: 0.2rem 0 0; color: var(--ink-2); }
 .sites.compact { grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr)); }
+/* four cards: two rows of two rather than three and one alone; on a wide screen all four in one row, so none is below the fold */
+.sites:has(> li:nth-child(4):last-child) { grid-template-columns: repeat(auto-fill, minmax(min(32rem, 100%), 1fr)); }
+.hero .lede { max-width: 60rem; }
+@media (max-width: 700px) { body:not(.slim) .hero .lede { display: grid; } .land-search { padding-top: 0.75rem; } }
+@media (min-width: 1180px) {
+  .sites:has(> li:nth-child(4):last-child) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.9rem; padding-block: 0.75rem 1rem; }
+  .sites:not(.compact) .land-card .band { min-height: 0; padding: 0.7rem 0.9rem; gap: 0.25rem; }
+  .sites:not(.compact) .land-card .art { height: 4.6rem; }
+  .sites:not(.compact) .land-card h2 { font-size: 1.15rem; }
+  .sites:not(.compact) .land-card .body { gap: 0.55rem; padding: 0.8rem 0.9rem 0.9rem; }
+  .sites:not(.compact) .land-card .hook { font-size: 0.95rem; }
+  .sites:not(.compact) .land-card .nums dd { font-size: 1.25rem; }
+}
 .sites.compact .art { display: none; }
 .sites.compact .band { min-height: 5.5rem; }
 .sites.compact .land-card h2 { font-size: 1.1rem; }
@@ -233,6 +259,23 @@ def ordered(cards: list[dict], cfg: dict) -> list[dict]:
     return sorted(cards, key=lambda c: rank.get(c['id'], len(rank)))
 
 
+def whats_new(wn) -> dict:
+    """The data releases' notes, from `whats_new` of the landing config or a site file: `{title, releases: [{title,
+    items, doi}]}`, newest first as written. An older config (one `title` and `items`) is one release."""
+    wn = {'releases': wn} if isinstance(wn, list) else wn or {}
+    rels = wn.get('releases')
+    if rels is None and wn.get('items'):
+        rels = [wn]
+    return {
+        'title': str(wn.get('title') or 'What’s new in each data release') if 'releases' in wn else 'What’s new',
+        'releases': [
+            {'title': str(r.get('title') or ''), 'items': [str(x) for x in r['items']], 'doi': str(r.get('doi') or '')}
+            for r in rels or []
+            if r.get('items')
+        ],
+    }
+
+
 def _ref(x: dict) -> str:
     """One line of the landing page's references: a label, then a DOI (a link to doi.org, with `all_versions` as a second
     DOI) or plain text (a link when it has a url)."""
@@ -240,13 +283,18 @@ def _ref(x: dict) -> str:
     parts = []
     if x.get('doi'):
         d = html.escape(str(x['doi']))
-        parts.append(f'<a href="https://doi.org/{d}">doi:{d}</a>')
+        parts.append(f'{"this version " if x.get("all_versions") else ""}<a href="https://doi.org/{d}">doi:{d}</a>')
     if x.get('all_versions'):
         a = html.escape(str(x['all_versions']))
         parts.append(f'all versions <a href="https://doi.org/{a}">doi:{a}</a>')
+    text = ''
     if x.get('text'):
         t = html.escape(str(x['text']))
-        parts.append(f'<a href="{html.escape(str(x["url"]))}">{t}</a>' if x.get('url') else t)
+        text = f'<a href="{html.escape(str(x["url"]))}">{t}</a>' if x.get('url') else t
+    if text and parts:  # "PTM_Pipeline v1.7.0 (this version doi:... · all versions doi:...)"
+        return f'<li><span class="muted">{label}:</span> {text} ({" · ".join(parts)})</li>'
+    if text:
+        parts.append(text)
     if not parts:
         return ''
     body = ' · '.join(parts) if x.get('doi') and x.get('all_versions') else ', '.join(parts)
@@ -266,6 +314,7 @@ def page(
     search: bool = False,
 ) -> str:
     title = html.escape(cfg.get('title') or 'ptmcontext')
+    page_title = html.escape(cfg.get('page_title') or cfg.get('title') or 'ptmcontext')
     desc = html.escape(cfg.get('description') or '')
     lede = html.escape(cfg.get('lede') or '')
     intro = ''.join(f'<p>{html.escape(p)}</p>' for p in cfg.get('intro') or [])
@@ -275,14 +324,33 @@ def page(
     )
     note = (cfg.get('footer') or {}).get('note')
     refs = ''.join(_ref(x) for x in cfg.get('references') or [])
-    wn = cfg.get('whats_new') or {}
+    ex = ''.join(
+        f'<li><a href="{html.escape(x["href"])}">{html.escape(x["label"])}</a></li>'
+        for x in cfg.get('examples') or []
+        if x.get('href') and x.get('label')
+    )
+    examples = (
+        f'<ul class="land-examples" aria-label="Examples"><li class="muted">Examples:</li>{ex}</ul>' if ex else ''
+    )
+    licence = f'<p class="land-license">{html.escape(cfg["license"])}</p>' if cfg.get('license') else ''
+    wn = whats_new(cfg.get('whats_new'))
+    # one entry per data release, newest first, inside one closed disclosure at the foot of the page
     new = (
-        f'<section class="land-new"><h2>{html.escape(wn.get("title") or "What’s new")}</h2><ul>'
-        + ''.join(f'<li>{html.escape(x)}</li>' for x in wn['items'])
-        + '</ul>'
-        + (f'<p class="muted">Data: {html.escape(wn["doi"])}</p>' if wn.get('doi') else '')
-        + '</section>'
-        if wn.get('items')
+        f'<details class="land-new"><summary>{html.escape(wn["title"])}</summary>'
+        + ''.join(
+            f'<section><h3>{html.escape(r["title"])}</h3><ul>'
+            + ''.join(f'<li>{html.escape(x)}</li>' for x in r['items'])
+            + '</ul>'
+            + (
+                f'<p class="muted">Data: <a href="https://doi.org/{html.escape(r["doi"])}">doi:{html.escape(r["doi"])}</a></p>'
+                if r['doi']
+                else ''
+            )
+            + '</section>'
+            for r in wn['releases']
+        )
+        + '</details>'
+        if wn['releases']
         else ''
     )
     groups = [g for g in cfg.get('groups') or [] if g.get('id')] or [{'id': None}]
@@ -307,7 +375,7 @@ def page(
         )
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{title}</title>
+<title>{page_title}</title>
 <meta name="description" content="{desc}">
 {f'<link rel="icon" href="{html.escape(favicon or logo)}">' if favicon or logo else ''}
 {'<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' if fonts_css.startswith('http') else ''}
@@ -320,16 +388,16 @@ def page(
 {f'<div class="lede"><p class="lede-what">{lede}</p></div>' if lede else ''}</div></header>
 <main class="wrap" id="sites">
 {f'<section class="land-intro" aria-label="About">{intro}</section>' if intro else ''}
-{f'<ul class="land-refs" aria-label="Paper and data">{refs}</ul>' if refs else ''}
-{new}
-{SEARCH_HTML if search else ''}
+{SEARCH_HTML if search else ''}{examples if search else ''}
 <h2 class="vh">The explorers</h2>
-{sections}</main>
+{sections}
+{new}
+{f'<div class="land-fine">{licence}<ul class="land-refs" aria-label="Paper and data">{refs}</ul></div>' if refs or licence else ''}</main>
 <footer class="wrap land-foot"><ul aria-label="Footer">{links}<li><a href="#privacy">Privacy</a></li></ul>
 <span class="theme-switch" role="group" aria-label="Color theme"><button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button></span>
 {f'<p>{html.escape(note)}</p>' if note else ''}
 <p>{built_with}</p>
-<p id="privacy">No cookies, no tracking: every test runs in your browser, and nothing you search or select leaves it.</p></footer><script>{THEME_JS}</script>{f'<script>{SEARCH_JS}</script>' if search else ''}</body></html>
+<p id="privacy">No cookies, no tracking. Statistics are precomputed in the data release, and tests on your selection run in your browser. A protein page asks UniProt, AlphaFold DB, PDBe and STRING for that protein’s public data, by accession only.</p></footer><script>{THEME_JS}</script>{f'<script>{SEARCH_JS}</script>' if search else ''}</body></html>
 """
 
 

@@ -55,6 +55,7 @@ def test_list_page_rows_equal_the_python_reference(tmp_path):
         "eval(fs.readFileSync(ASSETS + '/kit-genelist.js', 'utf8')); window.PTMC_MODULES.forEach",
     )
     body = """
+      K.exp = K.exp || { label: k => 'Data (' + k.toUpperCase() + ')' };
       K.fx = v => String(v); K.fq = v => String(v); K.g6 = v => String(v); K.preamble = (t, w) => '# ' + t + ': ' + w + NL;
       K.sel.data(); await K.sel.ready;
       const L = K.geneList.read('GP1 gp2 GP4 FOOBAR');
@@ -98,9 +99,13 @@ def test_list_page_rows_equal_the_python_reference(tmp_path):
         )
         assert j['p'] == pytest.approx(p['p'], rel=1e-9) and j['q'] == pytest.approx(p['q'], rel=1e-9)
     h = out['html']
-    assert 'A new test, not in the release statistics' in h and 'chosen, not drawn at random' in h
     assert (
-        'Not found' in h
+        'One-sided hypergeometric test of your proteins' not in h
+        and '>Method</a>' in h
+        and 'p and q describe the overlap only' in h
+    )
+    assert (
+        'Left out of the list' in h
         and 'FOOBAR' in h
         and 'p (one-sided hypergeometric)' in h
         and f'q (Benjamini–Hochberg, {len(ref)} sets)' in h

@@ -563,6 +563,30 @@ def mark_table_problems(site: dict, root: str | Path) -> list[str]:
     return out
 
 
+def mark_attribute_problems(site: dict, root: str | Path) -> list[str]:
+    """The columns marks.attributes names (a value's column, its link's, its pair_with), read from the headers of the marks
+    table and of each marks.add table (and the columns an add sets), so that a column the marks table lacks fails
+    `ptmc check` instead of the run. Nothing is read when the marks table is not under the root."""
+    attrs = (site.get('marks') or {}).get('attributes') or {}
+    entries = I.load(manifest_of(site))
+    path = Path(root) / entries.get(site['marks']['input'], {}).get('file', '')
+    if not attrs or not path.is_file():
+        return []
+    have = set(pd.read_csv(path, sep='\t', nrows=0).columns)
+    for add in site['marks'].get('add') or []:
+        extra = Path(root) / entries.get(add['input'], {}).get('file', '')
+        if not extra.is_file():
+            return []  # a table of the marks is missing: its columns are not known
+        have |= set(pd.read_csv(extra, sep='\t', nrows=0).columns) | set(add.get('set') or {})
+    out = []
+    for name, a in attrs.items():
+        named = [a['column'], (a.get('link') or {}).get('column'), a.get('pair_with')]
+        missing = [c for c in named if c and c not in have]
+        if missing:
+            out.append(f'marks.attributes.{name}: the marks table has no column {missing}')
+    return out
+
+
 def presence_only_problems(site: dict) -> list[str]:
     """A presence_only value that its attribute does not list, and a map row that draws a presence-only class as a
     stretch (a row table, rather than the marks flagged with it) or lists it as a class of a table."""
@@ -611,6 +635,41 @@ def export_problems(site: dict) -> list[str]:
             out.append(
                 f"website.export.presets {p['id']!r}: dpi is the PNG's resolution at a print size, so it needs mm"
             )
+    return out
+
+
+def propensity_problems(site: dict) -> list[str]:
+    """What website.propensity names that the site file does not have: an input that is not in the manifest, a source whose
+    `card` is no change_counts or variant_counts entry of the protein card, a repeated source id, a source on the waterfall
+    without the frequency and denominator tables."""
+    cfg = (site.get('website') or {}).get('propensity')
+    if not cfg:
+        return []
+    out = []
+    try:
+        have = set(I.load(manifest_of(site)))
+    except (OSError, ValueError, KeyError):
+        have = None  # no manifest to read here: the names are checked by ptmc inputs
+    names = [s['table'] for s in cfg.get('sources') or []]
+    names += [
+        cfg[k] for k in ('frequency', 'denominators', 'burden', 'site_sets', 'controls', 'validation') if cfg.get(k)
+    ]
+    names += list(cfg.get('changes') or []) + list(cfg.get('germline_changes') or [])
+    names += list(cfg.get('clinvar_changes') or []) + ([cfg['disease_families']] if cfg.get('disease_families') else [])
+    if have is not None:
+        out += [f'website.propensity: no manifest input {n!r}' for n in names if n not in have]
+    ids = [s['id'] for s in cfg.get('sources') or []]
+    if len(ids) != len(set(ids)):
+        out.append('website.propensity: a source id is used twice')
+    card = ((site.get('website') or {}).get('protein') or {}).get('card') or {}
+    cards = {x.get('id') for k in ('change_counts', 'variant_counts') for x in card.get(k) or []}
+    for s in cfg.get('sources') or []:
+        if s.get('card') and s['card'] not in cards:
+            out.append(
+                f'website.propensity, source {s["id"]!r}: card {s["card"]!r} is no change_counts or variant_counts entry'
+            )
+        if s.get('frequency_source') and not (cfg.get('frequency') and cfg.get('denominators')):
+            out.append(f'website.propensity, source {s["id"]!r}: frequency_source needs `frequency` and `denominators`')
     return out
 
 
@@ -672,6 +731,7 @@ def website_problems(site: dict) -> list[str]:
         + set_view_problems(site)
         + table_view_problems(site)
         + network_problems(site)
+        + propensity_problems(site)
         + export_problems(site)
     )
     if (web.get('cell') or {}).get('id'):
@@ -733,12 +793,19 @@ def website_problems(site: dict) -> list[str]:
             )
     set_ids = {a['id'] for a in site.get('analyses', []) if a.get('test') == 'protein_sets'}
     pattrs = {**((site.get('proteins') or {}).get('attributes') or {}), **CM.specs(site)[1]}
-    for lst in ((web.get('overview') or {}).get('starting_points') or {}).get('lists', []):
-        for n in [lst['by'], (lst.get('where') or {}).get('attribute')]:
-            if n and n != 'marks' and (n not in pattrs or pattrs[n].get('kind') != 'number'):
-                out.append(
-                    f'website.overview.starting_points: {lst["title"]!r} reads {n!r}, which is not a number attribute of proteins (proteins.attributes)'
-                )
+    for where, lists in (
+        (
+            'website.overview.starting_points',
+            ((web.get('overview') or {}).get('starting_points') or {}).get('lists', []),
+        ),
+        ('website.proteins.presets', (web.get('proteins') or {}).get('presets', [])),
+    ):
+        for lst in lists:
+            for n in [lst['by'], (lst.get('where') or {}).get('attribute')]:
+                if n and n not in ('marks', 'share') and (n not in pattrs or pattrs[n].get('kind') != 'number'):
+                    out.append(
+                        f'{where}: {lst["title"]!r} reads {n!r}, which is not a number attribute of proteins (proteins.attributes)'
+                    )
     for g in web.get('filters') or []:
         for n in g.get('proteins', []):
             if n != 'marks' and n not in pattrs:
@@ -861,6 +928,7 @@ def website_problems(site: dict) -> list[str]:
                 'proteins',
                 'sites',
                 'idrs',
+                'mutations',
             }:
                 out.append(f'website.legacy_links: {key!r} opens {to!r}, which is not a page of this site')
         elif not to.startswith('?') and to not in questions:
@@ -1141,6 +1209,8 @@ def card_problems(site: dict) -> list[str]:
         table('card.evidence.sequences', n, 'bound_windows')
     if ev.get('around'):
         table('card.evidence.around', ev['around']['table'], 'residue_evidence')
+    if ev.get('peptides'):
+        table('card.evidence.peptides', ev['peptides']['table'], 'site_evidence')
     if ev.get('protein'):
         if ev['protein'].get('table'):
             table('card.evidence.protein', ev['protein']['table'], 'protein_values')
@@ -1259,6 +1329,10 @@ def page_problems(site: dict) -> list[str]:
     an analysis, a class, an attribute, a table or one of its columns, a section; and tables mapped wrongly."""
     web = site.get('website') or {}
     ids = {x['id']: x for x in site.get('analyses', [])}
+    for ctl in site.get('controls') or []:  # a control's copy of a question (<question>_<control>), where not yet made
+        for a in ctl.get('analyses') or []:
+            if a in ids:
+                ids.setdefault(f'{a}_{ctl["id"]}', ids[a])
     attrs = {**((site.get('marks') or {}).get('attributes') or {}), **CM.specs(site)[0]}
     tables = web.get('tables') or {}
     words = _analysis_words(site)
@@ -1325,14 +1399,38 @@ def page_problems(site: dict) -> list[str]:
                 table(f'{here}.highlights', h['share']['table'], [h['share']['of'], h['share']['flag']])
             if h.get('section') and h['section'] not in secs:
                 out.append(f'{here}.highlights: no section {h["section"]!r}')
+        groups_fold = {'ixg-' + re.sub(r'\W+', '-', g['name']).lower() for g in pg['groups']}
+        for old_id, now in (pg.get('aliases') or {}).items():
+            if now not in secs and now not in groups_fold:
+                out.append(
+                    f'{here}.aliases: {old_id!r} opens {now!r}, which is neither a section nor a group of the page'
+                )
+        for tid in (ov.get('tiles') or {}).get('sections') or []:
+            if tid not in secs:
+                out.append(f'{here}.overview.tiles: no section {tid!r}')
         for g in pg['groups']:
             for sec in g['sections']:
                 w = f'{here}.{sec["id"]}'
-                for b in sec['blocks']:
+                blocks = list(sec['blocks'])
+                while blocks:
+                    b = blocks.pop(0)
                     k = b['kind']
-                    if k == 'forest':
+                    if k == 'fold':
+                        blocks[:0] = b.get('blocks') or []
+                    elif k == 'tiles':
+                        rowrefs(w, [t['row'] for t in b.get('tiles') or []])
+                    elif k == 'contact_list':
+                        m = b.get('modeled') or {}
+                        table(w, b.get('table', ''), ['kind', 'type', 'name', 'entry', 'distance'])
+                        if m:
+                            table(w, m['table'], [m['entry'], m['state'], *(m.get('where') or {})])
+                    elif k == 'pointer':
+                        pass
+                    elif k == 'forest':
                         rowrefs(w, b.get('rows'))
                     elif k in ('lines', 'sets'):
+                        if b.get('sentence') and b['sentence']['residue'] not in (b.get('series') or []):
+                            out.append(f'{w}: lines sentence.residue is not one of its series')
                         if b.get('analysis') not in ids:
                             out.append(
                                 f"{w}: {k} needs analysis: one of the site's questions (not {b.get('analysis')!r})"
@@ -1358,7 +1456,14 @@ def page_problems(site: dict) -> list[str]:
                         if not b.get('table'):
                             out.append(f'{w}: {k} needs table:')
                             continue
-                        cols = list(b.get('columns') or []) + [
+                        virtual = set(
+                            ((web.get('protein') or {}).get('card') or {})
+                            .get('evidence', {})
+                            .get('peptides', {})
+                            .get('columns')
+                            or {}
+                        )
+                        cols = [c for c in b.get('columns') or [] if not (b.get('peptides') and c in virtual)] + [
                             b.get(x)
                             for x in (
                                 'group_by',

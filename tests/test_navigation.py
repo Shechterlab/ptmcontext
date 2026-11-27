@@ -15,6 +15,7 @@ import jsonschema
 import pandas as pd
 import pytest
 import yaml
+from ci_sites import PUBLISHED
 from test_controls import _playwright
 from test_new_sources import _toy_site
 from test_search import _build, _page_data, _toy
@@ -30,22 +31,22 @@ WEBSITE = SCHEMA['properties']['website']['properties']
 
 
 def test_the_tabs_are_the_same_on_every_site_in_one_order():
-    order = (
-        "const TAB_ORDER = ['overview', 'proteins', 'sites', 'interactions', 'overlap', 'network', 'method', 'help'];"
-    )
+    order = "const TAB_ORDER = ['overview', 'proteins', 'sites', 'interactions', 'network', 'method', 'help'];"
     assert order in KIT
     # a tab the site lacks is greyed out with its reason on hover, never left out
     assert 'class="tab off" role="link" aria-disabled="true"' in KIT and 'K.tabEmpty(v)' in KIT
-    assert "overlap: 'Compare sets'" in KIT and "method: 'Methods'" in KIT
+    # the overlap of protein sets is no tab: it opens from a set's row, the selection bar and old addresses
+    assert "overlap: 'Compare sets'" not in KIT and "method: 'Methods'" in KIT
+    assert "K.tabs.push(() => ['overlap'" not in (ASSETS / 'kit-overlap.js').read_text()
     # the All tests tab is gone: its table is a part of Methods
     assert "['statistics'," not in KIT and "view === 'statistics'" in KIT  # only the old address is read
-    assert 'id="m-every"><h3>Every test</h3>' in KIT
+    assert 'id="m-every"><h3>All tests</h3>' in KIT
 
 
 def test_old_addresses_and_the_words_they_replace():
     assert "if (view === 'statistics') [view, rest] = ['method', ['every']];" in KIT
     assert "view === 'compare' && !rest[0]" in KIT and "['overlap', []]" in KIT
-    assert "btn('ov', 'Compare sets with…')" in KIT
+    assert "btn('ov', 'Overlap with another set ›')" in KIT
     for name in ('lysine', 'methylarginine', 'methyllysine', 'phospho', 'yeast_phospho'):
         text = (Path(__file__).resolve().parents[1] / 'sites' / f'{name}.yaml').read_text()
         assert 'All tests' not in text and 'Methods & data' not in text and 'label: Documentation' not in text
@@ -61,7 +62,7 @@ def test_the_schema_takes_the_empty_reason_key_findings_and_the_group_order():
     jsonschema.validate(
         {'key_findings': {'count': 3, 'min_fold': 1.2, 'pin': ['a/b'], 'exclude': [{'analysis': 'c'}]}}, ov
     )
-    jsonschema.validate({'key_findings': False, 'group_order': ['Where in the cell', 'Which proteins']}, ov)
+    jsonschema.validate({'key_findings': False, 'group_order': ['Localization', 'Classes and pathways']}, ov)
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate({'key_findings': {'count': 9}}, ov)
 
@@ -70,7 +71,7 @@ def test_every_site_lists_the_shared_groups_in_the_shared_order(tmp_path):
     cfg = json.loads(
         (Path(__file__).resolve().parents[1] / 'ptmcontext' / 'config' / 'overview_groups.json').read_text()
     )
-    for name in ('lysine', 'methylarginine', 'methyllysine', 'phospho'):
+    for name in PUBLISHED:
         site = S.load_site(Path(__file__).resolve().parents[1] / 'sites' / f'{name}.yaml')
         names = [x['name'] for x in site['website']['overview']['sections']]
         shared = [n for n in names if n in cfg['shared']]
@@ -186,13 +187,12 @@ def test_a_toy_site_in_a_browser(tmp_path):
     S.run(path, root=data, log=lambda *_: None)
     out = _serve_and_browse(tmp_path, web.build(path, log=lambda *_: None))
     assert out['errs'] == []
-    names = [t[0].split(' ')[0] if t[0].split(' ')[0] != 'Compare' else 'Compare sets' for t in out['tabs']]
+    names = [t[0].split(' ')[0] for t in out['tabs']]
     assert [n for n in names] == [
         'Overview',
         'Proteins',
         'Sites',
         'Interactions',
-        'Compare sets',
         'Network',
         'Methods',
         'Help',
@@ -209,10 +209,10 @@ def test_a_toy_site_in_a_browser(tmp_path):
     assert out['badgeTo']['open'] == 1
     # the old address of the table of tests: a section of Methods, filtered by the question
     assert out['stat']['hash'].startswith('#method/every') and 'a=motif' in out['stat']['hash']
-    assert 'Every test' in out['stat']['open'] and out['stat']['rows'] > 0 and out['stat']['dl'] == 1
+    assert 'All tests' in out['stat']['open'] and out['stat']['rows'] > 0 and out['stat']['dl'] == 1
     assert out['cite']['menu'] == ['Tests', 'Controls', 'Sources', 'Cite*', 'Download']
-    assert 'Licenses and privacy' in out['cite']['shown'] and 'Every test' not in out['cite']['shown']
-    assert 'How the tests work' in out['tests'] and 'Every test' in out['tests']
+    assert 'Licenses and privacy' in out['cite']['shown'] and 'All tests' not in out['cite']['shown']
+    assert 'How the tests work' in out['tests'] and 'All tests' in out['tests']
     assert out['privacy'] == 'Cite'
     assert out['compare'] == '#overview'  # the toy has no sets to compare: the address falls back to the Overview
     assert out['help'] == ['Searching', 'Filters', 'Reading a figure', 'Badges and terms']

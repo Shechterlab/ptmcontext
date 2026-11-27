@@ -2,8 +2,14 @@
 # the cards of sites not built yet. Each built site's card comes from its site file (website.name, band, accent, art,
 # landing.tagline / question / cta, stats) and its build (the numbers, the strongest result). CONTRACTS.md, "The landing page".
 title: PTMcontext
+url: https://shechterlab.github.io/ptmcontext/   # where the published folder lives: link previews need absolute image addresses
+page_title: "PTMcontext: human PTM site explorers"   # the <title> of the landing page (title is the brand line)
 lede: Analysis tools for protein post-translational modifications
 description: "PTMcontext: analysis tools for protein post-translational modifications."
+examples:                  # links under the search box: label and address (relative to the landing page)
+  - {label: H4 R3, href: "methylarginine/#protein/H4/P62805/R3"}
+  - {label: TP53 R213, href: "methylarginine/#protein/TP53/P04637/R213?open=sc-variants"}
+  - {label: "Compare: stress granule", href: "compare/#q=stress+granule"}
 logo: sites/art/ptmcontext_logo.svg
 favicon: sites/art/ptmcontext_favicon.svg   # the bolder mark for the tab icon
 logo_dots: cards           # the mark's dots: one per card, in its band color
@@ -16,21 +22,186 @@ order: [methylarginine, methyllysine, lysine, phospho]
 groups:                    # a card goes in the group its site file names (website.landing.group), else the first
   - {id: human, title: null}
   - {id: other, title: Other organisms, compact: true}
+compare:                   # the Compare marks page (compare/index.html): CONTRACTS.md, "Compare marks"
+  title: Compare marks
+  intro: "Published results per explorer, by class."
+  columns:                 # each explorer's short name here (default: its landing label)
+    methylarginine: Methylarginine
+    methyllysine: Methyllysine
+    lysine: Lysine modifications
+    phospho: Phosphosites
+  how:
+    - "Published results per explorer, by class."
+    - "The number is a fold: the share of the marks in the class over the share of the comparison group in it. For a protein set (PANTHER, condensates, cell locations, GO, disease) it is the fold enrichment of the marked proteins. The q is the explorer's Benjamini–Hochberg q."
+    - "Each question row names the test and the comparison group for each explorer. A different test is flagged."
+    - "Ringed: q is 0.05 or less and the fold is at least 1.1 or at most 1/1.1 (red ▲ more often, slate ▼ less often). Gray: q is 0.05 or less but the fold is within 1.1. Hollow: q is above 0.05, or the fold and the test point different ways. Circle size grows with the fold."
+    - "Not tested: no test, or too few."
+    - "Download gives the rows as a table (TSV) or a figure (SVG, PNG, PDF), with each explorer's data release and DOI."
+  groups:
+    - id: cell
+      title: Localization
+      questions:
+        - id: hpa
+          analysis: hpa_location
+          title: Human Protein Atlas locations
+          classes:
+            - {class: Nucleoplasm, label: "Nucleoplasm"}
+            - {class: Nucleoli, label: "Nucleoli"}
+            - {class: Nuclear speckles, label: "Nuclear speckles"}
+            - {class: Nuclear bodies, label: "Nuclear bodies"}
+            - {class: Cytosol, label: "Cytosol"}
+            - {class: Mitochondria, label: "Mitochondria"}
+            - {class: Endoplasmic reticulum, label: "Endoplasmic reticulum"}
+            - {class: Golgi apparatus, label: "Golgi apparatus"}
+            - {class: Plasma membrane, label: "Plasma membrane"}
+        - id: hcm
+          analysis: cell_hcm_compartment
+          title: Human Cell Map compartments
+          classes:
+            - {class: nucleolus, label: "Nucleolus"}
+            - {class: nuclear body, label: "Nuclear body"}
+            - {class: chromatin, label: "Chromatin"}
+            - {class: cytoplasmic ribonucleoprotein granule, label: "Cytoplasmic RNP granule"}
+            - {class: plasma membrane, label: "Plasma membrane"}
+    - id: disease
+      title: Disease classes (Disease Ontology)
+      questions:
+        - id: disease
+          analysis: disease_ontology
+          title: Disease classes (Disease Ontology)
+          classes:
+            - {class: "DOID:162", label: "cancer"}
+            - {class: "DOID:863", label: "nervous system disease"}
+            - {class: "DOID:150", label: "disease of mental health"}
+            - {class: "DOID:1287", label: "cardiovascular system disease"}
+            - {class: "DOID:2914", label: "immune system disease"}
+            - {class: "DOID:0014667", label: "disease of metabolism"}
+            - {class: "DOID:28", label: "endocrine system disease"}
+            - {class: "DOID:17", label: "musculoskeletal system disease"}
+            - {class: "DOID:74", label: "hematopoietic system disease"}
+            - {class: "DOID:77", label: "gastrointestinal system disease"}
+            - {class: "DOID:1579", label: "respiratory system disease"}
+            - {class: "DOID:18", label: "urinary system disease"}
+            - {class: "DOID:15", label: "reproductive system disease"}
+            - {class: "DOID:16", label: "integumentary system disease"}
+            - {class: "DOID:0050155", label: "sensory system disease"}
+    - id: panther
+      title: Protein classes (PANTHER)
+      questions:
+        - id: panther
+          analysis: panther_group
+          title: Protein classes (PANTHER), grouped
+          classes:
+            - {class: RNA processing and translation, label: "RNA processing and translation"}
+            - {class: "Transcription, chromatin and DNA", label: "Transcription, chromatin and DNA"}
+            - {class: Protein-modifying enzymes, label: "Protein-modifying enzymes"}
+            - {class: Metabolic enzymes, label: "Metabolic enzymes"}
+            - {class: "Scaffolds, adaptors and chaperones", label: "Scaffolds, adaptors and chaperones"}
+            - {class: "Cytoskeleton, adhesion and matrix", label: "Cytoskeleton, adhesion and matrix"}
+            - {class: "Signalling: receptors, ligands and modulators", label: "Signaling: receptors, ligands and modulators"}
+            - {class: Transport and membrane traffic, label: "Transport and membrane traffic"}
+            - {class: Immunity and defence, label: "Immunity and defense"}
+            - {class: Other PANTHER classes, label: "Other PANTHER classes"}
+    - id: condensates
+      title: Condensates, stress granules and P-bodies
+      questions:
+        - id: condensate
+          analysis: condensate_proteome
+          title: Biomolecular condensates
+          classes:
+            - {class: DEE660B4, label: "Stress granule (CD-CODE)"}
+            - {class: A40D6D0A, label: "DHX9 stress granule (CD-CODE)"}
+            - {class: 232F8A39, label: "P-body"}
+            - {class: 81D2A7B6, label: "Nuclear stress body"}
+        - id: organelle_ip
+          analysis: cell_organelle_ip
+          title: Organelle IP
+          classes:
+            - {class: stress_granule, label: "Stress granule (organelle IP)"}
+            - {class: p-body, label: "P-body"}
+            - {class: translation, label: "Translation machinery"}
+            - {class: proteasome, label: "Proteasome"}
+    - id: nucleic
+      title: RNA and DNA binding
+      questions:
+        - id: go_binding
+          analysis: go_binding
+          title: RNA and DNA binding (GO)
+          classes:
+            - {class: rna_binding, label: "RNA binding"}
+            - {class: rna_binding_experimental, label: "RNA binding, experimental evidence"}
+            - {class: dna_binding, label: "DNA binding"}
+            - {class: dna_binding_experimental, label: "DNA binding, experimental evidence"}
+        - id: crosslink
+          analysis: crosslink
+          title: RNA and DNA crosslinks in cells
+          classes:
+            - {class: rna_crosslink, label: "RNA-crosslinked residue"}
+            - {class: rbrid_residue, label: "RBR-ID positive residue"}
+            - {class: dna_crosslink, label: "DNA-crosslinked residue"}
+    - id: disorder
+      title: Disorder and structure
+      questions:
+        - id: disorder
+          analysis: disorder
+          title: Disorder context
+          classes:
+            - {class: disordered, label: "In a disordered region (IDR)"}
+            - {class: disorder_boundary, label: "Ordered, within 20 aa of an IDR"}
+            - {class: ordered, label: "Ordered, more than 20 aa from an IDR"}
+        - id: structure
+          analysis: structure_context
+          title: Structural context
+          classes:
+            - {class: domain_folded, label: "Folded domain"}
+            - {class: domain_disordered, label: "Disordered domain"}
+            - {class: ordered_outside_domain, label: "Ordered, outside domains"}
+            - {class: idr_near_domain, label: "Disordered, within 10 aa of a domain"}
+            - {class: idr_mid_domain, label: "Disordered, 11 to 30 aa from a domain"}
+            - {class: idr_far_from_domain, label: "Disordered, more than 30 aa from a domain"}
+        - id: interface
+          analysis: pdb_interface
+          title: Interfaces in PDB structures
+          classes:
+            - {class: protein, label: "Protein interface"}
+            - {class: any, label: "Any interface"}
+    - id: motifs
+      title: Sequence motifs
+      note: Motifs that two or more explorers test.
+      questions:
+        - id: motif
+          analysis: motif
+          title: Sequence motifs
+          classes:
+            - {class: ST_after, label: "Ser or Thr at +1"}
+            - {class: G_before, label: "Gly at −1"}
+            - {class: R_before, label: "Arg at −1"}
+            - {class: KK, label: "Another Lys at −1 or +1"}
+            - {class: basic_neighbours, label: "Lys or Arg within ±3"}
 footer:
   links:
     - {label: Cite, url: "https://github.com/Shechterlab/ptmcontext/blob/main/CITATION.cff"}
     - {label: "Source code ↗", url: "https://github.com/Shechterlab/ptmcontext"}
     - {label: Shechter Lab, url: "https://www.shechterlab.org/"}
+license: "Data: CC BY-NC-SA 4.0 (non-commercial, share-alike); PhosphoSitePlus records CC BY-NC-SA 3.0 where used. Each explorer’s Download page gives its terms. For commercial use, contact info@shechterlab.org."
 references:                # lines under the intro: a label with a DOI (and all versions), or text with an optional link
   - {label: Paper, doi: "10.1016/j.chembiol.2026.09.011"}
-  - {label: Data, doi: "10.5281/zenodo.24406688", all_versions: "10.5281/zenodo.22696798"}
-  - {label: Data, text: PTM_Pipeline v1.6.0, url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.6.0"}
-whats_new:             # a short list of what a release added: the landing page and each site's Help show it
-  title: What’s new in v1.6.0
-  items:
-    - "Cancer changes at every candidate residue (TCGA tumors, DepMap cell lines) and germline variants (ClinVar, gnomAD), with the gene named for proteins that several genes encode."
-    - "A count of the changes the cards do not show, with a download of those rows."
-    - "Histones and proteins without their initiator methionine are numbered as papers number them; one short name (H4) for a protein several genes encode, and search finds old gene names too."
-    - "The four human sites show the same protein-page cards, wherever the data have the residue."
-    - "Network clusters are named against the annotated human proteome, with a tooltip of each cluster's best terms and a Highlight a term box."
-  doi: "10.5281/zenodo.24406688"
+  - {label: Data, text: PTM_Pipeline v1.7.0, url: "https://github.com/Shechterlab/PTM_Pipeline/tree/v1.7.0", doi: "10.5281/zenodo.24429699", all_versions: "10.5281/zenodo.22696798"}
+whats_new:             # the data releases' notes, newest first: the landing page shows them under a closed disclosure at its foot, and each site's Help the same
+  title: What’s new in each data release
+  releases:                # one entry per PTM_Pipeline release: title (the data release, not the website), items, doi
+    - title: PTM_Pipeline v1.7.0 data release (2026-11-21)
+      items:
+        - "Mutation propensity: O/E and q for every tested residue in TCGA, DepMap and gnomAD, and a descriptive O/E for ClinVar."
+        - "Protein cards draw lollipops: stick height is the count, circle size is O/E, a ring marks q below 0.05. They replace the flag for counts at least 3 times the protein's average."
+        - "Mutations page: Ranked sites (TCGA, DepMap, gnomAD), Cancer: tumors (an oncoprint of the top TCGA sites), ClinVar pathogenic (variants by DisGeNET family), a chart of all sites, and a box for testing a pasted list of sites."
+        - "Hypermutated tumors (more than 10 coding calls per Mb) are left out by default. Choose With hypermutated to include them."
+      doi: "10.5281/zenodo.24429699"
+    - title: PTM_Pipeline v1.6.0 data release (2026-11-20)   # the notes the landing page carried for v1.6.0 (commit 773ecae)
+      items:
+        - "Cancer changes (TCGA tumors, DepMap cell lines) and germline variants (ClinVar, gnomAD) at every candidate residue, with the gene named where several genes encode a protein."
+        - "A count of changes the cards omit, with a download."
+        - "Histones and proteins without their initiator methionine are numbered as papers number them. A protein that several genes encode has one short name (H4); search also finds old gene names."
+        - "The four human sites show the same protein-page cards wherever the data cover the residue."
+        - "Network clusters are named against the annotated human proteome, with a tooltip of best terms and a Highlight a term box."
+      doi: "10.5281/zenodo.24406688"

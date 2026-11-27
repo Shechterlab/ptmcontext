@@ -126,11 +126,28 @@
     lightAll: false,
     cleanArg: false,
   };
+  // the page draws a section left empty while closed when it is opened (several at once, as Open all does, in one draw)
+  const LATER_CHARS = 20000;
+  let laterT = 0;
+  function drawOpened() {
+    clearTimeout(laterT);
+    if (!document.querySelector('#view details.pfold[open] > .pfold-body[data-later]')) return false;
+    document.querySelectorAll('#view details.pgroup, #view details.pfold').forEach((d) => {
+      if (d.id) PV.open[d.id] = d.open;
+    });
+    K.render();
+    return true;
+  }
+  K.drawOpenFolds = drawOpened; // the page's PDF and print open every section first (kit-export.js)
   document.addEventListener(
     'toggle',
     (e) => {
       const d = e.target;
       if (d.classList?.contains('pfold') || d.classList?.contains('pgroup')) PV.open[d.id] = d.open;
+      if (d.open && d.querySelector?.(':scope > .pfold-body[data-later]')) {
+        clearTimeout(laterT);
+        laterT = setTimeout(drawOpened, 0);
+      }
     },
     true
   );
@@ -278,6 +295,58 @@
   }
   // a mark's attributes, as the site file describes them: with links for a list that has them (each study to its paper)
   const attrVal = (m, name) => K.cols.markAttr(m, name) ?? '';
+  // the cell lines (or other entities) the site file names for each change of a list attribute at this site (a map row's
+  // from.names), each linked where the row gives a link; '' while the map's items load or when no row names any
+  function namedLines(m, name) {
+    const N = K.map?.namedChanges?.(PV.acc, SPECS[name].column),
+      hits = N && N.at.get(m[0]);
+    if (!hits?.length) return '';
+    const p = byAcc[PV.acc] || PV.lightP,
+      one = ([id, nm, group]) =>
+        N.link
+          ? `<a href="${esc(N.link.replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener" title="${esc(
+              [group, id].filter(Boolean).join(' · ')
+            )}">${esc(nm || id)}</a>`
+          : esc(nm || id);
+    return hits
+      .map(
+        (h) =>
+          `<div class="sc-names small"><span class="muted">${esc(N.title)}, </span><b>${esc(
+            h.change.replace(/^([A-Za-z])(\d+)(?=[A-Za-z*])/, (m0, a, d) => (+d === m[0] ? a + shownPos(p, m[0]) : m0))
+          )}</b>: ${h.list.map(one).join(', ')}${h.more ? ` and ${int(h.more)} more` : ''}</div>`
+      )
+      .join('');
+  }
+  (K.mapReady ||= []).push(() => {
+    if (
+      PV.rec &&
+      PV.site &&
+      Object.values(SPECS).some((s) => s.kind === 'list' && K.map?.namedChanges?.(PV.acc, s.column))
+    )
+      K.render();
+  });
+  // the card's "Other marks nearby", from the map's one count (K.map.nearMarks): the window is printed, and a kind with a score
+  // cut-off says what that cut-off leaves ("Phosphosite with score ≥ 0.5: none"); the run's own column is the fallback until the map's items load
+  const nearCard = (p, m) => {
+    const nm = K.map?.nearMarks?.(p.acc, [m[0]]);
+    if (!nm) return '';
+    const sg = (d) => `${d > 0 ? '+' : '−'}${Math.abs(d)}`,
+      at = (x) => K.prot.siteLabel(p.acc, x.pos),
+      hits = nm.kinds
+        .flatMap((k) => k.near.map((x) => ({ k, ...x })))
+        .sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist) || a.dist - b.dist);
+    const cuts = nm.kinds
+      .filter((k) => k.high != null)
+      .map((k) => {
+        const hs = k.near.filter((x) => k.score.has(x.pos));
+        return `${esc(k.label)} with ${esc(k.cut)}: ${hs.length ? hs.map((x) => esc(at(x))).join(', ') : 'none'}`;
+      });
+    return (
+      `<span class="muted">within ±${nm.win} aa:</span> ` +
+      (hits.length ? hits.map((x) => `${esc(x.k.label)} ${esc(at(x))} (${sg(x.dist)})`).join(', ') : 'none') +
+      (cuts.length ? `<br><span class="muted">${cuts.join(' · ')}</span>` : '')
+    );
+  };
   function attrHtml(m, name, full) {
     const s = SPECS[name],
       v = attrVal(m, name);
@@ -299,7 +368,7 @@
           `more" title="${esc(vals.map((x) => vLabel(name, x)).join('\n'))}">+${vals.length - 1}</span></span>`
         );
       }
-      return K.sel.listHtml(name, vals, ids, PV.acc, full);
+      return K.sel.listHtml(name, vals, ids, PV.acc, full) + (full ? namedLines(m, name) : '');
     }
     return esc(K.sel?.valueLabel ? K.sel.valueLabel(name, v) : v);
   }
@@ -325,120 +394,12 @@
     const k = Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category');
     return k ? pillOf(m, k) : '';
   };
-  // classes of one question that share a label (a test at several distances, in all, ordered and disordered parts) say what sets
-  // each apart: the words of its category that the others do not share ("ordered", "within 5 residues"), "all" for the shortest
-  function qualified(aid, cats) {
-    const byLab = {};
-    cats.forEach((c) => (byLab[label(aid, c)] ||= []).push(c));
-    const out = {};
-    Object.entries(byLab).forEach(([lab, cs]) => {
-      if (cs.length < 2) {
-        out[cs[0]] = lab;
-        return;
-      }
-      const ws = cs.map((c) => String(c).split('_'));
-      let k = 0;
-      while (ws.every((w) => w[k] != null && w[k] === ws[0][k])) k++;
-      cs.forEach((c, i) => {
-        const rest = ws[i].slice(k);
-        out[c] = `${lab} (${
-          rest.length ? (/^\d/.test(rest[0]) && k ? ws[i][k - 1] + ' ' : '') + rest.join(' ') : 'all'
-        })`;
-      });
-    });
-    return out;
-  }
-  function scoreRows(p, rec) {
-    return D.analyses
-      .filter((a) => rec.counts[a.id])
-      .map((a) => {
-        const rows = rec.counts[a.id].filter((r) => r[1] > 0).sort((x, y) => y[1] - x[1]),
-          [mt, ot] = rec.totals[a.id] || [0, 0],
-          ql = qualified(
-            a.id,
-            rec.counts[a.id].map((r) => r[0])
-          ),
-          label = (aid, c) => ql[c] || label0(aid, c);
-        // a class with its own totals (a question of several tests, each counting its own background) uses them
-        const ans =
-          rows
-            .slice(0, 2)
-            .map(
-              ([c, mi, oi, m2 = mt, o2 = ot]) =>
-                `${esc(label(a.id, c))}: <span class="an">${int(mi)} of ${int(m2)} (${pct(mi, m2)}) vs ${int(oi)} of ${int(o2)} other ${esc(W.residues)} (${pct(oi, o2)})</span>`
-            )
-            .join('; ') || '<span class="muted">none</span>';
-        const all = rec.counts[a.id].slice().sort((x, y) => y[1] - x[1] || y[2] - x[2]);
-        return (
-          `<details class="score small"><summary><span class="pm" aria-hidden="true"></span><span class="tq">` +
-          `<span class="t">${esc(a.title)}</span></span><span class="ans">${ans}</span><span class="go" ` +
-          `aria-hidden="true"></span></summary>` +
-          (`<div class="card-body"><div class="tbl-card"><table class="tbl"><thead><tr><th>Class</th><th class="num">On this protein</th>` +
-            `<th class="num">Other ${esc(W.residues)} on this protein</th></tr></thead><tbody>`) +
-          all
-            .map(
-              ([c, mi, oi, m2 = mt, o2 = ot]) =>
-                `<tr><td title="${esc(help(a.id, c))}">${esc(label(a.id, c))}</td><td ` +
-                `class="num">${int(mi)} of ${int(m2)} (${pct(mi, m2)})</td><td class="num">${int(oi)} of ${int(o2)} (${pct(oi, o2)})</td></tr>`
-            )
-            .join('') +
-          `</tbody></table></div></div></details>`
-        );
-      })
-      .join('');
-  }
-  // the one-line answer to "is that unusual?" for a single protein: what these counts can and cannot say, and where the dataset-wide answer is
-  function scoreVerdict(p, rec) {
-    const qs = D.analyses.filter((a) => rec.counts[a.id] && a.kind !== 'protein_sets'),
-      n = rec.marks.length,
-      others = Math.max(0, (rec.totals[qs[0]?.id] || [0, 0])[1]);
-    return (
-      `<p class="verdict"><b>Unusual?</b> One protein cannot say: its ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} are not ` +
-      `independent and only ${int(others)} other ${esc(W.residues)} are left to compare with, so no test is made ` +
-      `here. ${baseText() ? `Dataset-wide, the largest difference is ${esc(baseText())}. ` : ''}` +
-      (`These counts describe ${esc(p.gene || p.acc)}. Whether a class is unusual for ${esc(W.marks)} is tested ` +
-        `across the whole dataset, one question at a time: ${qs
-          .slice(0, 8)
-          .map((a) => `<a href="${esc(K.link('overview', a.id))}">${esc(a.title)}</a>`)
-          .join(', ')}${qs.length > 8 ? ', …' : ''}.</p>`)
-    );
-  }
-  // the dataset-wide base rate beside the verdict: the most over-represented class of the site's residue questions (q within
-  // the cut-off), the figure a single protein is read against. A control of another question (control_of) is not the main
-  // result, and the measure is the fold the Overview's tiles and the question's page show
+  // what a single protein's counts cannot say, in one sentence that points to the dataset-wide tests (one protein's marks
+  // are not independent, so the page makes no test of them)
   const shownOf = (r) => (K.valOf ? K.valOf(r) : r.eff);
-  function baseRate() {
-    const ids = new Set(D.analyses.filter((a) => a.kind !== 'protein_sets' && !a.control_of).map((a) => a.id)),
-      cut = K.PADJ ?? 0.05;
-    let best = null;
-    // the within-protein test the Overview and the tiles read, else the pooled one
-    for (const m of ['mantel_haenszel', 'fisher'])
-      if (!best)
-        D.rows.forEach((r) => {
-          if (
-            ids.has(r.analysis) &&
-            r.method === m &&
-            r.dir === 'more' &&
-            r.q != null &&
-            r.q <= cut &&
-            r.eff > 1 &&
-            r.eff < 1e299 &&
-            r.category !== '' &&
-            !/^(no |not |unknown|unassigned|other\b|none\b)/i.test(label(r.analysis, r.category)) &&
-            (!best || shownOf(r) > shownOf(best))
-          )
-            best = r;
-        });
-    return best;
-  }
-  const baseText = () => {
-    const b = baseRate();
-    return b
-      ? `${K.fxn(shownOf(b))}× in ${label(b.analysis, b.category)} (fold; ${
-          b.method === 'fisher' ? 'pooled' : 'within-protein'
-        } OR ${K.fxn(b.eff)})`
-      : '';
-  };
+  const untestedNote = () =>
+    `<p class="muted small p-untested">Whether a class is unusual for ${esc(W.marks)} is tested across the whole dataset, ` +
+    `not for one protein: <a href="${esc(K.link('overview'))}">see the questions on the Overview</a>.</p>`;
   const winHtml = (w) => {
     const c = Math.floor(w.length / 2);
     return `<span class="win">${esc(w.slice(0, c))}<b>${esc(w[c])}</b>${esc(w.slice(c + 1))}</span>`;
@@ -492,6 +453,14 @@
   const siteOf = (p, pos) => `${resAt(p, pos) || ''}${shownPos(p, pos)}`;
   // for other modules (the map, the 3D viewer): a position as this site shows it, and a site's name
   K.prot = {
+    // a protein's gene where the release lists it, else ''; and whether it has a page
+    gene: (acc) => byAcc[acc]?.gene || '',
+    isListed: (acc) => !!byAcc[acc],
+    // the listed protein a gene symbol (current, previous or alternative) names, else ''; never a free-text alias
+    byName: (name) => P_SYM[String(name || '').toUpperCase()] || '',
+    summaryAt,
+    loadUni,
+    uniLoaded: (acc) => !!UNI[acc]?.done,
     shownPos: (acc, pos) => shownPos(byAcc[acc] || (PV.acc === acc ? PV.lightP : null), pos),
     siteLabel: (acc, pos) => siteOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null) || { acc }, pos),
     numbering: (acc) => numOf(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
@@ -501,16 +470,32 @@
     first: (acc) => 1 + dropped(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
     length: (acc, n) => n - dropped(byAcc[acc] || (PV.acc === acc ? PV.lightP : null)),
     tables: (acc) => (PV.acc === acc ? PV.tb || null : null),
+    // the mean AlphaMissense score of a site's substitutions: undefined until AlphaFold DB's file for the open protein is in (or
+    // when it has none), else {sum, n} (read live for the open protein only)
+    // AlphaFold's confidence at a site, as the site card shows it (read live for the open protein; null until the file is in)
+    plddt: (acc, pos) => (PV.acc === acc ? plddtAt(byAcc[acc] || PV.lightP || { len: -1 }, pos) : null),
+    am: (acc, pos) => (PV.acc === acc ? PV.af?.am?.get?.(pos) : undefined),
+    amReady: (acc) => PV.acc === acc && !!PV.af?.am,
+    // a mark's state as its colored pill and as text (the site's first colored category attribute); '' without one
+    statePill: (m) => statePill(m),
+    stateLabel: () => {
+      const k = Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category');
+      return k ? SPECS[k].label : '';
+    },
+    stateText: (m) => {
+      const k = Object.keys(SPECS).find((n) => SPECS[n].colour && SPECS[n].kind === 'category');
+      return k ? String(K.sel?.valueLabel ? K.sel.valueLabel(k, attrVal(m, k)) : attrVal(m, k)) : '';
+    },
   };
 
   // ---- the site card: one mark, everything the site knows about it, from its attributes and tables ----------------
   const CC = D.protein_view?.card || {},
     TC = D.protein_view?.table || null;
-  const cardCtx = (p, rec, m) => ({
+  const cardCtx = (p, rec, m, tb = PV.tb, attr = (n) => attrVal(m, n)) => ({
     p,
     rec,
     m,
-    tb: PV.tb || {},
+    tb: tb || {},
     acc: p.acc,
     pos: m[0],
     gene: p.gene || p.acc,
@@ -518,7 +503,7 @@
     seq: rec.seq || '',
     window: m[1],
     shown: (q) => shownPos(p, q),
-    attr: (n) => attrVal(m, n),
+    attr,
     attrHtml: (n, v) => K.sel.listHtml(n, [v], [], p.acc, true),
     isListed: (a) => !!byAcc[a],
   });
@@ -547,7 +532,7 @@
     states: 'State by source',
     calls: 'Perturbations',
     changes: 'Changes',
-    germline: 'Germline variants',
+    germline: 'Inherited variants (ClinVar, gnomAD)',
     reported: 'Reported by',
     ...(CC.labels || {}),
   };
@@ -595,40 +580,167 @@
       (`<span class="tools">${
         typeof K.show3d === 'function' ? '<button type="button" class="btn small" data-site-3d>Show in 3D</button>' : ''
       }<button type="button" ` +
-        `class="btn small" data-site-close aria-label="Close">×</button></span></div>`) +
+        `class="btn small" data-site-close aria-label="Clear selection" title="Clear selection">×</button></span></div>`) +
       (`<p class="note small">Shown for reference only: not one of the ${int(D.counts.marks)} ${esc(W.marks)} counted here, ` +
         `and in no count, chart or test.</p><dl class="sc-kv">${rows}</dl></section>`)
     );
   }
   const shownAt = (rec, pos) => (rec.shown || []).find((x) => x[0] === pos);
-  // opening an address with a site lands on the card's header (under the sticky bar); the page above it settles for a few seconds
-  // (UniProt's text, the map), so the landing is repeated until the reader scrolls
-  let moved = false;
-  ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach((ev) =>
+  // opening an address with a site lands on the card's header (under the sticky bar); the page above it settles for several
+  // seconds (UniProt's text, AlphaFold, Ensembl, RCSB), so the target is kept pinned until the reader acts
+  let moved = false,
+    scrolled = scrollY > 0; // the reader has scrolled the page itself since the last click, key or address change (or before
+  // the kit loaded): a landing that starts later (the card is drawn only when its data arrives) must not take the page back
+  let at = location.hash.split('?')[0];
+  const SCROLL_KEYS = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '];
+  ['wheel', 'touchstart', 'keydown', 'mousedown', 'pointerdown', 'click'].forEach((ev) =>
     addEventListener(
       ev,
-      () => {
+      (e) => {
         moved = true;
+        scrolled = ev === 'wheel' || ev === 'touchstart' || (ev === 'keydown' && SCROLL_KEYS.includes(e.key));
+        at = location.hash.split('?')[0];
       },
-      { passive: true }
+      { passive: true, capture: true }
     )
   );
-  function landOnCard() {
+  ['hashchange', 'popstate'].forEach((ev) =>
+    addEventListener(ev, () => {
+      // another page (a section or option changing the address on the same page does not count)
+      if (location.hash.split('?')[0] !== at) scrolled = false;
+    })
+  );
+  // a target (found by `find`, as the page is drawn again) scrolled to just below the sticky toolbar and kept there: on every
+  // size change above it, and on any scroll that moves it, its measured top is put back (no browser anchoring needed). Held
+  // until the reader scrolls, clicks or presses a key, `keep()` fails, 15 s pass, or the page's own fetches (K.inflight, from
+  // kit-openlink.js) have all settled and the page has stopped growing for 4 s; the one landing every in-page address uses (K.landOn)
+  let landing = 0; // the landing in progress; a new one replaces it
+  function landOn(find, keep = () => true) {
+    if (scrolled) return;
     moved = false;
-    const go = () => {
-      const t = document.getElementById('site-card');
-      if (!t) return;
-      const bar = document.querySelector('.toolbar, .app-bar, header.top');
-      const h = bar ? bar.getBoundingClientRect().bottom : 0;
-      scrollTo(0, Math.max(0, t.getBoundingClientRect().top + scrollY - Math.max(0, h) - 8));
+    const id = ++landing,
+      t0 = Date.now();
+    let quiet = 0,
+      lastH = 0,
+      ro = null,
+      poll = 0;
+    const live = () => id === landing && !moved && keep() && Date.now() - t0 < 15000;
+    // the browser's own scroll anchoring moves the page when a section above is redrawn, then the pin moves it back: off
+    // while the pin holds, so the page does not jump in between
+    const root = document.documentElement;
+    root.style.overflowAnchor = 'none';
+    let follow = false, // the reader has taken over: the pin is gone, but the page may still grow above the view
+      ref = null,
+      refTop = 0;
+    const mine = () => id === landing;
+    const pick = () => {
+      const e = document.elementFromPoint(innerWidth / 2, innerHeight * 0.4);
+      ref = e && e !== root && e !== document.body ? e : null;
+      refTop = ref ? ref.getBoundingClientRect().top : 0;
     };
+    // after the release the element the reader looks at is kept where it is when content above it changes height; a reader's
+    // own scroll (which fires a scroll event before the size observer runs) takes a new reference
+    const hold = () => {
+      if (!mine()) return;
+      if (ref?.isConnected) {
+        const d = ref.getBoundingClientRect().top - refTop;
+        if (Math.abs(d) > 1) scrollBy(0, d);
+      }
+      pick();
+    };
+    const end = () => {
+      if (mine()) root.style.overflowAnchor = '';
+      ro?.disconnect();
+      clearInterval(poll);
+      removeEventListener('scroll', go);
+      removeEventListener('scroll', pick);
+    };
+    const stop = () => {
+      // release the pin: no re-land, timer or observer of it survives; keep only the reference hold until the page settles
+      ro?.disconnect();
+      clearInterval(poll);
+      removeEventListener('scroll', go);
+      if (!mine() || follow) return;
+      follow = true;
+      pick();
+      addEventListener('scroll', pick, { passive: true });
+      if (window.ResizeObserver) {
+        ro = new ResizeObserver(hold);
+        ro.observe(root);
+        ro.observe(document.getElementById('view') || document.body);
+      }
+      const t1 = Date.now();
+      let q = 0,
+        h0 = 0;
+      poll = setInterval(() => {
+        if (!mine()) return end();
+        hold();
+        const hgt = root.scrollHeight;
+        q = (K.inflight?.() ?? 1) > 0 || hgt !== h0 ? 0 : q + 250;
+        h0 = hgt;
+        if ((q >= 2000 && Date.now() - t1 > 1000) || Date.now() - t1 > 20000) end();
+      }, 250);
+    };
+    function go() {
+      if (follow) return;
+      if (!live()) return stop();
+      const t = find();
+      if (!t) return;
+      // the sticky bars' real height (the toolbar and the strip above it; on a phone the strip alone)
+      const st = getComputedStyle(root),
+        h = parseFloat(st.getPropertyValue('--sticky-h')) || parseFloat(st.getPropertyValue('--toolbar-h')) || 0,
+        want = Math.max(0, t.getBoundingClientRect().top + scrollY - h - 12);
+      if (Math.abs(want - scrollY) > 1) scrollTo(0, want);
+    }
     requestAnimationFrame(go);
-    [700, 1800, 3500].forEach((ms) =>
-      setTimeout(() => {
-        if (!moved && PV.site) go();
-      }, ms)
-    );
+    // the page above the target changes height as the map and the lazy sections arrive: land again on each change, before it
+    // is painted, so the target stays put
+    if (window.ResizeObserver) {
+      ro = new ResizeObserver(go);
+      ro.observe(root);
+      ro.observe(document.getElementById('view') || document.body);
+    }
+    addEventListener('scroll', go, { passive: true });
+    poll = setInterval(() => {
+      if (follow) return;
+      if (!live()) return stop();
+      go();
+      // settled: nothing in flight and the page's height unchanged for 4 s, and at least 8 s since the address opened
+      const hgt = root.scrollHeight;
+      quiet = (K.inflight?.() ?? 1) > 0 || hgt !== lastH ? 0 : quiet + 250;
+      lastH = hgt;
+      if (quiet >= 4000 && Date.now() - t0 > 8000) stop() || end();
+    }, 250);
   }
+  K.landOn = landOn;
+  // the fold of a protein's page that holds a question's facts about that one protein (the site file's protein_view.context, and
+  // the cell fold), or '' when the question is about the dataset
+  K.proteinHome = (aid) => {
+    const ctx = D.protein_view?.context || {},
+      f = Object.keys(ctx).find((k) => (ctx[k] || []).includes(aid));
+    return f && FOLDS.includes(f) ? f : K.cellHome?.(aid) || '';
+  };
+  const landOnCard = () =>
+    landOn(
+      () => {
+        const card = document.getElementById('site-card');
+        return K.openedIn?.(card) || card;
+      },
+      () => PV.site
+    );
+  // a module whose facts arrive after the card is drawn (conservation) draws the card again
+  K.redrawSiteCard = (acc) => {
+    const p = byAcc[acc],
+      card = document.getElementById('site-card');
+    if (card && p && PV.acc === acc && PV.site && PV.rec) card.outerHTML = siteCard(p, PV.rec);
+    if (PV.acc === acc) K.siteTable?.refresh();
+  };
+  // the variant lists arrive after the card is drawn: draw its variants again with the conditions
+  K.card.vc.onDetail((acc) => {
+    const p = byAcc[acc],
+      card = document.getElementById('site-card');
+    if (card && p && PV.acc === acc && PV.site && PV.rec) card.outerHTML = siteCard(p, PV.rec);
+  });
   const SC_OPEN = new Map(); // a group of the site card the reader opened or closed, kept as the card is redrawn
   document.addEventListener(
     'toggle',
@@ -690,7 +802,9 @@
     const ready = !!PV.tb,
       wait = '<span class="muted">loading…</span>';
     const tagged = new Set(K.shown?.on ? [...(K.shown.cfg.tests?.attributes || []), ...(K.shown.cfg.also || [])] : []);
-    const rest = shownAttrs(m).filter((n) => !USED.has(n) && !tagged.has(n));
+    // the marks nearby are a line of the summary at the top of the card, not a row of the rest
+    const NEAR = SPECS.ctx_near && shownAttrs(m).includes('ctx_near') ? 'ctx_near' : '';
+    const rest = shownAttrs(m).filter((n) => !USED.has(n) && !tagged.has(n) && n !== NEAR);
     // the question rows: one row for the questions a merge names (the same question at several windows), none for those hidden
     // (they repeat a block above), the ones with nothing to say as one line, and the less used ones behind "All site features"
     const MG = CC.merge || [],
@@ -745,6 +859,9 @@
       if (r) (!PQ || PQ.has(g.analyses[0]) || g.primary ? qrows : qmore).push(r);
     });
     const amv = PV.af?.am?.get?.(m[0]),
+      // AlphaMissense is less reliable in disordered regions: say so when the site lies in one (the map's disorder tracks)
+      amKinds = new Set((D.tracks || []).filter((t) => t.style === 'disorder').map((t) => t.kind)),
+      amDis = (PV.rec?.units || []).some((u) => amKinds.has(u[0]) && m[0] >= u[1] && m[0] <= u[2]),
       amCls = (v) => (v >= 0.564 ? 'likely pathogenic' : v >= 0.34 ? 'ambiguous' : 'likely benign');
     const afRow =
       pl != null || amv
@@ -755,27 +872,30 @@
             }${
               amv?.n
                 ? `${pl != null ? ' · ' : ''}<span title="Mean ` +
-                  `AlphaMissense pathogenicity of the ${amv.n} substitutions of this residue">AlphaMissense ${(amv.sum / amv.n).toFixed(2)} <span class="muted">(${amCls(amv.sum / amv.n)})</span></span>`
+                  `AlphaMissense pathogenicity of the ${amv.n} substitutions of this residue">AlphaMissense ${(amv.sum / amv.n).toFixed(2)} <span class="muted">(${amCls(amv.sum / amv.n)})</span>${amDis ? ' <span class="muted">· disordered region: less reliable</span>' : ''}</span>`
                 : ''
             }`,
-            'AlphaFold DB: the model’s confidence at this residue and the mean AlphaMissense score of its substitutions'
+            'AlphaFold DB: the model’s confidence at this residue and the mean AlphaMissense score of its substitutions (AlphaMissense is less reliable in disordered regions)'
           )
         : '';
     // the card's rows in groups, each a fold: the site itself, the questions it answers, and the rest (the less used closed)
     const group = (id, title, rows, open) =>
       rows
-        ? `<details class="sc-group" data-sc-group="${id}"${
+        ? `<details class="sc-group" data-sc-group="${id}"${id === 'records' ? ' id="sc-uniprot"' : ''}${
             (SC_OPEN.has(id) ? SC_OPEN.get(id) : open) ? ' open' : ''
           }><summary>${esc(title)}</summary><dl class="sc-kv">${rows}</dl></details>`
         : '';
+    // position: the sequence, the model's confidence, the neighbor and the question rows; the sources' states and calls are the experiments
     const siteRows =
-      kv('Sequence (±7 residues)', `<span class="mono">${winHtml(m[1])}</span>`) +
-      afRow +
-      ((CC.states || []).length ? kv(esc(CL_WORDS.states), ready ? K.card.states(c) : wait) : '') +
-      (near != null
-        ? kv(`Nearest other ${esc(W.mark)}`, `${esc(siteOf(p, near))}, ${int(Math.abs(near - m[0]))} aa away`)
-        : '') +
-      (CC.calls ? kv(esc(CL_WORDS.calls), ready ? K.card.calls(c) : wait) : '');
+        kv('Sequence (±7 residues)', `<span class="mono">${winHtml(m[1])}</span>`) +
+        afRow +
+        (near != null
+          ? kv(`Nearest other ${esc(W.mark)}`, `${esc(siteOf(p, near))}, ${int(Math.abs(near - m[0]))} aa away`)
+          : '') +
+        qrows.join(''),
+      expRows =
+        ((CC.states || []).length ? kv(esc(CL_WORDS.states), ready ? K.card.states(c) : wait) : '') +
+        (CC.calls ? kv(esc(CL_WORDS.calls), ready ? K.card.calls(c) : wait) : '');
     const uniRow = kv(
       `UniProt at ${esc(siteOf(p, m[0]))}`,
       PV.uniJson
@@ -783,8 +903,7 @@
             ? uniShow.map(featLine).join('<br>')
             : '<span class="muted">no feature at this residue</span>') +
             (` <span class="muted">` +
-              `· <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#ptm_processing">UniProt ${esc(p.acc)}</a>, when the ` +
-              `page opens</span>`)
+              `· <a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry#ptm_processing">UniProt ${esc(p.acc)}</a></span>`)
         : '<span class="muted">Loading from UniProt…</span>'
     );
     const citeRow =
@@ -792,12 +911,13 @@
     const restRows =
       rest.map((n) => kv(esc(SPECS[n].label), attrHtml(m, n, true), SPECS[n].help)).join('') +
       (K.shown?.on && K.shown.counted(m) ? kv(esc(cap(K.shown.label())), esc(K.shown.tip(m, false))) : '');
+    // the Overview's order: mutations, interactions, position, experiments, then the sources and the UniProt lines, and the
+    // other attributes as one closed list
     const siteHtml =
-      group('site', 'Site', siteRows, true) +
-      group('questions', 'Questions', qrows.join(''), true) +
-      group('records', 'UniProt and sources', uniRow + citeRow, true) +
-      group('more-questions', `Other questions (${qmore.length})`, qmore.join(''), false) +
-      group('attributes', `Other attributes (${rest.length})`, restRows, false);
+      group('site', 'Position in the protein', siteRows, true) + group('experiments', 'Experiments', expRows, true);
+    const srcHtml = group('records', 'Sources', uniRow + citeRow, true);
+    const nMore = qmore.length + rest.length + (K.shown?.on && K.shown.counted(m) ? 1 : 0),
+      moreHtml = group('questions', `Other attributes (${nMore})`, qmore.join('') + restRows, false);
     const ev = ready ? K.card.evidenceBlock(c) : '',
       recs = ready ? K.card.recordsBlock(c) : '',
       wr = ready ? K.card.writerBlock(c) : '';
@@ -807,7 +927,7 @@
         (CC.tables || []).some((x) => K.card.has(x.table)) ||
         (CC.calls?.tables || []).some(K.card.has));
     const varBlock =
-      `<section class="sc-vars" aria-label="Variants at ${esc(siteOf(p, m[0]))}"><h4>Variants at ${esc(siteOf(p, m[0]))}</h4><dl ` +
+      `<details class="sc-vars" id="sc-variants" data-sc-group="variants"${SC_OPEN.get('variants') === true ? ' open' : ''} aria-label="Mutations at ${esc(siteOf(p, m[0]))}"><summary><h4>Mutations at ${esc(siteOf(p, m[0]))}</h4></summary><dl ` +
       `class="sc-kv">` +
       kv(
         'UniProt variants',
@@ -821,7 +941,21 @@
         ? kv(esc(CL_WORDS.changes), ready ? K.card.changes(c) : wait)
         : '') +
       ((CC.variant_counts || []).length ? kv(esc(CL_WORDS.germline), ready ? K.card.variants(c) : wait) : '') +
-      '</dl></section>';
+      // one line: this site's O/E (changes seen over changes expected from its codon) and q in each source
+      (K.prop
+        ? kv(
+            'Changes vs expected',
+            K.prop.siteLine({ acc: p.acc, pos: m[0] }) + (K.mut ? ' ' + K.mut.addButton(p.acc, m[0]) : ''),
+            'observed/expected: observed changes at this residue over those expected from its codon, with the q of the test; count only for ClinVar'
+          )
+        : '') +
+      '</dl></details>';
+    const sumHtml = ready
+      ? K.card.cardSummary(c, {
+          uni: uniAt.filter((f) => f.type === 'Modified residue'),
+          near: NEAR ? nearCard(p, m) || attrHtml(m, NEAR, true) : '',
+        })
+      : '';
     return (
       `<section class="site-card" id="site-card"><div class="card-head"><div><p class="eyebrow">Selected ${esc(W.mark)}</p><h3>${esc(p.gene || p.acc)} ${esc(siteOf(p, m[0]))} ${statePill(m)}${
         K.shown?.on ? ' ' + K.shown.tag(m, false) : ''
@@ -844,9 +978,16 @@
           'the site card',
           'sources'
         )}<button type="button" ` +
-        `class="btn small" data-site-close aria-label="Close">×</button></span></div>`) +
+        `class="btn small" data-site-close aria-label="Clear selection" title="Clear selection">×</button></span></div>`) +
+      sumHtml +
       varBlock +
-      `<div class="sc-grid${ev ? '' : ' one'}">${ev}<section class="sc-site"><h4>Site</h4>${siteHtml}</section>${recs}${wr}</div>` +
+      // interactions: the records of proteins that write, read or bind the site, then the evidence (RNA and DNA contacts with it)
+      (wr || recs || ev
+        ? `<details class="sc-vars" id="sc-interactions" data-sc-group="interactions"${SC_OPEN.get('interactions') === false ? '' : ' open'} aria-label="Interactions at ${esc(siteOf(p, m[0]))}"><summary><h4>Interactions</h4></summary><div class="sc-grid one">${wr}${recs}${ev}</div></details>`
+        : '') +
+      (siteHtml ? `<section class="sc-site">${siteHtml}</section>` : '') +
+      (srcHtml ? `<section class="sc-src">${srcHtml}</section>` : '') +
+      `<section class="sc-more">${moreHtml}</section>` +
       (!ready && Object.keys(D.tables || {}).length ? K.loading('Loading tables…') : '') +
       '</section>'
     );
@@ -890,7 +1031,7 @@
   const residueOf = (p, pos) => {
     if (!p) return '';
     const sd = K.sel?.peek(),
-      mid = (m) => (m[4] || '')[Math.floor((m[4] || '').length / 2)] || '';
+      mid = K.markRes;
     if (sd && !resIdx) {
       resIdx = {};
       sd.marks.forEach((m) => {
@@ -933,6 +1074,17 @@
         if (!P_BY_NAME[g.toUpperCase()]) addName(g, acc);
       })
   );
+  // gene symbols only: genes, and the previous and alternative symbols a site lists (D.protein_symbols); not the free-text
+  // aliases of a table, which name complexes and families ("AMPK") that no one protein stands for
+  const P_SYM = {};
+  (D.proteins || []).forEach(([acc, gene]) =>
+    String(gene || '')
+      .split(/[\s;,]+/)
+      .filter(Boolean)
+      .forEach((g) => (P_SYM[g.toUpperCase()] ||= acc))
+  );
+  Object.entries(D.protein_genes || {}).forEach(([acc, gs]) => gs.forEach((g) => (P_SYM[g.toUpperCase()] ||= acc)));
+  Object.entries(D.protein_symbols || {}).forEach(([acc, gs]) => gs.forEach((g) => (P_SYM[g.toUpperCase()] ||= acc)));
   const accOf = (x) => {
     const a = String(x || '')
       .toUpperCase()
@@ -952,12 +1104,12 @@
     'p-na',
     'p-cond',
     'p-dis',
-    'p-depmap',
+    'p-dependency',
+    'p-mutations',
     'p-pert',
     'p-exp',
     'p-cluster',
     'p-ptm',
-    'p-score',
     'p-kinds',
     'p-regions',
     'p-struct',
@@ -979,6 +1131,9 @@
   const SECTION = {
     ...Object.fromEntries(FOLDS.map((f) => [f, f])),
     ...NAME_TO_FOLD,
+    'site-glance': 'p-sitetab', // the first site table sat under this name
+    'p-depmap': 'p-mutations', // the old card is two: the dependency card and this one
+    'p-score': 'p-sitetab', // the list of counts is gone; the sentence that replaced it sits under the site table
     ...(D.legacy_routes || {}),
   };
   const sectionKey = (at) => {
@@ -1096,6 +1251,50 @@
     const r = f.table ? K.card?.rows(PV.tb, f.table)?.[0] : null;
     return r ? r[f.column] : '';
   };
+  // ---- the summary items of one site (the site card's own, through K.card.summaryItems), read by the site table (kit-sitetable.js) ----
+  const UNI = {}; // accession -> UniProt's answer, for the proteins of a small selection's cards (the open protein's is PV.uniJson)
+  const uniOf = (acc) => (acc === PV.acc && PV.uniJson) || UNI[acc]?.j || null;
+  function loadUni(acc) {
+    return ((UNI[acc] ||= {}).p ||= getJson(`https://rest.uniprot.org/uniprotkb/${acc}.json`).then(
+      (j) => ((UNI[acc].done = true), (UNI[acc].j = j)),
+      () => ((UNI[acc].done = true), null)
+    ));
+  }
+  // the UniProt "Modified residue" features by position, built once per UniProt answer
+  const uniIdx = new WeakMap();
+  const uniAtPos = (j) => {
+    if (!j) return new Map();
+    if (!uniIdx.has(j)) {
+      const by = new Map();
+      for (const f of j.features || []) {
+        const a = f.location?.start?.value;
+        if (f.type === 'Modified residue' && a != null && a === f.location?.end?.value) {
+          if (!by.has(a)) by.set(a, []);
+          by.get(a).push(f);
+        }
+      }
+      uniIdx.set(j, by);
+    }
+    return uniIdx.get(j);
+  };
+  // the summary items (writer, variants, conservation) of one site of the open protein, or null until its tables are in
+  // For a protein that is not open (a small selection's cards), the caller gives the mark's row and the protein's tables;
+  // its UniProt entry is read once (loadUni) and the items are the same.
+  function summaryAt(acc, pos, other) {
+    const p = byAcc[acc];
+    if (other) {
+      if (!p || !other.tb || !other.m) return null;
+      if (!uniOf(acc)) loadUni(acc);
+      return K.card.summaryItems(cardCtx(p, {}, other.m, other.tb, other.attr), {
+        uni: uniAtPos(uniOf(acc)).get(pos) || [],
+      });
+    }
+    const m = PV.acc === acc && PV.rec?.marks.find((x) => x[0] === pos);
+    if (!p || !m || !PV.tb) return null;
+    return K.card.summaryItems(cardCtx(p, PV.rec, m), { uni: uniAtPos(PV.uniJson).get(pos) || [] });
+  }
+  (K.afterUni ||= []).push(() => K.siteTable?.refresh());
+
   function headline(p, rec) {
     const facts = D.protein_view?.facts;
     if (!facts?.length) return '';
@@ -1137,7 +1336,10 @@
           const sd = K.sel?.pdata(p.i),
             ps = sd?.protein_sets?.[f.analysis];
           if (!ps) return '';
-          const names = ps.sets.map(([s]) => s).filter((s) => K.sel.setHas(f.analysis, s, p.i));
+          const want = f.branches ? K.branchClasses(f.analysis) : null,
+            names = ps.sets
+              .map(([s]) => s)
+              .filter((s) => (!want || want.includes(s)) && K.sel.setHas(f.analysis, s, p.i));
           if (!names.length) return '';
           const best = f.best ? bestRow(f.analysis, names) : null,
             setLab = (s) => (A[f.analysis].labels || {})[s] || s;
@@ -1233,9 +1435,14 @@
       })),
     ];
   }
+  const sumLine = (c) => {
+    const t = K.card.summary(c.acc, c.pos, 'records', { tb: c.tb, label: c.label, isListed: c.isListed });
+    return t ? `<div class="sc-sum">${t}</div>` : '';
+  };
   const SHOW = {
     status: (c) => K.card.badge(c),
-    tags: (c) => (K.density.compact() ? K.card.tags(c, -1) : K.card.tags(c, 4)),
+    // the evidence kinds, then (where the site has records) the one line of who they name, from the site card's own function
+    tags: (c) => (K.density.compact() ? K.card.tags(c, -1) : K.card.tags(c, 4)) + sumLine(c),
     sequences: (c) => {
       if (!K.density.compact()) return K.card.sequences(c, true);
       const ws = K.card.windowsOf(c) || [];
@@ -1505,7 +1712,9 @@
       PV.cleanArg = true;
     }
     const selTxt = K.sel?.active()
-      ? `${int(K.sel.nMarks())} ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)} · selection`
+      ? K.sel.loading()
+        ? 'selection'
+        : `${int(K.sel.nMarks())} ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)} · selection`
       : `all ${esc(W.marks)}`;
     const head =
       `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a>` +
@@ -1521,17 +1730,24 @@
     const rec = PV.rec,
       sel = K.sel?.active() ? K.sel.selectedPositions(acc) : null;
     const isOpen = (id, open) => PV.open[id] ?? foldOpen(id, open);
-    const fold = (id, title, sum, body, open) =>
-      `<details class="pfold" id="${id}"${isOpen(id, open) ? ' open' : ''}><summary>` +
-      `<span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary>` +
-      `<div class="pfold-body">${body}</div></details>`;
+    // a closed section with a long body is drawn when it is first opened (a large protein's sites, sequence and regions)
+    // `pin`: the section stays where it is drawn (right after the tiles), opening as its caller says (arrangeFolds does not move it)
+    const fold = (id, title, sum, body, open, pin) => {
+      const o = pin ? (PV.open[id] ?? open) : isOpen(id, open),
+        later = !o && body.length > LATER_CHARS;
+      return (
+        `<details class="pfold${pin ? ' pfold-pin' : ''}" id="${id}"${o ? ' open' : ''}><summary>` +
+        `<span class="pfm" aria-hidden="true"></span><h3>${title}</h3><span class="fsum">${sum}</span></summary>` +
+        `<div class="pfold-body"${later ? ' data-later' : ''}>${later ? '' : body}</div></details>`
+      );
+    };
     const nSrc = Object.keys(SPECS).find((n) => SPECS[n].kind === 'list' && SPECS[n].link);
     const page = (laid) => arrangeFolds(laid);
     return (
       head +
       (sel && sel.size < rec.marks.length
-        ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} match your ` +
-          `selection; the others are faded. <button class="linkish" type="button" data-sel-clear-all>Clear ` +
+        ? `<p class="note">${int(sel.size)} of ${int(rec.marks.length)} ${esc(W.marks)} selected ` +
+          `(others faded). <button class="linkish" type="button" data-sel-clear-all>Clear ` +
           `filters</button></p>`
         : '') +
       page(
@@ -1546,9 +1762,10 @@
           true
         ) +
           (headline(p, rec) || legacyFacts(p, rec, nSrc)) +
+          (K.siteTable?.fold(p, rec, fold) || '') +
           fold(
             'p-sites',
-            `${esc(cap(W.marks))}`,
+            'All site tables',
             `${int(rec.marks.length)}${
               nSrc
                 ? ` · ${int(
@@ -1563,13 +1780,7 @@
             sitesTable(p, rec, sel),
             true
           ) +
-          fold(
-            'p-score',
-            `${esc(cap(W.marks))} vs other ${esc(W.residues)} in ${esc(p.gene || p.acc)}`,
-            esc(`Can't be ` + `tested for one protein${baseText() ? '; dataset-wide: ' + baseText() : ''}`),
-            `${scoreVerdict(p, rec)}<div class="hub">${scoreRows(p, rec)}</div>`,
-            false
-          ) +
+          untestedNote() +
           (D.analyses.some((a) => a.kind === 'protein_sets')
             ? fold('p-kinds', 'Protein classes and pathways', '', kindsHtml(p), false)
             : '') +
@@ -1752,9 +1963,8 @@
       `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <a href="${esc(K.link('proteins'))}">Proteins</a>` +
       ` › <b>${esc(p.gene || p.acc)}</b> <span class="muted">no ${esc(W.mark)}</span></p>` +
       protHead(p, true) +
-      (`<p class="note">No ${esc(W.mark)} on ${esc(p.gene || p.acc)}. None of its studies or databases reports one, which means ` +
-        `not reported, not shown to be un${esc(W.marked)}. This page shows its map, the ${esc(W.marks)} of other ` +
-        `proteins it is recorded binding, and its partners with ${esc(W.marks)}.</p>`) +
+      (`<p class="note">No ${esc(W.mark)} is reported on ${esc(p.gene || p.acc)}, though it may still carry one. Its page shows the map, the ${esc(W.marks)} of ` +
+        `proteins it binds, and its partners with ${esc(W.marks)}.</p>`) +
       `<div class="facts"><div class="fact"><b>${int(p.len)}</b><span>Residues</span></div><div class="fact"><b>${int(nRes)}</b><span>${esc(cap(W.residues))}</span></div>` +
       (ptab ? `<div class="fact"><b>${int(partners.length)}</b><span>Partners with ${esc(W.marks)}</span></div>` : '') +
       '</div>' +
@@ -1900,7 +2110,6 @@
       ['g-marks', `${cap(W.marks)} on this protein`, 0],
       ['p-map', 'Protein map', 1],
       ['p-sites', cap(W.marks), 1],
-      ['p-score', `${cap(W.marks)} vs other ${W.residues}`, 1],
       ['g-protein', 'The protein', 0],
       ...(D.analyses.some((a) => a.kind === 'protein_sets') ? [['p-kinds', 'Protein classes and pathways', 1]] : []),
       ['p-regions', 'Domains and regions', 1],
@@ -1963,57 +2172,60 @@
     if (!sd) return `${K.loading('Loading the sets…')}`;
     let cov = null;
     const none = [];
-    const blocks = D.analyses
-      .filter((a) => a.kind === 'protein_sets' && sd.protein_sets?.[a.id] && !K.inSetCards?.(a.id))
+    // the questions in the Overview's order, each once: a cell map's grouped regions are listed with the map, under the regions' name
+    const mineOf = (a) =>
+      (sd.protein_sets?.[a.id]?.sets || [])
+        .filter(([s]) => K.sel.setHas(a.id, s, p.i))
+        .map(([s]) => ({ s, r: setRow(a.id, s, 'enricher') }))
+        .filter((x) => x.r)
+        .sort((x, y) => RANK[x.r.dir] - RANK[y.r.dir] || x.r.q - y.r.q);
+    const blocks = K.questionOrder()
+      .filter((a) => a.kind === 'protein_sets' && sd.protein_sets?.[a.id] && !K.inSetCards?.(a.id) && !K.listHides(a))
       .map((a) => {
         const ps = sd.protein_sets[a.id];
         if (ps.covariate && !cov && ps.covariate.proteins[p.i])
           cov = { ...ps.covariate, me: ps.covariate.proteins[p.i], from: a };
-        const mine = ps.sets
-          .filter(([s]) => K.sel.setHas(a.id, s, p.i))
-          .map(([s]) => ({ s, r: setRow(a.id, s, 'enricher') }))
-          .filter((x) => x.r)
-          .sort((x, y) => RANK[x.r.dir] - RANK[y.r.dir] || x.r.q - y.r.q);
+        const reg = A[K.regionsOf[a.id]],
+          mine = [...(reg ? mineOf(reg) : []), ...mineOf(a)].filter(
+            (x, i, all) => all.findIndex((y) => y.r.label === x.r.label) === i
+          );
         if (!mine.length) {
-          none.push(esc(a.title));
+          none.push(esc(K.listTitle(a)));
           return '';
         }
-        const shown = PV.open['kinds:' + a.id] ? mine : mine.slice(0, 10);
+        const shown = PV.open['kinds:' + a.id] ? mine : mine.slice(0, 12);
         return (
-          `<article class="tile kind"><header><h3>${esc(a.title)} <span class="muted">${int(mine.length)} set${
-            mine.length === 1 ? '' : 's'
-          }</span></h3></header>` +
-          K.rowsTile(
-            a,
-            shown.map((x) => x.r),
-            'in-set'
-          ) +
-          (mine.length > 10
-            ? `<button class="linkish" type="button" data-kinds-all="${esc(a.id)}">${
+          `<div class="kind-set"><a href="${esc(K.link('overview', a.id))}"><b>${esc(K.listTitle(a))}</b></a> ` +
+          `<span class="muted">${int(mine.length)}</span> ` +
+          shown.map((x) => `<a class="chip" href="${esc(K.link('overview', a.id))}">${esc(x.r.label)}</a>`).join(' ') +
+          (mine.length > 12
+            ? ` <button class="linkish" type="button" data-kinds-all="${esc(a.id)}">${
                 PV.open['kinds:' + a.id] ? 'Fewer' : `All ${int(mine.length)}`
               }</button>`
             : '') +
-          '</article>'
+          '</div>'
         );
       })
       .join('');
     const covLine = cov
       ? `<p class="kind-cov"><b>Abundance</b>: ${
           cov.me[0] == null ? 'no value' : `${esc(cov.value)} ${K.fxn(cov.me[0])}`
-        }${cov.me[1] !== 'none' ? `, decile ${esc(cov.me[1])} of ${int(cov.strata)}` : ''} <span class="muted">(${esc(
-          (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version || cov.input
-        )}; the decile ` + `the protein-set tests stratify by)</span></p>`
+        } <span class="muted">(${[
+          cov.me[1] !== 'none' ? `decile ${esc(cov.me[1])} of ${int(cov.strata)}` : '',
+          esc(
+            String(
+              (Object.values(D.inputs).find((x) => (x.roles || [x.role]).includes(cov.input)) || {}).version ||
+                cov.input
+            ).replace(/\s*\(([^)]*?)(?:[- ]integrated)?\)/, (m, x) => ', ' + x.replace(/-/g, ' '))
+          ),
+        ]
+          .filter(Boolean)
+          .join('; ')})</span></p>`
       : '';
-    // the sets' results are about every ${W.mark} in the set, not about this protein alone: their own heading says so
-    const across =
-      `<h3 class="kinds-head">Across all ${esc(W.marks)}</h3><p class="muted small kinds-note">Each set this protein is in, ` +
-      `with the fold for all ${esc(W.marks)} in that set. The folds describe the whole set, not ${esc(
-        p.gene || p.acc
-      )}.</p>`;
-    const noneLine = none.length
-      ? `<p class="muted small kinds-none">In none of the sets tested for: ${none.join('; ')}.</p>`
-      : '';
-    return covLine + across + `<div class="kinds">${blocks}</div>` + noneLine;
+    // names only: a set's test is for every mark in it, not for this protein, so its numbers stay on the question's page
+    const across = `<p class="muted small kinds-note">Sets containing ${esc(p.gene || p.acc)}</p>`;
+    const noneLine = none.length ? `<p class="muted small kinds-none">Not in: ${none.join('; ')}.</p>` : '';
+    return covLine + across + `<div class="kinds kinds-chips">${blocks}</div>` + noneLine;
   }
 
   // ---- domains and regions: every region the questions of this explorer read, as a table, with the marks inside each --------
@@ -2136,7 +2348,7 @@
       `<div class="card-head"><p class="sub">${int(seq.length - d)} residues (${esc(
         (D.run.snapshot || {}).release || ''
       )}), the ${esc(W.marks)} in color ` +
-      `as on the map; hover one for its name, click it for its card.${d ? ' The initiator methionine is not shown or counted.' : ''}</p>` +
+      `as on the map. Hover for name, click for card.${d ? ' Initiator Met not counted.' : ''}</p>` +
       (`<span class="exp"><button class="btn small" type="button" data-fasta="copy">Copy FASTA</button><button ` +
         `class="btn small" type="button" data-fasta="dl">Download FASTA</button></span></div><pre class="seq">${lines.join('\n')}</pre>`)
     );
@@ -2215,6 +2427,7 @@
       }
       const first = !PV.uniJson;
       PV.uniJson = j;
+      K.afterUni?.forEach((f) => f(acc));
       const names = [
         ...new Set(
           (j.genes || [])
@@ -2223,7 +2436,7 @@
               ...(g.synonyms || []).map((x) => x.value),
               ...(g.orfNames || []).map((x) => x.value),
             ])
-            .filter((x) => x && x !== p.gene)
+            .filter((x) => x && x !== p.gene && !genesOf(p).some((g) => g.toUpperCase() === x.toUpperCase()))
         ),
       ];
       fill('aliases', names.length ? `Also reported as ${names.map(esc).join(', ')}` : '');
@@ -2239,8 +2452,8 @@
         'fn',
         texts.length
           ? `<p class="fn-text${PV.fn ? ' open' : ''}">${texts.map(linkPm).join(' ')}</p><p class="src">` +
-              `Function, from <a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry#function">UniProt ${esc(acc)}</a> when the ` +
-              `page opens · <button type="button" class="linkish" data-fn-more>${PV.fn ? K.ACT.showLess : K.ACT.showMore}</button></p>`
+              `Function from <a href="https://www.uniprot.org/uniprotkb/${esc(acc)}/entry#function">UniProt ${esc(acc)}</a> · ` +
+              `<button type="button" class="linkish" data-fn-more>${PV.fn ? K.ACT.showLess : K.ACT.showMore}</button></p>`
           : '<p class="muted">UniProt gives no function text for this entry.</p>'
       );
       if (first) {
@@ -2297,6 +2510,7 @@
       PV.af = af;
       if (first) drawMap();
       K.pfolds?.refresh();
+      K.s3d?.paintSide?.(); // the viewer's AlphaFold panel reads the site's confidence from the same array
       // AlphaMissense: each mark's substitutions (the file lists every residue's), their mean, read once for the site card
       if (af.amUrl && !af.am && !af.amAsked) {
         af.amAsked = true;
@@ -2316,6 +2530,7 @@
                 out.set(+mm[2], o);
               }
               af.am = out;
+              if (PV.acc === acc) K.siteTable?.refresh();
               if (PV.acc === acc && PV.site) {
                 const card = document.getElementById('site-card');
                 if (card) card.outerHTML = siteCard(p, rec);
@@ -2447,7 +2662,7 @@
       return p ? (p.gene || p.acc) + (at && /^\d+$/.test(at) ? ' ' + siteOf(p, +at) : '') : a;
     },
   };
-  K.tabs.push(() => ['proteins', 'Proteins', K.sel?.active() ? K.sel.nProteins() : P.length]);
+  K.tabs.push(() => ['proteins', 'Proteins', K.sel?.active() ? (K.sel.loading() ? '…' : K.sel.nProteins()) : P.length]);
   K.clicks.push(
     [
       '[data-sexp]',
@@ -2719,7 +2934,7 @@
       .filter((n) => SPECS[n].provenance && !SPECS[n].present)
       .slice(0, 3);
   const nearbyHtml = (pos) => {
-    const win = HV.window || 10,
+    const win = K.nearWindow?.() || HV.window || 10,
       max = HV.nearby_max || 3,
       hits = K.map?.nearby ? K.map.nearby(PV.acc, pos, win) : [];
     if (!hits.length) return '';

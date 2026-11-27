@@ -1,0 +1,74 @@
+........................................................................ [ 22%]
+........................................................................ [ 45%]
+........................................................................ [ 68%]
+.......ss..s...ss..s...............................FF................... [ 91%]
+............................                                             [100%]
+=================================== FAILURES ===================================
+____ test_the_table_sorts_flags_and_downloads_from_the_sources_it_is_given _____
+
+    @pytest.mark.skipif(not shutil.which('node'), reason='needs Node')
+    def test_the_table_sorts_flags_and_downloads_from_the_sources_it_is_given():
+        script = f"""
+    const noop = () => {{}};
+    global.window = global; global.addEventListener = noop;
+    const el = {{ id: '', querySelector: () => null }};
+    global.document = {{ addEventListener: noop, createElement: () => ({{}}), head: {{ appendChild: noop }}, getElementById: () => null }};
+    global.fetch = () => new Promise(noop);
+    const sources = [
+      {{ id: 'a', label: 'Alpha', long: 'Alpha tumors', kind: 'somatic', unit: ['tumor', 'tumors'] }},
+      {{ id: 'g', label: 'Gamma', kind: 'germline', unit: ['variant', 'variants'], lower_tail: true }},
+      {{ id: 'c', label: 'Clin', kind: 'germline', descriptive: true }},
+    ];
+    const cells = {{
+      'a:1': {{ k: 5, o: 3, e: 1.5, q: 0.2, p: 0.01 }}, 'a:2': {{ k: 9, o: 4, e: 2, q: 0.01, p: 0.001, hot: {{ self: true }} }}, 'a:3': {{ k: 0, o: 0, e: 1, q: 1, p: 1 }},
+      'g:1': {{ k: 1, o: 1, e: 1, q: 1, p: 1 }}, 'g:2': {{ k: 0, o: 0.1, e: 3, q: 1, p: 1, ql: 0.02, pl: 0.001 }}, 'g:3': {{ k: 2, o: 1, e: 2, q: 1, p: 1 }},
+    }};
+    const D = {{ site: {{ id: 'toy' }}, run: {{}}, proteins: [], tracks: [{{ kind: 'dis', style: 'disorder' }}],
+      propensity: {{ sources }}, protein_view: {{ site_table: {{ title: 'My table' }} }} }};
+    const K = {{ D, W: {{ mark: 'site', marks: 'sites' }}, S: {{}}, esc: s => String(s ?? ''), int: n => String(n), clicks: [], us: s => s, link: (v, a) => '#' + v + '/' + a,
+      loading: () => '', expBar: () => '', preamble: (t, w) => '# ' + t + '\\n# What: ' + w + '\\n', exportFigure: (k, f, n, b, tsv) => (global.TSV = tsv()),
+      prop: {{ ring: 0.05, desc: id => id === 'c', cfg: D.propensity, state: {{ hyper: false }}, peek: () => ({{}}), load: () => Promise.resolve(),
+        at: (acc, id, pos) => cells[id + ':' + pos] || null, fo: o => String(o), kOE: (id, v) => v.k + ' changes · O/E ' + v.o, fq: q => String(q), tip: () => 'tip', hotNote: () => 'a hotspot', hyperSwitch: () => '', onHyper: noop }},
+      prot: {{ siteLabel: (a, p) => 'X' + p, stateText: m => m[2], stateLabel: () => 'State' }},
+      card: {{ peek: () => ({{}}), load: () => Promise.resolve(), vc: {{ entries: [{{ id: 'c', label: 'Clin', highlight: {{ label: 'P/LP' }} }}],
+        siteVariants: (tb, pos) => [{{ x: {{ label: 'Clin' }}, n: pos, hot: pos === 2 ? 1 : 0 }}],
+        sites: (tb, x, ps) => ({{ any: ps.length, hot: ps.filter(p => p === 2).length, of: ps.length }}),
+        line: (tb, acc, pos) => '<a>' + pos + ' variants</a>', ready: () => Promise.resolve(), conditionsText: (tb, acc, pos) => pos === 2 ? 'Toy syndrome; Rare thing' : '', text: (tb, pos) => 'Clin: ' + pos + ' variants' }} }},
+      map: {{ namedRows: () => [], namedChanges: () => false }}, protState: () => ({{ p: {{ acc: 'P1', gene: 'G1' }}, rec }}) }};
+    const rec = {{ marks: [[3, 'w', 'on'], [1, 'w', 'off'], [2, 'w', 'on']], units: [['dis', 2, 2]] }};
+    eval(require('fs').readFileSync({json.dumps(str(ASSETS / 'kit-sitetable.js'))}, 'utf8'));
+    window.PTMC_MODULES.forEach(m => m(K));
+    let args;
+    K.siteTable.fold({{ acc: 'P1', gene: 'G1' }}, rec, (...a) => ((args = a), ''));
+    const rows = [...args[3].matchAll(/<tr><td[^>]*><a[^>]*>(X\\d)<\\/a>/g)].map(m => m[1]);
+    Promise.resolve(K.clicks.find(c => c[0] === '[data-stexp]')[1]({{ dataset: {{ stexp: 'tsv' }} }})).then(() => console.log(JSON.stringify({{ id: args[0], title: args[1], sum: args[2], rows, tsv: global.TSV, sections: K.proteinFoldSections }})));"""
+        run = subprocess.run(['node', '-e', script], capture_output=True, text=True)
+        assert run.returncode == 0, run.stderr[-1500:]
+        out = json.loads(run.stdout)
+        assert out['id'] == 'p-sitetab' and out['title'] == 'My table'
+>       assert out['rows'] == ['X2', 'X1', 'X3']  # the strongest first: q 0.01, 0.2, 1
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert ['X1', 'X2', 'X3'] == ['X2', 'X1', 'X3']
+E         
+E         At index 0 diff: 'X1' != 'X2'
+E         Use -v to get more diff
+
+tests/test_sitetable.py:64: AssertionError
+_____ test_a_sites_variants_have_one_counter_and_other_pages_show_its_line _____
+
+    def test_a_sites_variants_have_one_counter_and_other_pages_show_its_line():
+        card = (ASSETS / 'kit-sitecard.js').read_text()
+        table = (ASSETS / 'kit-sitetable.js').read_text()
+        pcards = (ASSETS / 'kit-pcards.js').read_text()
+        prot = (ASSETS / 'kit-proteins.js').read_text()
+        # the home: the site card's module counts, words and links; its variant block is a fold the address can open
+        for name in ('siteVariants', 'variantSites', 'variantWords', 'variantLine'):
+>           assert f'const {name} =' in card, name
+E           AssertionError: variantLine
+E           assert 'const variantLine =' in '/* The site card\'s blocks, the sites table\'s cells, a site\'s Evidence row and a protein\'s citation box, each read... asPartner,\n    partnersOf,\n    wholeProtein,\n    aroundRows,\n    windowsOf,\n    callRows,\n    num,\n  };\n});\n'
+
+tests/test_sitetable.py:101: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sitetable.py::test_the_table_sorts_flags_and_downloads_from_the_sources_it_is_given
+FAILED tests/test_sitetable.py::test_a_sites_variants_have_one_counter_and_other_pages_show_its_line
+2 failed, 308 passed, 6 skipped in 114.84s (0:01:54)

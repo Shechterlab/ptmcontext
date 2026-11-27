@@ -116,8 +116,8 @@
     (c.unresolved || []).forEach((raw) => {
       if (/:/.test(raw))
         out.push(
-          `<span class="sel-chip bad" title="Matches ` +
-            `nothing: no ${esc(W.mark)} is selected while it stays">${esc(raw)}<button type="button" ` +
+          `<span class="sel-chip bad" title="No ` +
+            `${esc(W.mark)} matches this">${esc(raw)}<button type="button" ` +
             `data-sel-drop-term="${esc(raw)}" aria-label="Remove ${esc(raw)}">×</button></span>`
         );
     });
@@ -132,7 +132,8 @@
           )
         )
       );
-    return out.join('');
+    // every part of a selection must hold: the chips read as one sentence
+    return out.join('<span class="sel-and">AND</span>');
   }
   // the selection in words for a figure's subtitle and for Copy link: "category · value; counts; what it is tested against"
   function summary() {
@@ -146,7 +147,11 @@
       ];
     return (
       `${parts.join('; ')}; ${int(c.marks.length)} of ${int(D.counts.marks)} ${W.marks} on ${int(np)} protein${np === 1 ? '' : 's'}` +
-      (K.selEffect ? `; ${K.selEffect().replace(/^Pages that follow the selection show only these · /, '')}` : '')
+      (K.selEffect
+        ? `; ${K.selEffect()
+            .replace(/^./, (ch) => ch.toLowerCase())
+            .replace(/\.$/, '')}`
+        : '')
     );
   }
   function bar() {
@@ -166,21 +171,19 @@
       (miss.length
         ? `<span class="sel-miss" title="Terms are key:value, where the key is a question (${esc(
             D.analyses.map((a) => a.id).join(', ')
-          )}) or an attribute (${esc(Object.keys(SPECS).join(', ') || 'none')})">Nothing matches ${miss
+          )}) or an attribute (${esc(Object.keys(SPECS).join(', ') || 'none')})">No ${esc(W.mark)} matches ${miss
             .map((x) => `<b>${esc(x)}</b>`)
             .join(', ')}</span>`
         : '') +
-      (absent.length
-        ? `<span class="sel-miss" title="Not a gene, accession or entry name of a protein with a ${esc(W.mark)} in this explorer">No ${esc(W.marked)} protein: ${absent
-            .map((x) => `<b>${esc(x)}</b>`)
-            .join(', ')}</span>`
+      (absent.length || ignored.length
+        ? `<span class="sel-miss">${K.sel.leftOut([...absent, ...ignored].map((x) => `<b>${esc(x)}</b>`).join(', '))}</span>`
         : '') +
-      (ignored.length
-        ? `<span class="sel-miss" title="In a list of proteins, words are not searched in protein ` +
-          `names: search them on their own to do that">Not a protein, left out of the list: ${ignored
-            .map((x) => `<b>${esc(x)}</b>`)
-            .join(', ')}</span>`
-        : '') +
+      (note
+        ? ''
+        : K.sel
+            .notesOf(c.q)
+            .map((t) => `<span class="sel-miss">${esc(t)}</span>`)
+            .join('')) +
       (amb.length
         ? `<span class="sel-miss" title="Write the protein first, or alone, to list it">${amb
             .map(([t, g]) => `<b>${esc(t)}</b> read as ${esc(g)}’s site, ` + `not the protein ${esc(t)}`)
@@ -201,7 +204,8 @@
       );
     return (
       (K.selEffect ? `<span class="sel-effect" title="${esc(K.selEffect())}">${esc(K.selEffect())}</span>` : '') +
-      `<span class="sel-tools">${savedMenu()}<button class="btn small accent" type="button" data-sel-clear-all>Clear all` +
+      `<span class="sel-tools">${savedMenu()}<button class="btn small" type="button" aria-live="polite" data-sel-share title="Copy a link that opens this ` +
+      `selection, with a description of it">Copy link</button><button class="btn small accent" type="button" data-sel-clear-all>Clear all` +
       `</button><span class="sel-menu"><button class="btn small" type="button" id="sel-menu-btn" data-sel-menu ` +
       `aria-haspopup="menu" aria-expanded="false" aria-controls="sel-menu-pop" aria-label="Selection actions for this ` +
       `selection" title="Selection actions">⋯</button><div class="sel-menu-pop" id="sel-menu-pop" role="menu" ` +
@@ -392,13 +396,15 @@
   // the groups: from the site file, or one per section of residue questions, protein-set questions and attributes
   function groups() {
     if (D.filters && D.filters.length)
-      return D.filters.map((g) => ({
-        ...g,
-        analyses: (g.analyses || []).filter((a) => A[a]),
-        attributes: (g.attributes || []).filter((k) => SPECS[k]),
-        proteins: (g.proteins || []).filter((k) => RSPEC(k)),
-        keys: (g.keys || []).filter((k) => validKey(k)),
-      }));
+      return D.filters
+        .map((g) => ({
+          ...g,
+          analyses: (g.analyses || []).filter((a) => A[a]),
+          attributes: (g.attributes || []).filter((k) => SPECS[k]),
+          proteins: (g.proteins || []).filter((k) => RSPEC(k)),
+          keys: (g.keys || []).filter((k) => validKey(k)),
+        }))
+        .filter((g) => keysOf(g).length); // a group a site holds a place for, with no filters, is not shown
     const out = [],
       seen = {};
     D.analyses.forEach((a) => {
@@ -583,7 +589,7 @@
         cur = S.f[key]?.[0] || '';
       const opts =
         sp.kind === 'number'
-          ? (sp.levels || []).map((v) => [String(v), `${sp.direction === 'max' ? '≤' : 'at least'} ${v}`])
+          ? (sp.levels || []).map((v) => [String(v), K.levelText(sp, v)])
           : [
               ...new Set(
                 (D.protein_attributes?.values?.[id] || [])
@@ -620,6 +626,9 @@
         (order.includes(x) ? order.indexOf(x) : 999) - (order.includes(y) ? order.indexOf(y) : 999) ||
         (cnt('t:' + id, y) || 0) - (cnt('t:' + id, x) || 0)
     );
+    // a value of none, said with the name of its group, not "none" under each of four groups
+    const noneLabel = (aid, v, sp) =>
+      v === '' && !(sp.values || {})[''] && sp.label ? `${sp.label}: none` : valueLabel(aid, v);
     if (spec.control === 'select')
       // many values: a drop-down list, one value at a time
       return (
@@ -630,7 +639,7 @@
             (v) =>
               `<option value="${esc(v)}"${on.has(v) ? ' selected' : ''}${
                 fc && !shownN(v) && !on.has(v) ? ' class="zero"' : ''
-              }>${esc(valueLabel(id, v))} (${int(shownN(v))})</option>`
+              }>${esc(noneLabel(id, v, spec))} (${int(shownN(v))})</option>`
           )
           .join('') +
         '</select></div>'
@@ -640,7 +649,7 @@
         spec.kind === 'list' ? ' <span class="muted">(match any)</span>' : ''
       }</p><div ` +
       `class="fchips">` +
-      sorted.map((v) => chip(v, valueLabel(id, v))).join('') +
+      sorted.map((v) => chip(v, noneLabel(id, v, spec))).join('') +
       '</div></div>'
     );
   }
@@ -654,6 +663,11 @@
       ...(g.keys || []).filter((k) => validKey(k)),
     ].filter((k) => !k.startsWith('a:') || !sd() || sd().classes[k.slice(2)]); // not a question whose classes the marks do not carry
   }
+  // on a phone the variant switch (the tab bar's, which scrolls out of reach) is the first line of the filters
+  const phoneVariant = () => {
+    const sw = matchMedia('(max-width: 700px)').matches ? K.variantSwitch() : '';
+    return sw ? `<div class="rail-variant">${sw}</div>` : '';
+  };
   function filtersTab() {
     M.need();
     const gs = groups();
@@ -661,12 +675,13 @@
       `<div class="rail-sel">${
         bar() ||
         `<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>`
-      }</div>${savedHtml()}` +
+      }</div>${phoneVariant()}${savedHtml()}` +
       gs
         .map((g, gi) => {
           const keys = keysOf(g),
             n = keys.filter((k) => S.f[k]?.length || termValues(k).length).length;
           return (
+            (g.heading && gs[gi - 1]?.heading !== g.heading ? `<p class="fheading">${esc(g.heading)}</p>` : '') +
             `<details class="fgroup${n ? ' active' : ''}" data-g="${gi}"${R.openGroups?.has(gi) ? ' open' : ''}><summary><span>${esc(g.name)}</span><span ` +
             `class="gcount muted" title="${keys.length} filter${keys.length === 1 ? '' : 's'} in this group${n ? `, ${n} in use` : ''}">${n ? `${n} of ` : ''}${keys.length}</span>${
               n
@@ -680,9 +695,11 @@
         })
         .join('') +
       (K.hl?.section?.() || '') +
-      `<div class="rail-foot"><span><b>${int(nMarks())}</b> ${esc(nMarks() === 1 ? W.mark : W.marks)} on <b>${int(nProteins())}</b> protein${nProteins() === 1 ? '' : 's'}${active() ? '' : ' (all)'}</span>${
-        active() ? '<button class="linkish" type="button" data-sel-clear-all>Clear all</button>' : ''
-      }</div>`
+      `<div class="rail-foot"><span>${
+        K.sel.loading?.()
+          ? esc(K.sel.loadingText())
+          : `<b>${int(nMarks())}</b> ${esc(nMarks() === 1 ? W.mark : W.marks)} on <b>${int(nProteins())}</b> protein${nProteins() === 1 ? '' : 's'}${active() ? '' : ' (all)'}`
+      }</span>${active() ? '<button class="linkish" type="button" data-sel-clear-all>Clear all</button>' : ''}</div>`
     );
   }
   // every page, as the tab bar lists them, with the Overview's sections under it (no other page lists its own), in their groups (as the
@@ -815,28 +832,13 @@
       return `<div class="toc-grp">${disclosure(`${S.view}|g|${g.head[1]}`, g.head[1], kids, 'toc-group', g.kids.some(isCur))}</div>`;
     };
     const item = (e) => (e.head ? group(e) : leaf(e.leaf, false));
-    const pages = [...document.querySelectorAll('#tabs a.tab')].map((a) => ({
-      href: a.getAttribute('href'),
-      name: a.cloneNode(true),
-      cur: a.getAttribute('aria-current') === 'page',
-    }));
-    pages.forEach((pg) => pg.name.querySelectorAll('.count, .selmark, svg').forEach((x) => x.remove()));
-    // one rule for every page: only the Overview lists its sections under its name; the other pages are a single entry
-    if (!pages.length)
-      return '<nav class="toc flat">' + (S.view === 'overview' ? entries.map(item).join('') : '') + '</nav>';
-    return (
-      '<nav class="toc flat">' +
-      pages
-        .map(
-          (pg) =>
-            `<a class="toc-p${pg.cur ? ' on' : ''}" href="${esc(pg.href)}"${pg.cur ? ' aria-current="page"' : ''}>${esc(pg.name.textContent.trim())}</a>` +
-            (pg.cur && (S.view === 'overview' || S.view === 'method') && raw.length
-              ? `<div class="toc-secs">${entries.map(item).join('')}</div>`
-              : '')
-        )
-        .join('') +
-      '</nav>'
-    );
+    // the pages are the tabs above the page (one list of them, drawn by kit.js); the sidebar lists only the sections of the page
+    // that has any (the Overview), and is empty on the rest (Methods lists its own parts at its top)
+    return S.view === 'overview'
+      ? entries.length
+        ? '<nav class="toc flat"><div class="toc-secs">' + entries.map(item).join('') + '</div></nav>'
+        : ''
+      : '';
   }
   const pinned = () => (R.pin === 'on' && innerWidth >= PIN_MIN) || (R.pin === 'auto' && innerWidth >= PIN_AUTO);
   // scroll-spy: the section in view is marked in the list
@@ -951,7 +953,7 @@
       );
     }
     const nf = K.sel.nFilters();
-    fab.innerHTML = `⏚ ${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}`;
+    fab.innerHTML = `${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}`;
     fab.setAttribute('aria-label', `Filters${nf ? `, ${nf} in use` : ''}`);
     document.body.classList.toggle('rail-open', open);
     if (open) {
@@ -968,21 +970,26 @@
     });
     document.documentElement.classList.toggle('rail-lock', open);
     drawerHistory(open, wasOpen);
+    // a page with no sections has no Sections tab: the sidebar is its filters
+    const secs = sectionsTab(),
+      tab = secs ? R.tab : 'filters';
     el.innerHTML =
-      `<div class="rail-head"><span class="seg" role="group"><button type="button" ` +
-      `data-rail-tab="sections" aria-pressed="${R.tab === 'sections'}">☰ Sections</button>` +
-      `<button type="button" data-rail-tab="filters" aria-pressed="${R.tab === 'filters'}">⏚ ${K.ACT.filters}${
+      `<div class="rail-head"><span class="seg" role="group">` +
+      (secs
+        ? `<button type="button" data-rail-tab="sections" aria-pressed="${tab === 'sections'}">☰ Sections</button>`
+        : '') +
+      `<button type="button" data-rail-tab="filters" aria-pressed="${tab === 'filters'}">${K.ACT.filters}${
         Object.keys(S.f).length ? ` <span class="badge">${Object.keys(S.f).length}</span>` : ''
       }</button></span>` +
       (innerWidth >= PIN_MIN
         ? `<button type="button" class="btn small" data-rail-pin title="${
             pinned() ? 'Show the sidebar only when asked (☰)' : 'Keep the sidebar beside the page'
-          }">${pinned() ? 'Unpin' : 'Pin'}</button>`
+          }">${pinned() ? 'Unpin sidebar' : 'Pin sidebar'}</button>`
         : '') +
       `${
         pinned() ? '' : '<button type="button" class="btn small" data-rail-close aria-label="Close">×</button>'
       }</div>` +
-      `<div class="rail-body">${R.tab === 'sections' ? sectionsTab() : filtersTab()}</div>` +
+      `<div class="rail-body">${tab === 'sections' ? secs : filtersTab()}</div>` +
       (pinned()
         ? `<div class="rail-grip" role="separator" aria-orientation="vertical" aria-label="Sidebar width: ` +
           `drag, or use the arrow keys; double-click resets it" aria-valuenow="${Math.round(
@@ -996,7 +1003,7 @@
       if (lab && !sel.hasAttribute('aria-label'))
         sel.setAttribute('aria-label', lab.textContent.replace(/\s+/g, ' ').trim());
     });
-    if (R.tab === 'sections') requestAnimationFrame(watchSections);
+    if (tab === 'sections') requestAnimationFrame(watchSections);
     const kept = (open || pinned()) && keep && el.querySelector(keep); // a sidebar being closed gives its focus back to the control that opened it, below
     if (kept) {
       kept.focus({ preventScroll: true });
@@ -1132,6 +1139,22 @@
             menuSet(false, false);
           }, 1600);
         });
+      },
+    ],
+    [
+      '[data-sel-share]',
+      (el) => {
+        const done = (t) => {
+          el.textContent = t;
+          setTimeout(() => (el.textContent = 'Copy link'), 1600);
+        };
+        const w = navigator.clipboard?.writeText(`${location.href}\n${summary()}`);
+        if (w)
+          w.then(
+            () => done('Link copied'),
+            () => done('Could not copy')
+          );
+        else done('Could not copy');
       },
     ],
     ['[data-sel-menu]', () => menuSet(menuEls().pop.hidden, false)],

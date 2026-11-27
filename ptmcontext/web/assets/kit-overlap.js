@@ -17,6 +17,7 @@
   const MAXT = Math.min(4, C.max_terms || 4);
   const LIGHT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100']; // categorical slots 1 to 4 (validate_palette.js, light and dark)
   const LETTERS = 'ABCD';
+  const TITLE = 'Overlap of protein sets';
   const UNITS = { proteins: 'Proteins', sites: 'Sites', enzymes: 'Enzymes', readers: 'Readers' };
   const SELMAX = 300; // most proteins a region puts in the address as a selection
 
@@ -47,9 +48,9 @@
     return { a, b, c, d, or: f.or, p: f.p, fold: s1 != null && s2 ? s1 / s2 : null };
   }
   // the overlap of the terms against chance: for each pair, n and m elements, a shared, N in the universe; expected = n*m/N,
-  // fold = a/expected, p = P(X >= a) for X hypergeometric (N, m, n), q = BH over the pairs of one universe. Two universes: every element,
-  // and the elements with sites (marked; none for a count of sites). ptmstats.pair_overlap is the same arithmetic.
-  function overlapPairs(nT, mask, marked) {
+  // fold = a/expected, p = P(X >= a) for X hypergeometric (N, m, n), q = BH over the pairs. The universe is every element counted.
+  // ptmstats.pair_overlap is the same arithmetic.
+  function overlapPairs(nT, mask) {
     const fam = (only) => {
       const cnt = new Array(nT).fill(0),
         both = {};
@@ -90,7 +91,7 @@
       t.forEach((r, k) => (r.q = q[k]));
       return rows;
     };
-    return { all: fam(null), marked: marked ? fam(marked) : null };
+    return { all: fam(null) };
   }
   const MIN_N = 5; // a region of fewer elements is counted, not tested
   // a region too small to test has no fold, p or q, and is left out of the Benjamini-Hochberg family
@@ -127,7 +128,7 @@
   };
 
   // ---- state in the address -----------------------------------------------------------------------------------------------
-  const clean = () => ({ ot: [], ou: 'proteins', ov: 'auto', or: '', oq: 'auto' });
+  const clean = () => ({ ot: [], ou: 'proteins', ov: 'auto', or: '' });
   Object.assign(S, clean());
   K.paramsIn.push((p) => {
     S.qn = p.get('qn') ? { q: p.get('q') || '', name: p.get('qn') } : null; // a selection this page made and named
@@ -146,7 +147,6 @@
     S.ou = C.units.includes(p.get('ou')) ? p.get('ou') : 'proteins';
     S.ov = 'auto'; // an old link's display choice is read and ignored
     S.or = /^a?\d+$/.test(p.get('or') || '') ? p.get('or') : ''; // a region (its mask), or a pair's overlap (a + the mask)
-    S.oq = ['a', 'b'].includes(p.get('oq')) ? p.get('oq') : 'auto';
   });
   K.paramsOut.push((p) => {
     if (S.qn && S.qn.q === S.q && S.q) p.set('qn', S.qn.name);
@@ -154,7 +154,6 @@
     if (S.ot.length) p.set('t', S.ot.map((x) => x.replace(/%/g, '%25').replace(/,/g, '%2C')).join(','));
     if (S.ou !== 'proteins') p.set('ou', S.ou);
     if (S.or) p.set('or', S.or);
-    if (S.oq !== 'auto') p.set('oq', S.oq);
   });
 
   // ---- terms --------------------------------------------------------------------------------------------------------------
@@ -375,7 +374,8 @@
       await DATA.sdReady();
       const SD = DATA.sd();
       if (SD) {
-        let marks = null;
+        let marks = null,
+          typed = null;
         if (kind === 'c') {
           const ai = SD.analyses.indexOf(a1),
             ci = SD.classes[a1]?.indexOf(rest);
@@ -393,6 +393,7 @@
           const q = K.sel.parse(id.slice(2)),
             ps = new Set([...q.genes, ...q.sites.map((s) => s[0])]);
           marks = SD.marks.map((m, i) => (ps.has(m[0]) ? i : -1)).filter((i) => i >= 0);
+          typed = ps.size;
         }
         if (marks) {
           const mk = new Uint8Array(SD.marks.length);
@@ -402,6 +403,7 @@
           t = {
             prot: fromProteins(new Set(marks.map((i) => SD.marks[i][0]))),
             mark: kind === 'g' || kind === 'sel' || kind === 'sv' || kind === 'c' ? mk : null,
+            typed,
           };
         }
       }
@@ -427,7 +429,19 @@
       return { ts, unit, nT: ids.length, missing: ids.filter((_, i) => !got[i]), rows: [], totals: [], pairs: {} };
     const fams = await DATA.families();
     const circ = ts.filter((t) => t.markedOnly).map((t) => t.label),
-      res = { ts, unit, nT, partial: U.partial, circ, rows: [], totals: [], note: '' };
+      res = {
+        ts,
+        unit,
+        nT,
+        partial: U.partial,
+        circ,
+        lists: ts
+          .filter((t) => ['g', 'sel', 'sv'].includes(t.id.split(':')[0]))
+          .map((t) => ({ label: t.label, n: t.n, typed: t.typed, list: t.id.startsWith('g:') })), // pasted, typed or selected by the reader: not chosen for having sites
+        rows: [],
+        totals: [],
+        note: '',
+      };
     if (nT < 2) return res;
     const SD = ts.some((t) => t.mark) || unit === 'sites' ? (await DATA.sdReady(), DATA.sd()) : null;
     let mask, marked, weight, elems;
@@ -524,8 +538,7 @@
         settle(res.totals, minN);
       }
     }
-    res.pairs = overlapPairs(nT, mask, marked);
-    if (U.partial && unit !== 'sites') res.pairs = { all: null, marked: res.pairs.all }; // only the proteins with sites are known
+    res.pairs = U.partial && unit !== 'sites' ? { all: null } : overlapPairs(nT, mask); // only the proteins with sites known: no test
     res.rows[0].outside = true; // the proteins in none of the terms: counted, not shown as a region
     res.mask = mask;
     res.elems = elems;
@@ -1384,8 +1397,6 @@
       el('path', { d: 'M2,5H16M2,1V9M16,1V9', stroke: 'var(--fig-ink-2)', 'stroke-width': 1.25, fill: 'none' }),
     ]);
   // the key: its items (a function of what the figure shows)
-  const expTick = () =>
-    svgEl(6, 14, [el('line', { x1: 3, x2: 3, y1: 0, y2: 14, stroke: 'var(--fig-ink)', 'stroke-width': 2 })]);
   const refTick = () =>
     svgEl(6, 14, [el('line', { x1: 3, x2: 3, y1: 0, y2: 14, stroke: 'var(--fig-ref)', 'stroke-width': 1.5 })]);
   const regionWords = (res, m) => regWords(res, m);
@@ -1394,9 +1405,8 @@
       out = res.ts.filter((_, i) => !(m & (1 << i))).map((t) => t.label);
     return inn.join(' and ') + (out.length ? `, not ${out.join(', not ')}` : '');
   }
-  const expText = (v) => (v == null || Number.isNaN(v) ? '–' : v < 10 ? v.toFixed(1) : fmtInt(Math.round(v)));
 
-  // -- the two questions as figure specs: what the key says, the columns, the rows and how each cell is drawn
+  // -- the question as a figure spec: what the key says, the columns, the rows and how each cell is drawn
   function specB(res, fd) {
     const sitesU = fd.sitesU,
       nT = res.nT,
@@ -1513,7 +1523,7 @@
         else
           o.push(
             res.circ?.length
-              ? `Not tested: ${joinNames(res.circ)} ${res.circ.length === 1 ? 'is' : 'are'} defined by having sites, so testing it for having sites would be circular. Counts only; the first question has no such problem.`
+              ? 'Counts only.'
               : res.partial
                 ? 'Not tested here: only the proteins with sites are known for these sets.'
                 : 'No test: a set describes sites, and the comparison residues are not known for several features at once. Counts only.'
@@ -1528,125 +1538,9 @@
       },
     };
   }
-  function specA(res) {
-    const uw = unitWord(res.unit),
-      groups = ['all', 'marked'].filter((u) => res.pairs?.[u]?.length),
-      recs = (u) =>
-        res.pairs[u].map((r) => ({
-          ...r,
-          u,
-          pair: true,
-          nA: r.n, // the sizes of the two sets; the bar is the shared count
-          nB: r.m,
-          m: r.mask, // the pair's mask (for the glyph and the rows)
-          n: r.a,
-          k: r.a,
-          or: r.fold,
-          noci: true,
-          sel: `a${r.mask}`,
-          hl: { m: r.mask, sup: true },
-          dm: r.mask,
-          text: `${LETTERS[r.i]} and ${LETTERS[r.j]}`,
-          tipText: `${fmtInt(r.a)} · ${expText(r.expected)} expected`,
-          sitesOnly: true,
-          unit: u,
-        })),
-      all = groups.flatMap(recs),
-      L2 = foldDomain(all.map((r) => ({ ...r, q: r.q }))),
-      tested = all.some((r) => r.q != null);
-    const terms = res.ts.map((t, i) => {
-      const n = res.rows.filter((r) => r.mask & (1 << i)).reduce((s, r) => s + r.n, 0);
-      return {
-        L: LETTERS[i],
-        name: t.label,
-        tag: t.tag,
-        i,
-        m: 1 << i,
-        n,
-        k: n,
-        term: true,
-        noBar: true,
-        tipText: `${fmtInt(n)} ${uw}`,
-        dm: 1 << i,
-      };
-    });
-    return {
-      q: 'a',
-      keyLines: [
-        [
-          'Bar length',
-          [
-            [keyBar('var(--fig-count-k)'), 'shared'],
-            [expTick(), 'expected by chance'],
-          ],
-        ],
-        [
-          'Times the expected overlap',
-          [
-            [keyBar('var(--fig-more)'), 'more than chance'],
-            [keyBar('var(--fig-surface)', 'var(--fig-muted)'), 'not clearly more'],
-            [refTick(), '1× (as expected)'],
-          ],
-        ],
-      ],
-      heads: {
-        size: ['Shared', `${uw} in both`],
-        mid: 'Times the expected overlap, log scale',
-        vals: ['fold', '', 'q'],
-      },
-      sections: [
-        { title: 'Sets', sub: `· ${uw} in each set`, rows: terms },
-        ...groups.map((u) => ({
-          title: `Among ${universeLabel(res, u)
-            .toLowerCase()
-            .replace(/^(\w)/, (c) => c)}`,
-          sub: `· ${fmtInt(res.pairs[u][0].N)} counted`,
-          rows: recs(u),
-        })),
-      ],
-      scaleValues: all.flatMap((r) => [r.a, Number.isNaN(r.expected) ? 0 : r.expected]),
-      tipTexts: all.map((r) => r.tipText),
-      sizeCell,
-      midCell: (r, w, phone) => (r.term ? svgEl(w, phone ? 22 : 30, []) : foldCell(r, L2, w, phone)),
-      midAxis: (w) => axisFold(L2, w),
-      vals: (r) => {
-        if (r.term) return { msg: '' };
-        if (r.q == null) return { msg: 'not tested' };
-        return {
-          parts: [
-            ['sh', r.a === 0 ? '0×' : foldFmt(r.fold, r.a)],
-            ['fo', ''],
-            ['q', 'q ' + fqf(r.q)],
-          ],
-        };
-      },
-      phoneA: (r) => r.tipText,
-      tip(rec) {
-        const out = { lines: [], extra: [] };
-        out.lines.push(['var(--fig-count-k)', fmtInt(rec.a), `${uw} in both`]);
-        out.extra.push(
-          `${expText(rec.expected)} expected by chance, from ${fmtInt(rec.nA)} and ${fmtInt(rec.nB)} of ${fmtInt(rec.N)} ${universeLabel(res, rec.u).toLowerCase()}`
-        );
-        if (rec.q != null)
-          out.extra.push(
-            `${rec.a === 0 ? '0×' : foldFmt(rec.fold, rec.a)} the expected overlap · p ${fqf(rec.p)} · q ${fqf(rec.q)}`
-          );
-        out.hint = `click to list the ${uw} in both`;
-        return out;
-      },
-      notes: (sc) => {
-        const o = [
-          'One-sided hypergeometric test of the shared count against two random sets of these sizes; fold = shared / expected; q: Benjamini–Hochberg across the pairs.',
-        ];
-        if (sc.brk < Infinity) o.push('Bars marked // are cut: they are longer than the axis.');
-        return o;
-      },
-      tested,
-    };
-  }
   const specOf = (res) => {
     const fd = figData(res);
-    return { fd, spec: question(res) === 'a' ? specA(res) : specB(res, fd) };
+    return { fd, spec: specB(res, fd) };
   };
 
   // -- the figure on the page: built as DOM from a result and a spec, redrawn when its width changes
@@ -2137,7 +2031,7 @@
   }
 
   // ---- the page ---------------------------------------------------------------------------------------------------------------
-  const trail = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <b>${esc(K.tabName('overlap', 'Compare sets'))}</b></p>`;
+  const trail = `<p class="crumb"><a href="${esc(K.link('overview'))}">Overview</a> › <b>${esc(TITLE)}</b></p>`;
   const fn = (v) => (v == null ? '–' : K.fx(v));
   const SWATCH = (i) => `<span class="ov-sw" style="background:var(--fig-c${i + 1})" aria-hidden="true"></span>`;
   const TESTS = {
@@ -2202,36 +2096,6 @@
     );
   }
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-  // what a universe is called, per unit
-  const universeLabel = (res, u) =>
-    u === 'marked'
-      ? `${cap(W.marked)} proteins`
-      : {
-          proteins: 'All reviewed proteins',
-          sites: `All ${W.marks}`,
-          readers: 'All reader proteins',
-          enzymes: 'All enzyme proteins',
-        }[res.unit];
-  const pairName = (res, r) => `${LETTERS[r.i]} and ${LETTERS[r.j]}`;
-  // the overlap test as a table: one row per pair and universe
-  function pairTableHtml(res) {
-    const body = ['all', 'marked']
-      .flatMap((u) => (res.pairs?.[u] || []).map((r) => ({ ...r, u })))
-      .map(
-        (r) =>
-          `<tr${String(S.or) === 'a' + r.mask ? ' class="ov-on"' : ''}><th scope="row"><button type="button" class="linkish" data-ov-reg="a${r.mask}" title="${esc(`${res.ts[r.i].label} and ${res.ts[r.j].label}`)}">${esc(pairName(res, r))}</button></th>` +
-          `<td>${esc(universeLabel(res, r.u))}</td><td class="num">${int(r.n)}</td><td class="num">${int(r.m)}</td><td class="num">${int(r.a)}</td>` +
-          `<td class="num">${Number.isNaN(r.expected) ? '–' : r.expected < 10 ? r.expected.toFixed(1) : int(Math.round(r.expected))}</td>` +
-          `<td class="num">${r.fold == null ? '–' : r.a === 0 ? '0×' : foldFmt(r.fold, r.a)}</td><td class="num">${fqf(r.p)}</td><td class="num">${fqf(r.q)}</td></tr>`
-      )
-      .join('');
-    return (
-      `<div class="tbl-card"><table class="tbl ov-tbl"><caption class="vh">Overlap of each pair of sets against chance</caption><thead><tr><th scope="col">Pair</th><th scope="col">Among</th>` +
-      `<th scope="col" class="num">In first</th><th scope="col" class="num">In second</th><th scope="col" class="num">In both</th><th scope="col" class="num" title="first × second / all counted">Expected</th>` +
-      `<th scope="col" class="num" title="in both / expected">Fold</th><th scope="col" class="num" title="one-sided hypergeometric: the chance of this many or more in both">p</th><th scope="col" class="num">q</th></tr></thead>` +
-      `<tbody>${body || '<tr><td colspan="9">Nothing to test.</td></tr>'}</tbody></table></div>`
-    );
-  }
   // a region's list
   // S.or: "5" is the region of exactly the terms of mask 5; "a5" is every element in those terms (and maybe more)
   const parseOr = (v) => ({ m: +String(v).replace('a', '') || 0, sup: String(v).startsWith('a') });
@@ -2262,11 +2126,11 @@
     return (
       `<section class="ov-region" id="ov-region" aria-live="polite"><h3>${esc(orTitle(res, k).head)}: ${esc(orTitle(res, k).words)}</h3>` +
       `<p class="muted">${int(items.length)} ${unitNoun}${sites ? `, on ${int(sel.length)} proteins` : `; ${int(withSites.length)} have ${esc(W.marks)} (linked to their pages), ${int(items.length - withSites.length)} have none`}.</p>` +
-      `<p class="actions"><button type="button" class="btn small" data-ov-use${sel.length && sel.length <= SELMAX ? '' : ' disabled'} title="${
-        sel.length > SELMAX
+      `<p class="actions"><button type="button" class="btn small" data-ov-use${sel.length && (sel.length <= SELMAX || andOf(res, k)) ? '' : ' disabled'} title="${
+        sel.length > SELMAX && !andOf(res, k)
           ? `Over ${SELMAX} proteins: too many for a link`
           : `The selection holds the ${sel.length} protein${sel.length === 1 ? '' : 's'} with ${W.marks}; the ${sites ? '' : `${int(items.length - withSites.length)} without `}cannot be selected`
-      }">Use the ${int(sel.length)}${sites ? '' : ` of ${int(items.length)}`} with ${esc(W.marks)} as the selection</button> <button type="button" class="btn small" data-ov-list>TSV</button> <button type="button" class="linkish" data-ov-close>Close</button></p>` +
+      }">Use the ${int(sel.length)}${sites ? '' : ` of ${int(items.length)}`} with ${esc(W.marks)} as the selection</button> <button type="button" class="btn small" data-ov-list>${esc(K.exp.label('tsv'))}</button> <button type="button" class="linkish" data-ov-close>Close</button></p>` +
       `<ul class="ov-list">${shown.map(li).join('')}</ul>` +
       (items.length > shown.length
         ? `<p class="muted">The first ${shown.length} of ${int(items.length)}; the TSV has all.</p>`
@@ -2316,6 +2180,23 @@
       `<button type="button" class="linkish" data-ov-del="${i}" aria-label="Remove ${esc(lab)}">×</button></span>`
     );
   }
+  // what a pasted gene list left out or merged, as the search box says it (names it does not know, a protein named twice)
+  function listNotes() {
+    return S.ot
+      .map((id, i) => {
+        if (!id.startsWith('g:')) return '';
+        const q = K.sel.parse(id.slice(2)),
+          left = [...(q.absent || []), ...(q.unmatched || []), ...(q.ignored || [])],
+          bold = (xs) => xs.map((x) => `<b>${esc(x)}</b>`).join(', '),
+          parts = [
+            ...(left.length ? [K.sel.leftOut(bold(left))] : []),
+            ...(q.dups.length ? [`Named more than once, counted once: ${bold(q.dups)}.`] : []),
+            ...K.sel.notesOf(q).map(esc),
+          ];
+        return parts.length ? `<p class="small muted ov-note"><b>${LETTERS[i]}</b> ${parts.join(' ')}</p>` : '';
+      })
+      .join('');
+  }
   function pickerHtml() {
     const full = S.ot.length >= MAXT,
       groups = groupOrder(),
@@ -2328,10 +2209,11 @@
         .join('');
     return (
       `<div class="ov-pick"><div class="ov-chips">${S.ot.map(chipHtml).join(' ') || '<span class="muted">No set chosen yet.</span>'}</div>` +
-      `<label class="flabel" for="ov-q">${full ? `${MAXT} of ${MAXT} sets chosen` : `Add a set (${int(pool0.length)} to choose from)`}</label>` +
-      `<div class="ov-gchips" role="group" aria-label="Where the sets come from">${chips}</div>` +
+      listNotes() +
+      `<label class="flabel" for="ov-q">${full ? `${MAXT} of ${MAXT} sets chosen` : 'Add a set'}</label>` +
       `<input id="ov-q" type="search" autocomplete="off" value="${esc(UIP.q)}" placeholder="${full ? `At most ${MAXT} sets` : 'Search by name or GO id: a pathway, a location, a disease, a protein family…'}"${full ? ' disabled' : ''}>` +
-      `<div id="ov-res" class="ov-res${UIP.q || UIP.group ? ' open' : ''}" role="listbox" aria-label="Matching sets">${resultsHtml(UIP.q)}</div>` +
+      `<div id="ov-res" class="ov-res${S.ot.length < 2 || UIP.q ? ' open' : ''}" role="listbox" aria-label="Matching sets">${resultsHtml(UIP.q)}</div>` +
+      `<details class="ov-browse"${UIP.group ? ' open' : ''}><summary>Browse by kind</summary><div class="ov-gchips" role="group" aria-label="Where the sets come from">${chips}</div></details>` +
       `<details class="ov-genes"><summary>Add a list of genes</summary><textarea id="ov-genes" rows="2" placeholder="Gene names or accessions"></textarea> <button type="button" class="btn small" data-ov-genes${full ? ' disabled' : ''}>Add</button></details></div>`
     );
   }
@@ -2340,8 +2222,14 @@
       return `<p class="muted">${MAXT} sets are chosen, the most that can be compared. Remove one to add another.</p>`;
     const w = q.trim().toLowerCase(),
       g = UIP.group,
-      all = [...specials(), ...termPool()].filter((t) => !S.ot.includes(t.id) && (!g || t.group === g));
+      all = [...specials(), ...termPool()].filter((t) => !S.ot.includes(t.id) && (!g || t.group === g)),
+      seen = new Set();
     let hit;
+    // two questions of one source hold the same class, with the same members (a condensate under both condensate questions): offered once
+    const once = (t) => {
+      const k = [t.group, t.label, t.ref, t.tag, t.size].join('|');
+      return !seen.has(k) && seen.add(k);
+    };
     if (w)
       hit = all
         .filter(
@@ -2365,7 +2253,8 @@
         .map((x) => x[0]);
     else if (g) hit = all.slice().sort((x, y) => (y.size || 0) - (x.size || 0));
     else hit = all.filter((t) => ['Selection', 'Readers', 'Enzymes'].includes(t.group));
-    if (!hit.length) return `<p class="muted">${w ? 'No set matches.' : 'Pick a source above, or type to search.'}</p>`;
+    hit = hit.filter(once);
+    if (!hit.length) return `<p class="muted">${w ? 'No set matches.' : 'Type to search, or browse by kind.'}</p>`;
     const shown = hit.slice(0, 40);
     let head0 = '';
     return (
@@ -2395,54 +2284,38 @@
       readers: 'Counts only reader proteins: those that carry a reader domain family of this site.',
       enzymes: 'Counts only enzyme proteins: those of the site’s writer and eraser classes.',
     })[u];
-  // which question is asked: the one the reader chose; else the overlap of two sets (a), or the regions of more (b)
-  const question = (res) => (S.oq === 'a' || S.oq === 'b' ? S.oq : res && res.nT === 2 ? 'a' : 'b');
+  // the question the page asks: whether the proteins in each region carry the modification more often (the test of the
+  // overlap of the sets themselves is one muted line under the diagram)
   const questionTitle = (res) => {
     const uw = unitWord(res.unit);
-    return question(res) === 'a'
-      ? `Do these sets share more ${uw} than chance?`
-      : res.unit === 'sites'
-        ? `Do the ${uw} in each region stand out?`
-        : `Are the ${uw} in each region ${W.marked} more often?`;
+    return res.unit === 'sites'
+      ? `Do the ${uw} in each region stand out?`
+      : `Are the ${uw} in each region ${W.marked} more often?`;
   };
-  function controls(res) {
-    const u =
-        C.units.length > 1
-          ? `<div class="ov-unit" role="group" aria-label="What is counted">${C.units.map((x) => `<button type="button" class="btn small${S.ou === x ? ' on' : ''}" aria-pressed="${S.ou === x}" data-ov-unit="${x}">${UNITS[x]}</button>`).join('')}</div>` +
-            `<p class="ov-unitnote muted">${esc(unitNote(S.ou))}</p>`
-          : '',
-      q = question(res),
-      uw = unitWord(S.ou),
-      qs =
-        S.ou === 'sites'
-          ? [
-              ['a', `Do these sets share more ${uw} than chance?`, `Overlap of the sets themselves, pair by pair.`],
-              [
-                'b',
-                `Do the ${uw} in each region stand out?`,
-                `Each region’s ${uw} against the other residues of the proteins with ${W.marks}.`,
-              ],
-            ]
-          : [
-              ['a', `Do these sets share more ${uw} than chance?`, `Overlap of the sets themselves, pair by pair.`],
-              [
-                'b',
-                `Are the ${uw} in each region ${W.marked} more often?`,
-                `Each region’s ${W.marked} share against all reviewed proteins.`,
-              ],
-            ];
-    return (
-      `<div class="ov-ctl">${u}</div>` +
-      `<div class="ov-qs" role="radiogroup" aria-label="Question">${qs
-        .map(
-          ([k, t, sub]) =>
-            `<button type="button" class="ov-qbtn${q === k ? ' on' : ''}" role="radio" aria-checked="${q === k}" data-ov-q="${k}"><b>${esc(t)}</b><span>${esc(sub)}</span></button>`
-        )
-        .join('')}</div>`
-    );
+  function controls() {
+    return C.units.length > 1
+      ? `<div class="ov-ctl"><div class="ov-unit" role="group" aria-label="What is counted">${C.units.map((x) => `<button type="button" class="btn small${S.ou === x ? ' on' : ''}" aria-pressed="${S.ou === x}" data-ov-unit="${x}">${UNITS[x]}</button>`).join('')}</div>` +
+          `<p class="ov-unitnote muted">${esc(unitNote(S.ou))}</p></div>`
+      : '';
   }
   // the answer in a sentence, from the terms and the result
   const joinNames = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a.at(-1)}`);
+  // why the share with sites is not tested: a pasted list holds only proteins that carry sites here (it was not chosen for having
+  // them); a set defined by having sites would make the test circular. Both are counts only; the overlap test is not affected.
+  const noTestWhy = (res) => {
+    const lists = res.lists || [],
+      defined = res.circ.filter((l) => !lists.some((x) => x.label === l)),
+      out = lists.map((x) => {
+        const what = x.list ? 'list' : 'selection',
+          all = x.typed == null || x.typed <= x.n;
+        return `${all ? `All ${fmtInt(x.n)}` : `${fmtInt(x.n)} of ${fmtInt(x.typed)}`} proteins in your ${what} carry ${W.marks} here, so the share with sites can't be tested; the overlap test below can.`;
+      });
+    if (defined.length)
+      out.push(
+        `${joinNames(defined)} ${defined.length === 1 ? 'is' : 'are'} defined by having sites, so the regions are not tested for it (that would be circular). The overlap test below can still be run.`
+      );
+    return out.join(' ');
+  };
   // "Proteins in both sets", "Proteins only in B", "Proteins in A and B but not C"
   const regionPhrase = (res, m, noun) => {
     const inn = res.ts.filter((_, i) => m & (1 << i)).map((t) => t.label),
@@ -2459,8 +2332,8 @@
       fq1 = (v) => (v == null ? '' : K.fq(v)),
       f1 = (v) => (v >= 10 ? Math.round(v) : v.toFixed(1)) + '×';
     if (q === 'a') {
-      const fam = res.pairs?.all || res.pairs?.marked;
-      if (!fam || !fam.length) return `${pre}no pair can be tested.`;
+      const fam = res.pairs?.all;
+      if (!fam || !fam.length) return '';
       const tested = fam.filter((r) => r.q != null),
         best = (tested.length ? tested : fam).slice().sort((x, y) => (x.q ?? 1) - (y.q ?? 1) || y.a - x.a)[0],
         up = fam.filter(sigUp).length,
@@ -2477,17 +2350,13 @@
       let out = pre;
       if (res.nT > 2) out += `${up} of ${fam.length} pairs share more ${uw} than chance. The clearest, ${pairName}: `;
       out += sentence(best, '') + '.';
-      const m =
-        res.pairs?.all && res.pairs?.marked ? res.pairs.marked.find((r) => r.i === best.i && r.j === best.j) : null;
-      if (m && res.unit !== 'sites' && m.a > 0)
-        out += ` Among the ${W.marked} proteins alone: ${int(m.a)} shared, ${m.fold != null ? f1(m.fold) : '–'} the expected overlap (q ${fq1(m.q)}).`;
       return out;
     }
     // question b
     const fd = figData(res),
       full = (1 << res.nT) - 1;
     if (!res.test)
-      return `${pre}${res.circ?.length ? `${joinNames(res.circ)} ${res.circ.length === 1 ? 'is' : 'are'} defined by having sites, so the regions are not tested for it (that would be circular). The first question can still be asked.` : res.partial ? 'only the proteins with sites are known for these sets, so no test is made.' : 'the regions can only be counted here, not tested.'}`;
+      return `${pre}${res.circ?.length ? noTestWhy(res) : res.partial ? 'only the proteins with sites are known for these sets, so no test is made.' : 'the regions can only be counted here, not tested.'}`;
     const pick =
       fd.regs.find((r) => r.m === full && isTested(r)) || fd.regs.filter(isTested).sort((x, y) => x.q - y.q)[0];
     if (!pick) return `${pre}no region has enough ${uw} to test.`;
@@ -2507,7 +2376,7 @@
     const key = JSON.stringify([S.ot, S.ou, !!K.sel.peek()]);
     const head =
       trail +
-      `<div class="page-head"><h2>${esc(K.tabName('overlap', 'Compare sets'))}</h2></div><p class="page-sub">Compare 2 to ${MAXT} sets of proteins: how many they share, and whether the shared proteins are ${W.marked} more often. <a href="${esc(K.link('method', 'overlap'))}">Methods</a></p>`;
+      `<div class="page-head"><h2>${esc(TITLE)}</h2></div><p class="page-sub">Choose 2 to ${MAXT} protein sets. Each region of the overlap is tested for ${W.marked} proteins against all reviewed proteins. <a href="${esc(K.link('method', 'overlap'))}">Methods</a></p>`;
     if (S.ot.length < 2) {
       RES = null;
       return head + pickerHtml();
@@ -2541,19 +2410,20 @@
       return (
         head +
         pickerHtml() +
-        `<p class="ov-warn" role="alert">Not available here: ${esc(res.missing.map((id) => termLabel(id)).join('; '))}. ${res.missing.some((id) => id.startsWith('sv:')) ? 'A saved selection stays in the browser that saved it, so a link cannot carry it. ' : 'It is not in this dataset. '}Remove it to compare the others; the letters of the other sets stay as they are.</p>`
+        `<p class="ov-warn" role="alert">Not available: ${esc(res.missing.map((id) => termLabel(id)).join('; '))}. ${res.missing.some((id) => id.startsWith('sv:')) ? 'A saved selection stays in the browser that saved it, so a link cannot carry it. ' : 'It is not in this dataset. '}Remove it to compare the others.</p>`
       );
-    const q = question(res);
+    const pair = answerText(res, 'a', true);
     return (
       head +
       pickerHtml() +
-      controls(res) +
-      `<p class="ov-answer" role="status">${esc(answerText(res, q))}</p>` +
+      controls() +
+      `<p class="ov-answer" role="status">${esc(answerText(res, 'b'))}</p>` +
       `<div id="ov-fig" class="ov-figwrap"></div>` +
+      (pair ? `<p class="ov-pairline muted small">${esc(pair)}</p>` : '') +
       `<div class="exp-row">${K.expBar(['pdf', 'svg', 'png', 'tsv'], 'ovexp', 'the overlap figure')}</div>` +
       regionHtml(res) +
       '<h3>Table</h3>' +
-      (q === 'a' ? pairTableHtml(res) : tableHtml(res))
+      tableHtml(res)
     );
   }
 
@@ -2572,7 +2442,7 @@
       cite = citeFor(res.ts.map((t) => t.id));
     const f = K.figureFrame({
       title: questionTitle(res),
-      sub: `${res.ts.map((t, i) => `${LETTERS[i]} ${t.label}`).join('; ')}. ${answerText(res, question(res), true)}`,
+      sub: `${res.ts.map((t, i) => `${LETTERS[i]} ${t.label}`).join('; ')}. ${answerText(res, 'b', true)}`,
       legend: [],
       body: b.svg,
       bodyH: b.h,
@@ -2584,41 +2454,7 @@
     });
     return f;
   }
-  // the overlap test as a table: one row per pair and universe
-  function tsvPairs(res) {
-    const g = (v) => (v == null || Number.isNaN(v) ? '' : K.g6(v));
-    const rows = ['all', 'marked'].flatMap((u) =>
-      (res.pairs?.[u] || []).map((r) =>
-        [
-          `${LETTERS[r.i]} and ${LETTERS[r.j]}`,
-          `${res.ts[r.i].label}; ${res.ts[r.j].label}`,
-          universeLabel(res, u),
-          r.n,
-          r.m,
-          r.a,
-          r.N,
-          g(r.expected),
-          g(r.fold),
-          g(r.p),
-          g(r.q),
-        ].join('\t')
-      )
-    );
-    return (
-      K.preamble(
-        'overlap of sets against chance',
-        `${res.ts.map((t, i) => `${LETTERS[i]} = ${t.label}`).join('; ')}; unit ${res.unit}. For each pair: one-sided hypergeometric test of the shared ${unitWord(res.unit)} against two random sets of the same sizes drawn from those counted (expected = n × m / N; fold = shared / expected; q: Benjamini–Hochberg across the pairs of each group).${citeFor(res.ts.map((t) => t.id)) ? ` ${citeFor(res.ts.map((t) => t.id))}` : ''}`
-      ) +
-      ['pair', 'sets', 'among', 'in_first', 'in_second', 'in_both', 'counted', 'expected', 'fold', 'p', 'q'].join(
-        '\t'
-      ) +
-      '\n' +
-      rows.join('\n') +
-      '\n'
-    );
-  }
   function tsv(res = RES.res) {
-    if (question(res) === 'a') return tsvPairs(res);
     const sites = res.unit === 'sites',
       fd = figData(res),
       rows = fd.regs;
@@ -2697,6 +2533,21 @@
     K.writeHash(true);
     K.render();
   };
+  // the one way to the page with sets chosen: the address is written by K.writeHash (t=<terms>), here and in every link to it
+  K.overlapOpen = (terms) => K.go('overlap', { ot: terms.slice(0, MAXT), ou: 'proteins', or: '' });
+  // the selection that is the AND of protein-set classes, in the form the Overview builds it: one filter per question
+  // (p:<question>), as a class row's "Add to selection (AND)" writes it; null when the terms are not such classes
+  const andFilters = (terms) => {
+    const f = {};
+    for (const t of terms) {
+      const m = /^s:([^:]+):(.+)$/.exec(t);
+      if (!m || f['p:' + m[1]] || A[m[1]]?.kind !== 'protein_sets') return null;
+      f['p:' + m[1]] = [m[2]];
+    }
+    return Object.keys(f).length === terms.length && terms.length > 1 ? f : null;
+  };
+  // the region of every set at once as that selection, or null
+  const andOf = (res, k) => (parseOr(k).m === (1 << res.nT) - 1 ? andFilters(S.ot) : null);
   const add = (id) => {
     if (S.ot.length < MAXT && !S.ot.includes(id)) {
       UIP.q = '';
@@ -2725,7 +2576,6 @@
     ['[data-ov-add]', (el) => add(el.dataset.ovAdd)],
     ['[data-ov-del]', (el) => set({ ot: S.ot.filter((_, i) => i !== +el.dataset.ovDel), or: '' })],
     ['[data-ov-unit]', (el) => set({ ou: el.dataset.ovUnit, or: '' })],
-    ['[data-ov-q]', (el) => set({ oq: el.dataset.ovQ, or: '' })],
     [
       '[data-ov-group]',
       (el) => {
@@ -2753,9 +2603,13 @@
                 .map((x) => x.acc)
             ),
           ];
-        if (!accs.length || accs.length > SELMAX) return;
+        const and = andOf(res, S.or);
+        if (!accs.length || (accs.length > SELMAX && !and)) return;
         const t = orTitle(res, S.or),
           q = accs.join(' ');
+        // the region of every set at once, when each set is a class of a protein-set question: the same selection, in the
+        // same address, as the AND built on the Overview (one filter per question)
+        if (and) return K.go('overview', { q: '', f: and, qn: null });
         // the pill is named after the region; the address keeps the sets and the region (t, or), so Back returns to them
         K.go('overview', {
           q,
@@ -2779,15 +2633,16 @@
     ]
   );
   // first in line: the button sits inside a row whose own click filters the page
-  K.clicks.unshift([
-    '[data-ov-compare]',
-    (el) => K.go('overlap', { ot: [el.dataset.ovCompare], ou: 'proteins', or: '' }),
-  ]);
+  K.clicks.unshift(['[data-ov-compare]', (el) => K.overlapOpen([el.dataset.ovCompare])]);
 
-  // a "Compare with…" button on the rows of a protein-set question's page (the Overview's tiles have none: a row opens the page)
+  // on the rows of a protein-set question's page (the Overview's tiles have them in the row's menu): "Overlap with another set ›",
+  // and, when a selection is on, "Add to selection (AND)" (the row's own click does the same: it selects the class)
   function rowButtons() {
     const mk = (aid, cat, name) =>
-      `<button type="button" class="btn small ov-cmp" data-ov-compare="${esc(`s:${aid}:${cat}`)}" aria-label="Compare ${esc(name)} with other terms">Compare with…</button>`;
+      `<button type="button" class="btn small ov-cmp" data-ov-compare="${esc(`s:${aid}:${cat}`)}" aria-label="Overlap of ${esc(name)} with another set">Overlap with another set ›</button>` +
+      (K.sel.andOk(aid, cat)
+        ? ` <button type="button" class="btn small ov-and" data-f="${esc('p:' + aid)}" data-v="${esc(cat)}" aria-label="Add ${esc(name)} to the selection (AND)">Add to selection (AND)</button>`
+        : '');
     if (S.view === 'overview' && S.arg && sets.includes(S.arg))
       document.querySelectorAll('#view .drow[data-cat]').forEach((r) => {
         if (r.querySelector('.ov-cmp') || !K.overlapHas(S.arg, r.dataset.cat)) return;
@@ -2809,16 +2664,15 @@
   (K.afterRender ||= []).push(rowButtons);
   K.views.overlap = {
     render: view,
-    title: () => K.tabName('overlap', 'Compare sets'),
+    title: () => TITLE,
     offNote: () =>
       S.ot.includes('sel')
         ? ''
-        : 'Not filtered by your selection: this page compares the sets chosen on it. Add “The current selection” as a set to compare it.',
+        : 'The selection does not filter this page. Add “The current selection” as a set to compare it.',
   };
-  K.tabs.push(() => ['overlap', 'Compare sets', null]);
   (K.methodParts ||= []).push(
     () =>
-      `<section id="m-overlap"><h3>Compare sets</h3><p>The Compare sets page compares two to four sets: the sets of the protein-set questions, reader families, enzymes, ` +
+      `<section id="m-overlap"><h3>Overlap of protein sets</h3><p>The Overlap of protein sets page compares two to four sets: the sets of the protein-set questions, reader families, enzymes, ` +
       `the selection or a list of genes. It answers two questions, and the reader chooses which.</p>` +
       `<p><b>Do these sets share more proteins than chance?</b> For each pair of sets, the proteins in both are counted and compared with the number ` +
       `two random sets of the same sizes would share: expected = n × m / N, where n and m are the sizes of the two sets and N the proteins counted; ` +
@@ -2829,7 +2683,7 @@
       `<p><b>Are the proteins in each region ${esc(W.marked)} more often?</b> A region holds the proteins in exactly one combination of sets. ` +
       `A one-sided hypergeometric test compares the region’s ${esc(W.marked)} proteins with all reviewed proteins, as the protein-set questions do ` +
       `(fold = share ${esc(W.marked)} in the region / share among all reviewed proteins; q is Benjamini–Hochberg across the regions shown; ` +
-      `a region of fewer than 5 is counted, not tested). A bar is filled when q ≤ 0.05 and the effect is at least 1.1×. ` +
+      `a region of fewer than 5 is counted, not tested). A bar is filled when q ≤ 0.05 and at least 1.1×. ` +
       `For ${esc(W.marks)}, a pooled Fisher’s exact test of the residues of proteins with ${esc(W.marks)} compares the ${esc(W.marks)} in a region with the other residues, ` +
       `when every set describes proteins. Computed in your browser. Reader families: ${
         (C.families?.readers || []).map((f) => `${esc(f.name)} (${(f.ids || []).map(esc).join(', ')})`).join('; ') ||
@@ -2839,7 +2693,6 @@
   K.overlapHas = (aid, cat) => sets.includes(aid) && (cat == null || rowsOf(aid).some((r) => r.id === cat)); // a protein-set question whose classes the Overlap page takes as terms
   K.overlap = {
     tableHtml,
-    pairTableHtml,
     answerText,
     exportBody,
     core: {

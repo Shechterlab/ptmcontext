@@ -1,15 +1,16 @@
 {
- "_about": "The Overview's section names, shared by every explorer and in this order; a site's own sections follow them, then the closing ones. A site can replace the order with website.overview.group_order.",
+ "_about": "The Overview's section names, shared by every explorer and in this order. \"*\" stands where a site's own sections (its mark-specific ones) go; the closing group follows. A site can replace the order with website.overview.group_order.",
  "shared": [
-  "Where in the cell",
-  "Which proteins",
-  "Where in the protein",
+  "Localization",
+  "Disease associations",
+  "Classes and pathways",
+  "Enzymes and readers",
+  "*",
   "Other modifications",
-  "Interactions and enzymes",
-  "Disease and cancer",
-  "Evidence and studies"
+  "Position in the protein"
  ],
  "last": [
-  "More questions"
+  "More questions",
+  "Studies and databases"
  ]
 }

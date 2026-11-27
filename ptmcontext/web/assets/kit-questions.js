@@ -219,8 +219,7 @@
         .filter((s) => site.has(s) && !enr(s))
         .sort((x, y) => size(y) - size(x))
         .slice(0, o.compare ?? 4);
-      if (cmp.length)
-        items.push(['head', 'For comparison: the largest classes, not enriched'], ...cmp.map((s) => ['row', s, 0]));
+      if (cmp.length) items.push(['head', 'Largest classes, not enriched'], ...cmp.map((s) => ['row', s, 0]));
     }
     LAST[a.id] = { items: items.map(([k, s, d]) => (k === 'row' ? ['row', rowOf(s), d] : [k, s])), o };
     const nSig = [...site.keys()].filter(enr).length;
@@ -269,7 +268,7 @@
     LAST[a.id + ':table'] = shown;
     return (
       `<div class="qv-members"><div class="card-head"><p class="note">${int(K.rowsFor(a, 'enricher').length - 1)} ${esc(nouns)} were tested; <b>${int(enr.length)}</b> are ` +
-      `enriched (q ≤ ${PADJ})${K.selOn() ? ' for your selection, tested again in your browser' : ''}.</p>${K.expBar(
+      `enriched (q ≤ ${PADJ})${K.selOn() ? ' for your selection, tested in this browser' : ''}.</p>${K.expBar(
         ['pdf', 'svg', 'png', 'tsv'],
         'qotexp',
         'the table',
@@ -433,7 +432,7 @@
         ? `Your selection was made with these data (or names its proteins), so its ${esc(nouns)} are shown,` +
           ` not tested. These ${int(pool.length)} hold its ${esc(unitOf(m.id))}, most first. `
         : `${int(pool.length)} of the ${int(nTested)} ${esc(nouns)} tested are enriched (q ≤ ${PADJ})${
-            sel ? ' for your selection, tested again in your browser' : ''
+            sel ? ' for your selection, tested in this browser' : ''
           }. `) +
       groups.map((g) => `${int(count('g' + g.k))} belong to the ${esc(g.label)}`).join('; ') +
       (mem.none ? `; ${int(count('none'))} to none` : '') +
@@ -650,7 +649,7 @@
     (siteRows[aid] ||= new Map(K.rowsFor(A[aid], 'enricher').map((r) => [r.category, r]))).get(s);
   const pick = (aid, s, name) =>
     `<button class="linkish" type="button" data-f="p:${esc(aid)}" data-v="${esc(s)}" title="Select ` +
-    `the ${esc(W.marks)} on proteins in it">${esc(name || labelOf(aid, s))}</button>`;
+    `the ${esc(W.marks)} on proteins in it">${esc(K.us(name || labelOf(aid, s)))}</button>`;
   const resText = (r) =>
     r ? `<span class="val ${r.dir}">${fxn(r.eff)}×</span> <span class="muted">q ${fq(r.q)}</span>` : '';
   // the protein's enriched terms grouped by the family that gathers them (website.protein.sets[].term_groups): the first family
@@ -682,11 +681,11 @@
       order
         .map(
           (g) =>
-            `<details class="dis-group"><summary>${
+            `<details class="dis-group" id="dg-${esc(aid)}-${g ? esc(String(g).replace(/[^\w]+/g, '-')) : 'other'}"><summary>${
               g
                 ? `<button class="linkish strong" type="button" ` +
                   `data-f="p:${esc(famAid[g])}" data-v="${esc(g)}" title="Select the ${esc(W.marks)} on the proteins of ` +
-                  `this family">${esc(g)}</button>`
+                  `this family">${esc(K.us(g))}</button>`
                 : '<span class="strong">Other / unassigned</span>'
             } ` +
             (`<span class="muted">${int(groups.get(g).length)} ${
@@ -705,97 +704,117 @@
     const sd = K.sel?.pdata(p.i);
     if (!sd) return K.loading('Loading the sets…');
     const gene = p.gene || p.acc;
-    const blocks = c.analyses
-      .filter((aid) => sd.protein_sets?.[aid])
-      .map((aid) => {
-        const a = A[aid],
-          mine = sd.protein_sets[aid].sets.map(([s]) => s).filter((s) => K.sel.setHas(aid, s, p.i));
-        const title = `<h4>${esc(a.title)} <span class="muted">${int(mine.length)}</span></h4>`;
-        if (!mine.length)
+    const render = (list) =>
+      list
+        .filter((aid) => sd.protein_sets?.[aid])
+        .map((aid) => {
+          const a = A[aid],
+            mine = sd.protein_sets[aid].sets.map(([s]) => s).filter((s) => K.sel.setHas(aid, s, p.i));
+          const title = `<h4>${esc(a.title)} <span class="muted">${int(mine.length)}</span></h4>`;
+          if (!mine.length)
+            return (
+              `<div class="kind">${title}<p class="muted">${esc(gene)} is in none of its tested ` + `sets.</p></div>`
+            );
+          if (a.parents) {
+            // an ontology: the most specific sets first, then the enriched ones above
+            const has = new Set(mine),
+              kids = kidsOf(aid);
+            const specific = mine
+              .filter((s) => !(kids[s] || []).some((x) => has.has(x)))
+              .sort((x, y) => labelOf(aid, x).localeCompare(labelOf(aid, y)));
+            const up = mine
+              .filter((s) => !specific.includes(s) && s !== a.root && enriched(siteRow(aid, s)))
+              .sort((x, y) => siteRow(aid, x).q - siteRow(aid, y).q);
+            const ns = ontologyOf(aid)?.nouns || 'sets';
+            return (
+              `<div class="kind">${title}<p class="muted small">Most specific ${esc(ns)}:</p><ul ` +
+              `class="kind-list">${specific
+                .map(
+                  (s) =>
+                    `<li>${pick(aid, s)} ${idLink(aid, s)}${
+                      enriched(siteRow(aid, s)) ? ' <span class="qv-tag">enriched</span>' : ''
+                    }</li>`
+                )
+                .join('')}</ul>` +
+              (up.length
+                ? `<p class="note">Enriched broader ${esc(ns)} that include ${esc(gene)}: ${up
+                    .slice(0, 10)
+                    .map((s) => pick(aid, s))
+                    .join(', ')}${up.length > 10 ? ` and ${int(up.length - 10)} more` : ''}.</p>`
+                : '') +
+              '</div>'
+            );
+          }
+          if (a.gathers) {
+            // families: each with how many of its tested member sets name the protein
+            const mem = membersOf(aid),
+              m = mem && A[mem.analysis];
+            return `<div class="kind">${title}<ul class="kind-list">${mine
+              .map((f) => {
+                const r = siteRow(aid, f),
+                  own = a.gathers[f] || [];
+                const named = m ? own.filter((s) => K.sel.setHas(m.id, s, p.i)) : [],
+                  nEnr = named.filter((s) => enriched(siteRow(m.id, s))).length;
+                const ns = esc(mem?.nouns || 'sets');
+                return `<li>${pick(aid, f)} ${resText(r)}${
+                  m
+                    ? ` <span class="muted">· ${
+                        named.length
+                          ? `in ${int(named.length)} of ${int(own.length)} tested ${ns}, ${
+                              nEnr ? int(nEnr) + ' enriched' : 'none enriched'
+                            }`
+                          : `in 0 of ${int(own.length)} tested ${ns}`
+                      }</span>`
+                    : ''
+                }</li>`;
+              })
+              .join('')}</ul></div>`;
+          }
+          if (c.term_groups?.terms === aid) return termGroupsHtml(c, aid, mine, title, gene);
+          const enr = mine
+              .filter((s) => enriched(siteRow(aid, s)))
+              .sort((x, y) => siteRow(aid, x).q - siteRow(aid, y).q),
+            key = 'psets:' + aid,
+            all = UI.all.has(key);
+          const ns = esc(asMembers(aid)?.nouns || 'sets');
           return (
-            `<div class="kind">${title}<p class="muted">${esc(gene)} is in none of its tested ` + `sets.</p></div>`
-          );
-        if (a.parents) {
-          // an ontology: the most specific sets first, then the enriched ones above
-          const has = new Set(mine),
-            kids = kidsOf(aid);
-          const specific = mine
-            .filter((s) => !(kids[s] || []).some((x) => has.has(x)))
-            .sort((x, y) => labelOf(aid, x).localeCompare(labelOf(aid, y)));
-          const up = mine
-            .filter((s) => !specific.includes(s) && s !== a.root && enriched(siteRow(aid, s)))
-            .sort((x, y) => siteRow(aid, x).q - siteRow(aid, y).q);
-          const ns = ontologyOf(aid)?.nouns || 'sets';
-          return (
-            `<div class="kind">${title}<p class="muted small">Most specific ${esc(ns)}:</p><ul ` +
-            `class="kind-list">${specific
-              .map(
-                (s) =>
-                  `<li>${pick(aid, s)} ${idLink(aid, s)}${
-                    enriched(siteRow(aid, s)) ? ' <span class="qv-tag">enriched</span>' : ''
-                  }</li>`
-              )
-              .join('')}</ul>` +
-            (up.length
-              ? `<p class="note">Enriched broader ${esc(ns)} that include ${esc(gene)}: ${up
-                  .slice(0, 10)
-                  .map((s) => pick(aid, s))
-                  .join(', ')}${up.length > 10 ? ` and ${int(up.length - 10)} more` : ''}.</p>`
+            `<div class="kind">${title}<p class="note">${esc(gene)} is in ${int(mine.length)} of the tested ${ns}; ${int(enr.length)} of them ` +
+            `are enriched across all ${esc(W.marked)} proteins${enr.length ? ':' : '.'}</p>` +
+            (enr.length
+              ? `<ul class="kind-list">${(all ? enr : enr.slice(0, 10))
+                  .map((s) => `<li>${pick(aid, s)} ${idLink(aid, s)} ${resText(siteRow(aid, s))}</li>`)
+                  .join('')}</ul>` +
+                (enr.length > 10
+                  ? `<button class="linkish" type="button" data-qallm="${esc(key)}">${all ? 'Fewer' : `All ${int(enr.length)}`}</button>`
+                  : '')
               : '') +
             '</div>'
           );
-        }
-        if (a.gathers) {
-          // families: each with how many of its tested member sets name the protein
-          const mem = membersOf(aid),
-            m = mem && A[mem.analysis];
-          return `<div class="kind">${title}<ul class="kind-list">${mine
-            .map((f) => {
-              const r = siteRow(aid, f),
-                own = a.gathers[f] || [];
-              const named = m ? own.filter((s) => K.sel.setHas(m.id, s, p.i)) : [],
-                nEnr = named.filter((s) => enriched(siteRow(m.id, s))).length;
-              const ns = esc(mem?.nouns || 'sets');
-              return `<li>${pick(aid, f)} ${resText(r)}${
-                m
-                  ? ` <span class="muted">· ${
-                      named.length
-                        ? `in ${int(named.length)} of its ${int(own.length)} tested ${ns}, ${
-                            nEnr ? int(nEnr) + ' enriched' : 'none enriched'
-                          }`
-                        : `in none of its ${int(own.length)} tested ${ns} (only in ${ns} too small ` +
-                          `or too large to test)`
-                    }</span>`
-                  : ''
-              }</li>`;
-            })
-            .join('')}</ul></div>`;
-        }
-        if (c.term_groups?.terms === aid) return termGroupsHtml(c, aid, mine, title, gene);
-        const enr = mine.filter((s) => enriched(siteRow(aid, s))).sort((x, y) => siteRow(aid, x).q - siteRow(aid, y).q),
-          key = 'psets:' + aid,
-          all = UI.all.has(key);
-        const ns = esc(asMembers(aid)?.nouns || 'sets');
-        return (
-          `<div class="kind">${title}<p class="note">${esc(gene)} is in ${int(mine.length)} of the tested ${ns}; ${int(enr.length)} of them ` +
-          `are enriched across all ${esc(W.marked)} proteins${enr.length ? ':' : '.'}</p>` +
-          (enr.length
-            ? `<ul class="kind-list">${(all ? enr : enr.slice(0, 10))
-                .map((s) => `<li>${pick(aid, s)} ${idLink(aid, s)} ${resText(siteRow(aid, s))}</li>`)
-                .join('')}</ul>` +
-              (enr.length > 10
-                ? `<button class="linkish" type="button" data-qallm="${esc(key)}">${all ? 'Fewer' : `All ${int(enr.length)}`}</button>`
-                : '')
-            : '') +
-          '</div>'
-        );
-      })
-      .join('');
-    return (
-      `<div class="kinds qv-psets">${blocks}</div><p class="note">Each result is for all ${esc(W.marked)} proteins ` +
-      `against the background, not for this protein. A name selects the ${esc(W.marks)} on its proteins, and ↗ ` +
-      `opens the set’s page.</p>`
-    );
+        })
+        .join('');
+    // a card's branches: the protein's own classes among those the Overview card lists (card.classes), first; the
+    // questions in behind follow under a closed heading
+    const bAid = c.branches && A[c.branches] ? c.branches : null,
+      want = bAid ? K.branchClasses(bAid) : null,
+      behind = new Set(c.behind?.analyses || []);
+    let blocks = render(c.analyses.filter((x) => !behind.has(x)));
+    if (bAid && want && sd.protein_sets?.[bAid]) {
+      const mine = sd.protein_sets[bAid].sets
+        .map(([s]) => s)
+        .filter((s) => want.includes(s) && K.sel.setHas(bAid, s, p.i) && siteRow(bAid, s))
+        .sort((x, y) => (siteRow(bAid, y).eff ?? 0) - (siteRow(bAid, x).eff ?? 0));
+      const title = `<h4>${esc(K.cardOf(bAid).title || A[bAid].title)} <span class="muted">${int(mine.length)}</span></h4>`;
+      blocks =
+        (mine.length
+          ? `<div class="kind">${title}<ul class="kind-list">${mine
+              .map((s) => `<li>${pick(bAid, s)} ${idLink(bAid, s)} ${resText(siteRow(bAid, s))}</li>`)
+              .join('')}</ul></div>`
+          : `<div class="kind">${title}<p class="muted">${esc(gene)} is in none of them.</p></div>`) + blocks;
+    }
+    const back = render([...behind]);
+    if (back)
+      blocks += `<details class="qv-behind"><summary>${esc(c.behind.label || 'More')}</summary>${back}</details>`;
+    return `<div class="kinds qv-psets">${blocks}</div><p class="note">All ${esc(W.marked)} proteins vs background (not this protein)</p>`;
   }
   // a card may take an id of its own (the explorer's p-dis), and its module's live parts before its sets (K.setsLive: kit-pcards.js)
   const cardId = (c, k) => c.id || `p-sets-${k}`;

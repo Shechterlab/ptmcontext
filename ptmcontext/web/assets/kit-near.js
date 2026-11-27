@@ -475,7 +475,7 @@
               .filter((x) => x[0] && x[1])
               .sort((a, b) => b[1] - a[1])
               .slice(0, 300)
-              .map(([g, k]) => [g, `${int(k)} ${W.marked} partners`])
+              .map(([g, k]) => [g, K.plural(k, `${W.marked} partner`)])
           : []),
       ];
     };

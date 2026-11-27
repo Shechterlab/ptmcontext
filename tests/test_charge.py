@@ -62,7 +62,7 @@ def test_idr_charge_layer(tmp_path):
     res = pd.DataFrame({'accession': ['A', 'A', 'A', 'A', 'B'], 'position': [31, 40, 60, 90, 2]})
     assert L.BUILT_IN['idr_charge'](res, ctx)['category'].tolist() == ['r2', 'r2', 'outside_idr', 'r4', 'no_idr']
     idrs = ctx._cache['units:idr_charge']
-    assert idrs['label'].iloc[0].startswith('Janus IDR: FCR 0.33, NCPR +0.33')
+    assert idrs['label'].iloc[0].startswith('Moderately charged, mixed disordered region: FCR 0.33, NCPR +0.33')
 
 
 def test_the_run_writes_each_idr_with_its_charge_and_what_is_inside(tmp_path):

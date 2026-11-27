@@ -1194,13 +1194,13 @@
               "include": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/condition"
+                  "$ref": "#/$defs/proteins_condition"
                 }
               },
               "exclude": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/condition"
+                  "$ref": "#/$defs/proteins_condition"
                 }
               },
               "label": {
@@ -1964,6 +1964,33 @@
         "name"
       ],
       "properties": {
+          "ci": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "the site is published by CI (tools/ci_plan.py): the Pages build, the tests' link and export audits. A site without it is not built there",
+            "required": ["order"],
+            "properties": {
+              "order": {
+                "type": "integer",
+                "description": "the site's place in the list CI builds and gives `ptmc pages` (unique among the published sites)"
+              },
+              "lower_confidence": {
+                "type": "boolean",
+                "description": "the Pages build also runs and builds the variant with_lower_confidence (default false)"
+              },
+              "audit": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "the audits' parameters for this site",
+                "properties": {
+                  "workers": {"type": "integer", "minimum": 1, "description": "link audit: browser pages at once (default 4)"},
+                  "budget": {"type": "integer", "minimum": 1, "description": "link audit: minutes after which no new page is started (default 150)"},
+                  "proteins": {"type": "string", "description": "export audits: comma-separated UniProt accessions to walk (default: the walk's own)"},
+                  "selection": {"type": "string", "description": "export audits: the selection to walk (default: the walk's own)"}
+                }
+              }
+            }
+          },
           "context_window": {
             "type": "integer",
             "minimum": 1,
@@ -1975,7 +2002,7 @@
           },
           "context_group": {
             "type": "string",
-            "description": "the Filters panel group the context marks' filters go in (default 'Other marks')"
+            "description": "the Filters panel group the context marks' filters go in (default 'Other modifications'); a group of that name in website.filters holds its place in the list, else it goes last"
           },
         "name": {
           "type": "string"
@@ -3035,15 +3062,16 @@
               ]
             },
             "key_findings": {
-              "description": "the strip at the top of the Overview: the strongest results that hold their controls, one plain line each, linked to their tile. Chosen by the smallest q among rows at or above min_fold that fail no control badge, at most one per section; false leaves the strip out",
+              "description": "the strip at the top of the Overview: the strongest results that hold their controls, one tile each, linked to their question. Chosen by the largest effect among rows with q ≤ 0.05 at or above min_fold that fail no control badge, at most one per section; off unless enabled is true",
               "oneOf": [
                 {"const": false},
                 {
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
-                    "count": {"type": "integer", "minimum": 1, "maximum": 5, "default": 3, "description": "how many results (default 3)"},
-                    "min_fold": {"type": "number", "minimum": 1, "default": 1.1, "description": "the smallest fold a result needs (default 1.1)"},
+                    "enabled": {"type": "boolean", "default": false, "description": "true draws the strip; without it the strip is not drawn"},
+                    "count": {"type": "integer", "minimum": 1, "maximum": 6, "default": 4, "description": "how many results (default 4)"},
+                    "min_fold": {"type": "number", "minimum": 1, "default": 1.25, "description": "the smallest fold a result needs (default 1.25)"},
                     "pin": {
                       "type": "array",
                       "items": {
@@ -3077,8 +3105,8 @@
             },
             "cell_first": {
               "type": "boolean",
-              "default": true,
-              "description": "the section whose card draws the cell (drawing: true) opens the Overview; false keeps it where the site file lists it"
+              "default": false,
+              "description": "true: the section whose card draws the cell (drawing: true) opens the Overview; false (default) keeps it in the shared section order, under its heading"
             },
             "draw_first": {
               "type": "integer",
@@ -3116,6 +3144,11 @@
                   "more": {
                     "type": "string",
                     "description": "the expander's words when show is set (the count follows), default 'More in <name>'"
+                  },
+                  "links": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "pages (tab ids, such as network or interactions) that answer more of this section: one line of links under its tiles, not a copy of their content"
                   },
                   "cards": {
                     "type": "array",
@@ -3177,6 +3210,12 @@
                                 "q"
                               ],
                               "description": "the classes' order on the tile and its question: by effect (default) or by evidence (q), for sets where a small set reaches the largest fold when every member is marked"
+                            },
+                            "classes": {
+                              "type": "array",
+                              "minItems": 1,
+                              "items": {"type": "string"},
+                              "description": "the tile shows exactly these classes of its question (class ids, as in the statistics rows), by effect or evidence as order says, with the question's own numbers; a class without a row is not drawn. For a question with many classes, such as the Disease Ontology"
                             },
                             "wide": {
                               "type": "boolean",
@@ -3525,6 +3564,11 @@
               "additionalProperties": false,
               "description": "the Overview's Starting points: proteins ranked by a count or a protein attribute, and ready-made selections",
               "properties": {
+                "on_overview": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "true draws the block on the Overview; by default the Overview leaves it out (the Proteins tab holds the ranked lists)"
+                },
                 "open": {
                   "type": "boolean",
                   "default": false,
@@ -3548,7 +3592,7 @@
                       },
                       "by": {
                         "type": "string",
-                        "description": "marks (the protein's count), or a number attribute of proteins"
+                        "description": "marks (the protein's count), share (marks over its candidate residues), or a number attribute of proteins"
                       },
                       "order": {
                         "enum": [
@@ -3660,6 +3704,10 @@
               "name": {
                 "type": "string"
               },
+              "heading": {
+                "type": "string",
+                "description": "a heading above this group and the following groups that name the same heading"
+              },
               "analyses": {
                 "type": "array",
                 "items": {
@@ -3749,6 +3797,10 @@
               "type": "string",
               "description": "the colored attribute's column heading"
             },
+            "state": {
+              "type": "string",
+              "description": "the attribute the State column shows (default: the first colored attribute with one value per mark); it may hold several values per mark, all shown"
+            },
             "short": {
               "type": "object",
               "additionalProperties": {
@@ -3764,7 +3816,7 @@
               "items": {
                 "type": "string"
               },
-              "description": "the colored attributes that get a quick filter above the table (default: all of them)"
+              "description": "the colored attributes that get a quick filter above the table (default: every colored attribute with one value per mark; a named one may also hold several values per mark)"
             },
             "site_tags": {
               "type": "object",
@@ -4098,6 +4150,10 @@
                   },
                   "opens": {
                     "type": "string"
+                  },
+                  "branches": {
+                    "type": "boolean",
+                    "description": "a protein-set question: count only the classes its Overview card lists (card `classes`)"
                   },
                   "hide_in": {
                     "enum": ["cards"],
@@ -4537,6 +4593,20 @@
                     "type": "string",
                     "pattern": "^p-[a-z0-9-]+$",
                     "description": "the fold's id (default p-sets-N): website.protein.order and open name folds by it"
+                  },
+                  "branches": {
+                    "type": "string",
+                    "description": "a question of the card whose Overview card lists classes (overview card `classes`): the protein's own among those classes lead the card, and the fold's header counts them"
+                  },
+                  "behind": {
+                    "type": "object",
+                    "required": ["label", "analyses"],
+                    "additionalProperties": false,
+                    "description": "questions of the card shown after the rest, under a closed heading",
+                    "properties": {
+                      "label": {"type": "string", "description": "the heading's words"},
+                      "analyses": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+                    }
                   },
                   "term_groups": {
                     "type": "object",
@@ -4991,6 +5061,11 @@
                 }
               }
             },
+            "complex_names": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "complex and family names (AMPK, CK2, PKC, bare CDK) that a writer name never resolves to one protein, though a gene may list the name as an alias; they link to a UniProt search instead"
+            },
             "conservation": {
               "type": "object",
               "additionalProperties": false,
@@ -5112,13 +5187,21 @@
               "type": "boolean",
               "description": "open the Interaction partners fold when the protein has partners in card.writer.partners' table"
             },
+            "site_table": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the folded table of a protein's sites and their variants (fold p-sitetab; CONTRACTS.md, Table of sites): drawn when website.propensity is set, from the propensity files, the ClinVar file and the map rows that name entities",
+              "properties": {
+                "title": {"type": "string", "description": "the fold's title (default: Sites and mutations)"}
+              }
+            },
             "order": {
               "type": "array",
               "items": {
                 "type": "string",
                 "pattern": "^p-[a-z0-9-]+$"
               },
-              "description": "the protein page's folds, first to last, by id (p-map, p-sites, p-score, p-kinds, p-regions, p-seq, p-struct, p-ix, p-cons, and the cards' p-cond, p-dis, p-depmap, p-pert, p-exp, p-cluster, p-ptm); a fold the list lacks follows the one before it, and without the list the page's own order stands"
+              "description": "the protein page's folds, first to last, by id (p-map, p-sites, p-score, p-kinds, p-regions, p-seq, p-struct, p-ix, p-sitetab, p-cons, and the cards' p-cond, p-dis, p-dependency, p-mutations, p-pert, p-exp, p-cluster, p-ptm); a fold the list lacks follows the one before it, and without the list the page's own order stands"
             },
             "groups": {
               "type": "array",
@@ -5166,7 +5249,7 @@
             "cards": {
               "type": "object",
               "additionalProperties": false,
-              "description": "the context cards of a protein page, each on when named (CONTRACTS.md, Protein page cards): location (p-cond), dependency (p-depmap), perturbations (p-pert), experiments (p-exp), clustering (p-cluster), other_ptms (p-ptm)",
+              "description": "the context cards of a protein page, each on when named (CONTRACTS.md, Protein page cards): location (p-cond), dependency (p-dependency and p-mutations), perturbations (p-pert), experiments (p-exp), clustering (p-cluster), other_ptms (p-ptm)",
               "properties": {
                 "location": {
                   "type": "object",
@@ -5530,7 +5613,7 @@
         },
         "tabs": {
           "type": "object",
-          "description": "the top tabs' words, by page: overview, proteins, sites, interactions, overlap (Compare sets), network, method (Methods), help, or a website.pages id. Every explorer shows the same tabs in this order; one whose data the site lacks is greyed out, with `empty` on hover. The tab and the page's heading take the label; the hint is the line on hover and under the heading. The page's address (#idrs, #overlap, #method) is unchanged; #statistics opens Methods > Every test and #compare opens #overlap.",
+          "description": "the top tabs' words, by page: overview, proteins, sites, interactions, overlap (Overlap of protein sets; no tab, opened from a set's row), network, method (Methods), help, or a website.pages id. Every explorer shows the same tabs in this order; one whose data the site lacks is greyed out, with `empty` on hover. The tab and the page's heading take the label; the hint is the line on hover and under the heading. The page's address (#idrs, #overlap, #method) is unchanged; #statistics opens Methods > Every test and #compare opens #overlap.",
           "additionalProperties": {
             "type": "object",
             "additionalProperties": false,
@@ -5590,7 +5673,7 @@
           "properties": {
             "label": {
               "type": "string",
-              "description": "its name (default: dataset)"
+              "description": "the data's name, shown as \"Data: <label> <version>\" (for example PTM_Pipeline; default: dataset)"
             },
             "version": {
               "type": "string"
@@ -5635,16 +5718,36 @@
         "whats_new": {
           "type": "object",
           "additionalProperties": false,
-          "description": "what a release added, shown at the top of the Help page: a `title`, a list of `items` (plain sentences) and the release's data `doi` once it has one",
+          "description": "the data releases' notes, shown on the Help page (a closed disclosure when long): a `title` and `releases`, newest first, each with a `title` naming the data release (for example 'PTM_Pipeline v1.7.0 data release (2026-11-21)'), a list of `items` (plain sentences) and its data `doi`. One `title`, `items` and `doi` without `releases` is read as one release",
           "properties": {
             "title": {"type": "string"},
             "items": {"type": "array", "items": {"type": "string"}},
-            "doi": {"type": "string"}
+            "doi": {"type": "string"},
+            "releases": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "title": {"type": "string"},
+                  "items": {"type": "array", "items": {"type": "string"}},
+                  "doi": {"type": "string"}
+                }
+              }
+            }
           }
         },
         "download_terms": {
           "type": "string",
           "description": "the terms the downloads come under (licenses, attribution), shown above the list"
+        },
+        "license": {
+          "type": "string",
+          "description": "one short line naming the license of the data (shown at the top of the Download section), for example 'Data: CC BY-NC-SA 4.0 (non-commercial, share-alike)'; download_terms gives the detail"
+        },
+        "scope": {
+          "type": "string",
+          "description": "one short line near the top of the page saying what the explorer holds and what it does not"
         },
         "methods_note": {
           "type": "string",
@@ -5734,6 +5837,11 @@
               "two_or_more": {
                 "type": "string",
                 "description": "values: what a mark with two or more values is, in running text (default: with two or more <unit>)"
+              },
+              "inline": {
+                "type": "boolean",
+                "default": false,
+                "description": "values: the count is one sentence in its Methods section (each value's share), not a tile; list it in no Overview section"
               },
               "group": {
                 "type": "string",
@@ -6287,6 +6395,163 @@
               "variant": {
                 "type": "string"
               }
+            }
+          }
+        },
+        "propensity": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Mutation propensity (CONTRACTS.md, 'Mutation propensity'): per-residue tables of the release that give, for each source, the changes seen at a residue (k), the changes its codon predicts (expected), O/E and a binomial q. Draws lollipops on the protein cards (stick: count, head: O/E, ring: q < 0.05), a line on the site card and the Mutations page (ranked sites, tumors, inherited disease, waterfall). Every name is a manifest input.",
+          "required": [
+            "residues",
+            "sources"
+          ],
+          "properties": {
+            "residues": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "description": "the residue letters of the site (the propensity tables have a row for every R, K, S, T, Y)"
+            },
+            "set": {
+              "type": "string",
+              "description": "the site's name in site_set_propensity (default: the site id)"
+            },
+            "sources": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "label",
+                  "kind",
+                  "table"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "long": {
+                    "type": "string",
+                    "description": "the source's name in running text"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "somatic",
+                      "germline"
+                    ],
+                    "description": "somatic: TCGA and DepMap (also without hypermutated samples); germline: ClinVar, gnomAD"
+                  },
+                  "table": {
+                    "type": "string",
+                    "description": "manifest input: the release's site_propensity_<source> table"
+                  },
+                  "set_source": {
+                  "type": "string",
+                  "description": "the value of `source` in site_set_propensity for this source (the Mutations page's line for the whole list)"
+                },
+                "frequency_source": {
+                    "type": "string",
+                    "description": "the value of `source` in site_frequency_by_group and group_denominators; only a source with one is on the waterfall"
+                  },
+                  "card": {
+                    "type": "string",
+                    "description": "the id of the change_counts or variant_counts entry of the protein card whose lollipop shows this source"
+                  },
+                  "unit": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "lower_tail": {
+                    "type": "boolean",
+                    "description": "the table has p_lower and q_lower (fewer changes than expected): kept for the tooltip"
+                  }
+                }
+              }
+            },
+            "frequency": {
+              "type": "string",
+              "description": "manifest input: site_frequency_by_group"
+            },
+            "denominators": {
+              "type": "string",
+              "description": "manifest input: group_denominators (samples profiled per group, the frequencies' denominators)"
+            },
+            "burden": {
+              "type": "string",
+              "description": "manifest input: sample_burden (coding calls per Mb and hypermutated, per sample)"
+            },
+            "changes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "manifest inputs: the TCGA change tables of the site's residues (a row per sample and change), the oncoprint's samples"
+            },
+            "germline_changes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "manifest inputs: the gnomAD change tables of the site's residues (a row per variant, with af); the waterfall's tooltip shows the sum of a residue's variants' af"
+            },
+            "clinvar_changes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "manifest inputs: the ClinVar change tables of the site's residues (a row per variation, with clinsig_simple, review_stars and conditions); the Mutations page's inherited view counts the pathogenic and likely pathogenic ones (see clinvar_pathogenic) by disease family"
+            },
+            "clinvar_pathogenic": {
+              "type": "object",
+              "properties": {
+                "column": {"type": "string"},
+                "matches": {"type": "string"}
+              },
+              "required": ["column", "matches"],
+              "additionalProperties": false,
+              "description": "which ClinVar variants the inherited view counts: those whose `column` fully matches the regular expression `matches` (the cards' P/LP highlight rule; conflicting classifications are not counted). Without it, clinsig_simple 1"
+            },
+            "disease_families": {
+              "type": "string",
+              "description": "manifest input: the release's disease family rules (PTM_Pipeline scripts/disease_families.py: FAMILY_RULES, ADDITIONAL_FAMILY_RULES, CURATED_OVERRIDES). Read as text for those three tables and never run; each ClinVar condition name gets the family of the first rule it matches"
+            },
+            "site_sets": {
+              "type": "string",
+              "description": "manifest input: site_set_propensity"
+            },
+            "controls": {
+              "type": "string",
+              "description": "manifest input: propensity_controls"
+            },
+            "validation": {
+              "type": "string",
+              "description": "manifest input: propensity_validation"
+            },
+            "hotspot_min_changes": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 20,
+              "description": "a protein counts as dominated by its enriched residues (a hotspot) when its changes at residues of a type total at least this many and the residues of that type with q_upper < 0.05 carry at least hotspot_min_share of them (default 20)"
+            },
+            "hotspot_min_share": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1,
+              "default": 0.3,
+              "description": "the share of a protein's changes (at residues of a type) carried by its enriched residues, q_upper < 0.05 in the release table for the source and cohort, that makes it dominant (default 0.3); the waterfall flags the protein's sites and leaves them out of its default labels. No statistic changes"
             }
           }
         },
@@ -6890,6 +7155,63 @@
           "additionalProperties": false,
           "description": "the Proteins page (kit-tables.js)",
           "properties": {
+            "presets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "by"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "help": {
+                    "type": "string"
+                  },
+                  "by": {
+                    "type": "string",
+                    "description": "marks (the protein's count), share (marks over its candidate residues), or a number attribute of proteins"
+                  },
+                  "order": {
+                    "enum": [
+                      "desc",
+                      "asc"
+                    ],
+                    "description": "largest first (default) or smallest first"
+                  },
+                  "where": {
+                    "type": "object",
+                    "required": [
+                      "attribute"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "attribute": {
+                        "type": "string"
+                      },
+                      "max": {
+                        "type": "number"
+                      },
+                      "min": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "show": {
+                    "type": "string",
+                    "description": "the figure beside each protein: {marks} or {<attribute>} placeholders (default: the ranking value)"
+                  },
+                  "n": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              },
+              "description": "the Proteins page's preset sorts (chips above the table): the proteins ranked by a count or a protein attribute, with the fields of an Overview starting-points list; one whose attribute the site lacks is left out"
+            },
             "columns": {
               "type": "array",
               "items": {
@@ -7823,6 +8145,13 @@
                   }
                 }
               },
+              "aliases": {
+                "type": "object",
+                "description": "ids this page's sections and folds had before they moved or went (a link with open= or an address of the old id): old id -> the id it opens now",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
               "overview": {
                 "type": "object",
                 "required": [
@@ -7833,6 +8162,27 @@
                   "section": {
                     "type": "string",
                     "description": "the Overview section the page's tile goes in"
+                  },
+                  "tiles": {
+                    "type": "object",
+                    "required": [
+                      "section",
+                      "sections"
+                    ],
+                    "additionalProperties": false,
+                    "description": "more of the page's sections as Overview tiles of their own, each the section's tile (its `tile` block) as on the page",
+                    "properties": {
+                      "section": {
+                        "type": "string",
+                        "description": "the Overview section they go in"
+                      },
+                      "sections": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
                   },
                   "title": {
                     "type": "string"
@@ -8039,7 +8389,11 @@
                                     "bars",
                                     "pairs",
                                     "histogram",
-                                    "text"
+                                    "text",
+                                    "tiles",
+                                    "contact_list",
+                                    "pointer",
+                                    "fold"
                                   ]
                                 },
                                 "title": {
@@ -8142,6 +8496,21 @@
                                     "additionalProperties": false
                                   }
                                 },
+                                "peptides": {
+                                  "type": "boolean",
+                                  "description": "table: the columns named in card.evidence.peptides.columns (sequence, study, dataset) draw a peptide's cells from the row's detail and source, and the download has a line a peptide"
+                                },
+                                "labels": {
+                                  "type": "object",
+                                  "description": "table: column name -> the heading to show in place of the column's own",
+                                  "additionalProperties": {
+                                    "type": "string"
+                                  }
+                                },
+                                "download": {
+                                  "type": "string",
+                                  "description": "table: the words of a button above the table that downloads every row as a TSV"
+                                },
                                 "chips": {
                                   "type": "string"
                                 },
@@ -8240,6 +8609,124 @@
                                 "among": {
                                   "type": "string",
                                   "description": "histogram: only the rows whose column is non-zero (the residues an evidence could reach)"
+                                },
+                                "tiles": {
+                                  "type": "array",
+                                  "description": "tiles: a card for each test row: its fold, q and the marks counted",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "label",
+                                      "row"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "tag": {
+                                        "type": "string"
+                                      },
+                                      "row": {
+                                        "type": "object",
+                                        "required": [
+                                          "analysis",
+                                          "category"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "analysis": {
+                                            "type": "string"
+                                          },
+                                          "category": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "pooled": {
+                                  "type": "boolean",
+                                  "description": "tiles: add a line with the first tile's fold across all proteins against within each protein"
+                                },
+                                "modeled": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "description": "contact_list: whether the structure models the methyl group, from a records table keyed by site: its entry column (a PDB id), its state column, the rows that count (where, column: value), the states that mean the plain residue (unmodified) and those that say nothing (unknown); any other state is a modeled modification",
+                                  "required": [
+                                    "table",
+                                    "entry",
+                                    "state"
+                                  ],
+                                  "properties": {
+                                    "table": {
+                                      "type": "string"
+                                    },
+                                    "entry": {
+                                      "type": "string"
+                                    },
+                                    "state": {
+                                      "type": "string"
+                                    },
+                                    "where": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "unmodified": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "unknown": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "kinds": {
+                                  "type": "object",
+                                  "description": "contact_list: the words for the nucleic_acid codes (rna, dna, hybrid)",
+                                  "additionalProperties": {
+                                    "type": "string"
+                                  }
+                                },
+                                "sentence": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "description": "lines: say the chart in a sentence made from its rows: the series that is the residue itself, and the phrase for the others (inside RNA-bound peptides)",
+                                  "required": [
+                                    "residue",
+                                    "inside"
+                                  ],
+                                  "properties": {
+                                    "residue": {
+                                      "type": "string"
+                                    },
+                                    "inside": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "fold": {
+                                  "type": "string",
+                                  "description": "lines with a sentence: the words that open the chart (Show by distance)"
+                                },
+                                "caption": {
+                                  "type": "string",
+                                  "description": "fold: a line under the blocks inside it"
+                                },
+                                "blocks": {
+                                  "type": "array",
+                                  "description": "fold: the blocks it holds (a fold opens by its label)",
+                                  "items": {
+                                    "type": "object"
+                                  }
                                 }
                               }
                             }
@@ -8311,7 +8798,7 @@
     },
       "context_marks": {
         "type": "array",
-        "description": "other modifications shown beside the site's own mark (CONTRACTS.md, Context marks): a row of the protein map, 'Other marks nearby' on the site card, a filter, columns of the Sites and Proteins tables and their downloads. Never part of a statistic, except through a near_marks question",
+        "description": "other modifications shown beside the site's own mark (CONTRACTS.md, Context marks): a row of the protein map, 'Other modifications nearby' on the site card, a filter, columns of the Sites and Proteins tables and their downloads. Never part of a statistic, except through a near_marks question",
         "items": {
           "type": "object",
           "required": [
@@ -9084,6 +9571,13 @@
                 },
                 "description": "a number attribute's filter: the thresholds offered"
               },
+              "level_labels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "a number attribute's filter: the words for a threshold in the menu, by threshold (for example \"0.05\": \"Yes (q <= 0.05)\"); a threshold without one reads as at least or at most it"
+              },
               "direction": {
                 "enum": [
                   "min",
@@ -9287,6 +9781,30 @@
           }
         }
       }
+    },
+    "proteins_condition": {
+      "description": "a condition on the rows of a table that lists proteins: a condition on one column, or any_of, which holds when one of the conditions listed does",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/condition"
+        },
+        {
+          "type": "object",
+          "required": [
+            "any_of"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "any_of": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        }
+      ]
     },
     "condition": {
       "type": "object",
@@ -9678,6 +10196,23 @@
               "label": {
                 "type": "string"
               },
+              "data": {
+                "type": "object",
+                "description": "the source's dataset (a PRIDE project, say), linked beside the study on a peptide's row",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "label",
+                  "url"
+                ],
+                "additionalProperties": false
+              },
               "cite": {
                 "type": "string"
               },
@@ -9732,6 +10267,10 @@
                       "optional": {
                         "type": "boolean",
                         "description": "true: where the table lacks a column this mapping names, the row has no items from it (columns a later release may add, a score)"
+                      },
+                      "keep_empty": {
+                        "type": "boolean",
+                        "description": "true: keep a row whose every mapped column is empty (a position listed without a state still marks the residue)"
                       },
                       "sep": {
                         "type": "string",
@@ -9815,6 +10354,35 @@
                           "type": "string"
                         },
                         "description": "keep only items of these classes from this table (a list column of codes, of which a few are this row's)"
+                      },
+                      "names": {
+                        "type": "object",
+                        "description": "marks: true only: name the entities a change lists, from another table. as: the column added to the marks table (map it as the row's ref); of: the marks column of entries (changes) separated by split; role: the role of the table with one row per entity and entry; change: its column naming the entry; id: its column of entity ids; accession: its protein column (default canonical_UniProtAC); lookup: {role, id, name, group} gives each id a name and group; max: entities kept for an entry (default 6); title and link ({id}) are how the page words and links them",
+                        "additionalProperties": false,
+                        "required": ["as", "of", "role", "change", "id", "lookup"],
+                        "properties": {
+                          "as": {"type": "string"},
+                          "of": {"type": "string"},
+                          "role": {"type": "string"},
+                          "change": {"type": "string"},
+                          "id": {"type": "string"},
+                          "accession": {"type": "string"},
+                          "sep": {"type": "string"},
+                          "max": {"type": "integer", "minimum": 1},
+                          "title": {"type": "string"},
+                          "link": {"type": "string"},
+                          "lookup": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["role", "id", "name"],
+                            "properties": {
+                              "role": {"type": "string"},
+                              "id": {"type": "string"},
+                              "name": {"type": "string"},
+                              "group": {"type": "string"}
+                            }
+                          }
+                        }
                       }
                     }
                   },
@@ -9836,6 +10404,10 @@
                         "optional": {
                           "type": "boolean",
                           "description": "true: where the table lacks a column this mapping names, the row has no items from it (columns a later release may add, a score)"
+                        },
+                        "keep_empty": {
+                          "type": "boolean",
+                          "description": "true: keep a row whose every mapped column is empty (a position listed without a state still marks the residue)"
                         },
                         "sep": {
                           "type": "string",
@@ -9919,6 +10491,35 @@
                             "type": "string"
                           },
                           "description": "keep only items of these classes from this table (a list column of codes, of which a few are this row's)"
+                        },
+                        "names": {
+                          "type": "object",
+                          "description": "marks: true only: name the entities a change lists, from another table. as: the column added to the marks table (map it as the row's ref); of: the marks column of entries (changes) separated by split; role: the role of the table with one row per entity and entry; change: its column naming the entry; id: its column of entity ids; accession: its protein column (default canonical_UniProtAC); lookup: {role, id, name, group} gives each id a name and group; max: entities kept for an entry (default 6); title and link ({id}) are how the page words and links them",
+                          "additionalProperties": false,
+                          "required": ["as", "of", "role", "change", "id", "lookup"],
+                          "properties": {
+                            "as": {"type": "string"},
+                            "of": {"type": "string"},
+                            "role": {"type": "string"},
+                            "change": {"type": "string"},
+                            "id": {"type": "string"},
+                            "accession": {"type": "string"},
+                            "sep": {"type": "string"},
+                            "max": {"type": "integer", "minimum": 1},
+                            "title": {"type": "string"},
+                            "link": {"type": "string"},
+                            "lookup": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": ["role", "id", "name"],
+                              "properties": {
+                                "role": {"type": "string"},
+                                "id": {"type": "string"},
+                                "name": {"type": "string"},
+                                "group": {"type": "string"}
+                              }
+                            }
+                          }
                         }
                       }
                     },

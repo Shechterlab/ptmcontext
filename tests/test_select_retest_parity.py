@@ -134,6 +134,7 @@ global.matchMedia = () => ({ matches: false }); global.addEventListener = noop;
 global.fetch = (u) => { const f = String(u).split('data/sel/')[1]; return Promise.resolve({ ok: !!f, json: () => Promise.resolve(JSON.parse(fs.readFileSync(SEL + '/' + f, 'utf8'))) }); };
 eval(fs.readFileSync(BUILT + '/kit-stats.js', 'utf8'));
 eval(fs.readFileSync(ASSETS + '/kit-seldata.js', 'utf8'));
+eval(fs.readFileSync(ASSETS + '/kit-names.js', 'utf8'));
 eval(fs.readFileSync(ASSETS + '/kit-select.js', 'utf8'));
 const html = fs.readFileSync(INDEX, 'utf8');
 const D = JSON.parse(html.match(/<script id="site-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);

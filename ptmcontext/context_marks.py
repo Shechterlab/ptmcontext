@@ -218,6 +218,7 @@ def map_row(entry: dict, after: str) -> dict:
         'after': after,
         'from': {
             'role': role(entry),
+            'keep_empty': True,  # a residue the table lists without a state is still a mark
             'columns': {
                 'accession': cols['accession'],
                 'position': cols['position'],
@@ -284,7 +285,7 @@ def specs(site: dict) -> tuple[dict, dict]:
     if not entries(site):
         return marks, prots
     marks['ctx_near'] = {
-        'label': 'Other marks nearby',
+        'label': 'Other modifications nearby',
         'kind': 'list',
         'separator': '; ',
         'help': f'Other modifications within ±{w} residues of the site, with the distance in residues '
@@ -314,7 +315,10 @@ def specs(site: dict) -> tuple[dict, dict]:
             marks[a['near_subset']] = {
                 'label': f'Has {with_article(e)} ({subset_label(e)}) within ±{w}',
                 'kind': 'category',
-                'values': {'yes': f'{e["label"]} ({subset_label(e)}) within ±{w}', 'no': f'None within ±{w}'},
+                'values': {
+                    'yes': f'{e["label"]} ({subset_label(e)}) within ±{w}',
+                    'no': f'No {noun(e)} ({subset_label(e)}) within ±{w}',
+                },
                 'filter': True,
                 'help': f'A {noun(e)} with {subset_label(e)} (from {e["citation"].get("short", e["label"])}) within {w} '
                 f'residues of the site on either side',
@@ -372,12 +376,14 @@ def expand(site: dict) -> dict:
     marks, prots = specs(site)
     # the Filters panel: one group, only where the site lists groups itself
     if web.get('filters') is not None:
-        web['filters'].append(
-            {
-                'name': web.get('context_group', 'Other marks'),
-                'attributes': [n for n in marks if marks[n].get('filter')],
-            }
-        )
+        gname = web.get('context_group', 'Other modifications')
+        attrs = [n for n in marks if marks[n].get('filter')]
+        # a group of that name in the site file's list holds the place; otherwise the group goes last
+        held = next((g for g in web['filters'] if g.get('name') == gname), None)
+        if held is not None:
+            held['attributes'] = [*held.get('attributes', []), *attrs]
+        else:
+            web['filters'].append({'name': gname, 'attributes': attrs})
     sites = web.setdefault('sites', {})
     if isinstance(sites.get('table'), list):
         sites['table'].append(

@@ -361,7 +361,7 @@
     ],
     [
       'ptm',
-      'Other PTMs',
+      'Other modifications',
       'live',
       'Modified residues, cross-links, glycosylation and lipidation of the UniProt entry, retrieved when the page opens, one row per kind',
     ],
@@ -778,17 +778,29 @@
   const shardKey = (acc) =>
     String([...acc].reduce((n, c) => n + c.charCodeAt(0), 0) % (D.map_shards || 64)).padStart(2, '0');
   // the items of a protein ([row index, start, end, class, label, value, ref, sources]), or null while they load
+  // a source's own names (an InterPro family, a class) are shown in American spelling: once for a shard's items
+  const americanLabels = (shard) => {
+    if (shard && !shard.__us) {
+      Object.defineProperty(shard, '__us', { value: true });
+      Object.values(shard).forEach((items) =>
+        items.forEach((x) => {
+          if (typeof x[4] === 'string' && x[4]) x[4] = K.us(x[4]);
+        })
+      );
+    }
+    return shard;
+  };
   function itemsOf(acc) {
     if (!D.map_shards) return [];
     const key = shardKey(acc);
-    if (mapInline[key]) return mapInline[key][acc] || [];
+    if (mapInline[key]) return americanLabels(mapInline[key])[acc] || [];
     if (!(key in mapFiles)) {
       mapFiles[key] = null;
       fetch(`data/map/${key}.json`)
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
         .then(
           (j) => {
-            mapFiles[key] = j;
+            mapFiles[key] = americanLabels(j);
           },
           () => {
             mapFiles[key] = { __failed: true };
@@ -796,18 +808,68 @@
         )
         .then(() => {
           if (M.ctx && shardKey(M.ctx.p.acc) === key) redraw();
+          (K.mapReady || []).forEach((f) => f(key));
         });
       return null;
     }
     const f = mapFiles[key];
     return f == null ? null : f.__failed ? [] : f[acc] || [];
   }
+  // a change named in UniProt numbering ("R46G" at UniProt 46) as the page numbers the protein (histones without the initiator
+  // methionine: "R45G"), so the map's labels and hovers agree with its sites
+  const renum = (q, lab) => {
+    const acc = K.protState?.()?.acc,
+      s = acc && K.prot?.shownPos ? K.prot.shownPos(acc, q) : q;
+    return s === q || !lab ? lab : String(lab).replace(new RegExp('^([A-Z])' + q + '(?!\\d)'), '$1' + s);
+  };
   const ownItems = (acc, r) => {
     const all = itemsOf(acc);
     if (!all) return null;
     const k = ROW_INDEX.indexOf(r.id);
     return all.filter((x) => x[0] === k);
   };
+  // the entities (cell lines) a site row names for each change (website.protein.map.rows[].from.names), for the cards and the
+  // protein page's site table: `column` is the marks column the row's labels come from (an attribute's column). false when no row
+  // names entities for it, null while the protein's items load, else {title, row, link, at: Map(position -> [{change, n, list:
+  // [[id, name, group]], more}])}: the row's words for them, its title, the link ({id}) and, at each residue, each change's
+  // lines (n counts all of them; `more` is how many the list leaves out)
+  const namedRow = (column) =>
+    OWN_ROWS.map((r) => ({ r, f: ownTables(r).find((x) => x && x.names && x.marks) })).find(
+      (x) => x.f && x.f.columns?.label === column
+    );
+  // the site rows that name entities, [{column, row (the row's title), title (the entities' word), link}]
+  const namedRows = () =>
+    OWN_ROWS.map((r) => ({ r, f: ownTables(r).find((x) => x && x.names && x.marks) }))
+      .filter((x) => x.f?.columns?.label)
+      .map(({ r, f }) => ({
+        column: f.columns.label,
+        row: r.title,
+        title: f.names.title || 'Listed',
+        link: f.names.link || '',
+      }));
+  function namedChanges(acc, column) {
+    const hit = namedRow(column);
+    if (!hit) return false;
+    const its = ownItems(acc, hit.r);
+    if (!its) return null;
+    const at = new Map();
+    for (const x of its) {
+      if (!x[6]) continue;
+      const list = String(x[6])
+        .split('||')
+        .filter(Boolean)
+        .map((e) => e.split('|'));
+      if (!list.length) continue;
+      if (!at.has(x[1])) at.set(x[1], []);
+      at.get(x[1]).push({
+        change: String(x[4] || ''),
+        n: +x[5] || list.length,
+        list,
+        more: Math.max(0, (+x[5] || 0) - list.length),
+      });
+    }
+    return { title: hit.f.names.title || 'Listed', row: hit.r.title, link: hit.f.names.link || '', at };
+  }
   // runs of a motif in the sequence (website.protein.map.rows[].sequence): at least min matches, each within gap
   // residues of the one before; strong ones counted apart and naming the run when there are enough
   function motifRuns(seq, sq) {
@@ -1058,7 +1120,7 @@
     Object.assign(c, { marks, nLev, level });
   }
   function draw_labels(c) {
-    const { marks, resName, X, shown, X0, X1, nLev } = c;
+    const { marks, resName, X, X0, X1, nLev } = c;
     // labels: Auto (3 lines, merged where they collide; none above 120 marks), All (12 lines), None
     const labels = [];
     const lmode = M.labels,
@@ -1084,7 +1146,7 @@
           if (!prev) return;
           prev.pos.push(m[0]);
           prev.n++;
-          prev.txt = prev.n === 2 ? `${prev.base}/${shown(prev.pos[1])}` : `${prev.base} +${prev.n - 1}`;
+          prev.txt = prev.n === 2 ? `${prev.base}/${resName(prev.pos[1])}` : `${prev.base} +${prev.n - 1}`;
           prev.left ??= prev.x - (K.tw(prev.base, 10.5) + 6) / 2;
           lineEnd[prev.line] = Math.max(lineEnd[prev.line], prev.left + K.tw(prev.txt, 10.5) + 6);
         }
@@ -1112,7 +1174,7 @@
         a.pos.push(...b.pos);
         a.n += b.n;
         a.left ??= a.x - (K.tw(a.base, 10.5) + 6) / 2;
-        a.txt = a.n === 2 ? `${a.base}/${shown(a.pos[1])}` : `${a.base} +${a.n - 1}`;
+        a.txt = a.n === 2 ? `${a.base}/${resName(a.pos[1])}` : `${a.base} +${a.n - 1}`;
         labels.splice(k, 1);
         again = true;
         break;
@@ -1207,10 +1269,20 @@
       parts.push(
         `<line x1="${r1(l.x)}" x2="${r1(l.x)}" y1="${r1(y + 2)}" y2="${r1(hy)}" stroke="${P.line}" stroke-width="0.7"/>`
       );
-      parts.push(
+      const tx =
         l.left != null
           ? `<text x="${r1(l.left + 3)}" y="${r1(y)}" font-size="10.5" fill="${P.ink}">${esc(l.txt)}</text>`
-          : `<text x="${r1(l.x)}" y="${r1(y)}" font-size="10.5" text-anchor="middle" fill="${P.ink}">${esc(l.txt)}</text>`
+          : `<text x="${r1(l.x)}" y="${r1(y)}" font-size="10.5" text-anchor="middle" fill="${P.ink}">${esc(l.txt)}</text>`;
+      // a label is a button: one site opens it, several open a chooser (not in an export)
+      const lx = l.left != null ? l.left : l.x - w / 2;
+      parts.push(
+        ex
+          ? tx
+          : `<g data-mlabel="${l.pos.join(',')}" tabindex="0" role="button" style="cursor:pointer" aria-label="${esc(
+              l.pos.length > 1
+                ? `Choose among ${l.pos.length} sites: ${l.pos.map(c.resName).join(', ')}`
+                : `Open site ${c.resName(l.pos[0])}`
+            )}"><rect x="${r1(lx)}" y="${r1(y - 11)}" width="${r1(w)}" height="14" rx="3" fill="transparent"/>${tx}</g>`
       );
     });
     // the site file's rows drawn behind the marks (dense windows, say): bands from the heads to the backbone
@@ -1222,7 +1294,7 @@
         .filter((x) => inView(x[1], x[2]))
         .forEach((x) => {
           const tip = (full) =>
-            `<b>${esc(r.title)}</b> ${rngOf(p.acc, x[1], x[2])}${x[4] ? '<br>' + esc(x[4]) : ''}${insideHtml(x[1], x[2], full)}<br><span ` +
+            `<b>${esc(r.title)}</b> ${rngOf(p.acc, x[1], x[2])}${x[4] ? '<br>' + esc(renum(x[1], x[4])) : ''}${insideHtml(x[1], x[2], full)}<br><span ` +
             `class="muted">${esc(ownHelp(r))}</span>`;
           const k = it({ tip: tip(false), card: tip(true), a: x[1], b: x[2], src: { own: r, x } });
           back.push(MK.box(XA(x[1]), top + 2, XB(x[2]) - XA(x[1]), yB + 8 - top - 2, c, op, ` rx="3" data-mi="${k}"`));
@@ -1514,16 +1586,27 @@
     // a label beside a tick, with a halo, flipped left at the right edge; skipped where it would hit the one before
     // (ticks: the x of every tick in the row; a label that would stand over another tick is left out, its hover has the name)
     const labelAt = (xx, yy, text, right, ticks = []) => {
-      const tw = K.tw(text, 9) * SL,
-        flip = xx + 4 + tw > Wd - 2,
-        left = flip ? xx - 4 - tw : xx + 4;
-      if (left <= right.v + 5) return;
-      if (ticks.some((t) => Math.abs(t - xx) > 1 && t + 3 > left && t - 2 < left + tw)) return;
-      parts.push(
-        `<text x="${r1(flip ? xx - 4 : xx + 4)}" y="${r1(yy - 4)}" font-size="9" fill="${P.ink}" stroke="${P.surf}" stroke-width="2.5" ` +
-          `paint-order="stroke"${flip ? ' text-anchor="end"' : ''}>${esc(text)}</text>`
-      );
-      right.v = flip ? xx : xx + 4 + tw;
+      // the label goes right of its mark, else left of it, and never over another tick; a list of items that fits neither way
+      // is cut to its first items and a count ("R213* ×71, R213Q ×9 +3 more")
+      const items = text.split(', '),
+        variants = [text];
+      for (let n = items.length - 1; n >= 1; n--)
+        variants.push(`${items.slice(0, n).join(', ')} +${items.length - n} more`);
+      for (const t of variants) {
+        const tw = K.tw(t, 9) * SL,
+          rightFirst = xx + 4 + tw <= Wd - 2;
+        for (const flip of rightFirst ? [false, true] : [true]) {
+          const left = flip ? xx - 4 - tw : xx + 4;
+          if (left <= right.v + 5 || left < 0) continue;
+          if (ticks.some((q) => Math.abs(q - xx) > 1 && q + 3 > left && q - 2 < left + tw)) continue;
+          parts.push(
+            `<text x="${r1(flip ? xx - 4 : xx + 4)}" y="${r1(yy - 4)}" font-size="9" fill="${P.ink}" stroke="${P.surf}" stroke-width="2.5" ` +
+              `paint-order="stroke"${flip ? ' text-anchor="end"' : ''}>${esc(t)}</text>`
+          );
+          right.v = flip ? xx : xx + 4 + tw;
+          return;
+        }
+      }
     };
     // boxes in lanes, each named inside, after it, or cut (UniProt's regions, a site's families)
     const lanes = (list, maxL = 5, lab = () => '') => {
@@ -1636,6 +1719,26 @@
       const CL = r.classes || {},
         order = Object.keys(CL),
         clsOf = (x) => CL[x[3]] || {};
+      // a row whose items name entities (website.protein.map.rows[].from.names: a cell line of a change, say): the ref holds
+      // 'id|name|group' entries separated by '||'; the names, their group on hover, and in the pinned card a link to each
+      const NAMES = [].concat(r.from || []).find((f) => f && f.names)?.names;
+      const namesHtml = (x, full) => {
+        if (!NAMES || !x[6]) return '';
+        const list = String(x[6])
+          .split('||')
+          .filter(Boolean)
+          .map((e) => e.split('|'));
+        const more = Math.max(0, (+x[5] || 0) - list.length);
+        const one = ([id, name, group]) => {
+          const t = esc(name || id) + (group && !full ? ` (${esc(group)})` : '');
+          return full && NAMES.link
+            ? `<a href="${esc(NAMES.link.replace('{id}', encodeURIComponent(id)))}" target="_blank" rel="noopener" title="${esc(
+                [group, id].filter(Boolean).join(' · ')
+              )}">${t}</a>`
+            : t;
+        };
+        return `${esc(NAMES.title || 'Listed')}: ${list.map(one).join(', ')}${more ? ` and ${int(more)} more` : ''}`;
+      };
       const valText = (v) =>
         v == null || v === ''
           ? ''
@@ -1646,7 +1749,7 @@
       const ctxHover = (x) => {
         const head = [],
           lines = [],
-          label = String(x[4] || '');
+          label = String(renum(x[1], x[4]) || '');
         HOVER_CTX.forEach((f) => {
           if (f === 'mark') head.push(`<b>${esc(r.title)}</b>`);
           else if (f === 'residue') head.push(esc(resName(x[1])));
@@ -1673,22 +1776,25 @@
         const cs = clsOf(x),
           head =
             !order.length && x[4] && x[1] === x[2]
-              ? `<b>${esc(x[4])}</b>${x[5] != null ? ' ' + esc(valText(x[5])) : ''}`
-              : `<b>${esc(cs.label || x[4] || r.title)}</b> ${span2(x[1], x[2])}${
-                  cs.label && x[4] ? '<br>' + esc(x[4]) : ''
+              ? `<b>${esc(renum(x[1], x[4]))}</b>${x[5] != null ? ' ' + esc(valText(x[5])) : ''}`
+              : `<b>${esc(cs.label || renum(x[1], x[4]) || r.title)}</b> ${span2(x[1], x[2])}${
+                  cs.label && x[4] ? '<br>' + esc(renum(x[1], x[4])) : ''
                 }${x[5] != null ? '<br>' + esc(valText(x[5])) : ''}`;
         const words =
           r.sequence?.words && x[8]
             ? '<br>' + esc(r.sequence.words.replace('{n}', x[8].n).replace('{strong}', x[8].strong))
             : '';
         const srcs = [...String(x[7] || '').split('; '), ...(cs.sources || [])].filter(Boolean);
-        const ref = x[6]
-          ? `<br>${
-              full && refLink(x[6])
-                ? `<a href="${esc(refLink(x[6]))}" target="_blank" ` + `rel="noopener">${esc(x[6])}</a>`
-                : esc(x[6])
-            }`
-          : '';
+        const nm = namesHtml(x, full);
+        const ref = nm
+          ? `<br>${nm}`
+          : x[6] && !NAMES
+            ? `<br>${
+                full && refLink(x[6])
+                  ? `<a href="${esc(refLink(x[6]))}" target="_blank" ` + `rel="noopener">${esc(x[6])}</a>`
+                  : esc(x[6])
+              }`
+            : '';
         return (
           head +
           (x[1] === x[2] && atMark.has(x[1]) ? ` · at a ${esc(W.mark)}` : '') +
@@ -1727,7 +1833,8 @@
           label: cap(W.marks),
           short: D.profile_short || cap(W.marks),
           col: P.accent,
-          help: `the ${W.marks} in this explorer`,
+          help: `the ${W.marks} of this explorer`,
+          total: new Set(marks.map((m) => m[0])).size,
           pts: marksIn.map((m) => ({ pos: m[0], own: true })),
         },
       };
@@ -1758,6 +1865,7 @@
             short: (SPL.short || {})[v] || label,
             col: attrColour(SPL.attribute, v),
             help: label,
+            total: new Set(marks.filter((m) => valsOf(m).includes(v)).map((m) => m[0])).size,
             pts: marksIn.filter((m) => valsOf(m).includes(v)).map((m) => ({ pos: m[0], own: true })),
           };
         });
@@ -1773,6 +1881,11 @@
           short: rows[rows.length - 1].short || rows[rows.length - 1].title,
           col: cfgColour(r, 'colour', P, P.variant),
           help: r.help || r.title,
+          loaded: its != null, // null while the protein's items load: the count is not 0 yet
+          total: new Set((its || []).map((x) => x[1])).size,
+          // when a score subset is shown (its row is on), the entry's whole count and the cut-off are printed beside it
+          all: new Set((ownItems(acc, rows[rows.length - 1]) || []).map((x) => x[1])).size,
+          cut: r === rows[rows.length - 1] ? '' : String(r.title || '').replace(/^[^:]*:\s*/, ''),
           pts: (its || [])
             .filter((x) => inView(x[1], x[1]))
             .map((x) => ({ pos: x[1], x, r, tip: () => tipOf(x, false), card: () => tipOf(x, true) })),
@@ -1846,7 +1959,13 @@
       order.forEach((d) => {
         const n = new Set(d.pts.map((q) => q.pos)).size, // marks, not records: two records at one residue are one mark
           off = M.combOff.has(d.id),
-          text = `${d.label} (${n})`,
+          // the count is the protein's, as the Other modifications section counts it; the zoom only changes the hover's "in view"
+          shownN = d.total,
+          text = `${d.label} (${d.loaded === false ? '–' : d.cut ? `${shownN} of ${d.all}, ${d.cut}` : shownN})`,
+          what =
+            d.loaded === false
+              ? 'still loading'
+              : `${shownN} in the protein${d.cut ? ` with ${d.cut} (${d.all} in all)` : ''}${n < shownN ? `; ${n} in view` : ''}`,
           w = 14 + K.tw(text, 9.5) * SL;
         if (lx > X0 && lx + w > X1) {
           lx = X0;
@@ -1854,9 +1973,9 @@
         }
         const attr = ex
           ? ''
-          : ` data-comb="${esc(d.id)}" tabindex="0" role="button" aria-pressed="${!off}" aria-label="${esc(d.label)}, ${n} in view, ${off ? 'hidden' : 'shown'}. Press to ${off ? 'show' : 'hide'}" style="cursor:pointer"`;
+          : ` data-comb="${esc(d.id)}" tabindex="0" role="button" aria-pressed="${!off}" aria-label="${esc(d.label)}, ${esc(what)}, ${off ? 'hidden' : 'shown'}. Press to ${off ? 'show' : 'hide'}" style="cursor:pointer"`;
         parts.push(
-          `<g${attr}><rect x="${r1(lx - 2)}" y="${r1(ly - 1)}" width="${r1(w + 2)}" height="13" rx="3" fill="transparent"/>` +
+          `<g${attr}>${ex ? '' : `<title>${esc(`${d.label}: ${what} (positions, not records). ${d.help || ''}`.trim())}</title>`}<rect x="${r1(lx - 2)}" y="${r1(ly - 1)}" width="${r1(w + 2)}" height="13" rx="3" fill="transparent"/>` +
             MK.tick(lx + 3, ly + 5.5, 10, d.col, '', 2.4, off ? 0.35 : 1) +
             `<text x="${r1(lx + 10)}" y="${r1(ly + 9)}" font-size="9.5" fill="${off ? P.muted : P.ink}"${off ? ' text-decoration="line-through"' : ''}>${esc(text)}</text></g>`
         );
@@ -1986,7 +2105,7 @@
             labelAt(
               X(q),
               mid,
-              xs.map((x) => x[4] + (x[5] > 1 ? ` ×${x[5]}` : '')).join(', '),
+              xs.map((x) => renum(x[1], x[4]) + (x[5] > 1 ? ` ×${x[5]}` : '')).join(', '),
               right,
               shown.filter((x) => markOf(x) === 'tick').map((x) => X(x[1]))
             )
@@ -2499,7 +2618,7 @@
     }
     const svg = back.join('') + parts.join('');
     return {
-      svg: ex ? svg.replace(/ data-(mi|msite|rowhelp)="[^"]*"/g, '') : svg,
+      svg: ex ? svg.replace(/ data-(mi|msite|mlabel|rowhelp)="[^"]*"/g, '') : svg,
       H: c.y + 4,
       X,
       za,
@@ -2866,7 +2985,7 @@
       cross.setAttribute('visibility', 'visible');
     };
     svg.addEventListener('pointerdown', (ev) => {
-      if (ev.button !== 0 || ev.target.closest('[data-mi],[data-msite],[data-comb]')) return;
+      if (ev.button !== 0 || ev.target.closest('[data-mi],[data-msite],[data-comb],[data-mlabel]')) return;
       d0 = toPos(ev);
       if (d0 == null) return;
       svg.setPointerCapture(ev.pointerId);
@@ -2890,7 +3009,7 @@
       if (d0 != null) svg.dispatchEvent(new MouseEvent('mousemove', ev));
     });
     svg.addEventListener('dblclick', (ev) => {
-      if (M.zoom && !ev.target.closest('[data-mi],[data-msite],[data-comb]')) {
+      if (M.zoom && !ev.target.closest('[data-mi],[data-msite],[data-comb],[data-mlabel]')) {
         M.zoom = null;
         render(el, ctx);
       }
@@ -2950,7 +3069,7 @@
     const ev = [];
     OWN_ROWS.filter((r) => !r.sequence && isOn(ownId(r))).forEach((r) => {
       const its = (ownItems(ctx.p.acc, r) || []).filter((x) => x[1] <= pos && x[2] >= pos);
-      const w = [...new Set(its.map((x) => (r.classes || {})[x[3]]?.label || x[4] || r.title))];
+      const w = [...new Set(its.map((x) => (r.classes || {})[x[3]]?.label || renum(x[1], x[4]) || r.title))];
       if (w.length) ev.push(`${esc(r.title)}: ${esc(w.slice(0, 3).join('; '))}`);
     });
     const pk = PDBK[ctx.p.acc];
@@ -3327,7 +3446,8 @@
         else togglePin(x);
       },
     ],
-    ['[data-pin-close]', () => closePin(true)]
+    ['[data-pin-close]', () => closePin(true)],
+    ['[data-mlabel]', (el) => openLabel(el)]
   );
   document.addEventListener('change', (e) => {
     const d = e.target.dataset || {};
@@ -3463,56 +3583,65 @@
       );
     return rows.concat(tracks).join('');
   });
-  // the context marks within win residues of a position (either side, the position itself left out), nearest first:
-  // [{mark, res, pos, dist, score}]. A score is read from the subset row's label (the number it ends with)
-  function nearby(acc, pos, win) {
-    const its = itemsOf(acc);
-    if (!its) return [];
-    const out = [];
-    CTX_IDS.forEach((id) => {
-      const rows = CTX_ROWS.filter((r) => r.context_mark === id),
-        full = rows[rows.length - 1],
-        scores = new Map();
-      rows.slice(0, -1).forEach((r) => {
-        const k = ROW_INDEX.indexOf(r.id);
-        its
-          .filter((x) => x[0] === k)
-          .forEach((x) => {
-            const m = String(x[4] || '').match(/(-?\d*\.?\d+)\s*$/);
-            if (m) scores.set(x[1], m[1]);
-          });
-      });
-      const k = ROW_INDEX.indexOf(full.id);
-      its
-        .filter((x) => x[0] === k && x[1] !== pos && Math.abs(x[1] - pos) <= win)
-        .forEach((x) =>
-          out.push({
-            mark: full.title,
-            res: K.prot?.siteLabel ? K.prot.siteLabel(acc, x[1]) : String(x[1]),
-            pos: x[1],
-            dist: x[1] - pos,
-            score: scores.get(x[1]) ?? null,
-          })
-        );
-    });
-    return out.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist) || a.dist - b.dist);
-  }
-  // the protein's context marks, from the same items as the map's legend: [{id, label, short, pos: [positions]}], one
-  // entry for each mark the protein has, or null while the map's items load
+  // ---- the one count of other modifications --------------------------------------------------------------------------
+  // Every place that says how many other modifications a protein has, or how many lie near its marks, reads these two
+  // functions: the map's legend, the Other modifications section, the hover and card lists, the Sites table. One window
+  // (website.context_window, as the run's "Other marks nearby" column reads it), the residue itself left out, a residue
+  // counted once for each kind of modification on it; a score cut-off (the entry's subset, "score ≥ 0.5") is a count of
+  // its own, printed with its cut-off, never mixed into the count of every site.
+  const ctxWindow = K.nearWindow; // the one window (kit-cols.js)
+  // the protein's context marks, from the same items as the map's legend, or null while the map's items load:
+  // [{id, label, short, pos: every position of the entry's table, high: the positions inside its score subset (null
+  // without one), cut: the subset's cut-off as words, score: position -> score of the subset's items}]
   function contextMarks(acc) {
     const its = itemsOf(acc);
     if (!its) return null;
     return CTX_IDS.map((id) => {
       const rows = CTX_ROWS.filter((r) => r.context_mark === id),
         full = rows[rows.length - 1],
-        k = ROW_INDEX.indexOf(full.id);
+        at = (r) => its.filter((x) => x[0] === ROW_INDEX.indexOf(r.id)),
+        score = new Map(),
+        sub = rows.slice(0, -1);
+      sub.forEach((r) =>
+        at(r).forEach((x) => {
+          const m = String(x[4] || '').match(/(-?\d*\.?\d+)\s*$/);
+          if (m) score.set(x[1], m[1]);
+        })
+      );
+      const uniq = (xs) => [...new Set(xs.map((x) => x[1]))].sort((p, q) => p - q);
       return {
         id,
         label: full.title,
         short: full.short || full.title,
-        pos: [...new Set(its.filter((x) => x[0] === k).map((x) => x[1]))].sort((a, b) => a - b),
+        pos: uniq(at(full)),
+        high: sub.length ? uniq(sub.flatMap(at)) : null,
+        cut: sub.length ? String(sub[0].title || '').replace(/^[^:]*:\s*/, '') : '',
+        score,
       };
     }).filter((c) => c.pos.length);
+  }
+  // the context marks within `win` residues of any of `from` (either side, a residue itself left out), by kind:
+  // { win, kinds: [{id, label, short, cut, n, high, near: [{pos, dist, from}], nearHigh}], residues: distinct positions
+  // near in all kinds }; dist is mark minus residue, taken to the nearest of `from`; null while the items load
+  function nearMarks(acc, from, win = ctxWindow()) {
+    const cm = contextMarks(acc);
+    return cm ? K.nearIn(cm, from, win) : null;
+  }
+  // the context marks within win residues of a position, nearest first: [{mark, res, pos, dist, score}] (the hover's and card's list)
+  function nearby(acc, pos, win = ctxWindow()) {
+    const nm = nearMarks(acc, [pos], win);
+    if (!nm) return [];
+    return nm.kinds
+      .flatMap((k) =>
+        k.near.map((x) => ({
+          mark: k.label,
+          res: K.prot?.siteLabel ? K.prot.siteLabel(acc, x.pos) : String(x.pos),
+          pos: x.pos,
+          dist: x.dist,
+          score: k.score.get(x.pos) ?? null,
+        }))
+      )
+      .sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist) || a.dist - b.dist);
   }
   // on a touch screen the first tap on a mark shows its hover, a second tap on the same mark opens its detail
   {
@@ -3603,13 +3732,87 @@
       s.value = '';
     });
   });
+  // a map label: one site opens like its dot; a merged label opens a small chooser of its sites (Escape closes it)
+  const hideMapTip = () => {
+    const t = document.getElementById('tip');
+    if (t) t.hidden = true;
+  };
+  function closeChooser(back) {
+    const c = document.getElementById('map-chooser');
+    if (!c) return;
+    const from = c._from;
+    c.remove();
+    if (back && from?.isConnected) from.focus();
+  }
+  function openLabel(el) {
+    hideMapTip();
+    closeChooser();
+    const pos = el.dataset.mlabel.split(',').map(Number),
+      acc = M.ctx.p.acc;
+    if (pos.length === 1) {
+      K.site?.focus(acc, pos[0], { from: 'map' });
+      return;
+    }
+    const nm = (q) => (K.prot?.siteLabel ? K.prot.siteLabel(acc, q) : String(q));
+    const box = document.createElement('div');
+    box.id = 'map-chooser';
+    box.setAttribute('role', 'group');
+    box.setAttribute('aria-label', 'Sites at this label');
+    box._from = el;
+    box.innerHTML = pos
+      .map(
+        (q, i) =>
+          `${i ? '<span class="muted"> · </span>' : ''}<a href="#" class="mono" data-chooser-site="${q}">${esc(nm(q))}</a>`
+      )
+      .join('');
+    const r = el.getBoundingClientRect();
+    box.style.cssText =
+      `position:fixed;z-index:60;left:${Math.max(8, Math.min(r.left, innerWidth - 240))}px;top:${r.bottom + 4}px;` +
+      'max-width:min(92vw,28rem);padding:.4rem .6rem;background:var(--bg,#fff);color:var(--ink,inherit);' +
+      'border:1px solid var(--line,#999);border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.25)';
+    document.body.appendChild(box);
+    box.querySelector('a')?.focus();
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest?.('[data-chooser-site]');
+    if (a) {
+      e.preventDefault();
+      const q = +a.dataset.chooserSite;
+      closeChooser();
+      K.site?.focus(M.ctx.p.acc, q, { from: 'map' });
+    } else if (!e.target.closest?.('#map-chooser,[data-mlabel]')) closeChooser();
+    if (e.target.closest?.('#pmap')) hideMapTip();
+  });
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      const lab = e.target.closest?.('[data-mlabel]');
+      if (lab && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        openLabel(lab);
+      } else if (e.key === 'Escape' && document.getElementById('map-chooser')) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeChooser(true);
+      }
+    },
+    true
+  );
+  addEventListener('hashchange', () => {
+    closeChooser();
+    hideMapTip();
+  });
   K.map = {
     render,
     exportOpts,
     cross: (pos) => M.cross?.(pos),
     nearby,
+    nearMarks,
+    ctxWindow,
     contextMarks,
     ctxIds: () => CTX_IDS.slice(),
+    namedChanges,
+    namedRows,
     figure,
     fileName,
     siteColour,

@@ -339,7 +339,9 @@
   };
   const topText = (l, n) =>
     topTerms(l)
-      .map((r) => `${r.chosen ? '\u2713 ' : ''}${r.name} \u00b7 ${int(r.k)} of ${int(n)} \u00b7 q ${K.fq(r.q)}`)
+      .map(
+        (r) => `${r.chosen ? '\u2713 ' : ''}${r.name} \u00b7 ${int(r.k)} of ${int(n)} carry it \u00b7 q ${K.fq(r.q)}`
+      )
       .join('\n');
   function clusters(M) {
     const shown = M.labels
@@ -713,7 +715,7 @@
       if (ex || mini) out.push(`<g${dim(i) ? ' opacity="0.18"' : ''}>${dot}</g>`);
       else
         out.push(
-          `<a href="${esc(K.link('protein', nd.acc))}" class="nw-n" data-nn="${i}" tabindex="-1" aria-label="${esc(nd.gene)}, ${int(nd.sites)} ${esc(W.marks)}"${dim(i) ? ' style="opacity:0.18"' : ''}>` +
+          `<a href="${esc(K.link('protein', pageArg(nd.acc)))}" class="nw-n" data-nn="${i}" tabindex="-1" aria-label="${esc(nd.gene)}, ${int(nd.sites)} ${esc(W.marks)}"${dim(i) ? ' style="opacity:0.18"' : ''}>` +
             `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="${Math.max(r(i) + 3, phone ? 12 : 7).toFixed(1)}" fill="transparent"/>${dot}</a>`
         );
     });
@@ -819,7 +821,7 @@
           );
         const free = (bx, by) => {
           const b = [bx, by, bx + w, by + h];
-          if (taken.some((q) => !(b[2] + 1 < q[0] || q[2] + 1 < b[0] || b[3] + 1 < q[1] || q[3] + 1 < b[1])))
+          if (taken.some((q) => !(b[2] + 3 < q[0] || q[2] + 3 < b[0] || b[3] + 3 < q[1] || q[3] + 3 < b[1])))
             return false;
           return !P.some((p, j) => {
             if (j === i) return false;
@@ -860,7 +862,7 @@
       out.push(
         text(
           L.shelf[0],
-          L.shelf[1] + 2,
+          L.shelf[1],
           phone ? L.fs : L.fs - 1.5,
           600,
           muted,
@@ -949,7 +951,11 @@
           )
           .join('')}</span>`
       );
-    return `<div class="nw-key" aria-label="Key"><span class="nw-sum" role="status">${sum}</span>${topSelect()}${bits.join('')}</div>`;
+    // the count line and its number box stay above the figure; the key (sizes, links, colors, outline) is one block under it
+    return {
+      head: `<div class="nw-head"><span class="nw-sum" role="status">${sum}</span>${topSelect()}</div>`,
+      key: `<div class="nw-key" role="group" aria-label="Key">${bits.join('')}</div>`,
+    };
   }
   // a phone names the clusters in a list under the figure: badge, short name, proteins; a tap lights the cluster, a second zooms
   function listHtml(CL) {
@@ -965,7 +971,7 @@
                 ? `<ul class="nw-top small muted">${topTerms(x.l)
                     .map(
                       (r) =>
-                        `<li>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} · ${int(r.k)} of ${int(x.n)} · q ${esc(K.fq(r.q))}</li>`
+                        `<li>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} · ${int(r.k)} of ${int(x.n)} carry it · q ${esc(K.fq(r.q))}</li>`
                     )
                     .join('')}</ul>`
                 : ''
@@ -989,12 +995,12 @@
           .slice()
           .sort((a, b) => M.nodes[b].sites - M.nodes[a].sites || (M.nodes[a].gene < M.nodes[b].gene ? -1 : 1));
         return (
-          `<tr><th scope="row">${x.other ? 'Smaller cluster: ' : ''}${esc(x.name)}${x.l.q != null ? ` <span class="muted">· ${int(x.l.k)} of ${int(x.n)}</span>` : ''}${
+          `<tr><th scope="row">${x.other ? 'Smaller cluster: ' : ''}${esc(x.name)}${x.l.q != null ? ` <span class="muted">· ${int(x.l.k)} of ${int(x.n)} carry this term</span>` : ''}${
             topTerms(x.l).length
               ? `<ul class="nw-top small muted">${topTerms(x.l)
                   .map(
                     (r) =>
-                      `<li>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} · ${int(r.k)} of ${int(x.n)} · q ${esc(K.fq(r.q))}</li>`
+                      `<li>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} · ${int(r.k)} of ${int(x.n)} carry it · q ${esc(K.fq(r.q))}</li>`
                   )
                   .join('')}</ul>`
               : ''
@@ -1068,6 +1074,8 @@
     'sources',
     'claim',
   ];
+  // the controls a reader uses less often are always under "More options", whatever the site file lists
+  const LESS_USED = new Set(['size', 'outline']);
   const controls = (CL) => {
     const counts = [];
     for (let v = CR[0]; v <= CR[1]; v += Math.max(1, CR[2])) counts.push([v, v]);
@@ -1149,23 +1157,28 @@
         ...(NC.controls?.includes('find') || !NC.controls ? ['term'] : []),
       ]),
       phone = phoneNow(),
-      main = phone ? [] : CONTROL_ORDER.filter((id) => want.has(id)),
+      main = phone ? [] : CONTROL_ORDER.filter((id) => want.has(id) && !LESS_USED.has(id)),
       rest = CONTROL_ORDER.filter((id) => !main.includes(id));
     const html = (ids) => ids.map((id) => built[id]()).join('');
+    // zoom, fit and the download: under "More options" with the other less-used controls
+    const extra =
+      (UI.mode === 'network'
+        ? `<span class="nw-zb" role="group" aria-label="Zoom"><button type="button" class="btn small" data-nw-zoom="-1" aria-label="Zoom out" title="Zoom out (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">−</button><button type="button" class="btn small" data-nw-zoom="1" aria-label="Zoom in" title="Zoom in (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">+</button>` +
+          `<button type="button" class="btn small" data-nw-fitpin title="Zoom to the pinned proteins and the clusters they touch">Fit pinned</button></span>`
+        : '') +
+      `<label class="nw-inl nw-xf"><span>Export</span><select data-nw="xf" aria-label="What the download frames"><option value="fit"${UI.xf === 'fit' ? ' selected' : ''}>Fit pinned</option><option value="view"${UI.xf === 'view' ? ' selected' : ''}>What you see</option><option value="whole"${UI.xf === 'whole' ? ' selected' : ''}>Whole network</option></select></label>` +
+      K.expBar(['svg', 'png', 'pdf', 'tsv'], 'nwexp', 'the network').replace(
+        '<div class="xm-items" role="menu">',
+        '$&<button type="button" class="exp-btn xm-item" role="menuitem" data-nw-copy title="Copy a link that opens this network with these settings">Copy link</button>'
+      );
     return (
       `<div class="nw-bar nw-row" role="group" aria-label="Network options">${html(main)}` +
       `<div class="nw-btns"><button type="button" class="btn small" data-nw-view="${UI.mode === 'network' ? 'table' : 'network'}">${UI.mode === 'network' ? 'Table view' : 'Network view'}</button>` +
       (UI.mode === 'network'
-        ? `<span class="nw-zb" role="group" aria-label="Zoom"><button type="button" class="btn small" data-nw-zoom="-1" aria-label="Zoom out" title="Zoom out (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">−</button><button type="button" class="btn small" data-nw-zoom="1" aria-label="Zoom in" title="Zoom in (Ctrl or Cmd and the wheel; pinch on a touch screen; drag to move)">+</button>` +
-          `<button type="button" class="btn small" data-nw-fitpin title="Zoom to the pinned proteins and the clusters they touch">Fit pinned</button>` +
-          `<button type="button" class="btn small" data-nw-vreset title="Show the whole drawing">${K.ACT.resetView}</button></span>`
+        ? `<button type="button" class="btn small" data-nw-vreset title="Show the whole drawing">${K.ACT.resetView}</button>`
         : '') +
-      `<label class="nw-inl nw-xf"><span>Export</span><select data-nw="xf" aria-label="What the download frames"><option value="fit"${UI.xf === 'fit' ? ' selected' : ''}>Fit pinned</option><option value="view"${UI.xf === 'view' ? ' selected' : ''}>What you see</option><option value="whole"${UI.xf === 'whole' ? ' selected' : ''}>Whole network</option></select></label>` +
-      `${K.expBar(['svg', 'png', 'pdf', 'tsv'], 'nwexp', 'the network').replace(
-        '<div class="xm-items" role="menu">',
-        '$&<button type="button" class="exp-btn xm-item" role="menuitem" data-nw-copy title="Copy a link that opens this network with these settings">Copy link</button>'
-      )}</div></div>` +
-      `<details class="nw-more"${UI.more ? ' open' : ''}><summary>More options</summary><div class="nw-bar" role="group" aria-label="More network options">${html(rest)}<button type="button" class="btn small" data-nw-reset>Reset all settings</button></div></details>`
+      `</div></div>` +
+      `<details class="nw-more"${UI.more ? ' open' : ''}><summary>More options</summary><div class="nw-bar" role="group" aria-label="More network options">${html(rest)}${extra}<button type="button" class="btn small" data-nw-reset>Reset all settings</button></div></details>`
     );
   };
   let curL = null;
@@ -1237,8 +1250,8 @@
     // it has partners: say why it was not drawn (by the numbers), then draw more, or only it and its partners
     UI.nbWhy =
       plan.rank < UI.top
-        ? `none of its ${int(plan.partners.length)} ${plural(plan.partners.length, 'partner', 'partners')} is among the ${int(UI.top)} proteins with most ${W.marks}`
-        : `it ranks ${int(plan.rank + 1)} by ${W.marks}, outside the ${int(UI.top)} drawn`;
+        ? `None of ${esc(geneOf(missing[0], M.full || FILE.full))}’s ${int(plan.partners.length)} ${plural(plan.partners.length, 'partner is', 'partners is')} among the top ${int(UI.top)} by ${W.marks}`
+        : `${esc(geneOf(missing[0], M.full || FILE.full))} ranks ${int(plan.rank + 1)} by ${W.marks}, outside the top ${int(UI.top)}`;
     const top = TOPS.find((v) => v >= plan.need);
     if (!top) {
       UI.nb = true;
@@ -1293,12 +1306,13 @@
     if (bsp) lines.push({ t: `${bsp.name}: ${(bsp.cats || [])[nd.bd] || bsp.none_label || 'none'}` });
     if (OUT && nd.rl >= 0) lines.push({ t: `${OUT.name}: ${(OUT.cats || [])[nd.rl] || ''}` });
     lines.push({
-      t: `${int(M.deg[i])} ${plural(M.deg[i], 'partner', 'partners')} (${int(inC)} in cluster, ${int(out)} outside)`,
+      t: `${int(M.deg[i])} ${plural(M.deg[i], 'protein partner', 'protein partners')} with ${W.marks} in this network (${int(inC)} in cluster, ${int(out)} outside)`,
+      ix: nd.acc,
     });
     if (c.l.q != null) {
       lines.push({ t: `Cluster term: ${c.name}` });
       lines.push({
-        t: `${NC.labels[c.l.source]?.label || 'Term'}: ${int(c.l.k)} of ${int(c.n)} cluster proteins, ${int(c.l.M)} of ${int(c.l.N)} in the network · q ${K.fq(c.l.q)}`,
+        t: `${int(c.l.k)} of ${int(c.n)} cluster proteins carry this ${NC.labels[c.l.source]?.label || 'term'} term (${int(c.l.M)} of ${int(c.l.N)} in the network) · q ${K.fq(c.l.q)}`,
       });
     }
     factsOf(M, i).forEach((t) => lines.push({ t }));
@@ -1308,7 +1322,7 @@
     lines
       .map(
         (l) =>
-          `<div>${l.b != null ? `<b>${esc(l.b)}</b>` : ''}${esc(l.t || '')}${l.m ? ` <span class="muted">${esc(l.m)}</span>` : ''}</div>`
+          `<div>${l.b != null ? `<b>${esc(l.b)}</b>` : ''}${esc(l.t || '')}${l.m ? ` <span class="muted">${esc(l.m)}</span>` : ''}${l.ix ? ` <span class="muted" data-nw-ix="${esc(l.ix)}"></span>` : ''}</div>`
       )
       .join('');
   const coarse = () => matchMedia('(pointer: coarse)').matches;
@@ -1320,6 +1334,12 @@
       `<div class="muted">${pinned ? (coarse() ? 'Tap again to open the protein page.' : 'Click again to open the protein page.') : coarse() ? 'Tap to pin it; tap again to open its page.' : 'Click to pin it; click again to open its page. Shift-click pins several.'}</div>`
     );
   }
+  // a protein's page from here: its site when the selection names one site of it (H4 R3), else the protein
+  const pageArg = (acc) => {
+    const q = K.sel?.parse?.(S.q),
+      st = q?.sites?.length === 1 ? q.sites[0] : null;
+    return st && D.proteins[st[0]]?.[0] === acc ? `${acc}/${st[1]}` : acc;
+  };
   // the pinned proteins' panel under the figure: a card each, the link to the page, Unpin
   function pinHtml(M, CL) {
     const set = [...pinNodes(M)];
@@ -1331,7 +1351,7 @@
           lines = cardLines(M, CL, i),
           shown = one ? lines : lines.filter((l, k) => k < 3 || /^Cluster term/.test(l.t || '') === false).slice(0, 5);
         return (
-          `<div class="nw-pc">${linesHtml(shown)}<div class="nw-pbtn"><a class="btn small" href="${esc(K.link('protein', nd.acc))}">Open protein page</a>` +
+          `<div class="nw-pc">${linesHtml(shown)}<div class="nw-pbtn"><a class="btn small" href="${esc(K.link('protein', pageArg(nd.acc)))}">Open protein page</a>` +
           `<button type="button" class="btn small" data-nw-unpin="${esc(nd.acc)}">Unpin${one ? '' : ' ' + esc(nd.gene)}</button></div></div>`
         );
       })
@@ -1358,14 +1378,14 @@
       `<b>${esc(x.name)}</b> · cluster ${x.other ? 'among the smaller ones' : x.rank + 1}<br>` +
       `<b>${int(x.n)}</b> proteins<br>${int(within)} links inside, ${int(between)} to other clusters` +
       (x.l.q != null
-        ? `<br>${esc(NC.labels[x.l.source]?.label || 'Term')}: ${int(x.l.k)} of ${int(x.n)} cluster proteins, ${int(x.l.M)} of ${int(x.l.N)} in the network · q ${esc(K.fq(x.l.q))}`
+        ? `<br>${int(x.l.k)} of ${int(x.n)} cluster proteins carry this ${esc(NC.labels[x.l.source]?.label || 'term')} term (${int(x.l.M)} of ${int(x.l.N)} in the network) · q ${esc(K.fq(x.l.q))}`
         : '') +
       (topTerms(x.l).length
-        ? `<br><span class="muted">Best terms (cluster proteins with the term, q):</span>` +
+        ? `<br><span class="muted">Best terms (how many cluster proteins carry each, q):</span>` +
           topTerms(x.l)
             .map(
               (r) =>
-                `<br>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} <span class="muted">· ${int(r.k)} of ${int(x.n)} · q ${esc(K.fq(r.q))}</span>`
+                `<br>${r.chosen ? '<b>\u2713 ' : ''}${esc(r.name)}${r.chosen ? '</b>' : ''} <span class="muted">· ${int(r.k)} of ${int(x.n)} carry it · q ${esc(K.fq(r.q))}</span>`
             )
             .join('')
         : '') +
@@ -1412,11 +1432,63 @@
       const m = K.sel?.nProteins?.();
       head = `${int(n)} of the ${m != null ? int(m) + ' ' : ''}selected ${plural(m, 'protein', 'proteins')} ${plural(n, 'is', 'are')} linked at ${how}`;
     } else
-      head = `${int(n)} of the ${int(UI.top)} ${plural(UI.top, 'protein', 'proteins')} with the most ${W.marks}${total ? ` (of ${int(total)})` : ''} ${plural(n, 'is', 'are')} linked at ${how}`;
-    const named = CL.nShown
-      ? `${int(CL.nShown)} named ${plural(CL.nShown, 'cluster', 'clusters')}${UI.clusters && UI.clusters !== CL.nShown ? ` (${int(UI.clusters)} asked for; closest is ${int(CL.nShown)})` : ''}`
-      : `no cluster of ${int(UI.minc)} or more proteins`;
-    return `${head} · ${int(M.edges.length)} ${plural(M.edges.length, 'link', 'links')} · ${named}${CL.nOther ? `, ${int(CL.nOther)} small (gray)` : ''}`;
+      // the sentence above says how many of the top proteins are drawn and how many groups they form; this line keeps the rest
+      head = `Linked at ${how}${total ? `; ${int(total)} ${W.marked} proteins` : ''}`;
+    const asked =
+      CL.nShown && UI.clusters && UI.clusters !== CL.nShown
+        ? `${int(UI.clusters)} clusters asked for; closest is ${int(CL.nShown)}`
+        : '';
+    return [
+      head,
+      `${int(M.edges.length)} ${plural(M.edges.length, 'link', 'links')}`,
+      asked,
+      CL.nOther ? `${int(CL.nOther)} small ${plural(CL.nOther, 'cluster', 'clusters')} (gray)` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  }
+  // the answer in one sentence, from the clusters as drawn: how many proteins, how many groups, the largest two
+  function answerText(M, CL, sel0) {
+    const n = M.nodes.length,
+      big = CL.shown
+        .map((c) => CL.list[c])
+        .sort((a, b) => b.n - a.n)
+        .slice(0, 2),
+      drawn = M.seeds || UI.nb || sel0,
+      groups = `${int(CL.nShown)} ${plural(CL.nShown, 'cluster', 'clusters')}`;
+    // the top proteins that have a link are the ones drawn: say so when some of them have none
+    const who = drawn
+      ? `${int(n)} proteins drawn`
+      : `${int(UI.top)} proteins with most ${W.marks}${n < UI.top ? `: ${int(n)} linked` : ''}`;
+    const sep = drawn || n >= UI.top ? ': ' : ', ';
+    if (!CL.nShown) return `${who}${sep}no cluster of ${int(UI.minc)} or more proteins.`;
+    return `${who}${sep}${groups}; largest ${big.map((x) => `${int(x.n)} (${x.label})`).join(', ')}.`;
+  }
+  // the cluster table under the figure: name, size, how many members carry the naming term, the busiest genes
+  function clusterTableHtml(M, CL) {
+    const by = M.labels.map(() => []);
+    M.nodes.forEach((nd, i) => by[nd.c].push(i));
+    const rows = CL.shown
+      .map((c) => {
+        const x = CL.list[c],
+          top = by[c]
+            .slice()
+            .sort((a, b) => M.nodes[b].sites - M.nodes[a].sites || (M.nodes[a].gene < M.nodes[b].gene ? -1 : 1))
+            .slice(0, 5)
+            .map((i) => `<a href="${esc(K.link('protein', M.nodes[i].acc))}">${esc(M.nodes[i].gene)}</a>`);
+        return (
+          `<tr><th scope="row"><span class="nw-bdg" style="background:${catVar(x.slot)};color:var(--nw-on-${x.slot + 1})">${x.rank + 1}</span> ${esc(x.name)}</th><td class="num">${int(x.n)}</td>` +
+          `<td>${x.l.q != null ? `${int(x.l.k)} of ${int(x.n)} carry ${x.term ? 'this term' : 'its best term'}` : '–'}</td><td>${top.join(', ')}</td></tr>`
+        );
+      })
+      .join('');
+    return (
+      `<div class="table-wrap nw-ctable"><table class="nw-table"><caption class="sr-only">The clusters of the network</caption>` +
+      `<thead><tr><th>Cluster</th><th class="num">Proteins</th><th>Members with the term</th><th>Top genes (most ${esc(W.marks)})</th></tr></thead><tbody>${rows}</tbody></table></div>` +
+      (CL.nOther
+        ? `<p class="muted small">${int(CL.nOther)} smaller ${plural(CL.nOther, 'cluster', 'clusters')} (${int(CL.protsOther)} proteins) are listed in the table view.</p>`
+        : '')
+    );
   }
   function view() {
     K.noNw = true; // the links this page draws are not given the network's own address parameters
@@ -1428,7 +1500,7 @@
   }
   function viewInner() {
     if ((S.nf || '') !== UI.find.trim().split(/\s+/).filter(Boolean).join(' ')) UI.find = S.nf || ''; // an address names the genes
-    const head = `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(leadOf())} <a href="${esc(location.hash)}" data-jump="nw-how">Method</a></p></div></div>`;
+    const head = `<div class="page-head results-head"><div><h2>${esc(TITLE)}</h2><p class="cx">${esc(leadOf())} <a href="${esc(location.hash)}" data-jump="nw-how">Methods</a></p></div></div>`;
     let M = model();
     if (M.error) return `${head}<p class="muted">The network could not be read (${esc(M.error)}).</p>`;
     if (M.wait) return head + K.loading('Loading the network…');
@@ -1455,24 +1527,33 @@
     const slot = [];
     if (fi?.wait) slot.push('Looking for the protein in the network…');
     else if (fi?.note) slot.push(`${fi.note} <button type="button" class="btn small" data-nw-fclear>Dismiss</button>`);
+    let pinShown = false;
     if (FOC >= 0 && !fi && (UI.fz || UI.nb || UI.topWas)) {
-      const c = CL.list[M.nodes[FOC].c];
+      const c = CL.list[M.nodes[FOC].c],
+        np = M.nodes.length - 1,
+        where = c.other ? 'a smaller cluster' : 'cluster ' + (c.rank + 1) + ': ' + esc(c.label);
+      pinShown = true;
       slot.push(
-        `Showing <b>${esc(M.nodes[FOC].gene)}</b> (${c.other ? 'a smaller cluster' : 'cluster ' + (c.rank + 1) + ': ' + esc(c.label)}).` +
-          (UI.nb
-            ? ` ${UI.nbWhy ? UI.nbWhy[0].toUpperCase() + UI.nbWhy.slice(1) + ', so' : 'So'} the network drawn is it and its ${int(M.nodes.length - 1)} ${plural(M.nodes.length - 1, 'partner', 'partners')}.`
+        `Showing <b>${esc(M.nodes[FOC].gene)}</b>${UI.nb ? ` and its ${int(np)} ${plural(np, 'partner', 'partners')}` : ''} (${where}).` +
+          (UI.nb && UI.nbWhy
+            ? ` ${UI.nbWhy}.`
             : UI.topWas
-              ? ` ${UI.nbWhy ? UI.nbWhy[0].toUpperCase() + UI.nbWhy.slice(1) + ', so' : 'So'} the ${int(UI.top)} proteins with most ${esc(W.marks)} are drawn.`
+              ? ` ${UI.nbWhy ? UI.nbWhy + ', so' : 'So'} the ${int(UI.top)} proteins with most ${esc(W.marks)} are drawn.`
               : '') +
           ` <button type="button" class="btn small" data-nw-fclear>Show the whole network</button>`
       );
     }
     if (sel0 && M.seeds) {
       const np = M.nodes.length - M.seedIdx.size;
+      // one protein: its own STRING partners, asked live, are on its protein page (the card drawn when the site file has website.partners)
+      const one = M.seeds === 1 && D.partners ? M.nodes[[...M.seedIdx][0]] : null;
       slot.push(
-        `Your selection has ${int(M.seeds)} ${plural(M.seeds, 'protein', 'proteins')}: ${M.seeds === 1 ? 'it is' : 'they are'} drawn with ${M.seeds === 1 ? 'its' : 'their'} ${int(np)} ${plural(np, 'partner', 'partners')}.`
+        `Your selection has ${int(M.seeds)} ${plural(M.seeds, 'protein', 'proteins')}: ${M.seeds === 1 ? 'it is' : 'they are'} drawn with ${M.seeds === 1 ? 'its' : 'their'} ${int(np)} ${plural(np, 'partner', 'partners')}.` +
+          (one?.acc
+            ? ` <a href="${esc(K.link('protein', `${one.acc}/interactions`))}">${esc(one.gene)}’s protein partners (STRING) are on its protein page</a>`
+            : '')
       );
-    } else if (sel0 && M.picked != null && M.nodes.length)
+    } else if (sel0 && M.picked != null && M.nodes.length && !pinShown && M.picked !== M.nodes.length)
       slot.push(
         `Your selection: ${int(M.picked)} of its proteins have a link in these sources; ${int(M.nodes.length)} are drawn.`
       );
@@ -1482,16 +1563,20 @@
     if (fn) slot.push(fn);
     // one slot above the figure for every note, so that the figure moves only when a note first appears
     const note = slot.length
-      ? `<div class="filter-note nw-fnote nw-slot on" role="status">${slot.join('<br>')}</div>`
+      ? `<div class="filter-note nw-fnote nw-slot on" role="status">${slot.map((t) => `<p>${t}</p>`).join('')}</div>`
       : '<div class="nw-slot" role="status"></div>';
     const sum = summaryText(M, CL, sel0);
     const body = !M.nodes.length
       ? `<p class="muted">${sel0 ? 'No protein of the selection has a link in the chosen sources, so there is nothing to draw. Choose more sources or a lower score, or widen the selection.' : 'No protein has a link in the chosen sources.'}</p>`
       : UI.mode === 'table'
         ? `<p class="nw-count" role="status">${sum} ${topSelect()}</p>${tableHtml(M, CL)}`
-        : `<div class="nw-main">${keyHtml(M, CL, { variant: phoneNow() ? 'phone' : 'desktop' }, sum)}<div class="nw-row2">${figureBox(M, CL)}${pinHtml(M, CL)}</div>${phoneNow() ? listHtml(CL) : ''}</div>`;
+        : (({ head: kh, key }) =>
+            `<div class="nw-main">${kh}<div class="nw-row2">${figureBox(M, CL)}${pinHtml(M, CL)}</div>${phoneNow() ? listHtml(CL) : ''}${key}</div>${CL.nShown ? clusterTableHtml(M, CL) : ''}`)(
+            keyHtml(M, CL, { variant: phoneNow() ? 'phone' : 'desktop' }, sum)
+          );
     const names = `<datalist id="nw-genes">${M.nodes.map((n) => `<option value="${esc(n.gene)}"></option>`).join('')}</datalist>`;
-    return head + controls(CL) + note + body + names + K.fold('nw-how', 'Method', '', methodHtml(), false);
+    const ans = M.nodes.length ? `<p class="nw-answer"><b>${esc(answerText(M, CL, sel0))}</b></p>` : '';
+    return head + ans + controls(CL) + note + body + names + K.fold('nw-how', 'Methods', '', methodHtml(), false);
   }
   // ---- exports ----------------------------------------------------------------------------------------------------------------
   // the figure in the style guide's frame: a title that is a claim, one sentence, a key, the drawing, a caption and the credit.
@@ -1812,7 +1897,7 @@
       keyItem(
         10,
         `<circle cx="5" cy="0" r="4.5" fill="${clusterFill(x, true)}"/>`,
-        `${x.other ? 'Smaller cluster' : x.label} · ${x.l.q != null ? `${int(x.l.k)} of ${int(x.n)}` : int(x.n)} proteins`
+        `${x.other ? 'Smaller cluster' : x.label} · ${x.l.q != null ? `${int(x.l.k)} of ${int(x.n)} carry this term` : `${int(x.n)} proteins`}`
       );
     });
     if (pinIdx.length)
@@ -2623,16 +2708,23 @@
     }
   })();
   const hasLinks = (p) => !LINKED || !LINKED.length || p.i == null || !!(LINKED[p.i >> 3] & (1 << (p.i & 7)));
+  const previewSlot = (p) =>
+    NC.protein_preview === false || NC.protein_link === false || !hasLinks(p)
+      ? ''
+      : `<span class="nw-prev" data-nw-prev="${esc(p.acc)}" data-href="${esc(K.net.link(p.acc))}"></span>`;
   (K.protActions ||= []).push((p) => {
     if (NC.protein_link === false || !hasLinks(p)) return '';
-    const href = esc(K.link('network', '', { p: p.acc }));
+    const href = esc(K.net.link(p.acc));
     return (
       `<a class="btn small" href="${href}" title="Open the network with ${esc(p.gene || p.acc)} shown, its cluster lit">See in network</a>` +
-      (NC.protein_preview === false
-        ? ''
-        : `<span class="nw-prev" data-nw-prev="${esc(p.acc)}" data-href="${href}"></span>`)
+      // the small drawing sits in the protein network's section (pn-net, kit-pnet.js) where the page has one
+      (K.pix ? '' : previewSlot(p))
     );
   });
+  // the protein page's STRING card links here: this protein as the selection, drawn with its partners (a protein the sources do not link has none)
+  // the one address of a protein in the network (it pinned and its cluster lit); every link to it is built here
+  K.net = { link: (acc) => K.link('network', '', { p: acc }), previewSlot: (p) => previewSlot(p) };
+  K.netHref = (p) => (NC.protein_link === false || !hasLinks(p) ? '' : K.net.link(p.acc));
   let viewP = null;
   const loadViewFile = () =>
     (viewP ||= fetch(NC.files.view)
@@ -2642,8 +2734,7 @@
   // name beside it in its colour; the same drawing code as the figure, at a small size
   function previewHtml(j, acc, href) {
     const i = j.nodes.findIndex((n) => sameAcc(n, acc));
-    if (i < 0)
-      return `<span class="muted nw-prev-no">Not among the proteins drawn by default; the link opens the network with it and its partners.</span>`;
+    if (i < 0) return '';
     const view = { gene: j.gene, sites: j.sites, comm: j.comm, edges: j.edges, labels: j.labels },
       c = j.comm[i],
       sl = K.netcore.previewSlice(view, i);
@@ -2662,7 +2753,7 @@
       L = K.netlayout.finish(sub, pos, 'desktop', 12.5 / s, 10.5 / s);
     }
     s = Math.min(2.4, 300 / L.w, 190 / L.h);
-    L.clabels.forEach((l) => (l.count = `${sl.nodes.length} of ${j.labels[c].n} proteins`));
+    L.clabels.forEach((l) => (l.count = `${sl.nodes.length} shown of ${j.labels[c].n} in the cluster`));
     const shown = j.labels
         .map((l, k) => k)
         .filter((k) => j.labels[k].n >= OPT.min_cluster)
@@ -2704,9 +2795,21 @@
     return (
       `<a class="nw-prev-a" href="${href}" aria-label="${esc(j.gene[i])} among ${int(j.labels[c].n)} proteins of its cluster${term ? ', ' + esc(term) : ''}; open the network">` +
       `<svg class="nw-prev-svg" width="${Math.round(L.w * s)}" height="${Math.round(L.h * s)}" viewBox="0 0 ${L.w} ${L.h}" role="img" aria-hidden="true">${svg}</svg></a>` +
-      `<span class="nw-prev-cap muted">${esc(j.gene[i])} with ${int(sl.nodes.length - 1)} of its ${int(sl.partners)} partners in its cluster</span>`
+      `<span class="nw-prev-cap muted" data-in="${sl.partners}" data-shown="${sl.nodes.length - 1}">${int(sl.partners)} of ${esc(j.gene[i])}’s STRING partners are in this cluster; ${int(sl.nodes.length - 1)} shown</span>`
     );
   }
+  // the partners line of a card points to the protein's partners in all (kit-pix.js owns that count)
+  (K.afterRender ||= []).push(() => {
+    document.querySelectorAll('[data-nw-ix]:not([data-done])').forEach((el) => {
+      el.dataset.done = '1';
+      K.pix?.countNote(el.dataset.nwIx).then(
+        (h) => {
+          if (h && el.isConnected) el.innerHTML = `· ${h}`;
+        },
+        () => {}
+      );
+    });
+  });
   (K.afterRender ||= []).push(() => {
     const els = [...document.querySelectorAll('.nw-prev:not([data-done])')];
     if (!els.length) return;
@@ -2715,7 +2818,19 @@
       el.dataset.done = '1';
       loadViewFile().then(
         (j) => {
-          if (el.isConnected) el.innerHTML = previewHtml(j, el.dataset.nwPrev, el.dataset.href);
+          if (!el.isConnected) return;
+          el.innerHTML = previewHtml(j, el.dataset.nwPrev, el.dataset.href);
+          // the caption's total is the protein's STRING partners in all (the partner table kit-pix.js reads)
+          const cap = el.querySelector('.nw-prev-cap');
+          if (cap && K.card?.load && K.pix?.partnersOf)
+            K.card.load(el.dataset.nwPrev).then(
+              (tb) => {
+                const n = K.pix.partnersOf(tb).length;
+                if (n >= +cap.dataset.in && cap.isConnected)
+                  cap.textContent = `${int(+cap.dataset.in)} of its ${int(n)} STRING partners are in this cluster; ${int(+cap.dataset.shown)} shown`;
+              },
+              () => {}
+            );
         },
         () => {}
       );

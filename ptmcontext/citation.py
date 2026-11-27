@@ -51,7 +51,11 @@ def short_reference(ref: dict) -> str:
     authors = [a for a in ref.get('authors', []) if _author(a) != 'et al.']
     many = len(ref.get('authors', [])) > 1
     first = (authors[0].get('family-names') or authors[0].get('name', '')) if authors else ''
-    return f'{first}{" et al." if many else ""} {ref.get("year", "")}'.strip()
+    short = f'{first}{" et al." if many else ""} {ref.get("year", "")}'.strip()
+    version = str(ref.get('version') or '')
+    if version:  # two records of one work (a release and all its versions) read differently
+        short += f' ({version if version[0].isalpha() else "v" + version})'
+    return short
 
 
 def site_citation(site: dict) -> dict:

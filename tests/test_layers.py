@@ -111,15 +111,15 @@ def test_protein_outputs_count_each_protein(tmp_path):
 
 def test_built_in_layers_take_with_parameters_and_their_labels_follow():
     default = L.get('idr')
-    assert default.labels['idr_boundary'] == 'Ordered, ≤20 aa from an IDR'
+    assert default.labels['idr_boundary'] == 'Ordered, ≤20 aa from a disordered region'
     bound = L.get('idr', None, {'window': 15, 'min_length': 30})
-    assert bound.labels['idr_boundary'] == 'Ordered, ≤15 aa from an IDR'
-    assert bound.labels['no_idr'] == 'No IDR of 30 aa or more' and '30 or more' in bound.question
+    assert bound.labels['idr_boundary'] == 'Ordered, ≤15 aa from a disordered region'
+    assert bound.labels['no_idr'] == 'No disordered region of 30 aa or more' and '30 or more' in bound.question
     assert bound.tracks[0].help.endswith('of 30 residues or more')
     s = L.get('structure_context', None, {'near': 5, 'mid': 25})
     assert (
-        s.labels['idr_mid_domain'] == 'IDR 6–25 aa from a domain'
-        and s.labels['idr_far_from_domain'] == 'IDR >25 aa from any domain'
+        s.labels['idr_mid_domain'] == 'Disordered, 6–25 aa from a domain'
+        and s.labels['idr_far_from_domain'] == 'Disordered, >25 aa from any domain'
     )
     with pytest.raises(ValueError, match='takes no parameter'):
         L.get('idr', None, {'nope': 1})

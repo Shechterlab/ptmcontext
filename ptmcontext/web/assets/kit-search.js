@@ -113,7 +113,7 @@
       ];
       names
         .sort((a, b) => b[1] - a[1])
-        .forEach(([s, n]) => out.push([String(A[key].labels?.[s] || s), `${int(n)} ${W.marked} proteins`]));
+        .forEach(([s, n]) => out.push([String(A[key].labels?.[s] || s), K.plural(n, `${W.marked} protein`)]));
     }
     if (SPECS[key] && sd)
       (sd.attributes[key] || []).filter(Boolean).forEach((v) => out.push([v, (SPECS[key].values || {})[v] || '']));
@@ -256,6 +256,37 @@
       .slice(0, 2)
       .map(([v, name]) => ({ kind: 'page', view: v, text: name, label: name, sub: 'Open this page' }));
   }
+  // the site a gene and a residue-and-position name (two words, as typed: "TP53 S15", "H4 R3"), with the UniProt position where the
+  // protein is numbered as papers do; null when the words are not that
+  function siteRow(toks, tok) {
+    const m = /^([A-Z])(\d+)$/i.exec(tok),
+      prev = toks.length > 1 ? toks[toks.length - 2] : '';
+    if (
+      !m ||
+      !prev ||
+      /^[a-z_][\w]*:/i.test(prev) ||
+      !(D.residues || []).some((r) => r.toUpperCase() === m[1].toUpperCase())
+    )
+      return null;
+    const ps = K.sel.protOf(prev);
+    if (!ps || ps.length !== 1) return null;
+    const p = ps[0],
+      aa = m[1].toUpperCase(),
+      typed = +m[2],
+      rule = K.numbering?.(p),
+      uni = typed - (rule?.offset || 0),
+      gene = String(p.gene || p.acc).split(/[\s;]+/)[0];
+    return {
+      kind: 'site',
+      text: tok,
+      label: `${gene} ${aa}${typed}`,
+      sub:
+        uni !== typed
+          ? `${rule.note || rule.label || 'Numbered as papers do'}: UniProt ${aa}${uni}`
+          : 'The site of this protein',
+      drop: 2,
+    };
+  }
   function suggestions(text) {
     const toks = text.match(/[a-z_][\w]*:"[^"]*"?|\S+/gi) || [],
       tok = /\s$/.test(text) ? '' : toks[toks.length - 1] || '';
@@ -277,6 +308,9 @@
         .slice(0, 10)
         .map(([v, l, n]) => ({ kind: 'value', text: `${key}:${head}${quote(v)}`, label: `${key}:${v}`, sub: l, n }));
     }
+    // "GENE R3" (a gene, then a residue letter and a position): the site, before any fuzzy match of the position word (S15 is not RPS15)
+    const site = siteRow(toks, tok);
+    if (site) return [site];
     const out = [],
       flags = []; // yes/no attributes whose query word begins with the typed word: shown by their label
     if (tok.length >= 2 && !m)
@@ -495,7 +529,16 @@
           e.preventDefault();
           close();
         }
-      } else if (e.key === 'Enter') close();
+      } else if (e.key === 'Enter') {
+        // a set or term named in full and entered without picking it: the top term match applies, as choosing it does
+        const top = suggestions(input.value);
+        if (top[0]?.kind === 'termsel' && top[0].group) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          items = top;
+          choose(0);
+        } else close();
+      }
     },
     true
   );
@@ -551,8 +594,9 @@
           ` name the protein (${EXGENE} ${aa}${pos}${to}) to open its site.`
       )
     );
+    K.sel.notesOf(q).forEach((t) => out.push(esc(t)));
     if (prots.size || q.sites.length) {
-      const missing = [...(q.absent || [])];
+      const missing = [...(q.absent || []), ...(q.ignored || [])];
       if (q.nWords > 1 && (prots.size > 1 || missing.length))
         out.push(
           `<b>${int(prots.size)}</b> protein${prots.size === 1 ? '' : 's'} from ${int(q.nWords - missing.length)} of ${int(q.nWords)} search words.`
@@ -564,17 +608,11 @@
             .map(([t, g]) => `${esc(t)} → ${esc(g.join('/'))}`)
             .join(', ')}.`
         );
-      if (missing.length)
-        out.push(`Not in this dataset: ${list_(missing)}.${missing.length === 1 ? typo(q, missing[0]) : ''}`);
+      if (missing.length) out.push(K.sel.leftOut(list_(missing)) + (missing.length === 1 ? typo(q, missing[0]) : ''));
       if (q.missing.length) out.push(`No ${esc(W.mark)} reported at ${list_(q.missing, 10)}.`);
       q.numbered.forEach(([g, typed, u, rule]) =>
         out.push(`${esc(rule.note || rule.label || 'Numbered as papers do')}: ${esc(g)} ${typed} is UniProt ${u}.`)
       );
-      if (q.ignored?.length)
-        out.push(
-          `<span title="In a list of proteins, words are not searched in protein ` +
-            `names: search them on their own to do that">Not a protein, left out of the list: ${list_(q.ignored)}.</span>`
-        );
       if (q.ambiguous?.length)
         out.push(
           q.ambiguous
@@ -589,7 +627,7 @@
       const phrase = q.words.join(' '),
         cs = conceptRows(phrase);
       out.push(
-        `No protein on this site matches all of “${esc(phrase)}”.` +
+        `No protein matches all of “${esc(phrase)}”.` +
           (cs.length
             ? ` Did you mean ${cs
                 .slice(0, 4)
@@ -613,7 +651,7 @@
       const phrase = q.unmatched.join(' '),
         cs = conceptRows([...q.words, ...q.unmatched].join(' '));
       out.push(
-        `No protein on this site matches “${esc(phrase)}”.` +
+        `No protein matches “${esc(phrase)}”.` +
           (q.unmatched.length === 1 ? typo(q, q.unmatched[0]) : '') +
           (cs.length
             ? ` Did you mean ${cs
@@ -633,11 +671,7 @@
       (t) => K.sel.isTermKey(t.split(':')[0]) && !errs.some((e) => e.startsWith(t.split(':')[0] + ':'))
     );
     if (errs.length) out.push(`<span class="warn-text">${errs.map(esc).join(' ')}</span>`);
-    if (empty.length)
-      out.push(
-        `<span class="warn-text">Nothing matches ${list_(empty)}: no ${esc(W.mark)} is selected ` +
-          `while it stays.</span>`
-      );
+    if (empty.length) out.push(`<span class="warn-text">No ${esc(W.mark)} matches ${list_(empty)}.</span>`);
     if (unknown.length)
       out.push(
         `<span class="warn-text">${list_(unknown)}: not a search key here (<a href="${esc(K.link('method', 'search'))}">the search ` +

@@ -17,6 +17,8 @@
     PADJ = K.PADJ,
     MINL2 = Math.log2(K.MIN_EFFECT);
   const ID = C.id;
+  // the protein page's own fold for this question (kit-proteins.js K.proteinHome asks): where in the cell
+  K.cellHome = (aid) => (aid === ID && D.protein_view?.cards?.location?.maps ? 'p-cell' : '');
   const MAPS = C.maps.filter((m) => A[m.analysis]);
   const REGMAPS = MAPS.filter((m) => m.regions && A[m.regions]);
   const MAP = {}; // analysis -> its map (a regions question takes its map's words)
@@ -57,7 +59,7 @@
   const hText = (h) => {
     if (h == null) return '–';
     const r = Math.abs(h).toFixed(1); // round first: a value that rounds to 0.0 carries no sign
-    return 'h ' + (Number(r) === 0 ? '' : h > 0 ? '+' : '−') + r;
+    return 'effect ' + (Number(r) === 0 ? '' : h > 0 ? '+' : '−') + r;
   };
   const hStep = (h) => H_BANDS.filter((b) => Math.abs(h) >= b).length;
   const hBand = (h) =>
@@ -327,6 +329,7 @@
     '.pk-bar .p0{background:var(--fig-seq-1)}.pk-bar .p1{background:var(--fig-seq-2)}.pk-bar .p2{background:var(--fig-seq-3)}.pk-bar .p3{background:var(--fig-seq-4)}.pk-bar .p4{background:var(--fig-seq-5)}',
     '.pk-brk{width:9px;height:14px;margin:0 -.35rem 0 -.3rem;fill:none;stroke:var(--ink-2);stroke-width:1.4}',
     '.pk-ref{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}',
+    '.pk-lines .cell-key{flex:1 0 100%}',
     '.pk-tick{display:inline-block;width:2px;height:12px;background:var(--ink);margin-right:.3rem}',
     '@media (max-width:700px){.cell-view button{padding:.3rem .55rem}}',
     '@media(max-width:700px){.cell-cell svg,.cell-svg.cell-cell,.cell-svg.cell-nucleus,.cell-svg.cell-bars,.cell-svg.cell-funnel{min-width:0}.tbl-wrap:has(>.cell-funnel-tbl){overflow-x:auto}}', // a phone: the drawings scale to the width and the funnel table scrolls inside its box, instead of widening the page
@@ -350,19 +353,19 @@
   const READ = K.READ || { min_maps: 2, min_group: 20 };
   const smallOf = (k, M) => k < READ.min_group || M - k < READ.min_group;
   // the comparison a map's row makes: the fold (the share of the marked proteins placed here over the share of all the
-  // proteins the map places), read by the map's test: within the strata (Mantel–Haenszel; its odds ratio beside) or of
-  // the whole map (hypergeometric)
-  const adj = (aid, t) =>
-    stratified(aid) && t.or !== undefined
-      ? {
-          l2: L2(t.fold),
-          lo: null,
-          hi: null,
-          q: t.q,
-          test: { l2: L2(t.or), lo: t.lo ? Math.log2(t.lo) : null, hi: t.hi ? Math.log2(t.hi) : null },
-          small: smallOf(t.k, t.M),
-        }
-      : { l2: L2(t.fold), lo: null, hi: null, q: t.fq, small: smallOf(t.k, t.M) };
+  // proteins the map places) read by the map's own hypergeometric test, not adjusted for protein abundance. Where the map
+  // was also tested within the strata (Mantel–Haenszel), its odds ratio is `est`, an estimate for the hover that never
+  // sets the color
+  const adj = (aid, t) => ({
+    l2: L2(t.fold),
+    lo: null,
+    hi: null,
+    q: t.fq,
+    ...(stratified(aid) && t.or !== undefined
+      ? { est: { l2: L2(t.or), lo: t.lo ? Math.log2(t.lo) : null, hi: t.hi ? Math.log2(t.hi) : null, q: t.q } }
+      : {}),
+    small: smallOf(t.k, t.M),
+  });
   // each map, as the grids and the footnote name it: its words, and how many proteins it places and how many are marked
   const DS = (aid) => {
     const m = MAP[aid] || {},
@@ -380,7 +383,7 @@
   // ---- words --------------------------------------------------------------------------------------------------------
   const who = (scoped) => (scoped ? 'proteins of your selection' : `${W.marked} proteins`);
   const inWord = (scoped) => (scoped ? 'are in your selection' : `are ${W.marked}`);
-  const alike = allStrat ? 'other proteins of similar abundance' : 'the other proteins each map places';
+  const alike = 'the other proteins each map places'; // not adjusted for protein abundance
   const others = `proteins without a ${W.mark}`;
   const here = 'proteins the map places here';
   const fxv = (v) => (v == null ? '–' : K.fxn(v));
@@ -407,8 +410,8 @@
   function tone(a) {
     if (!a || a.l2 == null) return 'na';
     if (a.q == null || a.q > PADJ || (Number.isFinite(a.l2) && Math.abs(a.l2) < MINL2)) return 'ns';
-    // too few proteins on a side, or a test that points the other way from the fold: not colored
-    if (a.small || (a.test && a.test.l2 != null && Math.sign(a.test.l2) !== Math.sign(a.l2))) return 'ns';
+    // too few proteins on a side: not colored
+    if (a.small) return 'ns';
     const m = Math.abs(a.l2),
       s = m >= 2 ? 3 : m >= 1.2 ? 2 : m >= 0.5 ? 1 : 0;
     return (a.l2 > 0 ? 'u' : 'd') + s;
@@ -455,7 +458,8 @@
     const cv = ps.covariate,
       counts = cv?.counts,
       res = new Map(),
-      tested = [];
+      tested = [],
+      estTested = [];
     const at = counts ? Object.fromEntries(counts.codes.map((x, i) => [x, i])) : null;
     const nS = counts ? counts.codes.map(() => 0) : null;
     if (counts)
@@ -476,26 +480,32 @@
         circular = !!n && (blocked || k === n || selected);
       const x = { k, M, n, N: ps.N, circular, selected, a: { l2: null, lo: null, hi: null, q: null } };
       if (n && !circular) {
+        // the selection's own test: hypergeometric, as the selection retest (K.sel) runs it, not adjusted for protein
+        // abundance. Where the map has abundance strata, the Mantel–Haenszel odds ratio goes beside it as `est`
+        if (k) x.a = { l2: Math.log2(k / n / (M / ps.N)), lo: null, hi: null, p: ST.hyperSF(k, ps.N, M, n), q: null };
         if (counts && counts.sets[s]) {
           const Ms = counts.sets[s],
             m = ST.mh(kS.map((ki, i) => [ki, nS[i] - ki, Ms[i] - ki, counts.N[i] - nS[i] - Ms[i] + ki]));
-          x.a = {
-            mh: true,
+          x.est = {
             l2: L2(m.or === Infinity ? 1e300 : m.or),
             lo: m.lo ? Math.log2(m.lo) : null,
             hi: m.hi ? Math.log2(m.hi) : null,
             p: m.p,
             q: null,
           };
-        } else if (k)
-          x.a = { l2: Math.log2(k / n / (M / ps.N)), lo: null, hi: null, p: ST.hyperSF(k, ps.N, M, n), q: null };
+        }
         if (x.a.p != null && Number.isFinite(x.a.p)) tested.push(x.a);
+        if (x.est && x.est.p != null && Number.isFinite(x.est.p)) estTested.push(x.est);
       }
       res.set(s, x);
     }
     const q = ST.bh(tested.map((a) => a.p));
     tested.forEach((a, i) => {
       a.q = q[i];
+    });
+    const qe = ST.bh(estTested.map((a) => a.p));
+    estTested.forEach((a, i) => {
+      a.q = qe[i];
     });
     return (memo.maps[aid] = { n, N: ps.N, res, blocked });
   }
@@ -506,17 +516,20 @@
         ? `${int(x.k)} of the ${int(x.M)} ${here} ${inWord(true)}; ${
             x.k === x.n
               ? 'every one of them is here, so there is nothing to compare'
-              : 'the selection names its proteins or was made with this map, so it is not compared with it'
+              : 'the selection names its proteins or was made with this map, so it is not compared'
           }`
         : `${int(x.k)} of the ${int(x.M)} ${here} ${inWord(true)} (${int(x.n)} of the ${int(x.N)} proteins the map ` +
           `places); ${abundText(x.a)}`;
   function abundText(a) {
     if (!a || a.l2 == null) return 'not compared';
-    const t = a.test,
+    const t = a.est,
       ci = t && t.lo != null && t.hi != null ? ` (95% CI ${fxv(2 ** t.lo)}–${fxv(2 ** t.hi)})` : '',
-      within = t && t.l2 != null ? `; within abundance deciles, odds ratio ${fxv(2 ** t.l2)}${ci}` : '';
+      within =
+        t && t.l2 != null
+          ? `; within abundance deciles (estimate), odds ratio ${fxv(2 ** t.l2)}${ci}, q ${fq(t.q)}`
+          : '';
     return (
-      `${orWords(a)}${within}, q ${fq(a.q)}` +
+      `${orWords(a)}, q ${fq(a.q)}${within}` +
       (a.small
         ? ` (fewer than ${READ.min_group} proteins on a side: not colored)`
         : tone(a) === 'ns'
@@ -572,7 +585,7 @@
             hi: null,
             q: x.a.q,
             p: x.a.p,
-            test: x.a.mh ? x.a : null,
+            ...(x.est ? { est: x.est } : {}),
             small: smallOf(x.k, x.M),
           };
       return {
@@ -780,7 +793,7 @@
     }, with Benjamini–Hochberg q across the parts shown; the overdispersion adjustment across compartments (φ, Spiegelhalter 2005) is ${
       DISP
         ? 'on'
-        : 'off, because it asks whether a compartment is unusual among compartments that are expected to be alike, which they are not by design, while abundance deciles handle detectability, the confounder that matters; φ is still given on hover'
+        : 'off, because it asks whether a compartment is unusual among compartments that are expected to be alike, which they are not by design, while abundance deciles handle detectability, the confounder that matters; φ is still given on hover or tap'
     }.`;
   function pctScale(P, within, scoped, view) {
     if (view === 'z') {
@@ -837,7 +850,7 @@
       `${nm}: ${esc(pctText(p.share))} of ${int(p.n)} proteins ${scoped ? 'are in your selection' : `have at least one ${esc(W.mark)}`}` +
       `${p.cells.length > 1 ? ', median of ' + esc(p.maps) : ''}<br>${esc(ptsText(p.share - ref))} from ${esc(pctText(ref))} among all mapped proteins; ` +
       `<b>${esc(hText(p.h))}</b> (${esc(hBand(p.h))}), OR ${f2(p.or)} (${f2(p.orLo)}–${f2(p.orHi)}), ${esc(zText(p.z))}, ` +
-      `${p.q == null ? '' : `q ${esc(fq(p.q))} (${p.clear ? 'significant' : p.small ? `significant but small, |h| under ${MIN_H}` : 'not significant'})`}<br>${per}` +
+      `${p.q == null ? '' : `q ${esc(fq(p.q))} (${p.clear ? `≤ ${Q_MAX}, |h| ≥ ${MIN_H}` : p.small ? `≤ ${Q_MAX} but |h| under ${MIN_H}` : `> ${Q_MAX}`})`}<br>${per}` +
       `<br><span class="muted">Click for its numbers and proteins</span>`
     );
   }
@@ -903,7 +916,7 @@
   // the proteins ONE stands for: the one of a protein page, or the few of a selection too small to test
   const oneIds = () => ONE.ids || [ONE.i];
   const geneOf = (i) => D.proteins[i][1] || D.proteins[i][0];
-  const ONEUI = { map: 'all', ds: false };
+  const ONEUI = { map: 'all', ds: false, all: false };
   function oneParts() {
     const f = oneFound();
     if (!ONEUI.ds) return f;
@@ -1009,8 +1022,8 @@
         title: () => `${who1}: the ${d.drawing}`,
         sub: () =>
           ONEUI.ds
-            ? `Every compartment is shaded by the fold across the dataset; the compartments where a study found ${who1} are outlined.`
-            : `Every compartment is named: colored where a study found ${who1}, gray where none did, outlined where no study tested it.`,
+            ? `Shaded by the fold across the dataset; outlined where a study found ${who1}.`
+            : `Colored where a study found ${who1}, gray where none did, outlined where none tested it.`,
         make: () => withOne(p, () => DRAW[d.drawing](false)),
         tsv: oneTsv(p),
         zoom: d.drawing,
@@ -1057,6 +1070,7 @@
         )
         .join('') +
       `</span><label class="cell-ds"><input type="checkbox" data-cellone-ds${ONEUI.ds ? ' checked' : ''}> Show the dataset</label>` +
+      `<label class="cell-ds"><input type="checkbox" data-cellone-all${ONEUI.all ? ' checked' : ''}> Show all compartments</label>` +
       `${menu}</div>`;
     return bar + html;
   }
@@ -1086,7 +1100,12 @@
   const tipAttr = (html) => ` data-cell-tip="${TIPS.push(html) - 1}"`;
   function draw(scoped, view) {
     const { P, within } = parts(scoped, view);
-    const own = (k) => (P[k] ? k : within[k] && P[within[k]] ? within[k] : null);
+    // one protein: only the compartments where a map places it are named and colored; "Show all compartments" lists the rest
+    const quiet = (k) => !!ONE && !ONEUI.ds && !ONEUI.all && !P[k].found;
+    const own = (k) => {
+      const o = P[k] ? k : within[k] && P[within[k]] ? within[k] : null;
+      return o && !quiet(o) ? o : null;
+    };
     const tn = (k) => (own(k) ? P[own(k)].tone : 'na');
     const mine = (k) => (own(k) && P[own(k)].mine ? ' mine' : '');
     const fill = (k) => 'cg-c ' + tn(k) + mine(k),
@@ -2105,11 +2124,11 @@
     ) +
     `Each point is a compartment of the map; the line is the share among all the proteins the map places, and the solid and dashed curves its 99.8% and 95% limits${
       phiOf(UI.map, scopedNow()) > 1
-        ? '; the lighter curves are the same limits widened by √φ (φ ' +
+        ? '; the lighter curves are the same limits widened by √φ (overdispersion φ ' +
           f2(phiOf(UI.map, scopedNow())) +
           ', ' +
-          (DISP ? 'applied' : 'not applied') +
-          ' to the fill)'
+          (DISP ? 'used' : 'not used') +
+          ' in the fill)'
         : ''
     }. Filled points differ at q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the compartments), colored by h.`;
   function funnelTsv(aid, scoped) {
@@ -2172,6 +2191,17 @@
             scoped,
             gcells(true).map((c) => c.share)
           );
+    const cellOf = (aid, row) =>
+      pctOn() ? pctGridCell(aid, row.map[aid], scoped, gsc) : gridCell(aid, row.map[aid], scoped);
+    const cellText = (c) => c.text ?? (c.circular ? '·' : orText(c.a));
+    // one type size for the grid: the longest cell text (a share and its effect) fits inside its cell, as drawn in any font
+    const widest = Math.max(
+      0,
+      ...L.groups.flatMap(([, rows]) =>
+        rows.flatMap((row) => cols.map((aid) => cellOf(aid, row)).map((c) => (c ? K.tw(cellText(c), 11) * 1.08 : 0)))
+      )
+    );
+    const tsize = widest > CW - 14 ? Math.floor(((11 * (CW - 14)) / widest) * 10) / 10 : 11;
     let y = HH + 4,
       g = '';
     cols.forEach((aid, i) => {
@@ -2194,7 +2224,7 @@
           )}"><rect class="cg-hit" ` +
           `x="0" y="${y}" width="${Wd}" height="${RH}"/><text class="cg-r" x="10" y="${y + 16}">${esc(row.label)}</text>`;
         cols.forEach((aid, i) => {
-          const c = pctOn() ? pctGridCell(aid, row.map[aid], scoped, gsc) : gridCell(aid, row.map[aid], scoped),
+          const c = cellOf(aid, row),
             x = LW + i * CW + 4;
           if (!c) {
             g += `<rect class="cg-c na" x="${x}" y="${y + 2}" width="${CW - 8}" height="${RH - 4}" rx="3"/>`;
@@ -2204,7 +2234,7 @@
             `<g${tipAttr(
               c.tip || cellTip(aid, row.map[aid], c, scoped)
             )}><rect class="cg-c ${c.tone}" x="${x}" y="${y + 2}" width="${CW - 8}" height="${RH - 4}" rx="3"/>` +
-            `<text class="cg-t ${c.tcls || 't' + c.tone.slice(1)}" x="${x + (CW - 8) / 2}" y="${y + 16}" text-anchor="middle">${esc(c.text ?? (c.circular ? '·' : orText(c.a)))}</text></g>`;
+            `<text class="cg-t ${c.tcls || 't' + c.tone.slice(1)}" x="${x + (CW - 8) / 2}" y="${y + 16}" text-anchor="middle"${tsize < 11 ? ` style="font-size:${tsize}px"` : ''}>${esc(cellText(c))}</text></g>`;
         });
         g += '</g>';
         y += RH;
@@ -2278,8 +2308,8 @@
   function gridTsv(L, scoped) {
     if (pctOn()) return pctTsv(L, scoped);
     const head = scoped
-      ? 'group\tcompartment\tmap\tmap_category\tmembers\tselected\tselected_placed\tplaced\tlog2_odds_ratio\tlog2_ci_low\tlog2_ci_high\tp\tq\tnot_compared\n'
-      : 'group\tcompartment\tmap\tmap_category\tmembers\tmarked\tlog2_fold_enrichment\tq\tlog2_odds_ratio_within_strata\tlog2_ci_low\tlog2_ci_high\tq_within_strata\n';
+      ? 'group\tcompartment\tmap\tmap_category\tmembers\tselected\tselected_placed\tplaced\tlog2_fold_enrichment\test_log2_odds_ratio\test_log2_ci_low\test_log2_ci_high\tp\tq\tnot_compared\n'
+      : 'group\tcompartment\tmap\tmap_category\tmembers\tmarked\tlog2_fold_enrichment\tq\test_log2_odds_ratio\test_log2_ci_low\test_log2_ci_high\test_q\n';
     const body = L.groups.flatMap(([group, rows]) =>
       rows.flatMap((row) =>
         L.cols
@@ -2289,7 +2319,7 @@
               name = DS(aid).name;
             if (!scoped) {
               const at = stratified(aid) ? adj(aid, t) : null,
-                a = at && at.test ? { ...at.test, q: at.q } : { l2: null, lo: null, hi: null, q: null };
+                a = at && at.est ? at.est : { l2: null, lo: null, hi: null, q: null };
               return [
                 group,
                 row.label,
@@ -2321,6 +2351,7 @@
                 '',
                 '',
                 '',
+                '',
                 'no selection data',
               ].join('\t');
             return [
@@ -2333,8 +2364,9 @@
               x.n,
               x.N,
               v6(x.a.l2),
-              v6(x.a.lo),
-              v6(x.a.hi),
+              v6(x.est?.l2),
+              v6(x.est?.lo),
+              v6(x.est?.hi),
               x.a.p ?? '',
               x.a.q ?? '',
               x.circular
@@ -2352,7 +2384,7 @@
       K.preamble(
         `${C.title || 'Where in the cell'}: ${L.key === 'region' ? 'regions' : 'compartments'} against maps`,
         `${who(scoped)} in each map, against ${alike}${
-          allStrat ? ' (Mantel–Haenszel odds ratio over the abundance strata, BH within each map)' : ''
+          allStrat && scoped ? ' (Mantel–Haenszel odds ratio over the abundance strata, BH within each map)' : ''
         }; members: ${here}`
       ) +
       head +
@@ -2569,13 +2601,13 @@
     VIEW === 'z'
       ? `Cohen's h of each part's share of proteins ${scopedNow() ? 'in your selection' : `with at least one ${W.mark}`} against the share among all the proteins the maps place; filled where q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the parts shown).`
       : scopedNow()
-        ? `Percent of each part's proteins that are in your selection, among the reviewed proteins each map places there; the median of the maps that have the part.`
-        : `Percent of each part's proteins with at least one ${W.mark}, among the reviewed proteins each map places there; the median of the maps that have the part.`;
+        ? `Percent of each part's proteins in your selection, among the reviewed proteins each map places there. Median over the maps that have the part.`
+        : `Percent of each part's proteins with at least one ${W.mark}, among the reviewed proteins each map places there. Median over the maps that have the part.`;
   const keyWords = () =>
     VIEW === 'z'
-      ? `h: the effect size (Cohen's h) of a part's share ${scopedNow() ? 'in your selection' : `with a ${W.mark}`} from the share among all mapped proteins (${pctText(
+      ? `effect: Cohen's h of a part's share ${scopedNow() ? 'in your selection' : `with a ${W.mark}`} from the share among all mapped proteins (${pctText(
           pctRef(scopedNow())
-        )}); about 0.2 is small, 0.5 medium, 0.8 large. Red: above, slate: below, deeper for larger h. Filled where q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the parts shown) and |h| ≥ ${MIN_H}; outlined where significant but smaller (significant but small); hatched where not significant. Dashed outline: no map measures it.`
+        )}); about 0.2 is small, 0.5 medium, 0.8 large. Red: above, slate: below, deeper for a larger effect. Filled where q ≤ ${Q_MAX} (${evidenceWords()}; Benjamini–Hochberg across the parts shown) and |effect| ≥ ${MIN_H}; outlined where significant but smaller; hatched where not significant. Dashed outline: no map measures it.`
       : pctOn()
         ? `Blue: the share of a part's proteins ${scopedNow() ? 'that are in your selection' : `with at least one ${W.mark}`}, darker for a larger share${
             scopedNow() ? ' (the steps are fifths of the largest share)' : ''
@@ -2589,13 +2621,13 @@
   const testWords = (view = pctOn() ? 'percent' : 'fold') =>
     view === 'percent'
       ? `A protein counts as having a ${W.mark} when it has at least one. Each map's proteins are the reviewed proteins it places; a part takes the median of the maps that have it. This view makes no test.`
-      : (allStrat
+      : (allStrat && scopedNow()
           ? `In each map, the fold: the share of ${who(scopedNow())} placed in the part over the share of all the ` +
             `proteins the map places; tested against ${alike} (Mantel–Haenszel across the abundance strata, ` +
             `continuity-corrected Cochran–Mantel–Haenszel test, Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} ` +
-            `and a fold of 1.1× or more.`
+            `and at least 1.1×.`
           : `In each map, the fold against the other proteins the map places (one-sided hypergeometric test, ` +
-            `Benjamini–Hochberg within the map), colored at q ≤ ${PADJ} and 1.1× or more.`) +
+            `Benjamini–Hochberg within the map; not adjusted for protein abundance), colored at q ≤ ${PADJ} and at least 1.1×.`) +
         ` A map with fewer than ${READ.min_group} ${W.marked} or other proteins in a part is not colored there. A part takes ` +
         `the median fold of the maps that have it, colored only when at least ${READ.min_maps} of them find a difference ` +
         `the same way and none the other way.`;
@@ -2874,8 +2906,8 @@
         ? `<button type="button" class="btn small cell-zoom-btn" ` +
           `data-cell-zoom="${esc(FIGS[k].zoom)}"${
             FIGS[k].one ? ` data-i="${FIGS[k].one.i}"${FIGS[k].one.ids ? ` data-ids="${FIGS[k].one.ids}"` : ''}` : ''
-          } title="Open the ${esc(FIGS[k].zoom)} large, to ` +
-          `read its labels, zoom and move">Enlarge</button>`
+          } title="Open the ${esc(FIGS[k].zoom)} in a larger view, to ` +
+          `read its labels, zoom and pan">Enlarge</button>`
         : ''
     }${withBar ? dualBar(K.expBar(['pdf', 'svg', 'png', 'tsv'], 'cell-exp', head, ID), k) : ''}</div>` +
     `<div class="cell-scroll">${svgOf(FIGS[k].make(), 'cell-svg cell-' + k)}</div></div>`;
@@ -3033,7 +3065,7 @@
     if (VIEW === 'z') {
       const ref = pctRef(scoped),
         clear = rows.filter((p) => p.clear && p.h != null),
-        ith = (p) => `${inText(p.row)} (${hText(p.h)})`,
+        ith = (p) => `${inText(p.row)}, ${hText(p.h)}`,
         up = clear
           .filter((p) => p.h > 0)
           .sort((a, b) => b.h - a.h)
@@ -3041,19 +3073,18 @@
         down = clear
           .filter((p) => p.h < 0)
           .sort((a, b) => a.h - b.h)
-          .slice(0, 2),
-        verb = (xs) => (xs.length > 1 ? 'stand' : 'stands');
+          .slice(0, 2);
       return (
         (scoped
-          ? `${pctText(ref)} of mapped proteins are in the selection; `
-          : `${pctText(ref)} of mapped proteins carry ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ${W.mark}; `) +
+          ? `Mapped proteins in the selection: ${pctText(ref)}. `
+          : `Mapped proteins with ${/^[aeiou]/i.test(W.mark) ? 'an' : 'a'} ${W.mark}: ${pctText(ref)}. `) +
         (up.length || down.length
-          ? up.length
-            ? `${and(up.map(ith))} ${verb(up)} out most above that` +
-              (down.length ? `, ${and(down.map(ith))} most below` : '')
-            : `${and(down.map(ith))} ${verb(down)} out most below that`
-          : `no part stands out from that`) +
-        ` (among parts with q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}).`
+          ? cap(
+              [up.length ? `highest: ${and(up.map(ith))}` : '', down.length ? `lowest: ${and(down.map(ith))}` : '']
+                .filter(Boolean)
+                .join('; ')
+            ) + '.'
+          : `No part differs from that.`)
       );
     }
     if (scoped) {
@@ -3208,8 +3239,8 @@
     const nPl = ms.filter((m) => m.sets.length).length,
       title =
         ids.length === 1
-          ? `Where ${p.gene} is found (${nPl} of ${ms.length} maps)`
-          : `Where these ${ids.length} proteins are found`,
+          ? `${p.gene} localization (${nPl} of ${ms.length} maps)`
+          : `Localization of these ${ids.length} proteins`,
       more = ids.length === 1 ? '' : ` (${nPl} of ${ms.length} maps place at least one)`;
     const sets = [...new Set(ms.flatMap((m) => m.sets))];
     return (
@@ -3218,7 +3249,7 @@
       `<p class="tans cell-ans">Found in${esc(more)}: ` +
       `${sets.length ? esc(and(sets.slice(0, 8))) : 'no compartment of these maps'}.</p>` +
       oneDrawings(p) +
-      `<p class="tkey">Only the selection is drawn; no statistics. Hover a compartment for the proteins and maps behind it.</p></article>`
+      `<p class="tkey">Only the selection is drawn, without statistics. Hover or tap a compartment for details.</p></article>`
     );
   }
   function bigTile(card) {
@@ -3239,8 +3270,8 @@
       (d) =>
         `<figure class="cell-fig"><figcaption class="vh">${esc(d.title || cap(d.drawing))}</figcaption>` +
         `<div class="cell-draw" data-cell-draw="${esc(d.drawing)}" role="group" aria-label="${esc(d.title || d.drawing)}"></div><button ` +
-        `type="button" class="btn quiet small cell-zoom-btn" data-cell-zoom="${esc(d.drawing)}" title="Open the ${esc(d.drawing)} large, to ` +
-        `read its labels, zoom and move">Enlarge the ${esc(d.drawing)}</button></figure>`
+        `type="button" class="btn quiet small cell-zoom-btn" data-cell-zoom="${esc(d.drawing)}" title="Open the ${esc(d.drawing)} in a larger view, to ` +
+        `read its labels, zoom and pan">Enlarge the ${esc(d.drawing)}</button></figure>`
     ).join('');
     const kinds = ['pdf', 'svg', 'png'],
       bar = K.tilekit
@@ -3258,7 +3289,7 @@
                 )
                 .join('')
             ).join('') +
-            `<button type="button" class="exp-btn" data-cell-exp="tsv" data-cell-fig="${esc(DRAWINGS[0].drawing)}" title="${esc(K.EXP_HELP.tsv)}">TSV</button>`
+            `<button type="button" class="exp-btn" data-cell-exp="tsv" data-cell-fig="${esc(DRAWINGS[0].drawing)}" title="${esc(K.EXP_HELP.tsv)}">${esc(K.exp.label('tsv'))}</button>`
         );
     return (
       `<article class="tile wide cell-tile" id="tile-${esc(ID)}" data-tile="${esc(ID)}" tabindex="0"><header>` +
@@ -3692,11 +3723,7 @@
       return [
         [t['up-2'], t['up-3'], `h above 0: share above the share among all mapped proteins (${pctText(ref)})`],
         [t['down-2'], t['down-3'], 'h below 0'],
-        [
-          '#ffffff',
-          '#8a96a0',
-          `outlined: significant but small (|h| < ${MIN_H}); hatched: not significant (q > ${Q_MAX})`,
-        ],
+        ['#ffffff', '#8a96a0', `outlined: q ≤ ${Q_MAX} but |h| < ${MIN_H}; hatched: q > ${Q_MAX}`],
         ...(ref != null ? [['', '#111827', pctRefWords(scoped, ref), 'tick']] : []),
         ...(hasSel() ? [['#ffffff', '#111827', 'outlined: your selection']] : []),
       ];
@@ -3729,17 +3756,17 @@
   // the same on the page: a ramp bar with the ends of its scale and a tick at the share among all the proteins the maps place
   function pctKey(scoped) {
     if (VIEW === 'z') {
-      const { ref, phi } = parts(scoped, 'z'),
+      const { ref } = parts(scoped, 'z'),
         steps = ['f3', 'f2', 'f1', 'f0', 'ns', 'm0', 'm1', 'm2', 'm3'];
       return (
-        `<div class="key cell-keys pct-key" role="group" aria-label="Color key"><span>h: how far a part’s share is from the share among all mapped proteins${
+        `<div class="key cell-keys pct-key pk-lines" role="group" aria-label="Color key"><span>effect: share against all mapped proteins${
           ref != null ? ` (${esc(pctText(ref))})` : ''
-        }, as Cohen’s effect size (0.2 small, 0.5 medium, 0.8 large)</span><span class="pk-lo">h −1</span><span class="pk-bar" role="img" aria-label="h from −1 to +1; red above, slate below">${steps
+        }</span><span class="pk-lo">effect −1</span><span class="pk-bar" role="img" aria-label="effect from −1 to +1; red above, slate below">${steps
           .map((s) => `<i class="${s === 'ns' ? 'f0' : s}"></i>`)
-          .join('')}<b class="pk-ref" style="left:50%"></b></span><span class="pk-hi">h +1</span>` +
-        `<span class="cell-key"><i class="cg-k sm"></i>significant but small (|h| &lt; ${MIN_H}); <i class="cg-k hx"></i>not significant. Filled where q ≤ ${Q_MAX} and |h| ≥ ${MIN_H}, Benjamini–Hochberg across the parts shown (${esc(evidenceWords())})${
-          phi > 1 ? `; φ = ${esc(f2(phi))}${DISP ? '' : ' (not applied)'}` : ''
-        }</span>` +
+          .join('')}<b class="pk-ref" style="left:50%"></b></span><span class="pk-hi">effect +1</span>` +
+        `<span class="cell-key"><i class="cg-k u3"></i><i class="cg-k d3"></i>Filled: q ≤ ${Q_MAX} and |effect| ≥ ${MIN_H}</span>` +
+        `<span class="cell-key"><i class="cg-k sm"></i>Outline: q ≤ ${Q_MAX}, |effect| &lt; ${MIN_H}</span>` +
+        `<span class="cell-key"><i class="cg-k hx"></i>Hatched: q &gt; ${Q_MAX}</span>` +
         (ref != null ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctRefWords(scoped, ref))}</span>` : '') +
         `<span class="cell-key"><i class="cg-k na"></i> not measured</span>${
           hasSel() ? '<span class="cell-key"><i class="cg-k sel"></i> outlined: your selection</span>' : ''
@@ -3817,7 +3844,7 @@
                 s.cells.length > 1 ? ' (the median of ' + s.maps + ')' : ''
               }; ${pctText(pctRef(false))} of all the proteins the maps place do.`
       : s.selected
-        ? `This is the part your selection was made with, so it is not compared with itself. The drawings compare the other parts.`
+        ? `Your selection was made from this part, so it is not compared with itself.`
         : sig
           ? `${cap(wh)} are <b>${s.tone[0] === 'u' ? 'more' : 'less'} likely</b> to be found here ` +
             `than ${esc(alike)} (${esc(orWords(s.a))}${s.cells.length > 1 ? ', the median of ' + s.maps : ''}).`
@@ -4068,6 +4095,13 @@
       '[data-cellone-ds]',
       (el) => {
         ONEUI.ds = el.checked;
+        K.render();
+      },
+    ],
+    [
+      '[data-cellone-all]',
+      (el) => {
+        ONEUI.all = el.checked;
         K.render();
       },
     ],

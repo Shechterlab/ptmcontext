@@ -122,12 +122,11 @@
         ? attrs.replace(/ title="([^"]*)"/, (m, t) => ` title="${esc(x.tip)}. ${t}"`)
         : `${attrs} title="${esc(x.tip)}"`
       : attrs;
+    const spoken = [x.badge, x.sub, x.n != null ? `n ${int(x.n)}` : ''].filter(Boolean).join(', ');
     const pop = x.pop && !x.mine ? ` data-pop="${esc(JSON.stringify(x.pop))}"` : '';
     return (
       `<div class="fr-row tile-row pick dir-${dir}${x.absent ? ' thin' : ''}${x.lead ? ' lead' : ''}${x.go ? ' qlink' : ''}${cls ? ' ' + cls : ''}"${tipped}${pop}><span class="fr-lab">` +
-      `<span>${esc(x.label)}</span>${x.badge ? `<span class="vh">, ${esc(x.badge)}</span>` : ''}${
-        x.sub ? `<span class="vh">, ${esc(x.sub)}</span>` : ''
-      }${x.n != null ? `<span class="vh">, n ${int(x.n)}</span>` : ''}</span>${track}` +
+      `<span>${esc(x.label)}</span>${spoken ? `<span class="vh"> (${esc(spoken)})</span>` : ''}</span>${track}` +
       (`<span class="fr-val">${esc(val)}<i class="fr-q ${dir}${x.desc ? ' desc' : ''}" aria-hidden="true"></i>` +
         `</span></div>`)
     );
@@ -138,7 +137,8 @@
       .flatMap((r) => [r.v, r.wv, ...(r.lo || [])])
       .filter((v) => v != null);
   // the one-line answer, from the tile's own rows: the strongest two that are more often and the strongest less often
-  function answerOf(rows, fold) {
+  // `title` is the question's name: a lone row whose words are all in it is not named again
+  function answerOf(rows, fold, title) {
     const ok = rows.filter((r) => !r.absent && !r.mine && r.v != null && !r.desc),
       sig = (r) => r.q != null && r.q <= K.PADJ && (r.dir === 'more' || r.dir === 'less');
     const more = ok
@@ -151,25 +151,24 @@
             .filter((r) => sig(r) && r.dir === 'less')
             .sort((a, b) => a.v - b.v)
             .slice(0, 1);
-    const nm = (r) => `${esc(r.label)} (${K.fxn(r.v)}×)`,
-      list = (x) => (x.length > 1 ? `${x.slice(0, -1).join(', ')} and ${x[x.length - 1]}` : x[0]);
+    const words = (t) =>
+        String(t ?? '')
+          .toLowerCase()
+          .match(/[a-z]{3,}/g) || [],
+      inTitle = new Set(words(title)),
+      lab = (r) => String(r.label).replace(/^(\d+) or more\b/, '≥$1'),
+      said = (r) => words(lab(r)).length > 0 && words(lab(r)).every((w) => inTitle.has(w)),
+      nm = (r) => (more.length + less.length === 1 && said(r) ? '' : `${esc(lab(r))}: `) + `${K.fxn(r.v)}×`;
     if (!ok.length) return rows.length && rows.every((r) => r.absent) ? 'None of these is in this selection.' : '';
     if (!more.length && !less.length) {
       // the same rule as the colors: a row significant by its test but under 1.1x is said, not hidden (its hover says why)
       const near = ok.filter((r) => r.q != null && r.q <= K.PADJ && r.dir === 'same').length;
       return (
         `No row here differs by 1.1× or more from the other ${fold ? 'proteins' : esc(W.residues)}` +
-        (near
-          ? `; ${near === 1 ? 'one is' : `${near} are`} significant but under 1.1× in fold (hover a row for why).`
-          : '.')
+        (near ? `; ${near === 1 ? 'one has' : `${near} have`} q ≤ 0.05 but a fold under 1.1×.` : '.')
       );
     }
-    return [
-      more.length ? `More often in ${list(more.map(nm))}.` : '',
-      less.length ? `Less often in ${list(less.map(nm))}.` : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
+    return `${[...more, ...less].map(nm).join('; ')}.`;
   }
   // a Download menu that opens on a tap: the formats given, and the question's Method
   const dlMenu = (label, kinds, attrs, method) =>

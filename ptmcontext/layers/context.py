@@ -105,11 +105,11 @@ def idr_track(values: dict) -> Track:
     n = values.get('min_length', IDR_MIN_LENGTH)
     return Track(
         'idr',
-        'IDRs',
+        'Disordered regions',
         'segments',
         lambda ctx, accs: _of(idr_units(ctx, n), accs),
         roles=('disorder',),
-        help=f'IDRs: the site’s disordered regions merged where they overlap, of {n} residues or more',
+        help=f'Disordered regions: the site’s regions merged where they overlap, of {n} residues or more',
     )
 
 
@@ -131,9 +131,9 @@ DOMAIN_TRACK = Track(
     needs=('disorder',),
     title='Disorder context',
     labels={
-        'disordered': 'IDR',
-        'disorder_boundary': 'Ordered, ≤<window> aa from an IDR',
-        'ordered': 'Ordered, ><window> aa from an IDR',
+        'disordered': 'Disordered',
+        'disorder_boundary': 'Ordered, ≤<window> aa from a disordered region',
+        'ordered': 'Ordered, ><window> aa from a disordered region',
         'no_disorder_annotation': 'No disorder data',
     },
     help={
@@ -143,7 +143,7 @@ DOMAIN_TRACK = Track(
         'no_disorder_annotation': 'The protein has no disordered region in the site’s disorder input',
     },
     question='Are {marks} in disordered regions, against the other {residues} of the same proteins?',
-    sub='{Marks} against the other {residues} of the same proteins, by disorder',
+    sub='{Marks} against the other {residues} of the same proteins, by disorder (an intrinsically disordered region is one with no fixed fold)',
     tracks=(DISORDER_TRACK,),
     ordered=True,
     params={'window': WINDOW},
@@ -159,21 +159,21 @@ def disorder(residues: pd.DataFrame, ctx: Context, window: int = WINDOW) -> pd.D
     'IDR (the disorder input’s regions merged, at least <min_length> residues): inside, within <window> residues outside, further '
     'out, or a protein without one',
     needs=('disorder',),
-    title='IDRs',
+    title='Disordered regions',
     labels={
-        'idr': 'IDR of <min_length> aa or more',
-        'idr_boundary': 'Ordered, ≤<window> aa from an IDR',
-        'outside_idr': 'Ordered, ><window> aa from an IDR',
-        'no_idr': 'No IDR of <min_length> aa or more',
+        'idr': 'Disordered region of <min_length> aa or more',
+        'idr_boundary': 'Ordered, ≤<window> aa from a disordered region',
+        'outside_idr': 'Ordered, ><window> aa from a disordered region',
+        'no_idr': 'No disordered region of <min_length> aa or more',
     },
     help={
         'idr': 'Inside a disordered region of at least <min_length> residues (the site’s regions merged where they overlap)',
-        'idr_boundary': 'Outside, but within <window> aa of, an IDR of <min_length> or more residues',
-        'outside_idr': 'More than <window> aa from any IDR of <min_length> or more residues',
+        'idr_boundary': 'Outside, but within <window> aa of, a disordered region of <min_length> or more residues',
+        'outside_idr': 'More than <window> aa from any disordered region of <min_length> or more residues',
         'no_idr': 'Protein has no disordered region of <min_length> or more residues',
     },
-    question='Are {marks} in IDRs of <min_length> or more residues, against the other {residues} of the same proteins?',
-    sub='{Marks} against the other {residues} of the same proteins, by IDRs of <min_length> or more residues',
+    question='Are {marks} in disordered regions of <min_length> or more residues, against the other {residues} of the same proteins?',
+    sub='{Marks} against the other {residues} of the same proteins, by disordered regions of <min_length> or more residues',
     tracks=(idr_track, DISORDER_TRACK),
     ordered=True,
     params={'window': WINDOW, 'min_length': IDR_MIN_LENGTH},

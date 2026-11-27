@@ -1,14 +1,19 @@
 # Build every site from its sources and publish them on GitHub Pages, with a landing page. Runs on each push to develop,
 # the working branch the site is served from, and to main (and by hand). Pages' source must be "GitHub Actions", and
 # the github-pages environment must allow develop among its deployment branches. The methylarginine site reads the release's public inputs as data, checked against inputs.json, and
-# must still equal release v1.6.0 (methylarginine data as in v1.4.3). The export audits (text overlap, legends) run in tests.yml, so a deploy does not wait for them.
-# The four sites are built in parallel jobs (one matrix entry each, the slowest about 45 minutes instead of the four in a row,
-# about two hours); a last job downloads their websites, assembles them with the landing page (ptmc pages) and uploads the Pages artifact.
+# must still equal release v1.7.0 (methylarginine data as in v1.4.3). The export audits (text overlap, legends) run in tests.yml, so a deploy does not wait for them.
+# The published sites (those with website.ci, in its order: tools/ci_plan.py) are built in parallel jobs (one matrix entry each,
+# the slowest about 45 minutes instead of all in a row, about two hours); a last job downloads their websites, assembles them with the landing page (ptmc pages) and uploads the Pages artifact.
+# Where the live site comes from is one repository variable, PAGES_MODE (Settings > Secrets and variables > Actions > Variables).
+# Unset or "develop" (today): every push to develop or main deploys. "tags" (from 1.0.0, see VERSIONING.md): only a tag vX.Y.Z
+# deploys; pushes to develop and main still build, so a broken build shows, but do not deploy. The github-pages environment
+# must allow the tags v* then. A tag push in "develop" mode does nothing: its commit was deployed from the branch.
 # (The yeast site is not published: sites/yeast_phospho.yaml stays as an example of a second organism.)
 name: pages
 on:
   push:
     branches: [develop, main]
+    tags: ["v*"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -18,176 +23,56 @@ concurrency:
   group: pages
   cancel-in-progress: false
 jobs:
+  # The sites CI builds, their per-site parameters and the files of the data repository they read all come from the site files
+  # (website.ci; tools/ci_plan.py): adding a site is its site file, not an edit here.
+  plan:
+    if: github.ref_type != 'tag' || vars.PAGES_MODE == 'tags'
+    runs-on: ubuntu-latest
+    outputs:
+      pages_matrix: ${{ steps.plan.outputs.pages_matrix }}
+      pages_sites: ${{ steps.plan.outputs.pages_sites }}
+      build_files: ${{ steps.plan.outputs.build_files }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e packages/ptmstats -e .
+      - id: plan
+        run: python tools/ci_plan.py --github-output "$GITHUB_OUTPUT"
   build:
+    needs: plan
     name: build (${{ matrix.site }})
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      matrix:
-        site: [methylarginine, methyllysine, phospho, lysine]
+      matrix: ${{ fromJSON(needs.plan.outputs.pages_matrix) }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/checkout@v5
         with:
           repository: Shechterlab/PTM_Pipeline
-          ref: f042367da8aac9746559f64a597ce031a2b6c05f  # PTM_Pipeline, the commit of data_pin.json; actions/checkout needs the full hash. The tag is v1.6.0 (checked by tools/check_data_pin.py); the hash is what is checked out
+          ref: 07e0e88bba86a7b91c30e166d4cd01cffb9400ef  # PTM_Pipeline, the commit of data_pin.json; actions/checkout needs the full hash. The tag is v1.7.0 (checked by tools/check_data_pin.py); the hash is what is checked out
           path: reference
-          sparse-checkout: |
-            inputs/reference
-            releases/v1.6.0/human_methyllysine_sites_v1.6.0.tsv
-            releases/v1.6.0/human_phosphorylation_sites_v1.6.0.tsv
-            releases/v1.6.0/human_acetylation_sites_v1.6.0.tsv
-            releases/v1.6.0/human_lysine_acylation_sites_v1.6.0.tsv
-            releases/v1.6.0/human_ubiquitination_sites_v1.6.0.tsv
-            releases/v1.6.0/human_sumoylation_sites_v1.6.0.tsv
-            releases/v1.6.0/supporting/methyllysine_site_interactions_v1.6.0.tsv
-            releases/v1.6.0/supporting/methyllysine_site_interaction_records_v1.6.0.tsv
-            releases/v1.6.0/supporting/methyllysine_nucleic_acid_contacts_v1.6.0.tsv
-            releases/v1.6.0/supporting/methyllysine_nucleic_acid_near_sites_v1.6.0.tsv
-            releases/v1.6.0/supporting/methyllysine_residue_evidence_v1.6.0.tsv
-            releases/v1.6.0/supporting/lysine_site_interactions_v1.6.0.tsv
-            releases/v1.6.0/supporting/lysine_site_interaction_records_v1.6.0.tsv
-            releases/v1.6.0/supporting/lysine_nucleic_acid_contacts_v1.6.0.tsv
-            releases/v1.6.0/supporting/lysine_nucleic_acid_near_sites_v1.6.0.tsv
-            releases/v1.6.0/supporting/lysine_residue_evidence_v1.6.0.tsv
-            releases/v1.6.0/supporting/phospho_site_interactions_v1.6.0.tsv
-            releases/v1.6.0/supporting/phospho_site_interaction_records_v1.6.0.tsv
-            releases/v1.6.0/supporting/phospho_nucleic_acid_contacts_v1.6.0.tsv
-            releases/v1.6.0/supporting/phospho_nucleic_acid_near_sites_v1.6.0.tsv
-            releases/v1.6.0/supporting/phospho_residue_evidence_v1.6.0.tsv
-            inputs/annotation/mobidb_disorder_intervals_2026-03-30.tsv
-            inputs/annotation/interpro_108.0_domain_intervals.tsv
-            inputs/annotation/interpro_108.0_all_entry_intervals.tsv
-            inputs/annotation/go_bp_human_2026-11-04.tsv
-            inputs/annotation/go_bp_terms_2026-11-04.tsv
-            inputs/layers/reactome_human_protein_pathways.tsv
-            inputs/layers/reactome_human_pathways.tsv
-            inputs/layers/hpa_subcellular_locations.tsv
-            inputs/layers/paxdb_human_integrated_abundance.tsv
-            inputs/annotation/panther_19.0_protein_classes.tsv
-            inputs/annotation/panther_19.0_protein_class_ontology.tsv
-            inputs/disease/dose_4.4.0_disgenet_term_genes.tsv
-            inputs/disease/orghsegdb_3.22.0_symbol_entrez.tsv
-            inputs/disease/hdo_2026-09-30_term_genes.tsv
-            inputs/disease/hdo_2026-09-30_terms.tsv
-            inputs/annotation/cdcode_protein_membership_v2.2.tsv
-            inputs/annotation/cdcode_proteins_2026-03-18.csv
-            inputs/annotation/cdcode_condensates_2026-03-18.csv
-            inputs/interactions/cdcode_2.3_condensate_members_2026-10-16.tsv
-            inputs/layers/cell_map_hcm_go2021.tsv
-            inputs/layers/cell_map_organelle_ip_hein2025.tsv
-            inputs/layers/cell_map_chromatin_kustatscher2014.tsv
-            inputs/layers/depmap_24q4_gene_effect_summary.tsv
-            inputs/layers/depmap_24q4_arginine_changes.tsv
-            inputs/layers/tcga_mc3_arginine_changes.tsv
-            releases/v1.6.0/supporting/tcga_mc3_changes_K_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/tcga_mc3_changes_R_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv
-            releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv
-            releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv
-            releases/v1.6.0/supporting/eclip_v1.6.0.tsv
-            releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv
-            releases/v1.6.0/supporting/tcga_mc3_changes_S_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/tcga_mc3_changes_T_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/tcga_mc3_changes_Y_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/depmap_24q4_changes_K_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/depmap_24q4_changes_R_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/depmap_24q4_changes_S_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/depmap_24q4_changes_T_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/depmap_24q4_changes_Y_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/cancer_change_protein_background_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/clinvar_changes_K_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/clinvar_changes_S_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/clinvar_changes_T_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/clinvar_changes_Y_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/clinvar_changes_R_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/gnomad_v4_1_changes_K_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/gnomad_v4_1_changes_S_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/gnomad_v4_1_changes_T_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/gnomad_v4_1_changes_Y_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/gnomad_v4_1_changes_R_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/clinvar_protein_background_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/gnomad_protein_background_v1.6.0.tsv.gz
-            releases/v1.6.0/supporting/variant_changes_excluded_v1.6.0.tsv.gz
-            releases/v1.6.0/human_methylarginine_sites_v1.6.0.tsv
-            releases/v1.6.0/statistics_v1.6.0.tsv
-            releases/v1.6.0/human_methylarginine_proteins_v1.6.0.tsv
-            releases/v1.6.0/supporting/methylarginine_nucleic_acid_contacts_v1.6.0.tsv
-            releases/v1.6.0/supporting/methylarginine_nucleic_acid_near_sites_v1.6.0.tsv
-            releases/v1.6.0/supporting/dna_motifs_v1.6.0.tsv
-            releases/v1.6.0/supporting/eclip_v1.6.0.tsv
-            releases/v1.6.0/supporting/nucleic_acid_regions_v1.6.0.tsv
-            releases/v1.6.0/supporting/rna_bind_n_seq_v1.6.0.tsv
-            releases/v1.6.0/supporting/protein_partners_v1.6.0.tsv
-            releases/v1.6.0/supporting/other_ptm_sites_v1.6.0.tsv
-            releases/v1.6.0/supporting/functional_experiments_v1.6.0.tsv
-            releases/v1.6.0/supporting/methylarginine_residue_evidence_v1.6.0.tsv
-            releases/v1.6.0/supporting/methylarginine_site_interaction_records_v1.6.0.tsv
-            releases/v1.6.0/supporting/methylarginine_site_interactions_v1.6.0.tsv
-            releases/v1.6.0/supporting/source_records_v1.6.0.tsv
-            releases/v1.6.0/studies_v1.6.0.tsv
-            releases/v1.6.0/supporting/carm1_ko_v1.6.0.tsv
-            releases/v1.6.0/supporting/maron2021_inhibitors_v1.6.0.tsv
-            releases/v1.6.0/supporting/writer_perturbations_v1.6.0.tsv
-            releases/v1.6.0/human_methylarginine_lower_confidence_sites_v1.6.0.tsv
-            releases/v1.6.0/statistics_with_lower_confidence_v1.6.0.tsv
-            releases/v1.6.0/supporting/density_windows_v1.6.0.tsv
-            releases/v1.6.0/supporting/disease_ontology_v1.6.0.tsv
-            releases/v1.6.0/supporting/disease_terms_tested_v1.6.0.tsv
-            releases/v1.6.0/analyses_with_lower_confidence/disease/disease_ontology.tsv
-            releases/v1.6.0/analyses_with_lower_confidence/disease/disease_terms.tsv
-            inputs/interactions/capri_panhale2019_adj_peptides.tsv
-            inputs/interactions/capri_panhale2019_measured_peptides.tsv
-            inputs/interactions/capri_panhale2019_xl_peptides.tsv
-            inputs/interactions/intact_binding_regions_human_2026-10-19.tsv
-            inputs/interactions/intact_mutations_human_2026-10-19.tsv
-            inputs/interactions/pclap_mullari2017_peptides.tsv
-            inputs/interactions/pdbe_kb_interface_residues_2026-10-16.tsv
-            inputs/interactions/pdbe_kb_interface_residues_2026-10-20.tsv
-            inputs/interactions/pdbe_kb_interface_residues_2026-10-21.tsv
-            inputs/interactions/pdbe_kb_interface_residues_2026-10-21_2.tsv
-            inputs/interactions/pdbe_kb_interface_residues_2026-10-21_3.tsv
-            inputs/interactions/pdbe_kb_interface_residues_2026-10-25.tsv
-            inputs/interactions/pepr_ms_v2_table_s2_rna_crosslinked_peptides.tsv
-            inputs/interactions/pepr_ms_v2_table_s3_focused_sites.tsv
-            inputs/interactions/protvar_predicted_interfaces_2024.05.28_pdockq0.23.tsv
-            inputs/interactions/quickgo_human_rna_dna_binding_2026-10-16.tsv
-            inputs/interactions/rbdmap_castello2016_measured_peptides.tsv
-            inputs/interactions/rbdmap_castello2016_rna_bound_fragments.tsv
-            inputs/interactions/rbrid_oksuz2023_k562_coverage.tsv
-            inputs/interactions/rbrid_oksuz2023_k562_positive_residues.tsv
-            inputs/interactions/rbrid_oksuz2023_k562_segments.tsv
-            inputs/interactions/sifts_observed_ranges_human_2026-10-16.tsv
-            inputs/interactions/trendel2025_dna_crosslink_localisation.tsv
-            inputs/interactions/trendel2025_dna_crosslinked_peptides.tsv
-            inputs/interactions/trendel2025_mcf7_dna_interactome.tsv
-            inputs/interactions/uniprot_human_dna_binding_regions_2026-10-16.tsv
-            inputs/interactions/uniprot_human_regions_2026-10-16.tsv
-            releases/v1.6.0/supporting/arginine_nucleic_acid_distances_v1.6.0.tsv
-            releases/v1.6.0/supporting/complexes_v1.6.0.tsv
-            releases/v1.6.0/supporting/eclip_rna_compartments_v1.6.0.tsv
-            releases/v1.6.0/supporting/arginine_background_v1.6.0.tsv
-            releases/v1.6.0/supporting/htr_selex_v1.6.0.tsv
-            inputs/interactions/string_v12.5_human_physical_links_score400.tsv
-            inputs/interactions/complex_portal_human_complexes_2026-10-16.tsv
+          sparse-checkout: ${{ needs.plan.outputs.build_files }}
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install -e packages/ptmstats -e .
-      # Methylarginine: the release's public inputs as data (v1.6.0). Methyllysine (unlisted on the landing page; in the sites'
+      # Methylarginine: the release's public inputs as data (v1.7.0). Methyllysine (unlisted on the landing page; in the sites'
       # header menu), phosphosites and lysine modifications (listed): release v1.5.0 of PTM_Pipeline, pinned above, with the
       # generic inputs the methylarginine site reads. Those three have no reference release: every statistic is new. The
-      # lower-confidence variants of the phosphosite and lysine sites are not built here.
+      # lower-confidence variant is built where the site file says so (website.ci.lower_confidence: methylarginine and methyllysine).
       - name: Run and build ${{ matrix.site }}
         run: |
           ptmc run sites/${{ matrix.site }}.yaml --root reference
-          case "${{ matrix.site }}" in phospho|lysine) lower=no ;; *) lower=yes ;; esac
+          lower=${{ matrix.lower && 'yes' || 'no' }}
           [ "$lower" = no ] || ptmc run sites/${{ matrix.site }}.yaml --root reference --variant with_lower_confidence
           ptmc web sites/${{ matrix.site }}.yaml
           [ "$lower" = no ] || ptmc web sites/${{ matrix.site }}.yaml --variant with_lower_confidence
-      # the website, the run record and the protein list, which the landing page reads (its cards and its search); the one-file copy (out/<site>/web/<site>.html, up to
+      # the website, the run record and the protein list, which the landing page reads (its cards and its search), and the statistics and set names the Compare marks page reads; the one-file copy (out/<site>/web/<site>.html, up to
       # 84 MB) is not published on Pages: kept in its own artifact
       - uses: actions/upload-artifact@v4
         with:
@@ -196,6 +81,10 @@ jobs:
             out/${{ matrix.site }}/web
             out/${{ matrix.site }}/run.json
             out/${{ matrix.site }}/proteins.tsv
+            out/${{ matrix.site }}/statistics.tsv
+            out/${{ matrix.site }}/set_names.tsv
+            out/${{ matrix.site }}/protein_sets.json
+            out/${{ matrix.site }}/marks.tsv
             !out/${{ matrix.site }}/web/${{ matrix.site }}.html
           retention-days: 1
           if-no-files-found: error
@@ -206,7 +95,7 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
   assemble:
-    needs: build
+    needs: [plan, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -223,12 +112,13 @@ jobs:
           mkdir -p out
           for d in out-parts/site-*; do mkdir -p "out/${d#out-parts/site-}"; cp -a "$d"/. "out/${d#out-parts/site-}/"; done
           ls out/*
-      - run: ptmc pages sites/methylarginine.yaml sites/methyllysine.yaml sites/phospho.yaml sites/lysine.yaml --out _site --skip-missing
+      - run: ptmc pages ${{ needs.plan.outputs.pages_sites }} --out _site --skip-missing
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
   deploy:
     needs: assemble
+    if: vars.PAGES_MODE != 'tags' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -242,8 +132,8 @@ jobs:
   # one open issue says the published site is stale: opened (or commented on) when a build or deploy fails, closed when a
   # deploy succeeds; watch the label "pages-failure" instead of Actions' e-mails
   report:
-    needs: [build, assemble, deploy]
-    if: always() && github.event_name != 'pull_request'
+    needs: [plan, build, assemble, deploy]
+    if: always() && github.event_name != 'pull_request' && needs.plan.result != 'skipped'
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -270,7 +160,7 @@ jobs:
             else gh issue create --repo "$REPO" --label pages-failure --title "Pages deployed without $skipped" --body "$body"; fi
           elif [ "$RESULT" = "success/success" ]; then
             [ -n "$open" ] && gh issue close "$open" --repo "$REPO" --comment "Deployed again from $REF at ${SHA:0:7}: $RUN" || true
-          elif [ "$RESULT" != "cancelled/skipped" ] && [ "$RESULT" != "cancelled/cancelled" ]; then
+          elif [ "$RESULT" != "cancelled/skipped" ] && [ "$RESULT" != "cancelled/cancelled" ] && [ "$RESULT" != "success/skipped" ]; then
             body="Build/deploy: $RESULT on $REF at ${SHA:0:7}. Log: $RUN"
             if [ -n "$open" ]; then gh issue comment "$open" --repo "$REPO" --body "$body"
             else gh issue create --repo "$REPO" --label pages-failure --title "Pages build failing on $REF" --body "$body"; fi

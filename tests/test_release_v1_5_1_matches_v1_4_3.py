@@ -38,14 +38,14 @@ def test_methylarginine_files_of_v1_5_1_are_those_of_v1_4_3(reference_root):
         pytest.skip('the v1.4.3 files are not in the checkout (add releases/v1.4.3 to its sparse list)')
     if not (rel_dir / 'release.json').exists():
         pytest.skip(
-            'the v1.5.1 files are not in the checkout (the sites read v1.6.0; add releases/v1.5.1 to its sparse list)'
+            'the v1.5.1 files are not in the checkout (the sites read v1.7.0; add releases/v1.5.1 to its sparse list)'
         )
     carried = json.loads((rel_dir / 'release.json').read_text())['carried_over']
     inputs = json.loads((REPO / 'inputs.json').read_text())['inputs']
     compared = 0
     for entry in inputs.values():
-        # the manifest reads v1.6.0 now: the same tables, named for v1.5.1
-        f = entry['file'].replace('releases/v1.6.0/', 'releases/v1.5.1/').replace('_v1.6.0.', '_v1.5.1.')
+        # the manifest reads v1.7.0 now: the same tables, named for v1.5.1
+        f = entry['file'].replace('releases/v1.7.0/', 'releases/v1.5.1/').replace('_v1.7.0.', '_v1.5.1.')
         if not f.startswith('releases/v1.5.1/'):
             continue
         rel = f[len('releases/v1.5.1/') :]

@@ -687,15 +687,18 @@
       ``
     );
   };
+  // a line to the Network view with this protein as the selection (kit-network.js; absent when the site has no network)
+  const netLine = (p) => {
+    const href = K.netHref?.(p);
+    return href ? `<p class="small pn-cross"><a href="${esc(href)}">See this protein in the Network view</a></p>` : '';
+  };
   function ixFold(p, rec, fold) {
     if (!IXP) return '';
-    const g = p.gene || p.acc;
     if (K.pix) {
       // site first: who binds each mark, partners and complexes, writer and reader paths; then the interfaces and the network, folded
       // when no mark sits at an interface (the network is the protein's associations, not its sites')
-      const s3 = rec?.s3d,
-        hasIface = !!((s3?.c || []).some((r) => r[1] === 'protein' || r[1] === 'self') || (s3?.p || []).length);
       const net =
+        (K.net?.previewSlot?.(p) || '') + // the protein in its cluster, drawn small (kit-network.js)
         `<div class="card-head">` +
         `${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network').replace(
           /<\/div>$/,
@@ -710,21 +713,20 @@
       return fold(
         'p-ix',
         'Protein interactions',
-        'who binds its ' + esc(W.marks) + ', partners, complexes and the network',
+        'proteins at the sites, protein partners (STRING), complexes and the protein network',
         K.pix.html(p, rec, K.prot.tables(p.acc)) +
           ifaceFold(p, rec) +
-          (`<details class="pn-fold"><summary>Network of ${esc(g)}’s partners <span class="muted">· STRING; ` +
-            `drag the nodes${
-              hasIface ? '; open to draw it' : `; folded, as no ${esc(W.mark)} is at an interface`
-            }</span></summary>${net}</details>`),
+          netLine(p) +
+          `<details class="pn-fold" id="pn-net"><summary>Protein network <span class="muted">(STRING partners)</span></summary>${net}</details>`,
         true
       );
     }
     return fold(
       'p-ix',
       'Protein interactions',
-      'STRING; drag the nodes',
-      `<div class="card-head">` +
+      'protein network (STRING)',
+      netLine(p) +
+        `<div class="card-head">` +
         (`${K.expBar(['svg', 'png', 'tsv'], 'pnexp', 'the network')}</div>${optionsHtml()}<div class="pn-box" ` +
           `id="pn-box" data-acc="${esc(p.acc)}"><p class="muted pn-msg">Asking STRING…</p></div>`) +
         `<div class="pn-legend" id="pn-legend"></div><p class="src pn-src" id="pn-src"></p>` +
@@ -771,11 +773,7 @@
       M = W.marks,
       m1 = W.mark;
     if (!obs.length && !pred.length)
-      return (
-        `<div class="pn-iface"><h4>Proteins at ${esc(m1)} interfaces</h4><p ` +
-        `class="muted">No protein at an interface with a ${esc(m1)} of ${esc(p.gene || p.acc)} in the structure ` +
-        `tables.</p></div>`
-      );
+      return `<div class="pn-iface">${K.noData(`No protein at an interface with a ${m1} of ${p.gene || p.acc} in the structure tables.`)}</div>`;
     const by = new Map(); // partner -> { name, acc, sites: Map(pos -> { obs: ids, pred: score }) }
     const put = (g, a, pos, f) => {
       const k = a || g;
@@ -921,10 +919,10 @@
       g = c.self.gene || c.acc;
     if (src)
       src.textContent =
-        `STRING${st.ver ? ' v' + st.ver : ''} ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more (${CITE}), retrieved ${today()}. Partners ` +
-        `are matched to this dataset’s proteins by UniProt accession` +
-        (`${st.mapped ? '' : ' (UniProt did not answer, so none could be matched)'}, isoforms by their canonical ` +
-          `accession. An association is to the whole protein and does not show that a partner binds or modifies a ${W.mark}.`) +
+        `STRING${st.ver ? ' v' + st.ver : ''} ${OPT.net} network, score ${(OPT.conf / 1000).toFixed(1)} or more (${CITE}), retrieved ${today()}. ` +
+        `Matched by UniProt accession` +
+        (`${st.mapped ? '' : ' (UniProt did not answer, so none could be matched)'}; isoforms by canonical ` +
+          `accession.`) +
         `${
           allCh()
             ? ''
@@ -1663,7 +1661,7 @@
     if (!LN.length || !rec) return '';
     return fold(
       'p-cc',
-      'Interaction evidence at a glance',
+      'Interaction evidence by site',
       `${LN.length} types of evidence, site by site`,
       `<div class="card-head">` +
         (`${K.expBar(

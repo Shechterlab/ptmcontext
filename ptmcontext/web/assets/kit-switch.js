@@ -38,7 +38,7 @@
     box.className = 'switch-note';
     box.setAttribute('role', 'status');
     box.innerHTML =
-      `<span>${n} filter${n === 1 ? '' : 's'} from ${esc(from)} ${n === 1 ? 'is' : 'are'} not on this site and ` +
+      `<span>${n} filter${n === 1 ? '' : 's'} from ${esc(from)} ${n === 1 ? 'is' : 'are'} not on this explorer and ` +
       `${n === 1 ? 'was' : 'were'} dropped. Your search and highlight are kept.</span>` +
       '<button type="button" aria-label="Dismiss this notice">×</button>';
     box.querySelector('button').addEventListener('click', () => box.remove());
@@ -59,9 +59,14 @@
       }
     })());
   // the address on another site: the protein open now when that site has it, the tab open now when that site has it (else its Overview)
+  const marksOn = {}; // site id -> the residues its marks sit on (sites.json residues), when the registry says
+  // the search to carry: not a site on a residue the other explorer does not hold (it keeps the protein), nor one on another protein
+  const qTo = (site, segs) =>
+    S.q && K.sel?.qFor ? K.sel.qFor(S.q, { segs, residues: marksOn[site]?.length ? marksOn[site] : null }) : S.q;
   const target = (site, name, withProtein) => {
-    const p = [];
-    if (S.q) p.push('q=' + encodeURIComponent(S.q));
+    const p = [],
+      q = qTo(site, acc() && withProtein ? [acc()] : null);
+    if (q) p.push('q=' + encodeURIComponent(q));
     if (S.hl) p.push('hl=' + encodeURIComponent(S.hl));
     const f = K.sel?.encode?.();
     if (f) p.push('f=' + f.replace(/[&#+\s]/g, (c) => encodeURIComponent(c)));
@@ -79,12 +84,12 @@
   const refresh = (items) =>
     items.forEach((a) => {
       const site = a.dataset.site;
-      if (site === here) return;
+      if (!site || site === here) return; // a page link (Compare marks) has no site
       a.href = target(site, D.site.name, false);
       if (acc()) hasProtein(site, acc()).then((ok) => ok && (a.href = target(site, D.site.name, true)));
     });
   // one switcher in `parent`: the header's side (first) or the sticky bar's end (`bar`); each has its own ids
-  const mount = (list, parent, bar, word) => {
+  const mount = (list, parent, bar, word, pages) => {
     const me = list.find((s) => s.id === here),
       uid = bar ? 'site-switch-list-bar' : 'site-switch-list';
     // the bar is short of room: it drops the words every site's name ends with ("Site Explorer"); the full name stays in the label and the menu
@@ -96,14 +101,21 @@
     const wrap = document.createElement('div');
     wrap.className = bar ? 'site-switch in-bar' : 'site-switch';
     wrap.innerHTML =
-      `<button type="button" class="site-switch-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="${uid}" aria-label="Switch ${esc(word)} site: ${esc(me?.label || '')}" ` +
-      `title="Open another site"><span>${esc(word)}<span class="sw-colon">:</span></span> <b>${esc(shown)}</b> <span aria-hidden="true">▾</span></button>` +
-      `<ul id="${uid}" class="site-switch-list" role="menu" aria-label="Sites" hidden>` +
+      `<button type="button" class="site-switch-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="${uid}" aria-label="Switch ${esc(word)} explorer: ${esc(me?.label || '')}" ` +
+      `title="Open another explorer"><span>${esc(word)}<span class="sw-colon">:</span></span> <b>${esc(shown)}</b> <span aria-hidden="true">▾</span></button>` +
+      `<ul id="${uid}" class="site-switch-list" role="menu" aria-label="Explorers" hidden>` +
       list
         .map(
           (s) =>
             `<li role="none"><a role="menuitemradio" aria-checked="${s.id === here}" ${s.id === here ? 'aria-current="true" ' : ''}` +
             `href="../${encodeURIComponent(s.id)}/" data-site="${esc(s.id)}" tabindex="-1">${esc(s.label)}</a></li>`
+        )
+        .join('') +
+      // the pages beside the explorers (sites.json `pages`), under a rule: each a plain link, not a site
+      (pages || [])
+        .map(
+          (p, k) =>
+            `<li role="none"${k ? '' : ' class="site-switch-page"'}><a role="menuitem" href="../${esc(p.href)}" data-page="${esc(p.id)}" tabindex="-1">${esc(p.label)}</a></li>`
         )
         .join('') +
       '</ul>';
@@ -169,7 +181,21 @@
       if (!menu.hidden && !wrap.contains(e.target)) close(false);
     });
   };
-  const build = (list, word, brand) => {
+  // from a selection that has a search: "Same genes in <other explorer>", each the other explorer's address with this q=
+  // (not its filters, which that explorer may not have). The list is sites.json, read once; the bar is drawn again when it is in.
+  let others = [];
+  (K.selTools ||= []).push(() =>
+    S.q && others.length
+      ? others
+          .map(
+            (s) =>
+              `<a class="btn small" href="../${encodeURIComponent(s.id)}/#overview?q=${encodeURIComponent(qTo(s.id, null))}" ` +
+              `data-same-genes="${esc(s.id)}">Same genes in ${esc(s.label)}</a>`
+          )
+          .join('')
+      : ''
+  );
+  const build = (list, word, brand, pages = []) => {
     const side = document.querySelector('.brand-side');
     // the way back to the landing page, which sits beside the sites' folders (where sites.json is): the brand line above the
     // site's name in the header (the landing config's title), and "All sites" in the sticky bar
@@ -180,7 +206,7 @@
       a.className = 'brand-line';
       a.href = '../';
       a.textContent = brand;
-      a.title = `${brand}: all sites`;
+      a.title = `${brand}: all explorers`;
       box.className = 'brand-name';
       h1.before(box);
       box.append(a, h1);
@@ -190,13 +216,13 @@
       const a = document.createElement('a');
       a.className = 'landing-link in-bar';
       a.href = '../';
-      a.textContent = 'All sites';
-      a.title = 'Back to the page that lists every site';
+      a.textContent = 'All explorers';
+      a.title = 'Back to the page that lists every explorer';
       end.prepend(a);
     }
     if (list.length >= 2) {
-      if (side) mount(list, side, false, word);
-      if (end) mount(list, end, true, word);
+      if (side) mount(list, side, false, word, pages);
+      if (end) mount(list, end, true, word, pages);
     }
     // in the header, the switcher sits on its own row, so the lab block and the links stay put
     const sw = side?.querySelector('.site-switch');
@@ -204,6 +230,14 @@
       const row = document.createElement('div');
       row.className = 'brand-top';
       side.prepend(row);
+      // the pages beside the explorers (Compare marks): a link in the header, next to the switcher
+      pages.forEach((p) => {
+        const a = document.createElement('a');
+        a.className = 'landing-link page-link';
+        a.href = `../${p.href}`;
+        a.textContent = p.label;
+        row.append(a);
+      });
       row.append(sw);
     }
   };
@@ -216,7 +250,10 @@
         mine = all.find((s) => s.id === here),
         // unlisted sites are in the menu of an unlisted site, and where their own file says so
         list = all.filter((s) => s.listed || s.in_switcher || s.id === here || (mine && !mine.listed));
-      build(list, reg.switcher_label || 'Explorer', reg.brand || '');
+      all.forEach((s) => (marksOn[s.id] = (s.residues || []).map((x) => String(x).toUpperCase())));
+      others = list.filter((s) => s.id !== here);
+      if (others.length && S.q) K.render?.();
+      build(list, reg.switcher_label || 'Explorer', reg.brand || '', reg.pages || []);
     } catch (e) {
       /* served alone: no list of sites, no menu */
     }

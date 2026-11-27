@@ -12,7 +12,8 @@
   if (!IDS.length) return;
   const Z95 = 1.959963984540054;
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  const fp = (p) => (p == null ? '–' : p === 0 ? '< 1e-300' : p < 1e-3 ? p.toExponential(1) : p.toFixed(3));
+  const fp = (p) =>
+    p == null ? '–' : p === 0 ? '< 1e−300' : p < 1e-3 ? p.toExponential(1).replace('e-', 'e−') : p.toFixed(3);
 
   // ---- the model's rows, by factor, strongest evidence first ---------------------------------------------------------
   const zOf = (r) =>
@@ -67,11 +68,7 @@
       fs = factors(id);
     return (
       `<article class="tile fm-tile${card.wide ? ' wide' : ''}" id="tile-${esc(id)}" data-tile="${esc(id)}" data-fid="${esc(id)}" tabindex="0">` +
-      `<header><h3>${esc(card.title || a.title)}${
-        a.new && D.run.parity
-          ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>'
-          : ''
-      }</h3>` +
+      `<header><h3>${esc(card.title || a.title)}</h3>` +
       `${K.detailsLink(id)}</header>` +
       `<p class="tstat">Odds ratio, taking all factors together</p>` +
       `<div class="fm-rows">${fs
@@ -85,11 +82,8 @@
         .join('')}</div>` +
       (`<div class="fm-axis"><span></span><span class="fm-ax"><i>1/8×</i><i>1×</i><i>8×</i></span><span></span>` +
         `</div>`) +
-      `<p class="tfoot">${esc(info(id))}. The strongest evidence is listed first.</p>` +
-      (K.selOn()
-        ? `<p class="twhole"><span>Whole dataset</span> the model is fitted once, on every ${esc(W.mark)}; it is not ` +
-          `refitted for your selection</p>`
-        : '') +
+      `<p class="tfoot">${esc(info(id))}.</p>` +
+      (K.selOn() ? `<p class="twhole"><span>Whole dataset</span> (not refitted for the selection)</p>` : '') +
       `<div class="tact">${K.tilekit.dlMenu(card.title || a.title, ['pdf', 'svg', 'png', 'tsv'], 'fexp', id)}</div>` +
       '</article>'
     );
@@ -171,7 +165,7 @@
     return { body: parts.join(''), H: top + fs.length * RH + 24, fs };
   }
   const legend = [
-    ['#b42318', '#b42318', 'more often (q ≤ 0.05, ≥ 1.1×)'],
+    ['#b42318', '#b42318', 'more often (q ≤ 0.05 and at least 1.1×)'],
     ['#334155', '#334155', 'less often'],
     ['#ffffff', '#8a96a0', 'no difference'],
     ['#475569', '#475569', 'filled: all factors together'],
@@ -269,7 +263,7 @@
       ? `<p class="note small muted">Left out because it does not vary: ${esc(fit.dropped.join(', '))}.</p>`
       : '';
     return (
-      `<div class="card-head"><div><h3>${esc(card.title || a.title)}</h3><p class="sub">${esc(a.sub || '')}</p></div>${K.expBar(
+      `<div class="card-head"><div><p class="sub">${esc(a.sub || '')}</p></div>${K.expBar(
         ['pdf', 'svg', 'png', 'tsv'],
         'fexp',
         a.title,

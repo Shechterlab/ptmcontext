@@ -32,6 +32,7 @@ CFG = {
         }
     ],
     'footer': {'links': [{'label': 'Cite it', 'url': 'https://example.org/cite'}], 'note': 'A footer note.'},
+    'license': 'Data: toy license (non-commercial).',
 }
 
 
@@ -53,6 +54,9 @@ def test_the_landing_page_is_made_of_the_site_file_and_the_landing_config(tmp_pa
     land = web.pages([a], tmp_path / 'site', out_root=root, log=lambda *_: None, landing_config=cfg).read_text()
     assert '<title>Toy hub</title>' in land and 'Many toys.' in land and 'Tested within each protein.' in land
     assert 'href="https://example.org/cite">Cite it' in land and 'A footer note.' in land
+    assert (
+        '<p class="land-license">Data: toy license (non-commercial).</p>' in land
+    )  # the license line, from the config
     # the live card: name, hook, numbers, the site's band, the button from the config's format; no question line and
     # no strongest result unless the config's `card` switches them on
     assert 'Toy toya' in land and 'Toy tagline.' in land
@@ -69,7 +73,7 @@ def test_the_landing_page_is_made_of_the_site_file_and_the_landing_config(tmp_pa
     reg = json.loads((tmp_path / 'site' / 'sites.json').read_text())
     assert reg['brand'] == 'Toy hub'
     kit = (Path(web.__file__).parent / 'assets' / 'kit-switch.js').read_text()
-    assert "className = 'brand-line'" in kit and 'reg.brand' in kit and "a.textContent = 'All sites'" in kit
+    assert "className = 'brand-line'" in kit and 'reg.brand' in kit and "a.textContent = 'All explorers'" in kit
 
 
 def test_the_card_switches_bring_back_the_question_and_the_strongest_result(tmp_path):
@@ -215,6 +219,9 @@ def test_the_landing_search_index_lists_each_protein_with_its_sites(tmp_path):
     assert [s['id'] for s in idx['sites']] == ['toya'] and idx['p']
     acc, gene, name, sites, *names = idx['p'][0]  # names: the genes and symbols, only where there are any
     assert acc and sites == [0]
+    assert idx['sites'][0][
+        'residues'
+    ]  # the residues of the site's mark: the search offers the explorers that fit a typed one
     # the box, its results and the script are on the page
     assert 'id="land-q"' in land and 'id="land-hits"' in land and "fetch('proteins.json')" in land
 
@@ -275,3 +282,162 @@ def test_the_whole_card_is_the_link_target():
     css = LP.CSS
     assert '.land-card .band { position: relative' not in css
     assert ".land-card h2 a::after { content: ''; position: absolute; inset: 0;" in css
+
+
+def test_the_scope_and_license_lines_come_from_the_site_file(tmp_path):
+    root, a = _toy(tmp_path, 'toyb')
+    spec = yaml.safe_load(a.read_text())
+    spec['website']['scope'] = 'Holds toy sites. It does not hold toy levels.'
+    spec['website']['license'] = 'Data: toy license.'
+    a.write_text(yaml.safe_dump(spec, sort_keys=False, allow_unicode=True))
+    S.run(a, root=root / 'data', log=lambda *_: None)
+    web.build(a, log=lambda *_: None)
+    page = next((root / 'out').rglob('index.html')).read_text()
+    assert '<p class="lede-scope">Holds toy sites. It does not hold toy levels.</p>' in page
+    assert '"license":"Data: toy license."' in page.replace('": "', '":"')
+    kit = (Path(web.__file__).parent / 'assets' / 'kit.js').read_text()
+    assert 'class="dl-license"' in kit and 'D.license' in kit
+
+
+WN = {
+    'title': 'What’s new in each data release',
+    'releases': [
+        {'title': 'Toy_Pipeline v2.0 data release (2026-02-02)', 'items': ['Newer thing.'], 'doi': '10.1/new'},
+        {'title': 'Toy_Pipeline v1.0 data release (2026-01-01)', 'items': ['Older thing.']},
+    ],
+}
+
+
+def test_whats_new_is_a_closed_disclosure_at_the_foot_with_one_entry_per_data_release(tmp_path):
+    root, a = _built(tmp_path)
+    cfg = tmp_path / 'landing.yml'
+    cfg.write_text(yaml.safe_dump({**CFG, 'whats_new': WN}))
+    land = web.pages([a], tmp_path / 'site', out_root=root, log=lambda *_: None, landing_config=cfg).read_text()
+    assert '<details class="land-new"><summary>What’s new in each data release</summary>' in land
+    assert '<details class="land-new" open' not in land
+    new, old = land.index('Toy_Pipeline v2.0 data release (2026-02-02)'), land.index('Toy_Pipeline v1.0 data release')
+    assert new < old  # newest first, as written
+    assert land.index('Toy toya') < land.index('class="land-new"') < land.index('</main>')  # below the cards
+    assert 'href="https://doi.org/10.1/new"' in land
+    assert LP.whats_new(None) == {'title': 'What’s new', 'releases': []}
+
+
+def test_an_older_whats_new_block_is_one_release_and_a_site_help_reads_the_same_list():
+    one = LP.whats_new({'title': 'What’s new in v1', 'items': ['A.'], 'doi': '10.1/x'})
+    assert one['releases'] == [{'title': 'What’s new in v1', 'items': ['A.'], 'doi': '10.1/x'}]
+    assert LP.whats_new(WN)['releases'][1]['doi'] == ''
+    help_js = (Path(web.__file__).parent / 'assets' / 'kit-help.js').read_text()
+    assert 'D.whats_new' in help_js and 'WN?.releases' in help_js and '<details${n > 4' in help_js
+    for site in ('methylarginine', 'methyllysine', 'lysine', 'phospho'):
+        spec = yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / f'{site}.yaml').read_text())
+        mine = [r['title'] for r in LP.whats_new(spec['website']['whats_new'])['releases']]
+        land = [
+            r['title']
+            for r in LP.whats_new(
+                yaml.safe_load((Path(__file__).resolve().parents[1] / 'sites' / 'landing.yml').read_text())['whats_new']
+            )['releases']
+        ]
+        assert mine == land and all('data release (' in t for t in land)
+
+
+def test_the_license_lines_name_the_commercial_contact_and_no_new_badge_is_drawn():
+    root = Path(__file__).resolve().parents[1]
+    lines = [yaml.safe_load((root / 'sites' / 'landing.yml').read_text())['license']]
+    for site in ('methylarginine', 'methyllysine', 'lysine', 'phospho'):
+        lines.append(yaml.safe_load((root / 'sites' / f'{site}.yaml').read_text())['website']['license'])
+    assert all('For commercial use, contact info@shechterlab.org' in x for x in lines)
+    assets = root / 'ptmcontext' / 'web' / 'assets'
+    assert not [f.name for f in assets.glob('kit*') if 'newtag' in f.read_text()]
+
+
+def test_the_landing_search_reads_a_site_as_the_explorers_do_and_offers_the_fitting_explorers():
+    import json
+    import subprocess
+
+    assets = Path(__file__).parent.parent / 'ptmcontext' / 'web' / 'assets'
+    names = (assets / 'kit-names.js').read_text()
+    search = (assets / 'land-search.js').read_text()
+    # the notations come from the one shared module, which the explorers' search also calls
+    assert 'PTMNames.siteOf' in (assets / 'kit-select.js').read_text()
+    assert 'N.siteOf(' in search and 'N.read(' in search and 'N.exact(' in search
+    assert 'Searched the first name only' not in search and 'choose a site' not in search
+    script = (
+        "const window = {}; const known = (n) => (['H4', 'TP53'].includes(n.toUpperCase()) ? { n } : null);"
+        + names
+        + 'const N = window.PTMNames; const f = (t) => { const s = N.siteOf(t, known); return s && [s.name, s.letter, s.pos]; };'
+        "console.log(JSON.stringify(['H4R3', 'TP53-R213', 'TP53_R213', 'TP53/213', 'TP53:R213', 'XYZR3', 'TP53'].map(f)"
+        '.concat([N.pos("R213"), N.pos("213"), N.pos("B3"), N.pos("TP53")])));'
+    )
+    out = subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout
+    assert json.loads(out) == [
+        ['H4', 'R', 3],
+        ['TP53', 'R', 213],
+        ['TP53', 'R', 213],
+        ['TP53', '', 213],
+        ['TP53', 'R', 213],
+        None,
+        None,
+        {'letter': 'R', 'pos': 213, 'mark': ''},
+        {'letter': '', 'pos': 213, 'mark': ''},
+        None,
+        None,
+    ]
+
+
+def test_a_phrase_with_a_name_and_a_site_is_that_site_and_a_list_needs_two_names_and_no_site():
+    import json
+    import subprocess
+
+    assets = Path(__file__).parent.parent / 'ptmcontext' / 'web' / 'assets'
+    names = (assets / 'kit-names.js').read_text()
+    script = (
+        "const window = {}; const known = (n) => (['H4', 'TP53', 'FUS', 'EWSR1', 'AKT1'].includes(n.toUpperCase()) ? { n } : null);"
+        + names
+        + "const r = (t) => { const x = window.PTMNames.read(t.split(' '), known); return x && (x.site ? ['site', x.site.name, x.site.letter + x.site.pos] : x.list ? ['list', ...x.list] : ['one', x.one.name]); };"
+        "console.log(JSON.stringify(['TP53 R213 mutation methylation', 'AKT1 T308 phosphorylation', 'FUS EWSR1 TAF15', "
+        "'FUS EWSR1 R3', 'TP53 mutation', 'mutation methylation', 'H4 R3'].map(r)));"
+    )
+    out = subprocess.run(['node', '-e', script], capture_output=True, text=True, check=True).stdout
+    assert json.loads(out) == [
+        ['site', 'TP53', 'R213'],
+        ['site', 'AKT1', 'T308'],
+        ['list', 'FUS', 'EWSR1'],
+        ['site', 'FUS', 'R3'],
+        ['one', 'TP53'],
+        None,
+        ['site', 'H4', 'R3'],
+    ]
+
+
+def test_a_search_naming_a_site_is_carried_only_where_it_means_something():
+    assets = Path(__file__).parent.parent / 'ptmcontext' / 'web' / 'assets'
+    kit, sel, sw = [(assets / f).read_text() for f in ('kit.js', 'kit-select.js', 'kit-switch.js')]
+    # the one place a link carries q (kit.js carry, which K.link and K.card.protRef use) and the explorer switcher ask qFor
+    assert 'K.sel.qFor(S.q, { segs' in kit and 'qFor(S.q, { segs, residues' in sw
+    assert 'function qFor(' in sel and 'qFor,' in sel
+
+
+def test_the_landing_page_leads_with_the_question_the_search_and_examples_and_keeps_the_fine_print(tmp_path):
+    root, a = _built(tmp_path)
+    cfg = tmp_path / 'landing.yml'
+    cfg.write_text(
+        yaml.safe_dump(
+            CFG
+            | {
+                'page_title': 'Toy hub: toy explorers',
+                'examples': [{'label': 'A B', 'href': 'toya/#protein/X/P1/R3'}],
+                'references': [{'label': 'Paper', 'doi': '10.1/x'}],
+            }
+        )
+    )
+    out = tmp_path / 'site'
+    land = web.pages([a], out, out_root=root, log=lambda *_: None, landing_config=cfg).read_text()
+    assert '<title>Toy hub: toy explorers</title>' in land and '<meta name="description" content="Toy sites.">' in land
+    if 'role="search"' in land:  # the box and its examples come before the cards and before the fine print
+        assert land.index('role="search"') < land.index('class="land-examples"') < land.index('id="toya"')
+    assert land.index('id="toya"') < land.index('class="land-fine"') < land.index('Data: toy license')
+    assert 'doi:10.1/x' in land
+    robots = (out / 'robots.txt').read_text()
+    assert 'Sitemap: https://shechterlab.github.io/ptmcontext/sitemap.xml' in robots
+    locs = re.findall(r'<loc>(.*?)</loc>', (out / 'sitemap.xml').read_text())
+    assert locs[0] == 'https://shechterlab.github.io/ptmcontext/' and locs[-1].endswith('/toya/')

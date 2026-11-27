@@ -13,10 +13,10 @@ def test_small_selection_reuses_the_protein_card_renderer():
     assert 'function foundTile(' in js and 'oneDrawings(p)' in js
     assert '!K.sel.testable() && K.sel.proteinIds().size)\n      return foundTile(card)' in js
     assert '`${found.length} of ${ids.length} proteins`' in js
-    assert 'Where these ${ids.length} proteins are found' in js and 'Where ${p.gene} is found' in js
+    assert 'Localization of these ${ids.length} proteins' in js and '${p.gene} localization (' in js
 
 
 def test_banner_no_longer_counts_the_cell_among_whole_dataset_tiles():
     kit = (ASSETS / 'kit.js').read_text()
-    assert 'except the cell, which shows where your selection is found' in kit
+    assert 'whole dataset shown' in kit
     assert 'proteinIds' in (ASSETS / 'kit-select.js').read_text()

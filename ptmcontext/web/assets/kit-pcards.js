@@ -7,9 +7,11 @@
 (window.PTMC_MODULES ||= []).push((K) => {
   'use strict';
   const { D, W, esc, int, cap } = K;
-  const PC = D.protein_view?.cards || {},
+  const PC = { ...(D.protein_view?.cards || {}) },
     LIVE = (D.protein_view?.sets || []).filter((c) => c.live);
   if (!Object.keys(PC).length && !LIVE.length) return;
+  // the dependency card's configuration holds both halves of the old card; the mutations card is the second half
+  if (PC.dependency) PC.mutations = { title: 'Mutations in tumors and cell lines' };
   const TH = D.tables || {},
     LK = D.lookups || {},
     SPECS = D.attribute_specs || {},
@@ -268,20 +270,21 @@
                 ? `<b>Found in:</b> ${esc(sets.join(' · '))}${grades.length ? `; ${esc(grades.join(', '))}` : ''}`
                 : `<span class="muted">` + `No map finds ${esc(gene(p))} in a compartment.</span>`
             }</p>`) +
-        `<details class="pc-mapsfold"><summary>Cell maps table <span class="muted">· each map's words on ${esc(gene(p))}</span></summary>${mapsTable(p, ms)}</details>`,
+        `<details class="pc-mapsfold"><summary>Cell maps <span class="muted">(terms on ${esc(gene(p))})</span></summary>${mapsTable(p, ms)}</details>`,
       sum:
         sets.length || grades.length
-          ? `${nPl} of ${ms.length} maps find it: ${sumList(sets, 3)}${
+          ? `Located in ${nPl} of ${ms.length} maps: ${sumList(sets, 3)}${
               grades.length ? (sets.length ? '; ' : '') + grades.join(', ') : ''
             }`
-          : `${ms.length} maps, none ` + `finds it in a compartment`,
-      pic: K.pfolds ? K.pfolds.bigN([[`${nPl}/${ms.length}`, 'maps find it']]) : '',
+          : `Located in 0 of ${ms.length} maps`,
+      pic: K.pfolds ? K.pfolds.bigN([[`${nPl}/${ms.length}`, 'maps locate it']]) : '',
     };
   }
   // where the RNAs the protein binds gather: for each map of the bound RNAs (protein-set questions), the compartments of the protein's own sets, each with the dataset's test of it
   function rnaMapsHtml(cfg, p) {
     const sd = K.sel.pdata(p.i),
       out = [];
+    let any = false;
     for (const aid of cfg.rna_maps) {
       const a = (D.analyses || []).find((x) => x.id === aid),
         ps = sd.protein_sets?.[aid];
@@ -289,10 +292,12 @@
       const names = ps.sets.map((s) => s[0]).filter((s) => K.sel.setHas(aid, s, p.i));
       const lab = (s) => (a.labels || {})[s] || s.replace(/_/g, ' ');
       const fold = (s) => {
-        const rs = D.rows.filter((r) => r.analysis === aid && r.category === s && r.dir === 'more'),
-          r = rs.find((x) => x.method === 'enricher') || rs[0];
-        return r ? ` <span class="muted ` + `small">(${K.fxn(r.eff)}× across the dataset)</span>` : '';
+        const r = K.setReading(aid, s);
+        return r && r.dir === 'more'
+          ? ` <span class="muted ` + `small">(${K.fxn(r.effect)}× across the dataset)</span>`
+          : '';
       };
+      if (names.length) any = true;
       out.push(
         `<tr><th scope="row">${esc(a.title)}</th><td>${
           names.length
@@ -301,6 +306,7 @@
         }</td></tr>`
       );
     }
+    if (out.length && !any) return K.noData('No compartments of bound RNAs for this protein.');
     return out.length
       ? `<h4 class="sub-h">Where the RNAs ${esc(gene(p))} binds gather</h4><div class="tbl-wrap">` +
           `<table class="pc-maps"><tbody>${out.join('')}</tbody></table></div>`
@@ -376,12 +382,10 @@
     return {
       n: rs.length,
       best,
-      html:
-        `<h4 class="sub-h">${esc(c.title || 'Condensates')} <span class="muted ` +
-        `small">${esc(c.source || '')}</span></h4>` +
-        (rs.length
-          ? `<ul class="cond-list mine">${rs.map(li).join('')}</ul>`
-          : '<p class="muted">No condensate membership recorded.</p>'),
+      html: rs.length
+        ? `<h4 class="sub-h">${esc(c.title || 'Condensates')} <span class="muted ` +
+          `small">${esc(c.source || '')}</span></h4><ul class="cond-list mine">${rs.map(li).join('')}</ul>`
+        : K.noData(`No ${c.source ? c.source.split(' ')[0] + ' ' : ''}condensates for this protein.`),
     };
   }
   function locationBuild(p, rec, tb) {
@@ -501,7 +505,7 @@
     } catch (e) {
       /* storage may be blocked */
     }
-    document.querySelectorAll('[data-pc="dependency"], [data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
+    document.querySelectorAll('[data-pc="mutations"], [data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
     paintAll();
   });
   // a card whose variant lists are in files of their own is filled when it is opened (toggle does not bubble)
@@ -515,13 +519,45 @@
     },
     true
   );
-  let CFLAG = false; // show only the sites flagged at least flag_ratio times the protein's average
-  document.addEventListener('click', (ev) => {
-    if (!ev.target.closest?.('[data-cc-flag]')) return;
-    CFLAG = !CFLAG;
-    document.querySelectorAll('[data-pc="dependency"]').forEach((el) => delete el.dataset.pcOk);
+  // the mutation propensity (kit-propensity.js, data/m): read once a protein, then the cards are painted again
+  const pAsked = new Set();
+  function propOf(acc) {
+    if (!K.prop) return null;
+    const v = K.prop.peek(acc);
+    if (v === undefined && !pAsked.has(acc)) {
+      pAsked.add(acc);
+      K.prop.load(acc).then(() => paintAll());
+    }
+    return v;
+  }
+  K.prop?.onHyper(() => {
+    document.querySelectorAll('[data-pc="mutations"], [data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
     paintAll();
   });
+  // a protein's residues as lollipops for one source (card.change_counts or variant_counts entry `x`): stick = the count the
+  // card shows, head = O/E, ring = q < 0.05. '' when the site has no propensity for the entry; `wait` while data/m is read
+  function lollipopFor(p, rec, x, counts, known, altsAt) {
+    const s = K.prop?.sources.find((q) => q.card === x.id);
+    if (!s) return { html: '', wait: false };
+    const v = propOf(p.acc);
+    if (v === undefined) return { html: K.loading('Loading observed/expected…'), wait: true };
+    if (v === null || !v[s.id]) return { html: '', wait: false };
+    return {
+      wait: false,
+      html:
+        `<h5 class="pr-h">${esc(s.label)}: changes along the protein, with observed/expected</h5>` +
+        K.prop.lollipop({
+          acc: p.acc,
+          id: s.id,
+          seq: rec.seq || '',
+          counts,
+          known,
+          shown: (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, q) : q),
+          site: (q) => siteName(rec, q, p.acc) + (altsAt?.(q) || ''),
+          unit: x.unit,
+        }),
+    };
+  }
   function changeCountsSection(p, rec, tb) {
     const cn = K.card.cc.entries,
       CCK = K.card.cc,
@@ -558,12 +594,10 @@
       )
       .join('');
     // one row per residue with a change, most changes first
-    const flagOf = (r, k) => CCK.flagged(tb, cn[k], seq[r.q - 1], CCK.total(r.cells[k]));
     const all = pool
       .map((q) => ({ q, cells: cn.map((x) => CCK.at(tb, x, q)) }))
       .filter((r) => r.cells.some((v) => v.length));
-    const nFlag = all.filter((r) => cn.some((x, k) => flagOf(r, k))).length;
-    const per = CFLAG ? all.filter((r) => cn.some((x, k) => flagOf(r, k))) : all;
+    const per = all;
     const sumOf = (r) => r.cells.reduce((a, v) => a + CCK.total(v), 0);
     per.sort((a, b) => sumOf(b) - sumOf(a) || a.q - b.q);
     const nSites = cn.map((x, k) => per.filter((r) => r.cells[k].length).length);
@@ -577,8 +611,7 @@
       ]
         .map(([k, t]) => `<button type="button" data-cc-mode="${k}" aria-pressed="${CMODE === k}">${t}</button>`)
         .join('') +
-      `</div> <span class="seg" role="group" aria-label="Flagged sites"><button type="button" class="cc-chip" data-cc-flag aria-pressed="${CFLAG}" title="Show only the sites with at ` +
-      `least ${cn.map((x) => x.flag_ratio || 3).join(' or ')} times the protein's average">Flagged only <span class="muted">${int(nFlag)}</span></button></span>`;
+      `</div>${K.prop && K.prop.sources.some((s) => s.kind === 'somatic' && cn.some((x) => x.id === s.card)) ? ' ' + K.prop.hyperSwitch('Tumors and cell lines') : ''}`;
     // a protein several genes encode lists a residue once a gene, with a Gene column (a lone gene is the page's title)
     const geneOn = cn.some((x) => CCK.showGene(p.acc, tb, x));
     const genesAt = (r) => {
@@ -595,18 +628,28 @@
     const cellOf = (r, k, g, first) => {
       const v = g ? r.cells[k].map((a) => ({ alt: a.alt, n: a.by?.[g] || 0 })).filter((a) => a.n) : r.cells[k];
       return v.length
-        ? esc(v.map((a) => siteName(rec, r.q, p.acc) + a.alt + (a.n > 1 ? ' ×' + a.n : '')).join(', ')) +
-            (first && flagOf(r, k) ? ' ' + CCK.flagTag(cn[k]) : '')
+        ? esc(v.map((a) => siteName(rec, r.q, p.acc) + a.alt + (a.n > 1 ? ' ×' + a.n : '')).join(', '))
         : '<span class="muted">—</span>';
     };
+    // each source's residues as lollipops: the count the card shows, O/E and q from the release's propensity tables
+    const lol = cn.map((x) => {
+      const counts = new Map();
+      pool.forEach((q) => {
+        const n = tot(x, q);
+        if (n) counts.set(q, n);
+      });
+      return lollipopFor(p, rec, x, counts, known, (q) => {
+        const v = CCK.at(tb, x, q);
+        return v.length ? ' → ' + v.map((a) => a.alt + (a.n > 1 ? ' ×' + a.n : '')).join(', ') : '';
+      });
+    });
     const html =
       `<section class="pc-sec pc-cc"><h4>Changes at ${esc(CMODE === 'known' ? W.marks : W.residues)}</h4>${seg}` +
       `<p class="small muted">${
-        CMODE === 'known'
-          ? `The protein's known ${esc(W.marks)} only.`
-          : `Every ${esc(W.residue)} of the protein, a known ${esc(W.mark)} or not.`
+        CMODE === 'known' ? `Known ${esc(W.marks)} only.` : `All ${esc(W.residues)} of the protein.`
       }</p>` +
       `<ul class="small pc-cc-lines">${lines || ''}</ul>` +
+      lol.map((l) => l.html).join('') +
       `<p class="small">${cn
         .map(
           (x, k) =>
@@ -636,11 +679,16 @@
         ? `<p class="small screen-only"><button type="button" class="linkish" data-vc-dl="cc:${esc(p.acc)}">Download every change of the protein (TSV)</button></p>`
         : '') +
       `</section>`;
-    return { html, nSites, nKnown: cn.map((x) => rec.marks.filter((m) => tot(x, m[0])).length) };
+    return {
+      html,
+      nSites,
+      nKnown: cn.map((x) => rec.marks.filter((m) => tot(x, m[0])).length),
+      wait: lol.some((l) => l.wait),
+    };
   }
   // ---- germline variants (card.variant_counts, cards.germline): one section a source, each from a table with a row per
-  // variant. The same switch as the change counts (known sites only, or every candidate residue); a count of at least
-  // flag_ratio times the protein's average per residue of that kind is flagged; a variant the entry highlights comes first.
+  // variant. The same switch as the change counts (known sites only, or every candidate residue); a variant the entry
+  // highlights comes first.
   const VMORE = new Set(); // the sources whose whole list is shown
   document.addEventListener('click', (ev) => {
     const b = ev.target.closest?.('[data-vc-more]');
@@ -651,7 +699,7 @@
     document.querySelectorAll('[data-pc="germline"]').forEach((el) => delete el.dataset.pcOk);
     paintAll();
   });
-  const sci = (v) => (!isFinite(v) ? '–' : v === 0 ? '0' : v.toExponential(1).replace('.0e', 'e'));
+  const sci = (v) => (!isFinite(v) ? '–' : v === 0 ? '0' : v.toExponential(1).replace('.0e', 'e').replace('e-', 'e−'));
   function fieldCell(f, r) {
     const v = r[f.column];
     if (v === '' || v == null) return '<span class="muted">–</span>';
@@ -870,9 +918,13 @@
       shown = (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, q) : q),
       limit = PC.germline?.limit || 12,
       all = pool.flatMap((q) => VCK.at(tb, x, q).map((r) => ({ q, r }))),
-      byQ = new Map();
-    for (const v of all) byQ.set(v.q, (byQ.get(v.q) || 0) + 1);
-    const nHot = new Set(all.filter((v) => VCK.hot(x, v.r)).map((v) => v.q)).size;
+      byQ = new Map(),
+      mine = VCK.sites(tb, x, pool); // the sites with a variant and with a highlighted one: the site card's counter
+    for (const q of pool) {
+      const n = VCK.sum(tb, x, q).n;
+      if (n) byQ.set(q, n);
+    }
+    const nHot = mine.hot;
     const known1 = CMODE === 'known';
     const lines = letters
       .map((l) => {
@@ -891,7 +943,9 @@
       })
       .join('');
     const what = known1 ? plural(known.size, W.mark, W.marks) : plural(nKnown.cands, 'candidate residue');
-    const hotWord = x.highlight?.label ? ` (${int(nHot)} with ${esc(x.highlight.label)})` : '';
+    const hotWord = x.highlight?.label
+      ? ` (${int(nHot)} ${esc((x.highlight.title || x.highlight.label).replace(/\s*\(.*\)$/, ''))})`
+      : '';
     const sorts = x.sort || [];
     all.sort((a, b) => {
       const h = VCK.hot(x, b.r) - VCK.hot(x, a.r);
@@ -903,30 +957,37 @@
       return a.q - b.q;
     });
     const open = VMORE.has(x.id),
-      list1 = open ? all : all.slice(0, limit),
-      flagSeen = new Set();
+      list1 = open ? all : all.slice(0, limit);
     const fields = x.fields || [];
     const geneOn = VCK.showGene(p.acc, tb, x);
     const row = ({ q, r }) => {
       const l = seq[q - 1],
-        fl = VCK.flagged(tb, x, l, byQ.get(q) || 0) && !flagSeen.has(q) ? (flagSeen.add(q), ' ' + VCK.flagTag(x)) : '',
         hot = VCK.hot(x, r),
         link =
           x.link && r[x.link.column]
             ? ext(x.link.url.replace('{}', encodeURIComponent(r[x.link.column])), `${esc(x.label)} ↗`)
             : '';
       return (
-        `<tr${hot ? ' class="vc-hot"' : ''}><td>${known.has(q) ? siteLink(p, rec, q) : esc(siteName(rec, q, p.acc))}${fl}</td>` +
-        `<td>${esc(l + shown(q) + r[alt])}${hot && x.highlight.label ? ` <span class="tag vc-hot-tag" title="${esc(x.highlight.title || '')}">${esc(x.highlight.label)}</span>` : ''}</td>` +
+        `<tr${hot ? ' class="vc-hot"' : ''}><td>${known.has(q) ? siteLink(p, rec, q) : esc(siteName(rec, q, p.acc))}</td>` +
+        `<td>${esc(l + shown(q) + r[alt])}${hot && x.highlight.label ? ` <span class="tag vc-hot-tag">${K.hlLabel(x.highlight)}</span>` : ''}</td>` +
         (geneOn ? `<td>${r[x.gene] ? geneHtml(r[x.gene]) : '<span class="muted">–</span>'}</td>` : '') +
         fields.map((f) => `<td>${fieldCell(f, r)}</td>`).join('') +
         `<td>${link}</td></tr>`
       );
     };
+    const counts = new Map();
+    pool.forEach((q) => {
+      if (byQ.get(q)) counts.set(q, byQ.get(q));
+    });
+    const lol = lollipopFor(p, rec, x, counts, known, (q) => {
+      const v = VCK.at(tb, x, q);
+      return v.length ? ' → ' + [...new Set(v.map((r) => r[alt]))].join(', ') : '';
+    });
     const html =
       `<section class="pc-sec pc-vc"><h4>${esc(x.label)}</h4>` +
       `<ul class="small pc-cc-lines">${lines}</ul>` +
-      `<p class="small">${int(byQ.size)} of ${esc(what)} ${byQ.size === 1 ? 'has' : 'have'} a variant${hotWord}.</p>` +
+      lol.html +
+      `<p class="small">${int(mine.any)} of ${esc(what)} ${mine.any === 1 ? 'has' : 'have'} a variant${hotWord}.</p>` +
       (all.length
         ? `<div class="tbl-wrap"><table class="pc-tbl"><thead><tr><th>${known1 ? 'Site' : 'Residue'}</th><th>Change</th>${geneOn ? '<th>Gene</th>' : ''}${fields
             .map((f) => `<th>${esc(f.label || f.column)}</th>`)
@@ -934,14 +995,19 @@
           (all.length > limit
             ? `<p class="small"><button type="button" class="linkish" data-vc-more="${esc(x.id)}">${
                 open ? 'Show fewer' : `Show all ${int(all.length)} ${esc(unit[1])}`
-              }</button>${open ? '' : ` <span class="muted">(${int(limit)} shown${x.highlight?.label ? `, ${esc(x.highlight.label)} first` : ''})</span>`}</p>`
+              }</button>${open ? '' : ` <span class="muted">(${int(limit)} shown${x.highlight?.label ? `, ${esc((x.highlight.title || x.highlight.label).replace(/\s*\(.*\)$/, ''))} first` : ''})</span>`}</p>`
             : '')
         : '') +
       (all.length
         ? `<p class="small screen-only"><button type="button" class="linkish" data-vc-dl="vc:${esc(x.id)}:${esc(p.acc)}">Download every ${esc(unit[0])} of the protein (TSV)</button></p>`
         : '') +
       `</section>`;
-    return { html, nHot, nSites: byQ.size, nKnown: rec.marks.filter((m) => VCK.at(tb, x, m[0]).length).length };
+    return {
+      html,
+      nHot,
+      nSites: mine.any,
+      wait: lol.wait,
+    };
   }
   function germlineBuild(p, rec, tb, el) {
     const VCK = K.card.vc,
@@ -953,16 +1019,19 @@
     for (let i = 0; i < seq.length; i++) if (resSet.has(seq[i])) cands.push(i + 1);
     const pool = CMODE === 'all' ? cands : [...known].filter((q) => seq[q - 1]).sort((a, b) => a - b);
     const letters = [...new Set(pool.map((q) => seq[q - 1]))].sort((a, b) => order(a) - order(b));
+    // the closed card's summary: the known sites with a variant, and with a highlighted one (the site card's counter)
+    const knownSum = (x) => {
+      const c = VCK.sites(
+        tb,
+        x,
+        rec.marks.map((q) => q[0])
+      );
+      return `${x.label}: ${c.any ? plural(c.any, 'site') : 'no site'} with a variant${x.highlight?.label && c.any ? ` (${int(c.hot)} ${(x.highlight.title || x.highlight.label).replace(/\s*\(.*\)$/, '')})` : ''}`;
+    };
     const lazy = VCK.entries.some((x) => x.lazy);
     if (lazy && !tb._vd) {
       // the variant lists are in files of their own: read when the card is opened; closed, only the counts show
-      const sums = VCK.entries.map((x) => {
-        const m = VCK.sums(tb, x);
-        return `${x.label}: ${(() => {
-          const n = rec.marks.filter((q) => m.has(q[0])).length;
-          return n ? plural(n, 'site') : 'no site';
-        })()}`;
-      });
+      const sums = VCK.entries.map((x) => knownSum(x));
       if (!el.closest('details')?.open) return { html: '', sum: sums.join(' · ') };
       const d = detail(p.acc);
       if (d === undefined) return { html: K.loading('Loading the variants…'), sum: sums.join(' · '), wait: true };
@@ -980,14 +1049,10 @@
         .join('') +
       `</div>`;
     const html = `${seg}<p class="small muted">${
-      CMODE === 'known'
-        ? `The protein's known ${esc(W.marks)} only.`
-        : `Every ${esc(W.residue)} of the protein, a known ${esc(W.mark)} or not.`
+      CMODE === 'known' ? `Known ${esc(W.marks)} only.` : `All ${esc(W.residues)} of the protein.`
     }</p><div class="pc-grid pc-grid-wide">${secs.map((s) => s.html).join('')}</div>${excludedLine(p, tb, PC.germline)}`;
-    const sum = VCK.entries
-      .map((x, k) => `${x.label}: ${secs[k].nKnown ? plural(secs[k].nKnown, 'site') : 'no site'}`)
-      .join(' · ');
-    return { html, sum };
+    const sum = VCK.entries.map((x) => knownSum(x)).join(' · ');
+    return { html, sum, wait: secs.some((s) => s.wait) };
   }
   function dependencyBuild(p, rec, tb) {
     const cfg = PC.dependency,
@@ -1021,6 +1086,28 @@
               .join(' · ')} <span class="muted">` + `(mean gene effect)</span></p>`
           : '');
     }
+    const html =
+      `${
+        cfg.url ? `<p class="actions">${ext(cfg.url.replace('{gene}', encodeURIComponent(g)), 'Source ↗')}</p>` : ''
+      }` + `<div class="pc-grid"><section class="pc-sec">${dep}</section></div>`;
+    const sum = r
+      ? /^true$/i.test(r.common_essential || '')
+        ? 'commonly essential'
+        : `${int(num(r.dependent))} of ${int(num(r.lines))} lines depend on it`
+      : 'not screened';
+    const depPic =
+      r && !/^true$/i.test(r.common_essential || '') && num(r.lines)
+        ? meters1(
+            'Dependent',
+            num(r.dependent) / num(r.lines),
+            `${int(num(r.dependent))} of ${int(num(r.lines))} lines`
+          )
+        : '';
+    return { html, sum, pic: depPic };
+  }
+  // the changes at the residues (the site card's changes and the per-residue change counts): the card next to the inherited variants
+  function mutationsBuild(p, rec, tb) {
+    const cfg = PC.dependency;
     // the changes at the marks: the site card's changes (website.protein.card.changes), one column each
     const ch = (D.protein_view?.card?.changes || []).filter((x) => SPECS[x.attribute]);
     let chg = '',
@@ -1084,25 +1171,15 @@
           : '');
     }
     const cnSec = K.card.cc?.entries.length ? changeCountsSection(p, rec, tb) : null;
+    if (!ch.length && !cnSec) return { html: '', sum: '', hide: true };
     const html =
-      `${
-        cfg.url ? `<p class="actions">${ext(cfg.url.replace('{gene}', encodeURIComponent(g)), 'Source ↗')}</p>` : ''
-      }` +
-      `<div class="pc-grid"><section class="pc-sec"><h4>Dependency in CRISPR knockout screens</h4>${dep}</section>` +
-      (ch.length
-        ? `<section class="pc-sec"><h4>Changes at ${esc(W.residues)}</h4>${chg}${cfg.changes_note ? `` : ''}</section>`
-        : '') +
+      `<div class="pc-grid">` +
+      (ch.length ? `<section class="pc-sec"><h4>Changes at ${esc(W.residues)}</h4>${chg}</section>` : '') +
       (cnSec ? cnSec.html : '') +
       '</div>' +
-      excludedLine(p, tb, cfg) +
-      (cfg.note ? `` : '');
+      excludedLine(p, tb, cfg);
     const first = ch[0],
       sum = [
-        r
-          ? /^true$/i.test(r.common_essential || '')
-            ? 'commonly essential'
-            : `${int(num(r.dependent))} of ${int(num(r.lines))} lines depend on it`
-          : 'not screened',
         ch.length
           ? `${nSites[0] ? plural(nSites[0], 'site') : 'no site'} changed in ${(first.unit || ['', 'records'])[1]}`
           : '',
@@ -1112,15 +1189,7 @@
       ]
         .filter(Boolean)
         .join(' · ');
-    const depPic =
-      r && !/^true$/i.test(r.common_essential || '') && num(r.lines)
-        ? meters1(
-            'Dependent',
-            num(r.dependent) / num(r.lines),
-            `${int(num(r.dependent))} of ${int(num(r.lines))} lines`
-          )
-        : '';
-    return { html, sum, pic: depPic };
+    return { html, sum, wait: !!cnSec?.wait };
   }
 
   // ---- inhibitors, knockouts and knockdowns of the mark's enzymes: a site against each experiment, a mark per call -----------------------
@@ -1170,10 +1239,7 @@
     const head = ``;
     if (!sites.length)
       return {
-        html:
-          head +
-          (`<p class="muted">None of its ${esc(W.marks)} was quantified in these ` +
-            `experiments (${esc(cols.map((c) => c.label).join('; '))}).</p>`),
+        html: head + K.noData(`No quantified ${W.marks} for this protein.`),
         sum: 'not measured',
       };
     const mk = (c) => marks[c] || (c === 'no_significant_change' ? '○' : '?');
@@ -1182,7 +1248,7 @@
       `<p class="pc-key">${Object.entries(marks)
         .map(([c, m]) => `<span><span class="trend c-${esc(c)}"><b>${esc(m)}</b></span> ${esc(word(words, c))}</span>`)
         .join('')}<span>○ no ` +
-      `significant change</span><span>blank: not quantified · hover a site for its numbers</span></p>`;
+      `significant change</span><span>blank: not quantified · tap, hover or focus a site for its numbers</span></p>`;
     const html =
       head +
       keyP +
@@ -1262,26 +1328,27 @@
       n = rec.marks.length,
       win = num(r.window_size),
       sites = num(r.window_sites),
-      q = num(r.window_q),
-      l2 = num(r.window_log2);
+      q = num(r.window_q);
     const wins = (cfg.windows || []).map((w) => [w, num(r['max_' + w])]).filter(([, v]) => v != null);
     const clusters = list(r.clusters)
       .map((c) => c.split(',').map(Number))
       .filter((c) => c.length);
     const sh = (q) => (K.prot?.shownPos ? K.prot.shownPos(p.acc, +q) : +q);
     const range = `${letter(rec, +r.window_start)}${sh(r.window_start)}–${sh(r.window_end)}`;
-    const html =
-      sub +
+    // one sentence answers "are they bunched?"; spacing, windows, architecture and the sequence picture sit behind a toggle
+    const bunched = win != null && sites != null && q != null,
+      verdict = !bunched
+        ? ''
+        : q > PADJ
+          ? `${esc(gene(p))}’s ${esc(W.marks)} are no more bunched than its ${esc(W.residues)} allow (q ${qf(q)}).`
+          : `${int(sites)} ${esc(W.marks)} within ${int(win)} aa (${esc(range)}), more than the spacing of its ${esc(W.residues)} predicts (q ${qf(q)}).`;
+    const dl =
       '<dl class="pc-dl">' +
       (sp == null
         ? `<dt>Spacing</dt><dd>${n === 1 ? `a single ${esc(W.mark)}` : 'not recorded'}</dd>`
         : `<dt>Closest ` + `/ median spacing</dt><dd>${int(num(r.spacing_min))} aa / ${int(sp)} aa</dd>`) +
       (wins.length
         ? `<dt>Most ${esc(W.marks)} within</dt><dd>${wins.map(([w, v]) => `${w} aa: ${int(v)}`).join(' · ')}</dd>`
-        : '') +
-      (win != null && sites != null
-        ? `<dt>Top cluster window <span class="muted small">(lowest q against a null ` +
-          `drawn from its other ${esc(W.residues)}, not necessarily the densest)</span></dt><dd>${int(sites)} sites in ${int(win)} aa (${esc(range)}), log2 obs/null ${l2 > 0 ? '+' : ''}${l2 == null ? '–' : l2.toFixed(2)}, q ${q == null ? '–' : qf(q)}</dd>`
         : '') +
       (r.architecture
         ? `<dt>Architecture</dt><dd>${esc(r.architecture)}${
@@ -1293,8 +1360,7 @@
               : ''
           }</dd>`
         : '') +
-      '</dl>' +
-      (cfg.note ? `` : '');
+      '</dl>';
     const len0 = p.len || (rec.seq || '').length || 1,
       bw =
         win != null && r.window_start
@@ -1314,19 +1380,20 @@
           p.acc
         )
       : '';
+    const html =
+      sub +
+      (verdict ? `<p class="pc-verdict">${verdict}</p>` : '') +
+      `<details class="pc-more"><summary>Site spacing and sequence</summary>${dl}${pic}</details>`;
     return {
-      pic,
+      pic: '',
       html,
-      sum: [
-        sp != null ? `median spacing ${int(sp)} aa` : '',
-        win != null && sites != null
-          ? `top window ${int(sites)} sites in ${int(win)} aa${
-              q != null ? `, q ${qf(q)}${q > PADJ ? ' (not significant)' : ''}` : ''
-            }`
-          : '',
-      ]
-        .filter(Boolean)
-        .join(' · '),
+      sum: !bunched
+        ? sp != null
+          ? `median spacing ${int(sp)} aa`
+          : ''
+        : q > PADJ
+          ? `Clustering: not clustered (q ${qf(q)})`
+          : `${int(sites)} within ${int(win)} aa (q ${qf(q)})`,
     };
   }
 
@@ -1348,39 +1415,54 @@
         html: `<p class="muted">No other modification is recorded on ${esc(gene(p))}.</p>`,
         sum: 'none recorded',
       };
-    const kinds0 = [...Object.keys(kinds), ...[...new Set(rs.map((r) => r.kind))].filter((k) => !(k in kinds))];
-    const by = (k) => rs.filter((r) => r.kind === k),
-      closest = (r) => Math.min(...marks.map((m) => Math.abs(m - r.start)));
+    // the counts come from the one function (K.nearIn, kit-cols.js): window and score cut-off are its own and are printed
+    const kinds0 = [...Object.keys(kinds), ...[...new Set(rs.map((r) => r.kind))].filter((k) => !(k in kinds))],
+      cm = ctx
+        ? ctx
+        : kinds0.map((k) => ({
+            id: k,
+            label: word(kinds, k),
+            short: word(kinds, k),
+            pos: [...new Set(rs.filter((r) => r.kind === k).map((r) => r.start))].sort((x, y) => x - y),
+            high: null,
+            cut: '',
+            score: new Map(),
+          })),
+      win = near ? K.D.context_window || near : 0,
+      nm = near && K.nearIn ? K.nearIn(cm, marks, win) : null;
+    const by = (k) => rs.filter((r) => r.kind === k);
     const body = kinds0
       .filter((k) => by(k).length)
       .map((k) => {
-        const all = by(k),
-          nr = near ? all.filter((r) => marks.length && closest(r) <= near).sort((a, b) => a.start - b.start) : [];
+        const kn = nm?.kinds.find((x) => x.id === k),
+          nr = kn ? kn.near : [],
+          n = new Set(by(k).map((r) => r.start)).size,
+          cutNote = kn?.high != null ? ` <span class="muted">(${int(kn.high)} with ${esc(kn.cut)})</span>` : '';
         return {
           k,
           label: word(kinds, k),
-          n: all.length,
+          n,
           near: nr,
           html:
             `<div class="pc-kind"><b>${esc(word(kinds, k))}</b> <span ` +
-            `class="num">${int(all.length)}</span>` +
-            (near
+            `class="num">${int(n)}</span>${cutNote}` +
+            (nm
               ? `<p class="small">${
                   nr.length
-                    ? `${plural(nr.length, 'site')} within ${near} aa of a ${esc(W.mark)}`
-                    : `none within ${near} aa of a ${esc(W.mark)}`
+                    ? `${plural(nr.length, 'site')} within ±${win} aa of a ${esc(W.mark)}${
+                        kn.high != null ? ` (${int(kn.nearHigh)} with ${esc(kn.cut)})` : ''
+                      }`
+                    : `none within ±${win} aa of a ${esc(W.mark)}`
                 }${
                   nr.length
                     ? `: ` +
                       nr
                         .slice(0, 12)
-                        .map((r) => {
-                          const m = marks.reduce((a, b) => (Math.abs(b - r.start) < Math.abs(a - r.start) ? b : a));
-                          return (
+                        .map(
+                          (r) =>
                             `<span class="tag" ` +
-                            `title="${esc(r.source || '')}">${esc(siteName(rec, r.start, p.acc))} · ${esc(siteName(rec, m, p.acc))}</span>`
-                          );
-                        })
+                            `title="${esc(by(k).find((x) => x.start === r.pos)?.source || '')}">${esc(siteName(rec, r.pos, p.acc))} · ${esc(siteName(rec, r.from, p.acc))}</span>`
+                        )
                         .join(' ') +
                       (nr.length > 12 ? ` +${nr.length - 12}` : '')
                     : ''
@@ -1389,7 +1471,6 @@
             '</div>',
         };
       });
-    const nNear = body.reduce((s, b) => s + b.near.length, 0);
     const len1 = p.len || (rec.seq || '').length || 1;
     return {
       pic: K.pfolds
@@ -1409,16 +1490,23 @@
       html: `` + body.map((b) => b.html).join('') + (cfg.note ? `` : ''),
       sum:
         body.map((b) => `${b.label} ${int(b.n)}`).join(' · ') +
-        (near && nNear ? ` · ${int(nNear)} within ${near} aa of a ${W.mark}` : ''),
+        (nm && nm.residues ? ` · ${plural(nm.residues, 'residue')} within ±${win} aa of a ${W.mark}` : ''),
     };
   }
 
   // ---- the live parts of the Disease card: UniProt's diseases, Open Targets' scores -----------------------------------
+  // the protein's disease classes: its Disease Ontology branches (the card's `branches`), else its families
   const famNames = (c, p) => {
-    const aid = c.term_groups?.families?.[0],
+    const aid = c.branches || c.term_groups?.families?.[0],
+      want = c.branches ? K.branchClasses(aid) : null,
       sd = K.sel.pdata(p.i),
       ps = sd?.protein_sets?.[aid];
-    return ps ? ps.sets.map((x) => x[0]).filter((s) => K.sel.setHas(aid, s, p.i)) : [];
+    return ps
+      ? ps.sets
+          .map((x) => x[0])
+          .filter((s) => (!want || want.includes(s)) && K.sel.setHas(aid, s, p.i))
+          .map((s) => (c.branches ? (D.analyses.find((a) => a.id === aid)?.labels || {})[s] || s : s))
+      : [];
   };
   function liveBuild(p, rec, tb, el) {
     const c = LIVE[+el.dataset.pcLive],
@@ -1520,7 +1608,13 @@
                 )
               : 'none curated in UniProt'
             : '',
-          K.sel.pdata(p.i) ? (fam.length ? 'families: ' + sumList(fam, 2) : 'in no disease family') : '',
+          K.sel.pdata(p.i)
+            ? fam.length
+              ? (c.branches ? 'branches: ' : 'families: ') + sumList(fam, 2)
+              : c.branches
+                ? 'in no Disease Ontology branch'
+                : 'in no disease family'
+            : '',
         ]
           .filter(Boolean)
           .join(' · ') ||
@@ -1530,7 +1624,13 @@
     if (fold0?.id && K.sel.pdata(p.i))
       K.pfolds?.set(
         fold0.id,
-        fam.length ? K.pfolds.bigN([[int(fam.length), fam.length === 1 ? 'disease family' : 'disease families']]) : ''
+        fam.length
+          ? K.pfolds.bigN([
+              c.branches
+                ? [int(fam.length), fam.length === 1 ? 'disease branch' : 'disease branches']
+                : [int(fam.length), fam.length === 1 ? 'disease family' : 'disease families'],
+            ])
+          : ''
       );
     return { html, wait: u === undefined || (ot && u && u.ensg[0] && OT[u.ensg[0]] === undefined) };
   }
@@ -1542,9 +1642,10 @@
 
   // ---- the folds -----------------------------------------------------------------------------------------------------
   const CARDS = [
-    ...(CELLFOLD ? [['location_cell', 'p-cell', 'Where in the cell', cellBuild]] : []),
-    ['location', 'p-cond', 'Location', locationBuild],
-    ['dependency', 'p-depmap', 'Cancer cell lines', dependencyBuild],
+    ...(CELLFOLD ? [['location_cell', 'p-cell', 'Localization', cellBuild]] : []),
+    ['location', 'p-cond', 'Condensates and HPA location', locationBuild],
+    ['dependency', 'p-dependency', 'Cancer cell dependency (DepMap)', dependencyBuild],
+    ['mutations', 'p-mutations', 'Mutations in tumors and cell lines', mutationsBuild],
     [
       'perturbations',
       'p-pert',
@@ -1553,8 +1654,8 @@
     ],
     ['experiments', 'p-exp', 'Experiments', experimentsBuild],
     ['clustering', 'p-cluster', 'Clustering', clusteringBuild],
-    ['other_ptms', 'p-ptm', 'Other PTMs', ptmsBuild],
-    ['germline', 'p-germline', 'Germline variants', germlineBuild],
+    ['other_ptms', 'p-ptm', 'Other modifications', ptmsBuild],
+    ['germline', 'p-germline', `${K.srcName('ClinVar')} and ${K.srcName('gnomAD')}`, germlineBuild],
   ].filter(([k]) => PC[k] || k === 'location_cell');
   const BUILD = { live: liveBuild };
   K.pcards = BUILD; // the cards' builders: (protein, record, tables) -> { html, sum }

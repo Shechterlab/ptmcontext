@@ -104,6 +104,8 @@
   const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
   const int = (n) => (n == null ? '–' : Number(n).toLocaleString('en-US'));
+  // a count with its noun, by the count: "1 protein", "2 proteins", "0 proteins"
+  const plural = (n, one, many) => `${int(n)} ${n === 1 ? one : many || one + 's'}`;
   // effect sizes as the Methylarginine Site Explorer prints them: 19, 2.1, 1.19, 0.48
   const fxn = (v) =>
     v == null
@@ -135,7 +137,8 @@
           .replace(/^CC-/, 'CC ')
           .replace(/-(\d[\d.]*)$/, ' $1')
       : l || '';
-  const fq = (q) => (q == null ? '–' : q === 0 ? '< 1e-300' : q < 1e-3 ? q.toExponential(1) : q.toFixed(3));
+  const fq = (q) =>
+    q == null ? '–' : q === 0 ? '< 1e−300' : q < 1e-3 ? q.toExponential(1).replace('e-', 'e−') : q.toFixed(3);
   const PADJ = 0.05,
     MIN_EFFECT = 1.1;
   // what a row shows: the fold (share among the marks over share among the comparison) where it has one, else its
@@ -143,8 +146,8 @@
   const valOf = (r) => r.shown ?? r.eff;
   const dir = (r) => {
     const v = valOf(r),
-      t = r.adj ? r.adj.eff : r.eff,
-      q = r.adj ? r.adj.q : r.q;
+      t = r.eff,
+      q = r.q;
     if (v == null || q == null || q > PADJ) return 'ns';
     // the fold and the test point different ways (the pooled counts against a test within proteins or within abundance
     // deciles): no reading either way
@@ -153,7 +156,7 @@
   };
   const split = (r) => {
     const v = valOf(r),
-      t = r.adj ? r.adj.eff : r.eff;
+      t = r.eff;
     return v != null && t != null && v >= 1 !== t >= 1;
   };
   const DIR_WORDS = {
@@ -168,7 +171,7 @@
       ? 'shown, not tested'
       : r.eff == null || r.p == null
         ? 'not tested (too few)'
-        : split(r) && (r.adj ? r.adj.q : r.q) <= PADJ
+        : split(r) && r.q <= PADJ
           ? 'the fold and the test point different ways'
           : DIR_WORDS[r.dir];
   // the color key of a figure in the page's own words (DIR_WORDS), as the legend entries K.figureFrame draws: one wording and one
@@ -191,28 +194,32 @@
     study: 'compared among sites reported by the same studies or databases (Mantel–Haenszel)',
   };
   const A = Object.fromEntries(D.analyses.map((a) => [a.id, a]));
+  // a protein set's result is not adjusted for protein abundance (abundant proteins have more detected sites): said once,
+  // by the axis or the line under a tile's rows; the test within abundance deciles is an estimate, for the hover
+  const SET_NOTE = 'Not adjusted for protein abundance; abundant proteins have more detected sites.';
+  const EST_TEST = 'within abundance deciles (estimate)';
   // the Overview's switch: its words, and what each compares
   const BTN = {
     mantel_haenszel: [
       'within each protein',
-      `Compares each ${W.mark} only with the other ${W.residues} of its own protein, so a protein with many sites does not ` +
-        `decide the result. Changes the tiles marked ⇄ (where ${W.marks} lie); questions about protein classes keep their test.`,
+      `Compares each ${W.mark} only with the other ${W.residues} of its own protein, so a protein with many sites cannot ` +
+        `decide the result. Applies to residue questions only.`,
     ],
     fisher: [
       'across all proteins',
       `Puts all the ${W.residues} of all the proteins in one group. Simpler, but a protein with many sites counts for more. ` +
-        `Changes the tiles marked ⇄ (where ${W.marks} lie); questions about protein classes keep their test.`,
+        `Applies to residue questions only.`,
     ],
     study: [
       'within studies',
-      `Compares ${W.marks} only with those reported by the same studies or databases. Changes the tiles marked ⇄.`,
+      `Compares ${W.marks} only with those reported by the same studies or databases. Applies to residue questions only.`,
     ],
   };
   // plain words for the terms of the tests, shown on hover (an abbr) and in one line on the Help page
   const GLOSS = {
     fold: 'The share in the class divided by the share in the comparison group. 1× means no difference.',
     'odds ratio': 'How many times higher the odds are inside the class than outside it. 2× means twice the odds.',
-    q: 'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and at least 1.1×.',
+    q: 'The p value adjusted for the many tests run (Benjamini–Hochberg false discovery rate). A difference counts at q ≤ 0.05 and an odds ratio (or fold, where the test gives one) of at least 1.1×.',
     'within each protein':
       `Each ${W.mark} is compared only with the other ${W.residues} of the same protein, so a ` +
       `protein with many sites does not dominate.`,
@@ -224,6 +231,39 @@
     `<abbr class="gloss" tabindex="0" title="${esc(
       GLOSS[String(term).toLowerCase()] || ''
     )}">${esc(text || term)}</abbr>`;
+  // the variant sources named once where they first appear: a plain label for a heading, an abbr title for a tile or card
+  // (the gnomAD version is read from the release's source list, never typed here)
+  const SRCNAME = {
+    gnomAD: 'gnomAD (population variants)',
+    TCGA: 'TCGA tumors',
+    DepMap: 'DepMap cell lines',
+    ClinVar: 'ClinVar (clinical variants)',
+  };
+  const srcVersion = () =>
+    /v\d+(\.\d+)?/.exec(
+      (D.propensity?.sources || []).find((s) => /^gnomad/i.test(s.set_source || s.id || ''))?.long || ''
+    )?.[0];
+  const SRCTIP = () => ({
+    gnomAD: `gnomAD: variants observed in the general population${srcVersion() ? ` (${srcVersion()})` : ''}`,
+    TCGA: 'TCGA: tumor samples of The Cancer Genome Atlas',
+    DepMap: 'DepMap: cancer cell lines of the Cancer Dependency Map',
+    ClinVar: 'ClinVar: variants with clinical interpretations',
+  });
+  const srcName = (k) => SRCNAME[k] || k;
+  // html text with its first gnomAD, TCGA, DepMap and ClinVar spelled out on hover (the text is escaped here)
+  const srcAbbr = (text) => {
+    const tip = SRCTIP(),
+      seen = new Set();
+    return esc(text).replace(/\b(gnomAD|TCGA|DepMap|ClinVar)\b/g, (w) => {
+      if (seen.has(w)) return w;
+      seen.add(w);
+      return `<abbr class="gloss" tabindex="0" title="${esc(tip[w])}">${w}</abbr>`;
+    });
+  };
+  // a variant highlight's short label (P/LP) as an abbreviation that spells itself out on hover; the one home of that markup
+  const hlFull = (h) => (h?.title || '').replace(/\s*\([^)]*\)\s*$/, '');
+  const hlLabel = (h) =>
+    h?.label ? (hlFull(h) ? `<abbr title="${esc(hlFull(h))}">${esc(h.label)}</abbr>` : esc(h.label)) : '';
   // what a tile's fold is relative to, in a few words
   const baseline = (a, m) =>
     a.kind === 'protein_sets'
@@ -255,7 +295,7 @@
     A[a.id] = a;
   });
   const label = (r) =>
-    ((A[r.analysis]?.labels || {})[r.category] || r.category.replace(/_/g, ' ')) +
+    us((A[r.analysis]?.labels || {})[r.category] || r.category.replace(/_/g, ' ')) + // the category is a source's own name: shown in American spelling
     (r.method === 'conditional_logit' && r.stratum === 'alone' ? ' (on its own)' : '');
   const SETS = (a) => A[a]?.kind === 'protein_sets';
   // what a protein-set question counts: proteins, or another identifier of theirs (genes), as the site file says
@@ -327,14 +367,12 @@
   D.rows.forEach((r) => {
     if (SETS(r.analysis) && r.method === 'mantel_haenszel') STRAT[r.analysis + '\u0000' + r.category] = r;
   });
-  // where a set was also tested within abundance deciles, that test is the row's reading (its q and direction); the
-  // number shown stays the fold
+  // a protein set is read by its own hypergeometric row (fold, q and direction from one test, not adjusted for protein
+  // abundance). Where it was also tested within abundance deciles, that test sits beside the row as an estimate
+  // (r.est): for the hover, never for the number, the q, the dot or the order
   D.rows.forEach((r) => {
     const st = SETS(r.analysis) && r.method === 'enricher' && STRAT[r.analysis + '\u0000' + r.category];
-    if (st && st.eff != null) {
-      r.adj = st;
-      r.dir = dir(r);
-    }
+    if (st && st.eff != null) r.est = st;
   });
   // does a protein set's enrichment (or depletion) hold within abundance deciles? 'holds' (the same reading there),
   // 'weaker' (the same direction by 1.1× or more, but not at q ≤ 0.05: underpowered, not contradicted), 'lost' (under
@@ -352,7 +390,7 @@
     return h == null ? null : h === 'holds';
   };
   const testName = (aid, m) =>
-    SETS(aid) ? (m === 'enricher' ? 'proteins, hypergeometric' : 'within abundance deciles') : METHOD[m] || m;
+    SETS(aid) ? (m === 'enricher' ? 'proteins, hypergeometric' : EST_TEST) : METHOD[m] || m;
   const methodName = (r) =>
     r.method === 'conditional_logit' && r.stratum === 'alone'
       ? 'one factor, within each protein'
@@ -414,6 +452,7 @@
     S,
     esc,
     int,
+    plural,
     fx,
     fxn,
     fq,
@@ -445,9 +484,8 @@
       proteins: `The proteins with ${W.marks}, and the ${W.marks} on each.`,
       sites: `One row per ${W.mark}, with its evidence.`,
       idrs: `Intrinsically disordered regions of the proteins, and the ${W.marks} in them.`,
-      method: 'How each question was asked and tested, every test, the controls, the sources and how to cite.',
-      overlap:
-        'Compare two to four sets of proteins: what they share, and whether the shared proteins carry the modification more often.',
+      method: 'How each question was asked and tested, all tests, the controls, the sources and how to cite.',
+      overlap: `Overlap of two to four protein sets, and whether the proteins in each region carry ${W.marks} more often.`,
       help: 'Searching, filters, reading a figure, and what the badges and terms mean.',
     }[v] ||
     '';
@@ -459,6 +497,7 @@
   K.tabName = tabName;
   K.tabHint = tabHint;
   K.paramsIn = [];
+  K.hashOut = [];
   K.paramsOut = [];
   // a question's title in running text, as the site file writes it (lower-casing would break PRMT, DNA, Reactome)
   const inText = (t) => String(t || '');
@@ -471,8 +510,13 @@
     const p = new URLSearchParams(qs || '');
     let [view, ...rest] = (path || '').split('/');
     // the old addresses: #statistics is the Every test section of Methods, and #compare (with no saved selection after it) is the
-    // Compare sets page, whose own address stays #overlap
-    const aliased = view === 'statistics' || (view === 'compare' && !rest[0]);
+    // Overlap of protein sets page, whose own address stays #overlap
+    // and #sec-<section> (the Overview's section element ids) is that section of the Overview
+    const aliased = view === 'statistics' || (view === 'compare' && !rest[0]) || (/^sec-./.test(view) && !rest.length);
+    if (/^sec-./.test(view) && !rest.length) {
+      const nm = view.slice(4);
+      [view, rest] = BUILT_IN_VIEWS.includes(nm) || K.views[nm] ? [nm, []] : ['overview', [nm]];
+    }
     if (view === 'statistics') [view, rest] = ['method', ['every']];
     else if (view === 'compare' && !rest[0]) [view, rest] = ['overlap', []];
     S.view = BUILT_IN_VIEWS.includes(view) || K.views[view] ? view : 'overview';
@@ -531,6 +575,20 @@
     S.legacy = ov || routed || slashed || aliased || (S.view !== view && !!view); // written back as this site's own link (replaceState)
     // #overview/<section> is a place on the Overview (a shared sidebar entry): the page opens there
     S.jumpArg = S.view === 'overview' && S.arg && !A[S.arg] ? S.arg : '';
+    // older links carry the Overview's former section names: the same places under the shorter names
+    const OLD_SECTIONS = {
+      'where-in-the-cell': 'localization',
+      'which-proteins': 'classes-and-pathways',
+      'where-in-the-protein': 'position-in-the-protein',
+      'rna-and-dna-binding': 'enzymes-and-readers', // its tile is a link under Enzymes and readers
+      'interactions-and-enzymes': 'enzymes-and-readers',
+      'disease-and-cancer': 'disease-associations',
+      disease: 'disease-associations',
+      evidence: 'studies-and-databases',
+      'evidence-and-studies': 'studies-and-databases',
+      'which-kinases-': 'kinase-motifs',
+    };
+    if (S.jumpArg && OLD_SECTIONS[S.jumpArg]) S.jumpArg = OLD_SECTIONS[S.jumpArg];
     if (S.view === 'overview' && S.arg && !A[S.arg]) S.arg = '';
     S.q = K.sel?.canonQ ? K.sel.canonQ(p.get('q') || '') : p.get('q') || '';
     S.m = p.get('m') || 'mantel_haenszel';
@@ -586,15 +644,17 @@
         .map(([k, v]) =>
           k === 'f'
             ? 'f=' + v.replace(/[&#+\s]/g, (c) => encodeURIComponent(c))
-            : new URLSearchParams([[k, v]]).toString()
+            : k === 'open'
+              ? 'open=' + v.split(',').map(encodeURIComponent).join(',') // open sections: ids joined by plain commas
+              : new URLSearchParams([[k, v]]).toString()
         )
         .join('&');
     }
   }
   // the selection's part of a link: search, filters, the test shown and the baseline
-  function selParams() {
+  function selParams(q = S.q) {
     const p = new Query();
-    if (S.q) p.set('q', S.q);
+    if (q) p.set('q', q);
     const f = K.sel?.encode();
     if (f) p.set('f', f);
     if (S.m !== 'mantel_haenszel') p.set('m', S.m);
@@ -611,11 +671,26 @@
     const [path, qs] = String(href).replace(/^#/, '').split('?'),
       own = new URLSearchParams(qs || '');
     if (own.has('q') || own.has('f')) return '#' + path + (qs ? '?' + qs : '');
-    const p = selParams();
+    // a search naming a site is dropped by a link to another protein (K.sel.qFor)
+    const [view, ...segs] = path.split('/'),
+      p = selParams(
+        view === 'protein' && segs.length && K.sel?.qFor
+          ? K.sel.qFor(S.q, { segs: segs.map((x) => decodeURIComponent(x)) })
+          : S.q
+      );
     own.forEach((v, k) => p.set(k, v));
     return '#' + path + (p.toString() ? '?' + p : '');
   }
+  // a question whose home is another page (website.legacy_links, K.questionHome): the address of that page, so that no link goes
+  // through the redirect an old #overview/<id> address takes
+  const movedHome = (id) => {
+    const old = (D.legacy_links || {})[id];
+    if (old?.[0] !== '#') return '';
+    const [v, ...a] = old.slice(1).split('/');
+    return BUILT_IN_VIEWS.includes(v) || K.views[v] ? link(v, a.join('/')) : '';
+  };
   const link = (view, arg, extra) =>
+    (view === 'overview' && arg && !extra && (K.questionHome?.(arg) || movedHome(arg))) ||
     carry('#' + view + (arg ? '/' + pathOf(view, arg) : '') + (extra ? '?' + new URLSearchParams(extra) : ''));
   let shown = null; // the address the page is drawn for (onNav skips a change to it)
   function writeHash(push) {
@@ -628,6 +703,7 @@
     }
 
     if (S.view === 'network' && S.nf) p.set('nf', S.nf);
+    (K.hashOut || []).forEach((f) => f(p)); // a module's own parameters for this page's address only (the open sections)
     const h = '#' + S.view + (S.arg ? '/' + pathOf(S.view, S.arg) : '') + (p.toString() ? '?' + p : '');
     if (h !== location.hash) (push ? history.pushState : history.replaceState).call(history, null, '', h);
     shown = location.hash; // the page shows this address: Back to an earlier one draws that one again
@@ -651,10 +727,17 @@
   K.loading = (text, cls) =>
     `<p class="ld${cls ? ' ' + esc(cls) : ''}" role="status" aria-live="polite"><i class="ld-spin" aria-hidden="true"></i>` +
     `<span>${esc(text || 'Loading…')}</span></p>`;
+  // a section or card whose source has nothing for this protein: one muted line, never an empty table or chart. The
+  // text is a sentence ("No CD-CODE condensates for this protein."); every caller draws it through here
+  K.noData = (text) => `<p class="muted nodata">${esc(text)}</p>`;
   Object.assign(K, {
     GLOSS,
     BTN,
     gloss,
+    srcName,
+    srcAbbr,
+    hlFull,
+    hlLabel,
     baseline,
     proteinAttr,
     go,
@@ -739,8 +822,7 @@
     const nf = K.sel ? K.sel.nFilters() : 0,
       fbtn = K.sel
         ? `<button type="button" class="btn small filter-btn${nf ? ' on' : ''}" data-rail-open="filters" ` +
-          `title="Open the filters: narrow every page to the ${esc(W.marks)} that match"><span aria-hidden="true">` +
-          `⏚</span> ${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}</button>`
+          `title="Open the filters: narrow every page to the ${esc(W.marks)} that match">${K.ACT.filters}${nf ? ` <span class="badge">${nf}</span>` : ''}</button>`
         : '';
     const hs = K.hl?.summary?.() || ''; // "Highlighted: FUS, TAF15 +1 ×", only while something is highlighted
     $('#scope').innerHTML =
@@ -754,23 +836,23 @@
   const follows = (v) => ['overview', 'proteins', 'sites', 'idrs'].includes(v) || !!K.views[v]?.follows;
   K.followsSelection = follows;
   function selLine() {
-    if (!K.sel?.active()) return '';
+    if (!K.sel?.active() || K.sel.loading()) return ''; // the selection's proteins are not known until its data loads
     const v = S.view;
     if (v === 'protein' && K.sel.protSelected(String(S.arg).split('/')[0])) return ''; // a protein of the selection: its page fades the sites outside it, and says so
     if (follows(v)) return ''; // the bar above says what is selected and how many; its Clear all removes it
     const n = K.views[v]?.offNote;
-    const note = typeof n === 'function' ? n() : n || 'Not filtered by your selection.'; // a page may say nothing: its sets already include the selection
+    // a page may say nothing (offNote '' or a function returning ''): its sets already include the selection, or it is the selection
+    const note = typeof n === 'function' ? n() : n === undefined ? 'Not filtered by your selection.' : n;
     return note ? `<p class="sel-line off" role="status">${esc(note)}</p>` : '';
   }
   // the tabs, the same on every explorer and in this order. A tab whose data a site lacks is greyed out with its reason on
   // hover (website.tabs.<page>.empty words it), never hidden; a page of the site's own (website.pages) follows Network
-  const TAB_ORDER = ['overview', 'proteins', 'sites', 'interactions', 'overlap', 'network', 'method', 'help'];
+  const TAB_ORDER = ['overview', 'proteins', 'sites', 'interactions', 'network', 'method', 'help'];
   const TAB_NAME = {
     overview: 'Overview',
     proteins: 'Proteins',
     sites: 'Sites',
     interactions: 'Interactions',
-    overlap: 'Compare sets',
     network: 'Network',
     method: 'Methods',
     help: 'Help',
@@ -779,11 +861,10 @@
     proteins: 'No protein table for this modification yet',
     sites: 'No site table for this modification yet',
     interactions: 'No interaction data for this modification yet',
-    overlap: 'No sets to compare for this modification yet',
     network: 'No network for this modification yet',
   };
   K.tabOrder = TAB_ORDER;
-  K.tabEmpty = (v) => TABS[v]?.empty || TAB_EMPTY[v] || 'No data for this modification yet';
+  K.tabEmpty = (v) => TABS[v]?.empty || TAB_EMPTY[v] || 'No data for this page yet';
   function tabs() {
     const sel = K.sel?.active();
     // the open protein is a tab of its own after the pages (classic), so the bar says where you are; the Proteins tab is then not the current one
@@ -847,6 +928,9 @@
 
   // ---- Overview: tiles. Each tile is a question with its most telling classes, and opens the question's figure ------
   // a mark that is a glyph says its meaning in hidden text as well
+  // the line for a question none of whose rows differs: under 1.1× when some row passes the test, else not significant
+  const noneDiffers = (rows) =>
+    rows.some((r) => r.q != null && r.q <= PADJ) ? 'None ≥ 1.1×' : 'No row reaches q ≤ 0.05';
   const am = (d) =>
     `<span class="am ${d}"><span aria-hidden="true">${d === 'more' ? '▲' : d === 'less' ? '▼' : '○'}</span>` +
     `<span class="vh">${d === 'more' ? 'more often: ' : d === 'less' ? 'less often: ' : 'no difference: '}</span></span>`;
@@ -921,19 +1005,6 @@
       ticks: [0, 0.25, 0.5, 0.75, 1].map((f, i) => ({ x: f, lab: pcS(f * s), minor: i % 2 === 1 })),
     };
   }
-  // a protein set's test again within abundance deciles: shown after its value where either test differs (as the
-  // explorer marks it), never on a selection's rows (the deciles are the whole dataset's)
-  const DECILE = {
-    more: ['✓', 'more than expected'],
-    same: ['≈', 'about the same (within 1.1×)'],
-    ns: ['○', 'no difference'],
-    less: ['▼', 'fewer than expected'],
-  };
-  const decile = (r) => {
-    if (!SETS(r.analysis) || r.selection || r.vs) return null;
-    const st = STRAT[r.analysis + '\u0000' + r.category];
-    return st && ((r.q != null && r.q <= PADJ && r.eff > 1) || st.dir !== 'ns') ? st : null;
-  };
   // with a selection tested again, each row keeps the whole dataset's row of its class: a tick, and a line in the hover
   function withRef(a, rows, m) {
     if (!selOn() || vsOn() || !rows) return rows;
@@ -974,15 +1045,11 @@
     return rows.filter((r) => !drop.has(r)).map((r) => out.get(r) || r);
   };
   K.collapseSimilar = collapseSimilar;
-  function chartRows(a, m, card = cardOf(a.id)) {
-    const rows = withRef(
-      a,
-      (vsOn() || selOn()
-        ? rowsOf(a, m) || []
-        : D.rows.filter((r) => r.analysis === a.id && r.method === (a.kind === 'protein_sets' ? 'enricher' : m))
-      ).slice(),
-      m
-    );
+  // whole: the site's own rows, whatever the selection (for a selection too small to test)
+  function chartRows(a, m, card = cardOf(a.id), whole = false) {
+    const site = () =>
+      D.rows.filter((r) => r.analysis === a.id && r.method === (a.kind === 'protein_sets' ? 'enricher' : m));
+    const rows = whole ? site().slice() : withRef(a, (vsOn() || selOn() ? rowsOf(a, m) || [] : site()).slice(), m);
     const ORDER = { more: 0, same: 1, ns: 2, less: 3 },
       sets = a.kind === 'protein_sets',
       groups = a.groups || [];
@@ -991,10 +1058,10 @@
       (card.order === 'q' ? (x.q ?? 1) - (y.q ?? 1) : 0) ||
       (y.eff ?? 0) - (x.eff ?? 0) ||
       x.label.localeCompare(y.label);
-    const own = Object.keys(a.labels || {}),
+    const order = Object.keys(a.labels || {}),
       at = (r) => {
-        const i = own.indexOf(r.category);
-        return i < 0 ? own.length : i;
+        const i = order.indexOf(r.category);
+        return i < 0 ? order.length : i;
       };
     const gi = (r) => {
       const i = groups.findIndex((g) => g.classes.includes(r.category));
@@ -1073,17 +1140,14 @@
           ['ns', descr ? 'shown, not tested' : `no difference (q > ${PADJ})`],
           ...(rows.some((r) => ciOf(r)) ? [['ci', '95% confidence interval']] : []),
           ...(rows.some((r) => r.ref) ? [['ref', REF_WORDS]] : []),
-          ...(rows.some(decile) ? [['dec', 'within abundance deciles: ✓ more · ≈ same · ○ none · ▼ fewer']] : []),
           ...(rows.some((r) => r.eff == null) ? [['none', '— no test within proteins']] : []),
         ];
     const axisTitle = vs
       ? `share of ${sets ? 'the proteins' : `the ${W.marks}`} in each ${cls}`
       : sets
-        ? 'fold enrichment, log scale'
+        ? `fold enrichment, log scale. ${SET_NOTE}`
         : rows.some((r) => r.shown != null)
-          ? `fold, log scale; beneath each row, the odds ratio of the test (${
-              m === 'fisher' ? 'Fisher, across all proteins' : 'Mantel–Haenszel, within each protein'
-            })`
+          ? 'fold, log scale; the odds ratio of the test is under each row'
           : `odds ratio, log scale (${
               m === 'fisher' ? 'Fisher, across all proteins' : 'Mantel–Haenszel, within each protein'
             })`;
@@ -1109,8 +1173,7 @@
   function chartRow(r, M, fkey, mark, own) {
     if (own) return ownRow(r, fkey, mark);
     const X = M.axis.X,
-      pc = (v) => (100 * X(v)).toFixed(2) + '%',
-      d = decile(r);
+      pc = (v) => (100 * X(v)).toFixed(2) + '%';
     let marks = M.axis.ticks
       .map(
         (t) =>
@@ -1148,26 +1211,18 @@
             } ${esc(r.label)}"`
           : ''
       }>` +
-      `<span class="lab"${r.help ? ` title="${esc(r.help)}"` : ''}><span class="ln">${esc(r.label)}</span>${
+      `<span class="lab" title="${esc(r.help ? `${r.label}: ${r.help}` : r.label)}"><span class="ln">${esc(r.label)}</span>${
         shortHelp(r) ? `<span class="lh">` + `<span class="sep">&nbsp;·&nbsp;</span>${esc(r.help)}</span>` : ''
       }</span>` +
       `<span class="cnt">${kfmt(r.a)} / ${kfmt(r.a + r.b)}</span><span class="cnt o">${kfmt(r.c)} / ${kfmt(r.c + r.d)}</span>` +
       `<svg aria-hidden="true">${marks}</svg><span class="val ${r.dir}"${
         !r.vs && sameWhy(r) ? ` title="${esc(sameWhy(r))}"` : ''
-      }>${r.vs ? `${pcS(share1(r))} <span class="muted">` + `· ${pcS(share2(r))}</span>` : valText(r) + shareSpan(r)}${
-        d
-          ? `<i class="dm ${d.dir}" title="Within ` +
-            `protein abundance deciles: ${DECILE[d.dir][1]} (OR ${fxn(d.eff)}, q ${fq(d.q)})"><span aria-hidden="true">${DECILE[d.dir][0]}</span>` +
-            `<span class="vh">Within abundance deciles: ${DECILE[d.dir][1]}</span></i>`
-          : r.vs || !M.legend.some((x) => x[0] === 'dec')
-            ? ''
-            : '<i class="dm"></i>'
-      }</span>` +
+      }>${r.vs ? `${pcS(share1(r))} <span class="muted">` + `· ${pcS(share2(r))}</span>` : valText(r) + shareSpan(r)}</span>` +
       `<span class="vh">${
         r.vs
           ? `${pcS(share1(r))} of your selection vs ${pcS(share2(r))} of ${esc(vsName())}`
           : `${valOf(r) !== r.eff && r.eff != null ? `fold ${esc(fx(valOf(r)))}; ` : ''}${esc(effText(r))}, q ${fq(r.q)}`
-      }${d ? `; within ` + `abundance deciles: ${DECILE[d.dir][1]}` : ''}${r.vs ? '' : sameWhy(r) ? `. ${esc(sameWhy(r))}` : ''}${
+      }${r.vs || !estLine(r) ? '' : `; ${esc(estLine(r))}`}${r.vs ? '' : sameWhy(r) ? `. ${esc(sameWhy(r))}` : ''}${
         r.ref ? `; whole dataset ${esc(effText(r.ref))}` : ''
       }</span></div>`
     );
@@ -1223,10 +1278,7 @@
         .join(', ') + (rs.length > k ? ` <span class="muted">+${rs.length - k}</span>` : '');
     if (up.length) return am('more') + list(up, 2) + (down.length ? '; ' + am('less') + list(down, 1) : '');
     if (down.length) return am('less') + list(down, 2);
-    return (
-      am('ns') +
-      (rows.some((r) => r.q != null && r.q <= PADJ) ? 'none differs by 1.1× or more' : 'none differs at q ≤ 0.05')
-    );
+    return am('ns') + noneDiffers(rows);
   }
   // why a selection's rows are shown and not tested: the reason the retest gave its rows (r.why), the most specific first
   const WHY_ORDER = ['defined', 'between', 'named', 'made', 'own', 'small'];
@@ -1259,13 +1311,25 @@
   };
   K.whyShown = whyShown;
   K.whyOf = whyOf;
+  // a class label after "in": the label's own leading "In" would double it ("in In an IDR")
+  const afterIn = (t) =>
+    String(t ?? '')
+      .replace(/^in\s+(?=\S)/i, '')
+      .replace(/^(\d+) or more\b/, '≥$1');
+  // a row's effect for the one-line summary: the fold, or the counts when the fold is huge or nil (almost no comparison
+  // residues in the class), read from the row's own counts
+  const foldOrCounts = (r) => {
+    const v = valOf(r);
+    if (r.a == null || r.c == null || (v != null && v < 1000 && v >= 0.01)) return fx(v);
+    return `${int(r.a)} of ${int(r.a + r.b)} ${esc(W.marks)}, ${int(r.c)} of ${int(r.c + r.d)} other ${esc(W.residues)}`;
+  };
   function summaryLine(rows, tmpl, card = {}) {
     rows = rows.filter((r) => !EXCL.test(r.label));
     if (rows.some((r) => r.vs)) {
       const ok = rows.filter(enough),
         up = ok.filter((r) => r.dir === 'more').sort((x, y) => strength(y) - strength(x))[0],
         dn = ok.filter((r) => r.dir === 'less').sort((x, y) => strength(y) - strength(x))[0];
-      const one = (r) => `<b>${esc(r.label)}</b> (${pcS(share1(r))} vs ${pcS(share2(r))})`;
+      const one = (r) => `<b>${esc(afterIn(r.label))}</b> (${pcS(share1(r))} vs ${pcS(share2(r))})`;
       return up || dn
         ? [up ? 'More often in ' + one(up) : '', dn ? 'Less often in ' + one(dn) : ''].filter(Boolean).join('. ')
         : `None differs from ${esc(vsName())} (q ≤ 0.05 ` + `and at least 1.1×)`;
@@ -1277,17 +1341,46 @@
         .sort(card.order === 'q' ? byOrder(card) : (x, y) => valOf(x) - valOf(y))[0];
     if (tmpl && top)
       return esc(tmpl)
-        .replace('{top}', `<b>${esc(top.label)}</b>`)
-        .replace('{fold}', fx(valOf(top)));
+        .replace('{top}', `<b>${esc(afterIn(top.label))}</b>`)
+        .replace('{fold}', foldOrCounts(top));
     if (top)
       return (
-        `More often in <b>${esc(top.label)}</b> (${fx(valOf(top))})` +
-        (low ? `. Less often in <b>${esc(low.label)}</b> (${fx(valOf(low))})` : '')
+        `<b>${esc(afterIn(top.label))}</b>: ${foldOrCounts(top)}` +
+        (low ? `. <b>${esc(afterIn(low.label))}</b>: ${foldOrCounts(low)}` : '')
       );
-    if (low) return `Least often in <b>${esc(low.label)}</b> (${fx(valOf(low))})`;
+    if (low) return `<b>${esc(afterIn(low.label))}</b>: ${foldOrCounts(low)}`;
     return 'None differs (q ≤ 0.05 and at least 1.1×)';
   }
   const EXCL = /^(no |not |unknown|unassigned|other\b)/i;
+  // One residue question's answer for the active selection, tested within each protein (the methylated residues of the
+  // selection's proteins against their other candidates), as the Overview's tile reads it: the same rows (K.sel.rows) and
+  // the same one-line summary. Null when the question is not a residue question here or nothing is selected.
+  K.selAnswer = (aid) => {
+    const a = A[aid];
+    if (
+      !a ||
+      !K.sel?.active() ||
+      ['protein_sets', 'module', 'attribute'].includes(a.kind) ||
+      a.tile ||
+      K.questions[aid]?.tile
+    )
+      return null;
+    const rows = K.sel.rows(aid, 'mantel_haenszel');
+    if (!rows?.length) return null;
+    const card = allCards().find((c) => c.analysis === aid) || { analysis: aid };
+    // the tile's own answer (K.tilekit.answerOf over the rows it shows, or its none-line), not a second generator
+    const st = tileState(card),
+      line = rows.some((r) => r.descriptive)
+        ? whyShown(a, rows)
+        : st.shown.length && K.tilekit
+          ? K.tilekit.answerOf(
+              st.shown.map((r) => frModel(a, r)),
+              SETS(a.id),
+              tileTitle(card)
+            )
+          : noneDiffers(st.rows);
+    return { id: aid, title: tileTitle(card), line };
+  };
   const OV = D.overview || {},
     FR = D.front || {};
   function ovSections() {
@@ -1298,6 +1391,7 @@
         about: x.about,
         show: x.show,
         more: x.more,
+        links: x.links,
         cards: x.cards
           .map((c) => (typeof c === 'string' ? { analysis: c } : c.rows_from ? { ...c, analysis: c.rows_from[0] } : c))
           .filter((c) => A[c.analysis]),
@@ -1313,10 +1407,11 @@
     }
     // one vocabulary and order for every explorer: the shared groups, then the site's own, then the closing ones
     const G = D.overview_groups || { shared: [], last: [] },
+      star = G.shared.indexOf('*'), // where the site's own sections (the mark-specific ones) go
       rank = (x) => {
         const i = G.shared.indexOf(x.name),
           j = G.last.indexOf(x.name);
-        return i >= 0 ? i : j >= 0 ? 2e6 + j : 1e6;
+        return i >= 0 ? i : j >= 0 ? 2e6 + j : star >= 0 ? star : 1e6;
       };
     out = out
       .map((x, i) => [x, i])
@@ -1324,9 +1419,69 @@
       .map((u) => u[0]);
     // the cell and the nucleus, drawn (a card with drawing: true), open the Overview
     const first = out.filter((x) => x.cards.some((c) => c.drawing === true && c.analysis === D.cell?.id));
-    if (D.overview?.cell_first === false) return out; // website.overview.cell_first: false: the section stays where the site file puts it, under its heading
+    if (D.overview?.cell_first !== true) return out; // website.overview.cell_first: true opens the Overview with the cell; otherwise the section stays in the shared order, under its heading
     return first.length ? [...first.map((x) => ({ ...x, cell: true })), ...out.filter((x) => !first.includes(x))] : out;
   }
+  // the questions in the Overview's order (its sections, then the cards in them), the controls of a question last: the order
+  // Methods lists them in
+  const methodOrder = () => {
+    const rank = new Map();
+    const add = (id) => {
+      if (id && !rank.has(id)) rank.set(id, rank.size);
+    };
+    // a question no card of the first sections holds goes after the first one of its Filters group that has one
+    let placed = false;
+    const place = () => {
+      if (placed) return;
+      placed = true;
+      const cards = new Map(rank);
+      D.analyses.forEach((a) => {
+        if (cards.has(a.id)) return;
+        const g = (D.filters || []).find((f) => (f.analyses || []).includes(a.id)),
+          at = (g?.analyses || []).filter((x) => cards.has(x)).map((x) => cards.get(x));
+        if (at.length) return rank.set(a.id, Math.min(...at) + 0.5);
+        // else next to its theme: after the last question of the same section that a card holds
+        const kin = a.section ? D.analyses.filter((x) => x.section === a.section && cards.has(x.id)) : [];
+        if (kin.length) rank.set(a.id, Math.max(...kin.map((x) => cards.get(x.id))) + 0.5);
+      });
+    };
+    // the sections that close every Overview ("More questions") hold what the others do not: they rank last
+    const closing = new Set(D.overview_groups?.last || []),
+      secs = ovSections();
+    [...secs.filter((x) => !closing.has(x.name)), ...secs.filter((x) => closing.has(x.name))].forEach((x) => {
+      if (closing.has(x.name)) place();
+      x.cards.forEach((c) => {
+        add(c.analysis);
+        (c.views || []).forEach((v) => add(v.analysis)); // the other vocabularies of one tile
+        (c.rows_from || []).forEach(add);
+        // the drawing of the cell stands for its maps' questions, map by map
+        if (c.drawing === true && c.analysis === D.cell?.id)
+          (D.cell.maps || []).forEach((m) => [m.analysis, m.regions].forEach(add));
+      });
+    });
+    place();
+    // a question made from another (a control, or the same question on a subset of the marks) follows it
+    const base = (a) =>
+      A[a.control_of] ||
+      (a.family_label &&
+        D.analyses.find((x) => !x.family_label && !x.control_of && (x.family || x.title) === a.family)) ||
+      a;
+    const key = (a) =>
+      (a.control_of ? 2e6 : 0) +
+      (rank.has(a.id) ? rank.get(a.id) : rank.has(base(a).id) ? rank.get(base(a).id) + 0.5 : 1e6);
+    return D.analyses
+      .map((a, i) => [a, i])
+      .sort((u, v) => key(u[0]) - key(v[0]) || u[1] - v[1])
+      .map((u) => u[0]);
+  };
+  K.questionOrder = methodOrder;
+  // a cell map's grouped-regions question is the same question as the map's own: lists name it once, by the regions' title
+  // (K.regionsOf: the map's analysis id -> its regions question's id)
+  K.regionsOf = Object.fromEntries(
+    (D.cell?.maps || []).filter((m) => m.regions && A[m.regions]).map((m) => [m.analysis, m.regions])
+  );
+  K.listTitle = (a) => A[K.regionsOf[a.id]]?.title || a.title;
+  K.listHides = (a) => Object.values(K.regionsOf).includes(a.id);
   // against other marks the attributes are questions too: about the sites, and (last, as a caveat) how they were found
   const wholeTile = (c) => A[c.analysis]?.anySize || !(A[c.analysis]?.tile || K.questions[c.analysis]?.tile); // a tile that reads the whole dataset: for a selection too small to test
   const secList = () =>
@@ -1390,13 +1545,22 @@
   const pcS = (v) => (v < 0.1 ? (100 * v).toFixed(1) : (100 * v).toFixed(0)) + '%';
   // the share in each group beside an odds ratio ("22.8% vs 14.6%"): the two proportions the odds ratio compares
   const pcD = (v) => (100 * v).toFixed(v > 0 && v < 0.01 ? 2 : 1) + '%';
+  // a protein set's fold is the share of the marked proteins in the set over the share of all proteins in it (the
+  // hypergeometric test), so its pair is those two shares, not the share of the unmarked proteins
+  const isSetRow = (r) => SETS(r.analysis) && r.method === 'enricher';
+  const share2Of = (r) => (isSetRow(r) ? (r.a + r.c) / (r.a + r.b + r.c + r.d) : share2(r));
   const sharePair = (r) =>
-    r && r.a != null && r.a + r.b > 0 && r.c + r.d > 0 ? `${pcD(share1(r))} vs ${pcD(share2(r))}` : '';
+    r && r.a != null && r.a + r.b > 0 && r.c + r.d > 0
+      ? `${pcD(share1(r))} vs ${pcD(share2Of(r))}${isSetRow(r) ? ' (all proteins)' : ''}`
+      : '';
   const shareSpan = (r) =>
     sharePair(r) && !r.vs
-      ? `<span class="sh" title="Share in the selection vs the others, ` +
-        `crude (not adjusted for the protein); the odds ratio is ${
-          r.method === 'mantel_haenszel' ? 'within-protein' : 'the one tested'
+      ? `<span class="sh" title="${
+          isSetRow(r)
+            ? `Share of the ${esc(W.marked)} proteins in the set vs share of all proteins in it; the fold is their ratio`
+            : `Share in the selection vs the others, crude (not adjusted for the protein); the odds ratio is ${
+                r.method === 'mantel_haenszel' ? 'within-protein' : 'the one tested'
+              }`
         }">${sharePair(r)}</span>`
       : '';
   K.sharePair = sharePair;
@@ -1405,13 +1569,43 @@
   // beneath a row's fold: the test it rests on (the odds ratio, its interval and q; for a set tested within abundance
   // deciles, that test)
   const testLine = (r) => {
-    const t = r.adj || r;
+    const t = r;
     if (r.descriptive) return 'shown, not tested';
     if (t.eff == null || t.p === null) return 'not tested (too few)';
     const ci = t.lo != null && t.hi != null ? ` (${fxn(t.lo)}–${fxn(t.hi)})` : '';
-    const or = valOf(r) !== t.eff || r.adj ? `OR ${fxn(t.eff)}${ci} · ` : '';
-    return `${r.adj ? 'within abundance deciles: ' : ''}${or}q ${fq(t.q)}`;
+    const or = valOf(r) !== t.eff ? `OR ${fxn(t.eff)}${ci} · ` : '';
+    return `${or}q ${fq(t.q)}`;
   };
+  // the estimate within abundance deciles of a protein set's row, in words, for a hover; '' where there is none
+  const estLine = (r) => {
+    const e = r.est;
+    if (!e || r.selection) return '';
+    const ci = e.lo != null && e.hi != null ? ` (${fxn(e.lo)}–${fxn(e.hi)})` : '';
+    return `${cap(EST_TEST)}: odds ratio ${fxn(e.eff)}${ci}, q ${fq(e.q)}`;
+  };
+  // a protein set's reading, the one place every view takes it from (a row of the site, a selection's retest, a cell of
+  // the Compare page's file): the effect is the hypergeometric fold, with that row's q and direction. Not adjusted for
+  // protein abundance (adjusted: false); `est` is the test within abundance deciles where the site ran it, an estimate
+  // for the hover. Nothing is adjusted in the browser: a selection's retest has no est
+  const readingOf = (r) =>
+    r && {
+      effect: r.eff == null ? null : valOf(r),
+      measure: 'fold enrichment',
+      q: r.q,
+      dir: r.dir,
+      lo: null,
+      hi: null,
+      fold: r.fold ?? null,
+      adjusted: false,
+      test: testName(r.analysis, 'enricher'),
+      est: r.est && !r.selection ? { or: r.est.eff, lo: r.est.lo, hi: r.est.hi, q: r.est.q, test: EST_TEST } : null,
+    };
+  K.readingOf = readingOf;
+  K.setReading = (aid, category, rows) =>
+    readingOf((rows || D.rows).find((x) => x.analysis === aid && x.category === category && x.method === 'enricher'));
+  K.estLine = estLine;
+  K.ceilingLine = (a, rows) => ceilingLine(a, rows); // the one sentence a set question with a ceiling shows (kit-interactions.js)
+  K.SET_NOTE = SET_NOTE;
   // a vertical line of an export from y0 to y1 with the stretches under a text left out (gaps: [x0, x1, y0, y1] boxes), so
   // no text is crossed by a line whatever draws its halo
   const vLine = (x, y0, y1, gaps, attrs) => {
@@ -1457,14 +1651,13 @@
   };
   // what the selection does, in one clause (the bar, a figure's subtitle, Copy link): follows the Test and Compared with settings
   K.selEffect = () =>
-    'Pages that follow the selection show only these · ' +
-    (vsOn()
-      ? `compared with ${S.vs === 'cmp' ? 'the sites of ' + cmpName() : 'the other ' + W.marks}`
+    vsOn()
+      ? `Compared with ${S.vs === 'cmp' ? 'the sites of ' + cmpName() : 'the other ' + W.marks}.`
       : S.m === 'fisher'
-        ? `tested against all other ${W.residues}`
+        ? `Tested against all other ${W.residues}.`
         : S.m === 'study'
-          ? `tested against ${W.marks} from the same studies or databases`
-          : `tested against other ${W.residues} of the same proteins`);
+          ? `Tested against ${W.marks} from the same studies or databases.`
+          : `Tested against other ${W.residues} of these proteins.`;
   const selTestable = () => !selOn() || (K.sel.data() && K.sel.testable() && K.sel.nMarks() > 0);
   // which rows a tile shows: up to 7, the classes that differ most first (a few of those less often, if any), then
   // significant ones within 1.1×; none, unknown and other classes are left to the full figure
@@ -1475,8 +1668,10 @@
   const cardHas = (c, aid) =>
     c.analysis === aid || (c.rows_from || []).includes(aid) || (c.views || []).some((v) => v.analysis === aid);
   const cardOf = (aid) => allCards().find((c) => c.analysis === aid) || {};
+  // the classes an Overview card lists for a question (card.classes): the protein page lists a protein's own among them
+  const branchClasses = (aid) => allCards().find((c) => c.analysis === aid && c.classes)?.classes || null;
   // a row's evidence: its reading's q (a set's test within abundance deciles where it has one)
-  const qOf = (r) => (r.adj ? r.adj.q : r.q) ?? 1;
+  const qOf = (r) => r.q ?? 1;
   const byOrder = (card) =>
     card.order === 'q'
       ? (x, y) => qOf(x) - qOf(y) || valOf(y) - valOf(x)
@@ -1590,7 +1785,7 @@
       rows
         .map(
           (r) =>
-            `<div class="trow pick" data-r="${reg(r)}"${pickAttrs(r)}><span class="lab">${esc(r.label)}</span><svg ` +
+            `<div class="trow pick" data-r="${reg(r)}"${pickAttrs(r)}><span class="lab" title="${esc(r.label)}">${esc(r.label)}</span><svg ` +
             `aria-hidden="true">${grid.join('')}` +
             (ciOf(r) ? `<line class="whisker ${r.dir}" x1="${X(r.lo)}" x2="${X(r.hi)}" y1="50%" ` + `y2="50%"/>` : '') +
             `<circle class="dot ${r.dir}" cx="${X(valOf(r))}" cy="50%" r="4.6"/>${
@@ -1622,12 +1817,23 @@
       foot: '',
     };
   }
+  // a card with classes: the rows of exactly those classes (of the question's own rows), in the usual order; a class
+  // without a row is not drawn
+  function pickListed(rows, card) {
+    const want = new Set(card.classes);
+    return {
+      shown: rows.filter((r) => r.eff != null && want.has(r.category)).sort(byOrder(card)),
+      more: 0,
+      left: [],
+    };
+  }
   function tileState(card) {
     if (card.rows_from) return groupState(card);
     const a = A[card.analysis],
       max = card.rows || OV.rows || 5;
+    const choose = (rs) => (card.classes ? pickListed(rs, card) : pick(rs, max, card));
     const rows = collapseSimilar(a, smallSel() ? rowsFor(a, S.m) : withRef(a, rowsOf(a, S.m), S.m));
-    let { shown, more, left } = pick(rows, max, card);
+    let { shown, more, left } = choose(rows);
     const whole = selOn() && !vsOn() && !smallSel() ? rowsFor(a, S.m) : null;
     // shown, not tested: the whole dataset's rows stand in, except for a selection of whole proteins against the other
     // marks, whose shares are drawn (the retest ran; it is only not tested)
@@ -1636,7 +1842,7 @@
     // a ring); a class the selection does not hold is a faint row without a value; a selection made with this question is
     // not tested again, so its tile shows the whole dataset's rows
     if (whole) {
-      const base = pick(whole, max, card),
+      const base = choose(whole),
         by = Object.fromEntries(rows.filter((r) => !r.descriptive).map((r) => [r.category, r]));
       shown = base.shown.map((w) =>
         made
@@ -1664,11 +1870,19 @@
   }
   // a question's title on its tile, and in the sidebar: one name from the site file
   // the questions the Test switch changes: where the marks lie, not the protein-class questions (one test each)
-  const followsTest = (a) => a.kind !== 'protein_sets' && a.kind !== 'module' && !a.tile && !K.questions[a.id]?.tile;
   const tileTitle = (c) => c.title || FR.short?.[c.analysis] || A[c.analysis]?.title || '';
   K.tileTitle = tileTitle;
+  // where a question's tile leads: its question page, or, for a question about one protein's own facts asked of a selection
+  // that is that one protein, the section of that protein's page that holds them
+  const tileHref = (id) => {
+    const ids = K.sel?.proteinIds?.(),
+      fold = ids?.size === 1 ? K.proteinHome?.(id) : '';
+    return fold
+      ? link('protein', D.proteins[[...ids][0]][0], { open: fold })
+      : K.questionHome?.(id) || link('overview', id);
+  };
   const detailsLink = (id) =>
-    `<a class="tdetails" href="${esc(link('overview', id))}" title="Open the question: ` +
+    `<a class="tdetails" href="${esc(tileHref(id))}" title="Open the question: ` +
     `every class, the tests and the downloads">${K.ACT.details} ›</a>`;
   K.detailsLink = detailsLink;
   function tile(card) {
@@ -1718,17 +1932,9 @@
           ]
         : ms0,
       ax = fr ? K.tilekit.axisOf(K.tilekit.valsOf(ms)) : null;
-    const ans = fr && !made && !card.rows_from && shown.length > 1 ? K.tilekit.answerOf(ms, SETS(a.id)) : '';
+    const ans = fr && !made && !card.rows_from && shown.length > 1 ? K.tilekit.answerOf(ms, SETS(a.id), title) : '';
     return (
-      `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${esc(title)}${
-        followsTest(a)
-          ? ` <span class="tsw" title="This tile changes with the Test switch"><span aria-hidden="true">⇄</span><span class="vh"> changes with the Test switch</span></span>`
-          : ''
-      }${
-        a.new && D.run.parity
-          ? ' <span class="newtag" title="Not in the published release: a question this rebuild adds">new</span>'
-          : ''
-      }</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
+      `<article class="tile" id="tile-${esc(a.id)}" data-tile="${esc(a.id)}"${card.rows_from ? ' data-group' : ' tabindex="0"'}><header><h3>${srcAbbr(title)}</h3>${card.rows_from ? '' : detailsLink(a.id)}</header>` +
       (ans ? `<p class="tans">${ans}</p>` : '') +
       (shown.length
         ? `<div class="trows${fr ? ' fr-rows' : ''}">${
@@ -1756,20 +1962,15 @@
           }</div>`
         : made
           ? ''
-          : `<p class="muted ` +
-            `tnone">${
-              rows.some((r) => r.q != null && r.q <= PADJ) ? 'None differs by 1.1× or more' : 'None differs (q ≤ 0.05)'
-            }</p>`) +
+          : `<p class="muted ` + `tnone">${noneDiffers(rows)}</p>`) +
       (OV.statistic_label !== false && !vsOn() && shown.length && rows.some((r) => r.eff != null)
         ? ownSel && fr
           ? `<p class="tstat">${otherRows(a, made)}</p>`
-          : `<p class="tstat">${
+          : `<p class="tstat"${SETS(a.id) ? ' data-setnote' : ''}>${
               shown.every((r) => r.absent || r.shown != null)
                 ? gloss('fold', 'Fold')
                 : gloss('odds ratio', 'Odds ratio')
-            } ${esc(baseline(a, vsMethod(S.m)))}${
-              shown.some((r) => r.adj) ? '. Dots: the test within abundance deciles' : ''
-            }</p>`
+            } ${esc(baseline(a, vsMethod(S.m)))}</p>`
         : '') +
       (fr && ms.some((x) => x.wv != null) ? '<p class="tkey">Dashed ring: the whole dataset.</p>' : '') +
       (side.length ? '' : besideLine(card, shown)) +
@@ -1836,22 +2037,22 @@
   // a tile row as the cards' rows read it: the short row label (website.front.row_labels), the interval, q, n and the whole dataset's ring
   // a row significant by its test but under 1.1x in the fold the page reads ('same'): why the two disagree, for its hover
   const sameWhy = (r) => {
-    const t = r.adj || r,
+    const t = r,
       q = t.q;
     if (r.dir !== 'same' || q == null || q > PADJ || t.eff == null) return '';
     const big = t.eff >= MIN_EFFECT || t.eff <= 1 / MIN_EFFECT;
     if (!big) return '';
-    const head = `${effName(t)} ${fxn(t.eff)} at q ${fq(q)}, but the fold is ${fx(valOf(r))}, under the 1.1× a difference needs`;
+    const head = `${effName(t)} ${fxn(t.eff)} at q ${fq(q)}, but the fold is ${fx(valOf(r))}, under the 1.1× needed for a difference`;
     if (SETS(r.analysis) && r.a != null && r.a + r.b + r.c + r.d > 0) {
       const n = r.a + r.b,
         N = n + r.c + r.d;
       return (
         `${head}: the fold is against the whole background, and ${int(n)} of its ${int(N)} proteins ` +
-        `(${pcD(n / N)}) are ${W.marked}, so it stays near 1×; the odds ratio compares with the other proteins only`
+        `(${pcD(n / N)}) are ${W.marked}, so it stays near 1×. The odds ratio compares with the other proteins only`
       );
     }
     return sharePair(r)
-      ? `${head}: the shares (${sharePair(r)}) are close, and the odds ratio is large where a class is common in both groups`
+      ? `${head}: the shares (${sharePair(r)}) are close, and the odds ratio overstates the difference when a class is common in both groups`
       : head;
   };
   K.sameWhy = sameWhy;
@@ -1859,9 +2060,10 @@
   const popOf = (a, r) => ({
     name: r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
     fold: fx(valOf(r)),
-    tests: [...(r.adj ? [`Proteins, hypergeometric: q ${fq(r.q)}`, testLine(r)] : [testLine(r)]), sameWhy(r)].filter(
-      Boolean
-    ),
+    tests: [
+      ...(SETS(a.id) ? [`Test: ${testName(a.id, 'enricher')}`, testLine(r), estLine(r)] : [testLine(r)]),
+      sameWhy(r),
+    ].filter(Boolean),
     counts: countLine(r),
     n: r.a != null ? int(r.a) : '',
     aid: a.id,
@@ -1869,6 +2071,7 @@
     f: A[r.analysis || a.id] ? fkeyOf(a) : '',
     noun: SETS(a.id) ? 'proteins' : W.marks,
     ov: SETS(a.id) && K.overlapHas?.(a.id, r.category) ? `s:${a.id}:${r.category}` : '',
+    and: K.sel?.andOk?.(a.id, r.category) || false, // a protein-set class that would narrow the selection (AND)
   });
   const frModel = (a, r) => ({
     label: r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
@@ -1877,7 +2080,7 @@
     sub: r.absent ? '' : testLine(r),
     tip: r.absent ? '' : [countLine(r), testLine(r), sameWhy(r)].filter(Boolean).join('. '),
     pop: r.absent ? null : popOf(a, r),
-    q: r.adj ? r.adj.q : r.q,
+    q: r.q,
     dir: r.absent ? 'ns' : r.dir,
     n: r.absent ? null : r.a,
     wv: r.ref ? valOf(r.ref) : null,
@@ -1957,8 +2160,8 @@
       (controlsOf(A[d.aid] || {}).length
         ? `<p class="rp-ctl"><a href="${esc(link('method', 'controls'))}">How this result is checked</a></p>`
         : '') +
-      `<div class="rp-acts">${d.f ? btn('sel', `Show these ${esc(d.noun)}`) : ''}${
-        d.ov ? btn('ov', 'Compare sets with…') : ''
+      `<div class="rp-acts">${d.f ? btn('sel', d.and ? 'Add to selection (AND)' : `Show these ${esc(d.noun)}`) : ''}${
+        d.ov ? btn('ov', 'Overlap with another set ›') : ''
       }${btn('open', K.ACT.details)}</div>`;
     document.body.append(el);
     const r = row.getBoundingClientRect(),
@@ -1990,7 +2193,7 @@
           b.click();
           b.remove();
           scrollTo(0, 0);
-        } else if (k === 'ov') K.go('overlap', { ot: [d.ov], ou: 'proteins', or: '' });
+        } else if (k === 'ov') K.overlapOpen([d.ov]);
         else if (k === 'open') {
           MORE = { aid: d.aid, cats: new Set([d.cat]), until: Date.now() + 6000, scroll: true };
           go('overview', { arg: d.aid });
@@ -2046,9 +2249,9 @@
       ? `<button type="button" class="linkish" data-go-compare title="Compare with a saved ` +
         `selection">a saved selection…</button>`
       : '') +
-    `</span></p>`;
+    `</span></p>` +
+    (S.vs === 'cmp' ? `<p class="muted small">Exploratory: not adjusted for other selections tried.</p>` : '');
   function lead() {
-    const q = OV.question || `Which parts of proteins are ${W.marked_long}?`;
     const keyP =
       `<p class="key"><span><i class="kd more"></i>more often</span><span><i class="kd less"></i>less ` +
       `often</span><span><i class="kd same"></i>about the same (within 1.1×)</span><span><i class="kd ns"></i>` +
@@ -2060,28 +2263,13 @@
       }` +
       `<button class="chip-btn" type="button" id="how" aria-expanded="${S.how}">${S.how ? 'Hide details' : 'Show details'}</button></p>`;
     const howP = S.how
-      ? `<p class="how-text">Each tile is a question and each row a class, with its effect on a ` +
-        `log scale (the solid line is no difference). The number is the fold: for questions about where ${esc(W.marks)} ` +
-        `lie, the share of ${esc(W.marks)} in the class over the share of the other ${esc(W.residues)} in it${
+      ? `<p class="how-text">Each row is a class, drawn as a fold on a log scale (the solid line is 1×, no difference). The line under it is the test: odds ratio, 95% interval and q. A row differs when q ≤ ${PADJ} and the fold or odds ratio is at least 1.1× the same way. ` +
+        `Within each protein compares each ${esc(W.mark)} only with the other ${esc(W.residues)} of its own protein (Mantel–Haenszel odds ratio). ` +
+        `Across all proteins pools the ${esc(W.residues)} of the ${esc(W.marked)} proteins (Fisher’s exact test). ${
           D.analyses.some((a) => a.kind === 'protein_sets')
-            ? '; for questions about protein classes, the share of ' +
-              esc(W.marked) +
-              ' proteins in the set over the share of all proteins'
+            ? `Protein-set questions show the fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test, not adjusted for protein abundance). `
             : ''
-        }. Beneath it is the test: the odds ratio with its 95% interval, and q. The hover gives the counts. A row ` +
-        `differs when q ≤ ${PADJ}, the fold is at least 1.1× either way and the test points the same way. Within ` +
-        `each protein, each ${esc(W.mark)} is compared only with the other ${esc(W.residues)} of its own protein ` +
-        `(Mantel–Haenszel odds ratio), which separates where ${esc(W.marks)} lie from which proteins were found ${esc(W.marked)}. Across ` +
-        `all proteins puts all the ${esc(W.residues)} of the ${esc(W.marked)} proteins together (Fisher’s exact ` +
-        `test). ${
-          D.analyses.some((a) => a.kind === 'protein_sets')
-            ? `Questions about protein types show the ` +
-              `fold enrichment of ${esc(W.marked)} proteins in a set (one-sided hypergeometric test). `
-            : ''
-        }Red: more ` +
-        `often (q ≤ 0.05 and at least 1.1×). Slate: less often. Gray: significant but within 1.1×. Hollow: no ` +
-        `significant difference. A tile shows the classes that differ most and opens to every class. Hover a row ` +
-        `for its counts.</p>`
+        }Hover or tap a row for its counts. <a href="${esc(link('help', 'h-read'))}">More in Help</a>.</p>`
       : '';
     const key = keyP + howP;
     const methods = vsOn() && K.sel.STUDY ? ['mantel_haenszel', 'fisher', 'study'] : ['mantel_haenszel', 'fisher'];
@@ -2096,12 +2284,21 @@
           }>${esc(BTN[m][0])}</button>`
       )
       .join('')}</span></span>`;
+    // one note beside the switch: which tiles it changes (the protein-set tiles do not follow it)
+    const tnote = `<span class="tnote muted small">Applies to residue questions only.</span>`;
     // the marks the site shows and counts nowhere (kit-shown.js): the note says how many, beside how many are counted
     if (!selOn())
-      return `<div class="page-head"><h2>${esc(q)}</h2>${tools}</div>` + (K.shown?.note ? K.shown.note() : '') + key;
+      return (
+        `<div class="page-head"><h2>Key findings</h2>${tools}${tnote}</div>` +
+        (K.shown?.note ? K.shown.note() : '') +
+        key
+      );
     const c = K.sel.compute(),
       n = (c.marks || []).length,
       np = c.proteins ? c.proteins.size : 0;
+    // the marks are still coming: no count (it would read 0) and no verdict until they are in
+    if (K.sel.loading?.())
+      return `<div class="page-head"><h2>Your selection</h2></div><p class="sel-lead">${esc(K.sel.describe())} · ${esc(K.sel.loadingText())}</p>`;
     if (K.sel.data() && n === 0)
       return (
         `<div class="page-head"><h2>Your selection</h2></div><p class="note">No ${esc(W.mark)} matches ` +
@@ -2156,15 +2353,15 @@
     return (
       head +
       circ +
-      (K.sel.testable()
-        ? row
-        : against +
-          (`<p class="note">Too few to test: a selection needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}. Compare ` +
-            `it with the other ${esc(W.marks)} instead, or see its ${esc(W.marks)} on the Proteins${
-              K.views.sites ? ' and Sites pages' : ' page'
-            }.</p>`))
+      (K.sel.loading?.()
+        ? K.loading(K.sel.loadingText())
+        : K.sel.testable()
+          ? row
+          : against + (smallSel() && S.view === 'overview' && !S.arg ? '' : tooFew()))
     );
   }
+  const tooFew = () =>
+    `<p class="note">Too few to test (minimum ${K.sel.MIN.proteins} proteins, ${K.sel.MIN.marks} ${esc(W.marks)}).</p>`;
   // log2 of the odds ratio or fold: the displayed value stays "2.0×" with an arrow for its direction; the table beside it
   // sorts by log2 (signed) or by strength (|log2|, either direction). Charts of ORs and folds use a log2 axis centered on 1×.
   K.l2 = (r) => {
@@ -2274,6 +2471,7 @@
           `independent observation, so the shares are shown without a test; the protein-level questions are tested.</span>`
         : '') +
       `</p>`;
+    if (K.sel.loading?.()) return who + K.loading(K.sel.loadingText());
     if (!K.sel.testable()) {
       const c = K.sel.compute();
       return (
@@ -2403,13 +2601,13 @@
     els.forEach((el) => io.observe(el));
   });
   // ---- Key findings: the strongest results that hold their controls, in one plain line each, at the top of the Overview.
-  // Chosen from the tiles' rows by the smallest q among those at or above 1.1× that fail no control, at most one per section
-  // (website.overview.key_findings: count, min_fold, pin and exclude, each a question id or "id/class"; false leaves it out)
+  // Chosen from the tiles' rows: among those with q ≤ 0.05 at or above 1.25× that fail no control, the largest effect, at most one per section
+  // (website.overview.key_findings: off unless {enabled: true}; count, min_fold, pin and exclude, each a question id or "id/class")
   function keyFindings() {
     const KF = OV.key_findings;
-    if (KF === false || selOn() || vsOn() || S.arg) return '';
-    const n = KF?.count ?? 3,
-      minFold = KF?.min_fold ?? MIN_EFFECT;
+    if (KF?.enabled !== true || selOn() || vsOn() || S.arg) return '';
+    const n = KF?.count ?? 4,
+      minFold = KF?.min_fold ?? 1.25; // a tiny effect with a huge n (a tiny q) is not a finding
     const named = (list, a, c) =>
       (list || []).findIndex((x) =>
         typeof x === 'string'
@@ -2435,7 +2633,7 @@
           return;
         (rowsOf(a, S.m) || []).forEach((r) => {
           if (r.descriptive || r.absent || r.eff == null || r.dir !== 'more') return;
-          const e = { a, r, q: r.adj ? r.adj.q : r.q, v: valOf(r), sec: x.name, card },
+          const e = { a, r, q: r.q, v: valOf(r), sec: x.name, card },
             at = named(KF?.pin, a.id, r.category);
           if (at >= 0) return pins.push({ ...e, at });
           if (a.key_findings_off?.includes(r.category)) return;
@@ -2446,7 +2644,7 @@
       });
     });
     pins.sort((x, y) => x.at - y.at);
-    cands.sort((x, y) => x.q - y.q || y.v - x.v);
+    cands.sort((x, y) => y.v - x.v || x.q - y.q); // among q ≤ 0.05, by the size of the effect
     const pick = pins.slice(0, n),
       used = new Set(pick.map((e) => e.sec));
     for (const e of cands) {
@@ -2458,38 +2656,41 @@
     if (!pick.length) return '';
     const sentence = ({ a, r, v }) => {
       const label = r.glabel || FR.row_labels?.[a.id]?.[r.category] || r.label,
-        f = `${fxn(v)}×`,
-        // "RGG" and "IDR" keep their capitals; "Nucleus" reads "nucleus" after "in"
-        low = (t) =>
-          /^[A-Z][a-z]*(\s|$)/.test(t) && !/^[A-Z][a-z]{2}\s+(or|and)\s+[A-Z]/.test(t)
-            ? t.charAt(0).toLowerCase() + t.slice(1)
-            : t,
-        where = /^(in|at|near|next to|within|inside|on)\s/i.test(label) ? low(label) : `in ${low(label)}`;
-      // a protein set reads as its plural noun: "P-body proteins", "Chromodomain proteins (reader)"
-      const noun = (t) => {
-        const [head, ...rest] = t.replace(/^(an?|the)\s+/i, '').split(/(?=\s\()/),
-          h = /\bproteins?$/i.test(head)
-            ? head.replace(/protein$/i, 'proteins')
-            : /\bproteome$/i.test(head)
-              ? head.replace(/proteome$/i, 'proteins')
-              : `${head} proteins`;
-        return cap(h) + rest.join('');
-      };
+        f = `${fxn(v)}×`;
       return SETS(a.id)
-        ? `<b>${esc(noun(label))}</b> are ${esc(W.marked)} ${f} as often as other proteins.`
-        : `${esc(cap(W.marks))} are more common <b>${esc(where)}</b> (${f} other ${esc(W.residues)}).`;
+        ? `<b>${esc(label)}</b>: ${f} vs all proteins tested`
+        : `<b>${esc(cap(label))}</b>: ${f} vs other ${esc(W.residues)}`;
     };
-    return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Key findings</h3><ol>${pick
+    return `<section class="keyfind" aria-labelledby="kf-h"><h3 id="kf-h">Strongest results${
+      D.variant
+        ? ` <span class="muted small">(${esc(D.variant.label.charAt(0).toLowerCase() + D.variant.label.slice(1))})</span>`
+        : ''
+    }</h3><ol>${pick
       .map(
         (e) =>
-          `<li><a href="${esc(link('overview', e.a.id))}" data-jump="tile-${esc(e.a.id)}" title="Go to the tile">${sentence(e)}</a> ` +
-          `<span class="muted">${esc(e.card.title || FR.short?.[e.a.id] || e.a.title)}, q ${esc(fq(e.q))}</span></li>`
+          `<li><span class="muted">${esc(e.card.title || FR.short?.[e.a.id] || e.a.title)}:</span> ` +
+          `<a href="${esc(link('overview', e.a.id))}" data-jump="tile-${esc(e.a.id)}" title="Go to the tile">${sentence(e)}</a> ` +
+          `<span class="muted">q ${esc(fq(e.q))}</span></li>`
       )
       .join('')}</ol></section>`;
   }
   K.keyFindings = keyFindings;
+  // the tiles of some questions as the Overview draws them (a page that shows the same tests, Mutations): the same
+  // tile(), so the effect and q are the Overview's; without the Test switch's note, which only the Overview carries
+  K.tilesOf = (ids, rows = 2) => {
+    REG = [];
+    return ids
+      .filter((id) => A[id])
+      .map((id) => tile({ analysis: id, rows, noTest: true }))
+      .join('');
+  };
   function overview() {
     REG = [];
+    const home = S.arg && K.questionHome?.(S.arg);
+    if (home) {
+      location.replace(home); // a question whose home is another page (an old #overview/<id> address)
+      return '';
+    }
     if (S.arg && A[S.arg]?.page) return focus(S.arg);
     if (selOn() && !K.sel.data()) return lead() + K.loading('Loading the selection…');
     // a selection too small to test: its proteins drawn and the counts that hold for any selection; one that can be
@@ -2499,9 +2700,7 @@
     if (selOn() && !vsOn() && !selTestable() && K.sel.data() && !K.sel.nMarks()) return lead() + selBlocks(K.selSmall);
     const small = smallSel();
     const banner = small
-      ? `<p class="note small-sel" role="status"><b>Showing the whole dataset.</b> Your ` +
-        `selection is too small to test (it needs at least ${K.sel.MIN.proteins} proteins and ${K.sel.MIN.marks} ${esc(W.marks)}), so each ` +
-        `tile shows all ${esc(W.marks)}${D.cell && K.sel.proteinIds().size ? ', except the cell, which shows where your selection is found' : ''}.</p>`
+      ? `<p class="note small-sel" role="status"><b>Too few to test</b> (minimum ${K.sel.MIN.proteins} proteins, ${K.sel.MIN.marks} ${esc(W.marks)}); whole dataset shown.</p>`
       : '';
     if (S.arg && A[S.arg] && (A[S.arg].kind !== 'attribute' || vsOn())) return focus(S.arg);
     if (
@@ -2525,12 +2724,47 @@
     // K.overviewTop: a module's block above the Overview's questions (kit-help.js: the start panel for a first visit)
     // a section's tiles: all of them, or (website.overview.sections[].show) the first few, the rest behind "More on ... (n)"
     // (a selection shows them all: its tests are what was asked for)
-    const secBody = (x) => {
+    const made = new Map(); // a card's tile, drawn once (the unchanged ones are told apart by their markup)
+    const tileH = (c) => {
+      if (!made.has(c)) made.set(c, tile(c));
+      return made.get(c);
+    };
+    // a tile of a selection too small to test that fell back to the whole dataset: the question's own tile (tileState), not
+    // a module's tile (the cell's drawing of the selection, the counts) which has something of the selection to show
+    const unchanged = (c) => small && tileH(c).startsWith('<article class="tile" id="tile-');
+    const emptyLine = (list) => {
+      const why = [...new Set(list.map((e) => e[1]))];
+      return why
+        .map(
+          (w) =>
+            `<p class="ov-empty muted">${list
+              .filter((e) => e[1] === w)
+              .map(
+                ([c]) =>
+                  `<a id="tile-${esc(c.analysis)}" href="${esc(link('overview', c.analysis))}">${esc(tileTitle(c))}</a>`
+              )
+              .join(', ')}: ${w.replace(/^./, (ch) => ch.toLowerCase())}</p>`
+        )
+        .join('');
+    };
+    const secBody = (x, bare) => {
       const cs = x.cards,
         k = x.show > 0 && !selOn() && cs.length > x.show ? x.show : cs.length;
+      // a tile with no row to show (none differs, none reaches q ≤ 0.05) is a name in one line under the section, not a tile
+      const empty = [],
+        shown = cs.slice(0, k).filter((c) => {
+          const h = tileH(c),
+            m =
+              !selOn() && !c.rows_from && h.startsWith('<article class="tile" id="tile-') && !h.includes('class="trows')
+                ? h.match(/<p class="muted tnone">([^<]*)<\/p>/)
+                : null;
+          if (m) empty.push([c, m[1]]);
+          return !m;
+        });
       return {
-        main: cs.slice(0, k).map(tile).join('') + more(x.name),
-        rest: cs.slice(k).map(tile).join(''),
+        empty: emptyLine(empty),
+        main: shown.map(tileH).join('') + (bare ? '' : more(x.name)),
+        rest: cs.slice(k).map(tileH).join(''),
         n: cs.length - k,
       };
     };
@@ -2550,27 +2784,53 @@
           `</p></header></section>`)
       );
     };
-    const sectionHtml = (x, i) => {
+    // website.overview.sections[].links: the pages that hold more of a section, as one line of links (no copy of their content)
+    const pointer = (x) => {
+      const ls = selOn() ? [] : (x.links || []).filter((v) => K.views[v]);
+      return ls.length
+        ? `<p class="ov-pointer">More on ${ls
+            .map((v) => `<a href="${esc(link(v))}">${esc(K.tabName(v, v).toLowerCase())}</a>`)
+            .join(' and ')}.</p>`
+        : '';
+    };
+    // a section of one tile that bears the section's name shows the name once, in the tile (the section's own heading is read, not seen)
+    const namedByTile = (x) =>
+      x.cards.length === 1 && !(K.ovTiles || []).some((t) => t.section === x.name) && tileTitle(x.cards[0]) === head(x);
+    const sectionHtml = (x, i, bare) => {
       if (lazyOn && i >= FIRST && !K.ovOpen.has(x.name)) return lazyHtml(x);
-      const b = secBody(x);
-      if (!b.main && !b.rest) return '';
+      const b = secBody(x, bare);
+      if (!b.main && !b.rest && !b.empty) return '';
       const id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
       return (
         `<section class="ov-sec${x.caveat ? ' caveat' : ''}" aria-labelledby="sec-${id}"><header ` +
-        `class="ov-sec-head${x.cell ? ' vh' : ''}"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3></header>` +
-        `<div class="tiles">${b.main}</div>` +
+        `class="ov-sec-head${x.cell || namedByTile(x) ? ' vh' : ''}"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3></header>` +
+        `<div class="tiles">${b.main}</div>${b.empty}` +
         (b.n
           ? `<details class="sec-more"><summary>${esc(x.more || 'More in ' + x.name)} (${b.n})</summary>` +
             `<div class="tiles">${b.rest}</div></details>`
           : '') +
+        pointer(x) +
         '</section>'
       );
     };
     // the question's heading, its color key and the test switch first, as the head of every section below; then the
     // sections in the order the site lists them (the sidebar's), the cell's among them, each under its own heading
-    const secs = secList()
-      .map((x, i) => sectionHtml(x, i))
-      .join('');
+    const list = secList(),
+      secs = list
+        .map((x, i) => sectionHtml(small ? { ...x, cards: x.cards.filter((c) => !unchanged(c)) } : x, i))
+        .join('');
+    // a selection too small to test: the tiles that show the whole dataset again are one line, "N questions unchanged
+    // by this selection · show", with their sections under it
+    const same = small
+        ? list.map((x) => ({ ...x, cards: x.cards.filter(unchanged) })).filter((x) => x.cards.length)
+        : [],
+      nSame = same.reduce((n, x) => n + x.cards.length, 0),
+      folded = nSame
+        ? `<details class="ov-unch"><summary>${int(nSame)} question${nSame === 1 ? '' : 's'} unchanged by this selection · ` +
+          `<span class="u-show">show</span><span class="u-hide">hide</span></summary>${same
+            .map((x, i) => sectionHtml(x, i, true))
+            .join('')}</details>`
+        : '';
     return (
       (S.arg ? '' : (K.overviewTop || []).map((f) => f()).join('')) +
       lead() +
@@ -2578,6 +2838,9 @@
       keyFindings() +
       (selOn() && !vsOn() && !small ? selBlocks(K.selLead) : '') +
       secs +
+      folded +
+      // the abundance note of the protein-set tiles, once under the sections (the question page keeps its own)
+      ((secs + folded).includes('data-setnote') ? `<p class="muted small ov-foot">${esc(SET_NOTE)}</p>` : '') +
       (selOn() ? '' : (K.overviewBlocks || []).map((f) => f()).join(''))
     ); // the modules' own blocks (Starting points)
   }
@@ -2625,7 +2888,7 @@
   //   reversed  on the other side of 1x, at q <= 0.05 (the fold and the test pointing the same way)
   //   lost      otherwise: under 1.1x the same way, or the other side without q <= 0.05
   //   new       a reading the question itself does not have
-  const ctlTest = (r) => r.adj || r;
+  const ctlTest = (r) => r;
   function ctlVerdict(r, c) {
     const up = (x) => x.dir === 'more',
       reads = (x) => x.dir === 'more' || x.dir === 'less';
@@ -2683,13 +2946,13 @@
       or = r.method !== 'enricher' && t.eff != null ? `OR ${fxn(t.eff)}${ci}, ` : '';
     return `${or}q ${fq(t.q)}`;
   };
-  // "Doesn't hold with high-confidence sites (n = 83)", "Doesn't hold in detectable peptides": the control, and how many
+  // "Not robust with high-confidence sites (n = 83)", "Not robust in detectable peptides": the control, and how many
   // marks it counted
   const failText = (f) => {
     const n = D.run?.analyses?.[f.id]?.marks_where?.marks,
       lab = String(f.label || f.id);
     return (
-      `Doesn't hold ${/^(in|inside|with|within|among|at|near|without)\b/i.test(lab) ? '' : 'with '}${lab}` +
+      `Not robust ${/^(in|inside|with|within|among|at|near|without)\b/i.test(lab) ? '' : 'with '}${lab}` +
       (n != null ? ` (n = ${int(n)})` : '')
     );
   };
@@ -2715,6 +2978,7 @@
     const t = document.getElementById('q-controls'),
       seen = t && t.getBoundingClientRect().top < innerHeight * 0.6 && t.getBoundingClientRect().bottom > 0;
     if (seen && still >= 2) return t.focus({ preventScroll: true });
+    if (t?.tagName === 'DETAILS') t.open = true; // closed by default: a badge or link to it opens it
     if (t && !seen) t.scrollIntoView({ block: 'start' });
     if (tries) setTimeout(() => toControls(tries - 1, seen ? still + 1 : 0), 100);
   }
@@ -2788,12 +3052,12 @@
     };
     const whole = selOn() || vsOn();
     return (
-      `<section class="pcard controls" id="q-controls" tabindex="-1"><h3>Controls${
+      `<details class="pcard controls" id="q-controls" tabindex="-1"><summary><h3>Controls${
         whole ? ' <span class="muted">(whole dataset)</span>' : ''
-      }</h3><p class="page-note">${
+      }</h3>${pageFails(a)}</summary><details class="page-note"><summary>How to read this</summary>${
         whole ? 'These describe the whole dataset; your selection is not tested again here. ' : ''
       }The same test again with one change each (${esc(METHOD[m] || 'proteins, hypergeometric')}), read on the fold the ` +
-      `tiles show; each cell's odds ratio, interval and q are in its tooltip. ${CTL_KEY}</p>` +
+      `tiles show; each cell's odds ratio, interval and q are in its tooltip. ${CTL_KEY}</details>` +
       `<div class="tbl-card"><table class="tbl">` +
       `<thead><tr><th>Class</th><th>This question</th>${ctl
         .map((x) => `<th><a href="${esc(link('overview', x.id))}">${esc(A[x.id].control_label)}</a></th>`)
@@ -2810,11 +3074,83 @@
               .join('')}</tr>`
         )
         .join('') +
-      `</tbody></table></div>${fewNotes}</section>`
+      `</tbody></table></div>${fewNotes}</details>`
     );
   }
+  // a selection too small to test: where each selected site (or, for a set question, its protein) falls in the question's
+  // classes or sets. Facts about the selection, not results; a long list is cut after a few.
+  const FEW_CLASSES = 8;
+  function fewHtml(a) {
+    const P = K.few?.picked(),
+      sd = K.sel.peek();
+    if (!P || !sd) return '';
+    const own = K.questions[a.id]?.few?.(); // a question's module may draw its own
+    if (own) return own;
+    const sets = a.kind === 'protein_sets',
+      ai = sets ? -1 : K.sel.AN().indexOf(a.id),
+      names = (list) => {
+        const ch = list.slice(0, FEW_CLASSES).map((n) => ({ text: esc(n) }));
+        if (list.length > FEW_CLASSES)
+          ch.push({ text: `<span class="muted">+${int(list.length - FEW_CLASSES)} more</span>` });
+        return ch.length ? ch : [{ text: `<span class="muted">none for this question</span>` }];
+      },
+      setIds = sets ? (sd.protein_sets?.[a.id]?.sets || []).map((x) => x[0]) : [],
+      seen = new Set(),
+      sites = [];
+    P.list.forEach((m) => {
+      if (sets) {
+        if (seen.has(m[0])) return;
+        seen.add(m[0]);
+        const own = P.list.filter((x) => x[0] === m[0]).length,
+          hit = setIds
+            .filter((id) => K.sel.setHas(a.id, id, m[0]))
+            .map((id) => label({ analysis: a.id, category: id }));
+        sites.push({
+          key: 'p' + m[0],
+          head: `${K.few.protLink(m[0])} <span class="muted">${esc(D.proteins[m[0]]?.[2] || '')} · ${K.few.count(own, W.mark)} selected</span>`,
+          facts: names(hit),
+        });
+        return;
+      }
+      const codes = sd.classes?.[a.id] || [],
+        hit = (m[2]?.[ai] || []).map((ci) => label({ analysis: a.id, category: codes[ci] }));
+      sites.push({
+        key: `${m[0]}-${m[1]}`,
+        head: `${K.few.siteLink(m[0], m[1])} <span class="muted">${esc(D.proteins[m[0]]?.[2] || '')}</span>`,
+        facts: names(hit),
+      });
+    });
+    return K.few.html({
+      title: sets
+        ? 'Where your selected proteins fall'
+        : `Where your selected ${P.all === 1 ? `${W.mark} falls` : `${W.marks} fall`}`,
+      note: sets
+        ? `Each selected protein's own sets for this question.`
+        : `Each selected ${W.mark}'s own classes for this question.`,
+      sites,
+      more: P.all - P.list.length,
+    });
+  }
   // one question, opened from its tile: every class, the summary and the downloads, with Previous and Next
+  // the question's strongest rows as 2-3 tiles above its table: up to two more often and one less often (effect, q, n)
+  function qTiles(a, rows, card) {
+    const ok = rows.filter((r) => r.eff != null && !r.vs && !EXCL.test(r.label || '') && rankable(r)),
+      up = ok
+        .filter((r) => r.dir === 'more')
+        .sort(byOrder(card))
+        .slice(0, 2),
+      dn = ok
+        .filter((r) => r.dir === 'less')
+        .sort((x, y) => valOf(x) - valOf(y))
+        .slice(0, 1);
+    if (!up.length && !dn.length) return '';
+    const one = (r, d) =>
+      `<article class="tile qtile ${d}"><h4>${d === 'more' ? 'More often' : 'Less often'}: <b>${esc(afterIn(r.label))}</b></h4>` +
+      `<p class="qt-line"><span class="qt-fold">${esc(fx(valOf(r)))}</span> <span class="muted small">q ${esc(fq(r.q))} · n = ${int(r.a)}</span></p></article>`;
+    return `<div class="tiles q-tiles">${up.map((r) => one(r, 'more')).join('')}${dn.map((r) => one(r, 'less')).join('')}</div>`;
+  }
   function focus(aid) {
+    inFocus = false;
     // a question that is one of a card's views (website.overview cards: views) opens that card
     const cards = allCards(),
       own = cards.findIndex((c) => c.analysis === aid),
@@ -2829,6 +3165,7 @@
       `<div class="focus-bar"><a href="${esc(link('overview'))}">‹ All sections</a><span class="crumb">` +
       `Overview › ${esc(card.section || '')} › <b>${esc(card.title || a.title)}</b></span>` +
       (i >= 0 ? `<span class="muted">${i + 1} of ${cards.length}</span>` : '') +
+      (K.compareLink ? K.compareLink(aid) : '') +
       `<span class="pn">${
         prev
           ? `<a href="${esc(link('overview', prev.analysis))}">‹ Previous · ${esc(
@@ -2842,11 +3179,16 @@
             )} · Next ›</a>`
           : ''
       }</span></div>`;
-    if (a.page) return bar + a.page(card); // a question a module draws (kit-counts.js)
-    const rows = mod ? [] : chartRows(a, S.m, card);
-    return (
-      bar +
-      `<div class="page-head"><h2>${esc(card.title || a.title)}</h2>${pageFails(a)}<span class="tools">${
+    if (a.page) return a.page(card) + bar; // a question a module draws (kit-counts.js)
+    // a selection too small to test: its own sites first, then every site, labeled as such (nothing here is tested)
+    const small = smallSel() && !mod,
+      rows = mod ? [] : chartRows(a, S.m, card, small),
+      ctl = mod
+        ? ''
+        : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m === 'fisher' ? 'fisher' : 'mantel_haenszel');
+    inFocus = true; // the card under the heading does not repeat the title
+    const page =
+      `<div class="page-head"><h2>${esc(card.title || a.title)}</h2>${ctl ? '' : pageFails(a)}<span class="tools">${
         a.kind === 'protein_sets' || mod
           ? ''
           : `<span class="flabel">Test:</span> <span class="seg" ` +
@@ -2868,46 +3210,59 @@
       (selOn() && !mod && K.sel.testable() ? `<div class="ctl-row">${againstHtml()}</div>` : '') +
       `<p class="page-sub">${
         vsOn()
-          ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}, tested in ` +
-            `your browser (exploratory).`
-          : esc(a.question || a.describe || '')
+          ? `${esc(a.title)}: <b>your selection</b> against ${esc(vsName())}${
+              K.sel.testable() ? ', tested in this browser (exploratory).' : ', shown, not tested: it is too small.'
+            }`
+          : esc(a.kind === 'protein_sets' && a.sub ? '' : a.question || a.describe || '') // a set's own sub line under the card title leads
       }${
         selOn() && !vsOn()
-          ? ` <b>Your ` +
-            `selection</b>${
-              rows.some((r) => r.descriptive)
-                ? ': ' + whyShown(a, rows).replace(/^Your selection /, '')
-                : vsOn()
-                  ? ''
-                  : ', tested in your browser (exploratory).'
-            }`
+          ? mod
+            ? ` <b>Your selection</b> is not tested here. The model is fitted once on every ${esc(W.mark)}.`
+            : small
+              ? ` <b>Your selection</b> is too small to test.`
+              : ` <b>Your ` +
+                `selection</b>${
+                  rows.some((r) => r.descriptive)
+                    ? ': ' + whyShown(a, rows).replace(/^Your selection /, '')
+                    : vsOn()
+                      ? ''
+                      : ', tested in this browser (exploratory).'
+                }`
           : ''
       }</p>` +
       // the site file's note on this question (analysis.note), and one-click filters (analysis.note_filters: label, query)
       (a.note && !vsOn()
-        ? `<p class="page-note note">${esc(a.note)}${(a.note_filters || [])
-            .map(
-              (f) =>
-                ` <button type="button" class="chip" data-try="${esc(f.query)}" title="Select the ${esc(W.marks)} that match ${esc(f.query)}">${esc(f.label)}</button>`
+        ? (() => {
+            const long = String(a.note).trim().split(/\s+/).length > 25,
+              tag = long ? 'details' : 'p';
+            return `<${tag} class="page-note note">${long ? '<summary>How to read this</summary>' : ''}${esc(a.note)}${(
+              a.note_filters || []
             )
-            .join('')}</p>`
+              .map(
+                (f) =>
+                  ` <button type="button" class="chip" data-try="${esc(f.query)}" title="Select the ${esc(W.marks)} that match ${esc(f.query)}">${esc(f.label)}</button>`
+              )
+              .join('')}</${tag}>`;
+          })()
         : '') +
-      familyLine(a) +
+      (small || mod || selOn() ? '' : qTiles(a, rows, card)) +
       (a.control_too_few != null
         ? `<section class="pcard"><p class="note too-few">${esc(tooFewText(a))}</p></section>`
-        : `<section class="pcard">${
+        : (small ? fewHtml(a) : '') +
+          `<section class="pcard">${small ? `<h3 class="whole-h">All ${esc(W.marks)}</h3>` : ''}${
             (Q?.page && Q.page(card, () => cardBody(a, rows))) ??
             (K.questionBody && K.questionBody(a, rows, card)) ??
             cardBody(a, rows)
           }${
-            selOn() && !vsOn() && !mod
+            selOn() && !vsOn() && !mod && !small
               ? `<p class="twhole">` + `<span>Whole dataset</span> ${answer(rowsFor(a, S.m))}</p>`
               : ''
           }</section>`) +
-      (mod
-        ? ''
-        : controlsBlock(a, a.kind === 'protein_sets' ? 'enricher' : S.m === 'fisher' ? 'fisher' : 'mantel_haenszel'))
-    );
+      ctl +
+      familyLine(a) +
+      bar;
+    inFocus = false;
+    return page;
   }
   // what the site keeps, what it asks other services for, and under which licenses everything is
   // the data a reader can download (website.downloads), under its terms, and the site's own tables
@@ -2918,7 +3273,7 @@
     return (
       `<section id="m-download"><h3>Download the data</h3>` +
       (ds
-        ? `<p>${esc(cap(ds.label || 'dataset'))} ${
+        ? `<p>Data: ${esc(ds.label || 'dataset')} ${
             ds.url ? `<a href="${esc(ds.url)}">${esc(ds.version)}</a>` : esc(ds.version)
           }${ds.date ? ` (${esc(hdate(ds.date))})` : ''}${
             ds.doi ? `, archived ` + `as <a href="https://doi.org/${esc(ds.doi)}">doi:${esc(ds.doi)}</a>` : ''
@@ -2928,6 +3283,7 @@
         ? `<p>This explorer analyzes ${int(D.run.marks.counted)} ${esc(W.marks)}; the release table holds ` +
           `${int(D.run.marks.rows)} rows. Sites known only by similarity, or not on the UniProt snapshot, are left out.</p>`
         : '') +
+      (D.license ? `<p class="dl-license"><b>License.</b> ${esc(D.license)}</p>` : '') +
       (D.download_terms ? `<p>${esc(D.download_terms)}</p>` : '') +
       (`<div class="tbl-card"><table class="tbl"><thead><tr><th>File</th><th>Format</th><th>What it holds</th></tr>` +
         `</thead><tbody>`) +
@@ -3012,8 +3368,8 @@
       }. This site’s ` +
         `data and figures are under ${esc(hlicence(CIT.licence || 'their sources’ terms'))}, and each source ` +
         `keeps its own terms (see the Data table).</p>`) +
-      (`<p>Privacy: the site sets no cookies and uses no tracking. Searches, filters, selections and every test on ` +
-        `them stay in your browser and its address. The browser’s local storage keeps only your preferences ` +
+      (`<p>Privacy: the site sets no cookies and uses no tracking. Searches, filters and selections stay in your browser and the page address, and tests on a selection run there. ` +
+        `The browser’s local storage keeps only your preferences ` +
         `(theme, sidebar, protein map rows) and saved selections; clear them with the site data. A protein page ` +
         `asks these services for that protein’s public data, by accession only: ${esc(live.join(', '))}. Downloads ` +
         `are made in the browser.</p></section>`)
@@ -3072,11 +3428,13 @@
     [
       ['m-g1', 'The tests', 0],
       ['m-tests', 'How the tests work', 1],
-      ['m-every', 'Every test', 1],
-      ['m-questions', 'Questions, and what made each', 1],
+      ['m-every', 'All tests', 1],
+      ['m-questions', 'How each question was made', 1],
       ['m-parity', 'Checked against the release', 1],
       ['m-gq', 'Each question', 0],
-      ...D.analyses.map((a) => [`m-q-${a.id}`, a.title, 1]),
+      ...methodOrder()
+        .filter((a) => !K.listHides(a))
+        .map((a) => [`m-q-${a.id}`, K.listTitle(a), 1]),
       ...K.methods.map((x) => [`m-q-${x.id}`, x.title, 1]),
       ['m-g2', 'The data', 0],
       ['m-controls', 'Controls', 1],
@@ -3140,12 +3498,33 @@
     }),
     ...(selOn() || S.arg ? [] : (K.overviewSections || []).flatMap((f) => f())),
   ];
+  // A set question whose folds stop at a ceiling: when most proteins of the universe carry the mark, no set can show a
+  // fold above all proteins over the marked ones, and sets of near-identical members all sit at it. The card then says
+  // so in one sentence (from its own rows: no new test) and keeps the chart behind a toggle.
+  function ceilingLine(a, rows) {
+    if (a.kind !== 'protein_sets' || vsOn() || selOn()) return '';
+    const rs = rows.filter((r) => r.a != null && r.b != null && r.c != null && r.d != null && r.eff != null);
+    if (rs.length < 3) return '';
+    const marked = rs[0].a + rs[0].b,
+      total = marked + rs[0].c + rs[0].d,
+      top = rs.reduce((x, y) => (y.eff > x.eff ? y : x)),
+      cap = marked ? total / marked : 0;
+    if (!cap || top.eff < 0.9 * cap) return '';
+    const nSig = rs.filter((r) => r.q != null && r.q <= PADJ && r.eff > 1).length,
+      what = String(a.describe || 'proteins of the universe').replace(/^other /, '');
+    return (
+      `<p class="note ix-ceiling">Maximum possible fold <b>${fxn(cap)}×</b> (${pcS(marked / total)} of ${esc(what)} are ${esc(W.marked)}). ` +
+      `Highest: ${esc(top.label)}, ${fxn(top.eff)}×; ${int(nSig)} of ${int(rs.length)} sets > 1× (q ≤ ${PADJ}).</p>`
+    );
+  }
+  let inFocus = false; // a question's own page: the heading above holds its title
   function cardBody(a, rows) {
     // a residue question shows every class, and so does a set question with 12 sets or fewer (a partition)
     const mark = moreMarks(a, rows),
       all = S.all.has(a.id),
       shown = shownOf(a, rows),
-      own = ownClasses(a);
+      own = ownClasses(a),
+      ceil = ceilingLine(a, rows);
     const noun = a.kind === 'protein_sets' ? 'sets' : 'classes';
     const toggle =
       a.kind === 'protein_sets' && rows.length > 12
@@ -3155,13 +3534,15 @@
           }</button>`
         : '';
     return (
-      `<div class="card-body"><div class="card-head"><div><h3>${esc(a.title)}</h3>` +
+      `<div class="card-body"><div class="card-head"><div>${inFocus ? '' : `<h3>${srcAbbr(a.title)}</h3>`}` +
       (`<p class="sub">${
         vsOn()
           ? `Your selection (filled) against ${esc(vsName())} (hollow)${
               a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]
             }`
-          : `${esc(K.shortSub(a.sub))}${a.kind === 'protein_sets' ? '' : ', ' + METHOD_PHRASE[S.m]}`
+          : a.kind === 'protein_sets'
+            ? esc(K.shortSub(a.sub))
+            : esc(METHOD_PHRASE[S.m].charAt(0).toUpperCase() + METHOD_PHRASE[S.m].slice(1))
       }. <a href="#method">` +
         `How it was tested</a> · <a href="${esc(link('method', 'every', { a: a.id }))}">all tests</a></p>${
           own
@@ -3174,8 +3555,11 @@
         /data-exp="(\w+)"/g,
         `data-exp="$1" data-aid="${esc(a.id)}"`
       )}</div>` +
-      chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark, own) +
-      `${toggle}</div>`
+      (ceil
+        ? ceil +
+          `<details class="ix-more"><summary>Show the chart</summary>${chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark, own)}${toggle}</details>`
+        : chartHtml(chartModel(a, shown, S.m), fkeyOf(a), mark, own) + toggle) +
+      `</div>`
     );
   }
 
@@ -3184,8 +3568,8 @@
     ['analysis', 'Question', (r) => r.title, false],
     ['label', 'Class or set', (r) => r.label, false],
     ['method', 'Test', (r) => methodName(r), false],
-    ['a', `${cap(W.marked)}: in class / all`, (r) => r.a, true],
-    ['c', 'Others: in class / all', (r) => r.c, true],
+    ['a', `${cap(W.marked)} in class / all`, (r) => r.a, true],
+    ['c', 'Others in class / all', (r) => r.c, true],
     ['or', 'Effect (95% CI)', (r) => r.eff ?? -1, true],
     ['log2', 'log2(OR)', (r) => K.l2(r) ?? -99, true],
     ['q', 'q', (r) => r.q ?? 2, true],
@@ -3196,7 +3580,7 @@
     // a protein-set question with no abundance repeat has its hypergeometric rows under either test
     const rows = D.rows.filter(
       (r) =>
-        (!S.a || r.analysis === S.a) &&
+        (!S.a || r.analysis === S.a || r.analysis === K.regionsOf[S.a]) &&
         (S.m === 'both' ||
           r.method === S.m ||
           (r.method === 'enricher' && (S.m === 'fisher' || !A[r.analysis]?.stratified))) &&
@@ -3217,9 +3601,15 @@
   // Methods > Every test: the whole table of tests, with its filters and its download
   function everyTest() {
     const rows = shownStatistics();
-    const opts = [['', 'All questions'], ...D.analyses.map((a) => [a.id, a.title])];
+    // the Overview's order; a map's two questions are one entry, named by its regions question
+    const opts = [
+      ['', 'All questions'],
+      ...methodOrder()
+        .filter((a) => !K.listHides(a))
+        .map((a) => [a.id, K.listTitle(a)]),
+    ];
     return (
-      `<section id="m-every"><h3>Every test</h3>` +
+      `<section id="m-every"><h3>All tests</h3>` +
       `<p class="page-sub">One row per class and test. ${gloss('q')}: Benjamini–Hochberg within each question. ` +
       `<button class="btn small" type="button" id="dl">Download TSV</button></p>` +
       `<div class="filters"><label>Question <select id="f-a">${opts
@@ -3370,7 +3760,8 @@
                     : 'Those with an abundance input are'
                 } repeated ` +
                 `within protein-abundance deciles (Mantel–Haenszel odds ratio across them), because mass spectrometry ` +
-                `finds abundant proteins most often. An enrichment that holds there is not explained by abundance.`
+                `finds abundant proteins most often. Their results are not adjusted for it; the estimate within abundance deciles ` +
+                `is in each row's hover.`
               : ''
           }</p>`
         : '') +
@@ -3384,18 +3775,14 @@
         `was checked against its MD5 before it was read.</p>`) +
       (`<div class="tbl-card"><table class="tbl"><thead><tr><th>Source</th><th>Used for</th><th>License</th><th>` +
         `File</th><th>MD5</th></tr></thead><tbody>${inputs}</tbody></table></div></section>`) +
-      `<span id="m-gq"></span><section id="m-questions"><h3>Questions, and what made each</h3>` +
+      `<span id="m-gq"></span><section id="m-questions"><h3>How each question was made</h3>` +
       `<div class="tbl-card"><table class="tbl"><thead><tr><th>Question</th><th>Made by</th></tr></thead><tbody>` +
-      D.analyses
-        .map(
-          (a) =>
-            `<tr><td>${esc(a.title)}${a.new && D.run.parity ? ' <span class="newtag">new</span>' : ''}</td><td ` +
-            `class="wrapok">${esc(madeByText(a.id))}</td></tr>`
-        )
+      methodOrder()
+        .map((a) => `<tr><td>${esc(a.title)}</td><td ` + `class="wrapok">${esc(madeByText(a.id))}</td></tr>`)
         .join('') +
       `</tbody></table></div></section>` +
       controlsMethod() +
-      D.analyses.map(questionMethod).join('') +
+      methodOrder().map(questionMethod).join('') +
       (K.methodParts || []).map((f) => f()).join('') +
       K.methods.map((x) => x.html()).join('') +
       par +
@@ -3406,8 +3793,8 @@
       privacySection() +
       sourcesSection() +
       (`<section id="m-made"><h3>Software and build</h3><p>The site file <span class="mono">${esc(D.site.config)}</span> ` +
-        `sets the modification, sequences, regions, questions, colors and pictures. It was built with ptmcontext ${esc(D.kit.version)} (commit ` +
-        `<span class="mono">${esc(shortCommit(D.kit.commit))}</span>) on ${esc(hdate(RUN.written))}. Citation, ` +
+        `sets the modification, sequences, regions, questions, colors and pictures. The app is PTMcontext ${esc(D.kit.version)}, built from commit ` +
+        `<span class="mono">${esc(shortCommit(D.kit.commit))}</span> on ${esc(hdate(RUN.written))}. Citation, ` +
         `version and date are in <span class="mono">${esc(CIT.file || '')}</span>.</p>`) +
       (`<p>Every download includes its citation, data sources, versions, inputs and export date, printed under each ` +
         `figure and kept in the file (SVG metadata, PNG text fields, PDF properties, TSV # lines).</p></section>` +
@@ -3429,7 +3816,7 @@
       return (
         `<h4>${esc(cap(c.label))}</h4>${c.note ? `<p>${esc(c.note)}.</p>` : ''}` +
         (n
-          ? `<p>A ${esc(W.mark)} counts when at least ${int(n.distinct_at_least)} independent ${int(n.distinct_at_least) === 1 ? 'source reports' : 'sources report'} it.` +
+          ? `<p>A ${esc(W.mark)} counts when at least ${int(n.distinct_at_least)} independent ${n.distinct_at_least === 1 ? 'source reports' : 'sources report'} it.` +
             (groups.length
               ? ` Sources counted once together: ${groups
                   .map(([g, xs]) => `${esc(g)} (${xs.map(nm).join(', ')})`)
@@ -3450,8 +3837,7 @@
   }
   // a question's own Method section (#method/q-<id>): what it asks, what it is compared with and its classes
   function questionMethod(a) {
-    const RUN = D.run,
-      set = a.kind === 'protein_sets';
+    const set = a.kind === 'protein_sets';
     const labels = Object.entries(a.labels || {}).filter(([c]) => c);
     const classes =
       labels.length && labels.length <= 40
@@ -3461,9 +3847,7 @@
             .join('')}</dl></details>`
         : '';
     return (
-      `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}${
-        a.new && RUN.parity ? ' <span class="newtag">new</span>' : ''
-      }</h3>` +
+      `<section id="m-q-${esc(a.id)}" class="qm"><h3>${esc(a.title)}</h3>` +
       (a.question ? `<p class="qm-q">${esc(a.question)}</p>` : '') +
       (a.sub ? `<p>${esc(a.sub)}.</p>` : '') +
       (a.describe && a.describe !== D.site.default_background
@@ -3481,7 +3865,7 @@
     pdf: 'PDF: vector, fonts embedded, with its citation and sources',
     svg: 'SVG: vector, editable, with its citation and sources in the file',
     png: 'PNG at 300 dpi, with its citation and sources in the image and its text fields',
-    tsv: 'TSV: the rows, under # lines saying what they are, how to cite them and where they come from',
+    tsv: 'TSV: the rows, with # header lines on their source and how to cite them',
   };
   const shortCommit = (c) =>
     c ? c.replace(/-dirty$/, '').slice(0, 7) + (c.endsWith('-dirty') ? '+changes' : '') : 'not recorded';
@@ -3499,11 +3883,10 @@
       (m === 'fisher'
         ? `Across all proteins: the ${W.marks} in each class against all the other ${W.residues} of the ${W.marked} proteins ` +
           `(two-sided Fisher’s exact test, Haldane–Anscombe odds ratio).`
-        : `Within each protein, each protein is analyzed separately: its ${W.marks} are compared only with its own ${W.residues} (Mantel–Haenszel ` +
+        : `Within each protein: its ${W.marks} are compared only with its own ${W.residues} (Mantel–Haenszel ` +
           `odds ratio with 95% confidence interval, continuity-corrected Cochran–Mantel–Haenszel test).`) +
       (` Only ${W.marks} on proteins with another ${W.residue} are counted. q is Benjamini–Hochberg across the ` +
-        `classes. Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Hollow: no significant ` +
-        `difference.`)
+        `classes. Red: more often (q ≤ 0.05 and at least 1.1×). Slate: less often. Gray: about the same (q ≤ 0.05 but within 1.1×). Hollow: no difference (q above 0.05).`)
     );
   }
   function setWords(a) {
@@ -3512,9 +3895,9 @@
       `against the ${
         a.describe || 'other proteins of the universe'
       }. Fold enrichment is the share of ${markedUnits(a.id)} in the set ` +
-      `over the share of all ${setUnit(a.id)} in it. q is Benjamini–Hochberg across the sets. Within abundance ` +
-      `deciles (where shown): a Mantel–Haenszel odds ratio across deciles, asking whether an enrichment holds ` +
-      `among proteins of similar abundance.`
+      `over the share of all ${setUnit(a.id)} in it; fold and q are not adjusted for protein abundance. q is ` +
+      `Benjamini–Hochberg across the sets. Within abundance deciles (an estimate, where shown): a Mantel–Haenszel odds ` +
+      `ratio across deciles, asking whether an enrichment holds among proteins of similar abundance.`
     );
   }
   function provenance(extra = {}) {
@@ -3525,10 +3908,11 @@
       version: CIT.version || '',
       date: CIT.date || '',
       doi: CIT.doi || '',
+      data_release: releaseText(),
       licence: CIT.licence || '',
       cite: CIT.preferred ? CIT.preferred.text + doiTxt(CIT.preferred.doi) : '',
       data_sources: (CIT.references || []).map((r) => r.text + doiTxt(r.doi)),
-      software: `ptmcontext ${D.kit.version}`,
+      software: `PTMcontext ${D.kit.version}`,
       commit: D.kit.commit || '',
       run: RUN.written,
       sequences: RUN.snapshot,
@@ -3574,24 +3958,45 @@
     const lines = [];
     if (CIT.preferred) lines.push(`Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}`);
     if ((CIT.references || []).length)
-      lines.push('Data: ' + CIT.references.map((r) => r.short + doiTxt(r.doi)).join('; '));
+      lines.push('Data sources: ' + CIT.references.map((r) => r.short + doiTxt(r.doi)).join('; '));
+    if (releaseText()) lines.push(`Data: ${releaseText()}`);
     lines.push(
-      `${D.site.name}, version ${CIT.version || '–'}${
-        CIT.date ? ' (' + hdate(CIT.date) + ')' : ''
-      } · ptmcontext ${D.kit.version}${sn.release ? ' · ' + sn.release : ''}`
+      `${appText()}${CIT.version && CIT.date ? ' (' + hdate(CIT.date) + ')' : ''} · ${D.site.name}${
+        sn.release ? ' · ' + sn.release : ''
+      }`
     );
-    if (selOn() && K.sel.data()) lines.push(`Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks})`);
+    if (selOn() && K.sel.data())
+      lines.push(`Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${K.sel.nMarks() === 1 ? W.mark : W.marks})`);
     // the commit and the FASTA MD5 are not in the strip: they are in the file's metadata (provenance()); the page's full
     // address (view, filters, protein, section) is, so the figure can be traced back to it
     if (typeof location !== 'undefined' && /^https?:/.test(location.href)) lines.push(`${PAGE_LABEL} ${location.href}`);
     lines.push(`Exported ${hdate(stamp())}${CIT.licence ? ' · license ' + hlicence(CIT.licence) : ''}`);
     return lines;
   }
+  // the data release the explorer reads (website.dataset): "v1.7.0 (2026-11-21), doi:10.5281/zenodo.24429699"
+  // the two versions every page and file names, each with a label: "App: PTMcontext 0.6.0" and
+  // "Data: PTM_Pipeline v1.7.0 (doi:10.5281/zenodo.24429699)"
+  const appText = () => `App: PTMcontext ${D.kit.version}`;
+  const releaseText = () => {
+    const ds = D.dataset;
+    return ds && ds.version
+      ? `${ds.label ? ds.label + ' ' : ''}${ds.version}${ds.doi ? ' (doi:' + ds.doi + ')' : ''}`
+      : '';
+  };
+  // the release's data dictionary, from the site's Download list: "data_dictionary.tsv in PTM_Pipeline release v1.7.0"
+  const dictionaryText = () => {
+    const ds = D.dataset,
+      d = (D.downloads || []).find((x) => /dictionary/i.test(x.label || '')),
+      repo = /github(?:usercontent)?\.com\/[^/]+\/([^/]+)/.exec((ds && ds.url) || (d && d.url) || '');
+    return ds && ds.version && d
+      ? `${String(d.url).split('/').pop()}, release ${ds.version}${repo ? ' of ' + repo[1] : ''}`
+      : '';
+  };
   function preamble(title, what) {
     const RUN = D.run,
       sn = RUN.snapshot || {};
     const inputs = Object.entries(RUN.inputs || {})
-      .map(([k, v]) => `${k} (MD5 ${v.md5})`)
+      .map(([k, v]) => `${k} ${v.md5}`)
       .join(', ');
     return (
       [
@@ -3602,22 +4007,20 @@
             `main release's set of sites; do not mix the two.`
           : null,
         CIT.preferred ? `# Cite: ${CIT.preferred.text}${doiTxt(CIT.preferred.doi)}` : null,
-        (CIT.references || []).length
-          ? '# Data sources: ' + CIT.references.map((r) => r.text + doiTxt(r.doi)).join(' | ')
-          : null,
-        `# Version: ${CIT.version || '–'}${CIT.date ? ' (' + CIT.date + ')' : ''}${CIT.doi ? ', doi:' + CIT.doi : ''}${
-          CIT.licence ? '; license ' + CIT.licence : ''
-        }`,
-        `# Made with: ptmcontext ${D.kit.version} (commit ${D.kit.commit || 'not recorded'}) from ${D.site.config}; run ${RUN.written}`,
-        `# Sequences: ${sn.release} (${int(sn.entries)} entries, FASTA MD5 ${sn.fasta_md5}); inputs: ${inputs}`,
-        `# Questions made by: ${Object.keys(D.run.analyses || {})
-          .map((aid) => `${aid}: ${madeByText(aid)}`)
-          .join('; ')}${
+        ...(CIT.references || []).map((r) => `# Data source: ${r.text}${doiTxt(r.doi)}`),
+        releaseText() ? `# Data: ${releaseText()}` : null,
+        dictionaryText() ? `# Column definitions: the release's columns are defined in ${dictionaryText()}` : null,
+        `# ${appText()} (commit ${D.kit.commit || 'not recorded'}${CIT.version && CIT.date ? '; released ' + hdate(CIT.date) : ''}); run ${RUN.written}`,
+        `# Site: ${D.site.name}${CIT.licence ? '; license ' + hlicence(CIT.licence) : ''}`,
+        `# Sequences: ${sn.release} (${int(sn.entries)} entries, FASTA MD5 ${sn.fasta_md5})`,
+        `# Inputs (MD5): ${inputs}`,
+        `# Questions: how each was made is in Methods, under How each question was made${
           (RUN.trusted_plugins || []).length ? `; trusted plugins: ${RUN.trusted_plugins.join(', ')}` : ''
         }`,
         selOn() && K.sel.data()
-          ? `# Selection: ${K.sel.describe()} (${K.sel.nMarks()} ${W.marks} on ${K.sel.nProteins()} proteins),` +
-            ` tested again in the browser`
+          ? `# Selection: ${K.sel.describe()} (${int(K.sel.nMarks())} ${K.sel.nMarks() === 1 ? W.mark : W.marks} on ${int(K.sel.nProteins())} ${
+              K.sel.nProteins() === 1 ? 'protein' : 'proteins'
+            }); ${K.sel.testable() ? 'tested in this browser (exploratory)' : 'too small to test'}`
           : null,
         `# Exported: ${stamp()} from ${pageUrl()}`,
       ]
@@ -3977,7 +4380,6 @@
       X0 = 462,
       X1 = 728,
       VX = 814,
-      DX = 832,
       ink2 = '#374151';
     const X = (v) => X0 + M.axis.X(v) * (X1 - X0),
       r1 = (v) => v.toFixed(1);
@@ -4036,12 +4438,11 @@
         } else y += 3;
         return;
       }
-      const r = it.r,
-        d = decile(r);
+      const r = it.r;
       // its name (two lines at most), then its meaning where there is room
       let name = wrap(r.label, LW, 11.5);
       if (name.length > 2) name = [name[0], fit(name.slice(1).join(' '), LW, 11.5)];
-      const h = Math.max(sharePair(r) && !r.vs ? 30 : 22, name.length * 15 + 8),
+      const h = Math.max(sharePair(r) && !r.vs ? 34 : 22, name.length * 15 + 8),
         yc = y + h / 2;
       name.forEach((t, k) => {
         const last = k === name.length - 1,
@@ -4084,7 +4485,7 @@
       }
       if (r.ref && r.ref.eff != null)
         rp.push(
-          `<line x1="${r1(X(valOf(r.ref)))}" x2="${r1(X(valOf(r.ref)))}" y1="${yc - 9}" y2="${yc + 9}" stroke="${PAL.ink}" stroke-width="2"/>`
+          `<line x1="${r1(X(valOf(r.ref)))}" x2="${r1(X(valOf(r.ref)))}" y1="${yc - 7.5}" y2="${yc + 7.5}" stroke="${PAL.ink}" stroke-width="2"/>`
         );
       const strong = !r.vs && (r.dir === 'more' || r.dir === 'less');
       T(
@@ -4095,17 +4496,10 @@
         rp
       );
       if (sharePair(r) && !r.vs) {
-        T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted, halo: true }, rp);
-        gaps.push([VX - tw(sharePair(r), 9.5) - 2, VX + 2, yc + 1, yc + 15]);
+        // beneath the bar, its interval and the reference mark, which end at yc + 7.5
+        T(VX, yc + 16.5, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted, halo: true }, rp);
+        gaps.push([VX - tw(sharePair(r), 9.5) - 2, VX + 2, yc + 7.5, yc + 19]);
       }
-      if (d)
-        T(
-          DX,
-          yc + 4,
-          DECILE[d.dir][0],
-          { size: 11, anchor: 'middle', fill: d.dir === 'more' ? PAL.more : d.dir === 'less' ? PAL.less : PAL.muted },
-          rp
-        );
       y += h;
     });
     M.axis.ticks.forEach((t) =>
@@ -4553,18 +4947,20 @@
     const P = JSON.parse(f.meta);
     pdf.setProperties({
       title: f.title,
-      subject: `${citeText()} ${D.site.name}, version ${CIT.version || '–'}.`.replace(/\s+/g, ' ').trim(),
+      subject: `${citeText()} ${D.site.name}, ${CIT.version ? 'version ' + CIT.version : 'version not recorded'}.`
+        .replace(/\s+/g, ' ')
+        .trim(),
       author: D.site.lab || D.site.name,
       keywords: [
         D.mark,
-        `version ${CIT.version || '–'}`,
-        `ptmcontext ${D.kit.version}`,
+        CIT.version ? `version ${CIT.version}` : 'version not recorded',
+        `PTMcontext ${D.kit.version}`,
         `commit ${D.kit.commit || 'not recorded'}`,
         P.from,
       ]
         .filter(Boolean)
         .join('; '),
-      creator: `ptmcontext ${D.kit.version} (${D.kit.commit || 'commit not recorded'})`,
+      creator: `PTMcontext ${D.kit.version} (${D.kit.commit || 'commit not recorded'})`,
     });
     const holder = document.createElement('div');
     holder.style.cssText = `position:fixed;left:-100000px;top:0;` + `width:${f.W}px;height:${f.H}px;overflow:hidden`;
@@ -4720,7 +5116,7 @@
           .sort((x, y) => y[1] - x[1]);
         return (
           `<section id="m-sources"><h3>${esc(s.label)}</h3><p>${int(rows.length)} ${esc(lcLabel(s.label))} report the ${esc(W.marks)}, with the ` +
-          `number each reports. ${esc(s.help || '')} Cite those whose ${esc(W.marks)} you use.</p>` +
+          `number each reports. ${esc(s.help ? String(s.help).replace(/[.!?]?\s*$/, '.') + ' ' : '')}Cite those whose ${esc(W.marks)} you use.</p>` +
           (`<div class="tbl-card"><table class="tbl"><thead><tr><th>${esc(s.label)}</th><th class="num">${esc(cap(W.marks))}</th><th>` +
             `Reference</th></tr></thead><tbody>`) +
           rows
@@ -4757,11 +5153,11 @@
           }</p>`
         : '') +
       ((CIT.references || []).length
-        ? `<p>${CIT.preferred ? 'and the' : 'Please cite the'} original data sources${
+        ? `<p>${CIT.preferred ? 'Please also cite' : 'Please cite'} the original data sources${
             Object.values(D.attribute_specs || {}).some((x) => x.kind === 'list' && x.link)
-              ? ` and the ${esc(
+              ? `, and the ${esc(
                   lcLabel(Object.values(D.attribute_specs).find((x) => x.kind === 'list' && x.link).label)
-                )} <a href="#method/sources">` + `under Sources</a> you use`
+                )} <a href="#method/sources">` + `listed under Sources</a> whose records you use`
               : ''
           }:</p><ul>${CIT.references
             .map(
@@ -4772,7 +5168,7 @@
             )
             .join('')}</ul>`
         : '') +
-      `<p class="muted">This site: ${esc(CIT.title)}, version ${esc(CIT.version)}${
+      `<p class="muted">This explorer: ${esc(CIT.title)}. App: PTMcontext ${esc(D.kit.version)}${
         CIT.date ? ' (' + esc(hdate(CIT.date)) + ')' : ''
       }${CIT.doi ? `, <a href="https://doi.org/${esc(CIT.doi)}">doi:${esc(CIT.doi)}</a>` : ''}${
         CIT.licence ? '; license ' + esc(hlicence(CIT.licence)) : ''
@@ -4923,7 +5319,8 @@
   const methodLink = (aid, sec) =>
     `<a class="exp-btn" href="${esc(
       link('method', aid ? 'q-' + aid : sec || '')
-    )}" title="How ${aid ? 'this question was' : 'these were'} made and ` + `tested, and from what data">Method</a>`;
+    )}" title="How ${aid ? 'this question was' : 'these questions were'} made and ` +
+    `tested, and the data ${aid ? 'it uses' : 'they use'}">Methods</a>`;
   // a figure's download menu (kit-export.js): the formats it makes, a button each with data-<attrs>="<format>"
   const expBar = (kinds, attrs, label, method, o) =>
     K.exp.menu(kinds, attrs, label, method ? methodLink(A[method] ? method : '', A[method] ? '' : method) : '', o);
@@ -4977,6 +5374,7 @@
     fkeyOf,
     allCards,
     cardOf,
+    branchClasses,
     byOrder,
     methodLink,
     setWords,
@@ -5029,7 +5427,7 @@
   // (K.sel.prewarm, which gives the browser back between questions), then the page. A draw asked meanwhile waits for it.
   let drawnSel = null,
     holding = false;
-  function busy(on, done, total) {
+  function busy(on) {
     let el = document.getElementById('sel-busy');
     if (!on) {
       if (el) el.hidden = true;
@@ -5044,10 +5442,7 @@
       el.setAttribute('aria-live', 'polite');
       document.body.appendChild(el);
     }
-    const n = K.sel.nMarks();
-    el.innerHTML =
-      `<span class="spin" aria-hidden="true"></span>Updating: testing ${int(n)} ${esc(n === 1 ? W.mark : W.marks)} ` +
-      `again${total ? ` (${int(done)} of ${int(total)} questions)` : '…'}`;
+    el.innerHTML = `<span class="spin" aria-hidden="true"></span>Updating…`;
     el.hidden = false;
     document.body.setAttribute('aria-busy', 'true');
   }
@@ -5087,6 +5482,12 @@
         ? D.site.name
         : `${mod?.title ? mod.title(S.arg) : tabName(S.view, cap(S.view))} · ${D.site.name}`; // the page first: "FUS R216 · <site>"
     document.body.classList.toggle('slim', (S.view !== 'overview' || !!S.arg) && D.header?.compact === true); // the full header band on every page unless website.header.compact: true
+    // CSS: under 700 px the header is one row on these pages, and on a phone's Overview too (the cell drawing starts on the first screen)
+    const phone = matchMedia('(max-width: 700px)');
+    const compactPhone = () =>
+      document.body.classList.toggle('compact-phone', S.view !== 'overview' || !!S.arg || phone.matches);
+    compactPhone();
+    if (!K.phoneWatch) (K.phoneWatch = phone).addEventListener?.('change', compactPhone);
     document.body.classList.remove('bar-hidden');
     document.querySelector('.toolbar')?.removeAttribute('inert');
     K.barReset?.();
@@ -5096,10 +5497,11 @@
       // a section's address scrolls to it; a part's (#method/cite) stays at the top, under the menu; a change to the table of tests stays at the table
       const at = S.stay || (S.arg && !M_PARTS.some(([k]) => k === S.arg) ? 'm-' + S.arg : '');
       S.stay = '';
-      if (at)
-        (document.getElementById(at) || document.getElementById(at.replace(/^m-/, 'm-q-')))?.scrollIntoView({
-          block: 'start',
-        });
+      if (at) {
+        const find = () => document.getElementById(at) || document.getElementById(at.replace(/^m-/, 'm-q-'));
+        if (K.landOn) K.landOn(find);
+        else find()?.scrollIntoView({ block: 'start' });
+      }
     }
     K.rail?.();
     (K.afterRender || []).forEach((f) => f()); // the modules' own touches after a page is drawn (kit-search.js)
@@ -5117,7 +5519,10 @@
     `<div class="pfold-body">${body}</div></details>`;
   K.foldsForSave = () => ({ ...K.folds });
   K.restoreFolds = (f) => {
-    foldPending = f && Object.keys(f).length ? { ...f } : null;
+    foldPending =
+      f && Object.keys(f).length
+        ? Object.fromEntries(Object.entries(f).map(([id, on]) => [K.foldId?.(id) || id, on]))
+        : null;
   };
   document.addEventListener('click', (e) => {
     const d = e.target.closest?.('summary')?.parentElement;
@@ -5137,6 +5542,23 @@
         t = document.getElementById(id);
       }
       t?.scrollIntoView({ block: 'start' });
+      // the sections above fill in after the jump and move the target: land on it again until the reader scrolls
+      if (!t) return;
+      let moved = false;
+      const stop = () => (moved = true),
+        evs = ['wheel', 'touchstart', 'keydown', 'mousedown'];
+      evs.forEach((ev) => addEventListener(ev, stop, { once: true, passive: true }));
+      let n = 0;
+      const want = parseFloat(getComputedStyle(t).scrollMarginTop) || 0, // where it lands (below the sticky bar)
+        tick = setInterval(() => {
+          const el = document.getElementById(id);
+          if (!moved && el && Math.abs(el.getBoundingClientRect().top - want) > 12)
+            el.scrollIntoView({ block: 'start' });
+          if (moved || ++n >= 16) {
+            clearInterval(tick);
+            evs.forEach((ev) => removeEventListener(ev, stop));
+          }
+        }, 400);
     }, 0);
   });
   (K.afterRender ||= []).push(() => {
@@ -5163,7 +5585,7 @@
   function linkPass() {
     const root = document.body;
     root.querySelectorAll('.tile[data-tile]:not([data-group])').forEach((t) => {
-      const h = link('overview', t.dataset.tile);
+      const h = tileHref(t.dataset.tile);
       if (t.dataset.href === h) return;
       t.dataset.href = h;
       const h3 = t.querySelector('header h3');
@@ -5173,7 +5595,7 @@
         a.href = h;
         a.append(...h3.childNodes);
         h3.append(a);
-      }
+      } else h3?.querySelector('a.tile-link')?.setAttribute('href', h);
     });
     root.querySelectorAll('tr[data-acc]:not([data-href])').forEach((r) => {
       r.dataset.href = link('protein', r.dataset.acc);
@@ -5229,8 +5651,8 @@
   function showTip(e, r) {
     const selNote =
       (r.selection
-        ? `<br><span class="muted">Your selection, tested again in the browser${
-            r.descriptive ? ': shown, not tested' : ' (exploratory)'
+        ? `<br><span class="muted">${
+            r.descriptive ? 'Your selection: shown, not tested' : 'Your selection, tested in this browser (exploratory)'
           }</span>`
         : '') +
       (r.ref && !r.vs
@@ -5270,11 +5692,11 @@
         `<b>${esc(r.label)}</b><br>${int(r.a)} of ${int(r.a + r.b)} ${
           r.selection ? esc(setUnit(r.analysis)) + ' of your selection' : esc(markedUnits(r.analysis))
         } (${pct(r.a, r.a + r.b)}) vs ${int(r.c)} of ${int(r.c + r.d)} other ${esc(setUnit(r.analysis))} (${pct(r.c, r.c + r.d)})` +
-        `<br>${fxn(r.eff)}×, q ${fq(r.q)} (one-sided hypergeometric)` +
+        `<br>${fxn(r.eff)}×, q ${fq(r.q)} (one-sided hypergeometric, not adjusted for abundance)` +
         (st && !r.selection
-          ? `<br>Within abundance deciles: OR ${fxn(st.eff)}${
+          ? `<br>${esc(cap(EST_TEST))}: odds ratio ${fxn(st.eff)}${
               st.lo != null ? ` (95% CI ${fxn(st.lo)}–${fxn(st.hi)})` : ''
-            }, q ${fq(st.q)}${decile(r) ? ` (${DECILE[st.dir][0]} ${DECILE[st.dir][1]})` : ''}`
+            }, q ${fq(st.q)}`
           : '') +
         selNote;
     } else
@@ -5289,7 +5711,7 @@
             }, q ${fq(r.q)} · ${METHOD[r.method] || esc(r.method)}${
               r.strata != null && r.method === 'mantel_haenszel' ? `, ${int(r.strata)} informative ` + `proteins` : ''
             }`) +
-        (r.dir === 'same' ? '<br>Significant, but within 1.1× either way: about the same' : '') +
+        (r.dir === 'same' ? '<br>q ≤ 0.05, but within 1.1× either way: about the same' : '') +
         selNote;
     tip.hidden = false;
     tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + 'px';
@@ -5554,6 +5976,11 @@
     if (prots.length !== 1 || !K.views.protein) return false;
     const acc = D.proteins[prots[0]][0],
       site = q.sites.length === 1 ? '/' + q.sites[0][1] : '';
+    // a variant word with a site (TP53 R213 mutation): the card opens at its variants, as the Variants line does
+    if (site && window.PTMNames.asksVariants(S.q.split(/[\s,;]+/))) {
+      location.hash = link('protein', acc + site, { open: 'sc-variants' });
+      return true;
+    }
     go('protein', { arg: acc + site });
     return true;
   }
@@ -5755,10 +6182,13 @@
     const sel = d.querySelector('.dock-sel');
     if (sel && K.sel?.nMarks) {
       const on = K.sel.active?.();
-      sel.innerHTML =
-        `<span aria-hidden="true">⏚</span> <b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(W.marks)}</span><span class="dock-sel-p"> · <b>${int(
-          K.sel.nProteins()
-        )}</b> proteins</span>` + (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');
+      sel.innerHTML = K.sel.loading?.()
+        ? `<span class="dock-sel-w">Loading…</span>` +
+          (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '')
+        : `<b>${int(K.sel.nMarks())}</b><span class="dock-sel-w"> ${esc(K.sel.nMarks() === 1 ? W.mark : W.marks)}</span><span class="dock-sel-p"> · <b>${int(
+            K.sel.nProteins()
+          )}</b> ${K.sel.nProteins() === 1 ? 'protein' : 'proteins'}</span>` +
+          (on ? ' <i class="dock-dot" aria-label="a filter is on"></i>' : '');
       sel.title = on ? 'A selection is on: open the filters' : 'Open the filters';
     }
   }
@@ -5786,6 +6216,9 @@
       rail.scrollTop += h - barH;
     barH = h;
     document.documentElement.style.setProperty('--toolbar-h', `${h}px`);
+    // what covers the top of the window once the page is scrolled: the toolbar and the strip above it, or on a phone (the toolbar scrolls
+    // away) the strip alone; the one offset a jump lands below (CSS scroll-margin-top, K.landOn)
+    document.documentElement.style.setProperty('--sticky-h', `${h || dockH()}px`);
   };
   // the search, selection line and tabs slide away on the way down and come back on the way up (a transform: nothing in the page
   // moves); the compact bar above keeps the site, the way home, the switcher, a search, the pages and the selection
@@ -5864,22 +6297,24 @@
   // the footer: licenses and privacy, on every page (the Method page has the full text)
   const upd = D.built || D.run?.written; // when `ptmc web` built this site (else when the run was written)
   $('#credit').innerHTML =
-    `${esc(D.site.name)}${
-      CIT.version
-        ? ` · <a href="#method/cite">version ${esc(CIT.version)}</a>${CIT.date ? ` (${esc(hdate(CIT.date))})` : ''}`
-        : upd
-          ? ` · updated ` + `<time datetime="${esc(upd)}">${esc(hdate(upd))}</time>`
-          : ''
-    } · built with <a href="${esc(D.kit.url || '#method/made')}">ptmcontext</a> ${esc(D.kit.version)}${
-      D.kit.commit ? ` (${esc(shortCommit(D.kit.commit))})` : ''
-    }` +
+    `${esc(D.site.name)} · <a href="${CIT.version ? '#method/cite' : esc(D.kit.url || '#method/made')}">App: PTMcontext ${esc(D.kit.version)}</a>` +
+    [CIT.version && CIT.date ? hdate(CIT.date) : '', D.kit.commit ? 'build ' + shortCommit(D.kit.commit) : '']
+      .filter(Boolean)
+      .map(esc)
+      .join(', ')
+      .replace(/^(.+)$/, ' ($1)') +
+    (!CIT.version && upd ? ` · updated <time datetime="${esc(upd)}">${esc(hdate(upd))}</time>` : '') +
     (D.dataset
-      ? ` · ${esc(D.dataset.label || 'dataset')} ${esc(D.dataset.version)}${
-          D.dataset.date ? ` (${esc(hdate(D.dataset.date))})` : ''
-        }${D.dataset.doi ? `, <a href="https://doi.org/${esc(D.dataset.doi)}">doi:${esc(D.dataset.doi)}</a>` : ''}`
+      ? ` · Data: ${esc(D.dataset.label || 'dataset')} ${esc(D.dataset.version)}${
+          D.dataset.doi
+            ? ` (<a href="https://doi.org/${esc(D.dataset.doi)}">doi:${esc(D.dataset.doi)}</a>)`
+            : D.dataset.date
+              ? ` (${esc(hdate(D.dataset.date))})`
+              : ''
+        }`
       : '') +
     ` · code: ${esc(hlicence(D.kit.licence || 'MIT'))}${CIT.licence ? ` · data: ${esc(hlicence(CIT.licence))}` : ''}` +
-    ` · no cookies, no tracking; nothing you search leaves your browser`;
+    ` · No cookies, no tracking. Protein pages fetch public data from UniProt, AlphaFold DB, PDBe and STRING by accession.`;
   // one footer on every page: Cite · Download · Methods · Keyboard shortcuts · Source code · Data DOI · Privacy, then the theme
   $('#foot-links').innerHTML = [
     ['Cite', link('method', 'cite')],
@@ -5899,7 +6334,94 @@
     .join('');
   setTheme(document.documentElement.dataset.theme || 'auto');
   themed = true;
+  // ---- hover text: a label or a short sentence; the detail is in Help and on the card the hover opens ----------------------------
+  // The lines of a hover (<br> in the html ones, newlines in a title) are kept in order while the whole stays within HOVER_MAX
+  // words; a source note (a muted span of more than 12 words) goes first; one line that is itself too long is cut at a sentence
+  // or semicolon outside parentheses. The short footer ("Click for details") is always kept.
+  const HOVER_MAX = 40,
+    wordsIn = (t) => (String(t).match(/[A-Za-z0-9][\w'’-]*/g) || []).length;
+  // a parenthesis of more than 8 words (a definition, a citation) goes first
+  const dropLong = (t) => {
+    let depth = 0,
+      start = 0;
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] === '(') {
+        if (!depth) start = i;
+        depth++;
+      } else if (t[i] === ')' && depth && !--depth && wordsIn(t.slice(start, i + 1)) > 8)
+        return dropLong(t.slice(0, start) + t.slice(i + 1));
+    }
+    return t;
+  };
+  const cutLine = (t0, budget) => {
+    let t = dropLong(t0).replace(/\s+([:;,.])/g, '$1');
+    if (wordsIn(t) <= budget) return t.trim();
+    const parts = [];
+    let depth = 0,
+      at = 0;
+    for (let i = 0; i < t.length; i++) {
+      const c = t[i];
+      if (c === '(') depth++;
+      else if (c === ')') depth = Math.max(0, depth - 1);
+      else if (!depth && (c === ';' || c === '.') && /\s/.test(t[i + 1] || ' ')) {
+        parts.push(t.slice(at, i + 1));
+        at = i + 1;
+      }
+    }
+    parts.push(t.slice(at));
+    let out = '';
+    for (const x of parts) {
+      if (wordsIn(out + x) > budget) break;
+      out += x;
+    }
+    if (!out.trim()) out = t.split(/\s+/).slice(0, Math.max(3, budget)).join(' ') + '…';
+    return out.trim().replace(/;$/, '');
+  };
+  K.shortHover = (h, html = true) => {
+    const sep = html ? '<br>' : '\n',
+      txt = (x) => (html ? x.replace(/<\/?[a-z][^>]*>/gi, ' ') : x);
+    if (!h || wordsIn(txt(h)) <= HOVER_MAX) return h;
+    let lines = String(h).split(sep);
+    if (html)
+      lines = lines.filter((x) => {
+        const m = /^<span class="muted">([^<]*)<\/span>$/.exec(x.trim());
+        return !m || wordsIn(m[1]) <= 12;
+      });
+    const foot = html && /^<span class="muted">[^<]*<\/span>$/.test(lines[lines.length - 1] || '') ? lines.pop() : null;
+    const out = [];
+    let used = foot ? wordsIn(txt(foot)) : 0;
+    for (const x of lines) {
+      const n = wordsIn(txt(x));
+      if (used + n <= HOVER_MAX) {
+        out.push(x);
+        used += n;
+      } else {
+        // only the plain text of a line can be cut (after a bold label); the first line is kept at least in part
+        const pre = (/^<b>[^<]*<\/b>/.exec(x) || [''])[0],
+          rest = x.slice(pre.length),
+          room = HOVER_MAX - used - wordsIn(txt(pre));
+        if (!/<\/?[a-z]/i.test(rest) && room >= 6) {
+          const cut = cutLine(rest, room);
+          out.push(pre + (/^\s/.test(rest) && !/^[:;,.]/.test(cut) ? ' ' : '') + cut);
+        } else if (!out.length) out.push(x);
+        break;
+      }
+    }
+    if (foot) out.push(foot);
+    return out.join(sep);
+  };
   (window.PTMC_MODULES || []).forEach((f) => f(K));
+  // every hover goes through it: the modules' hover functions, and the titles drawn on the page
+  K.tips.forEach((e) => {
+    const f = e[1];
+    e[1] = (el) => K.shortHover(f(el));
+  });
+  (K.afterRender ||= []).push(() =>
+    document.querySelectorAll('[title]').forEach((e) => {
+      const t = e.getAttribute('title');
+      if (t.length > 160 && wordsIn(t) > HOVER_MAX) e.setAttribute('title', K.shortHover(t, false));
+    })
+  );
   // the explorer's links put the selection before the hash (?q=FUS%20R216#P35637): it moves into the hash once, and leaves
   // the address's query, so a search cleared later stays cleared on reload
   (() => {

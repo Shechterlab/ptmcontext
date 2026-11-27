@@ -1,9 +1,9 @@
 # How the yeast phosphosite site is cited, and its version. Edit and rebuild (ptmc web) to change them.
 cff-version: 1.2.0
 message: "Please cite the original data sources; this site is a test of the kit, not a publication."
-title: "Saccharomyces cerevisiae phosphosites from UniProt, against disorder and domains"
-version: "pilot-0.3.0"
-date-released: "2026-11-01"
+title: "Yeast Phosphorylation Site Explorer"
+version: "0.6.0"
+date-released: "2026-11-23"
 license: "CC-BY-4.0"
 authors:
   - name: "Shechter Lab, Albert Einstein College of Medicine"

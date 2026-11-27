@@ -338,8 +338,9 @@ def test_a_failed_control_keeps_its_row_with_a_badge_in_the_kit():
     # the badge sits after the tile row (not inside its button), links to Methods > Controls, and the row's name says it
     assert 'class="ctl-fail"' in js and 'class="ctl-badge" href="${esc(link(\'method\', \'controls\'))}"' in js
     assert 'id="q-controls"' in js
-    assert "Doesn't hold ${" in js and 'badge: fails.map(failText)' in js
-    assert '<span class="vh">, ${esc(x.badge)}</span>' in (ASSETS / 'kit-tile.js').read_text()
+    assert 'Not robust ${' in js and 'badge: fails.map(failText)' in js
+    tile = (ASSETS / 'kit-tile.js').read_text()
+    assert 'x.badge, x.sub' in tile and '<span class="vh"> (${esc(spoken)})</span>' in tile
     css = (ASSETS / 'kit.css').read_text()
     badge = css[css.index('.ctl-badge {') :]
     badge = badge[: badge.index('}')]
@@ -361,7 +362,13 @@ def _playwright():
     if not shutil.which('node') or not shutil.which('npm'):
         return None
     root = subprocess.run(['npm', 'root', '-g'], capture_output=True, text=True).stdout.strip()
-    ok = subprocess.run(['node', '-e', "require('playwright')"], env={**__import__('os').environ, 'NODE_PATH': root})
+    # run outside the repo: a repo-local node_modules (the CI test job installs playwright there for the link audit, without
+    # a browser) must not count, since these scripts run from tmp_path with NODE_PATH as their only module path
+    ok = subprocess.run(
+        ['node', '-e', "require('playwright')"],
+        env={**__import__('os').environ, 'NODE_PATH': root},
+        cwd=__import__('tempfile').gettempdir(),
+    )
     return root if ok.returncode == 0 else None
 
 
@@ -380,7 +387,7 @@ const { chromium } = require('playwright');
   out.part = await p.evaluate(() => document.querySelector('.msub [aria-current]').textContent);
   // the question's own page still holds its Controls table: each cell shows the fold, its test in the tooltip
   await p.goto(process.argv[2] + '/index.html#overview/motif');
-  await p.waitForSelector('#q-controls tbody td span[title]', { timeout: 20000 });
+  await p.waitForSelector('#q-controls tbody td span[title]', { state: 'attached', timeout: 20000 });
   out.cells = await p.evaluate(() => [...document.querySelectorAll('#q-controls tbody td span[title]')].map((x) => [x.textContent, x.title]));
   console.log(JSON.stringify({ ...out, tip, errs }));
   await b.close();
