@@ -3268,6 +3268,15 @@ a.exp-btn {
 .vswitch input {
   accent-color: var(--accent);
 }
+.rail-variant .vswitch {
+  margin-left: 0;
+  padding: 0.3rem 0;
+}
+@media (max-width: 700px) {
+  #tabs .vswitch {
+    display: none;
+  }
+}
 /* Starting points (kit-start.js) */
 .start-card {
   display: grid;
