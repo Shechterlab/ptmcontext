@@ -429,9 +429,17 @@
     const P = pal(ex),
       rows = rowsFor(b.rows, m),
       sc = scale(rows.flatMap((x) => [x.site, x.mine].filter(Boolean).flatMap((r) => [effOf(r), r.lo, r.hi])));
+    // a row's numbers, right-aligned: the forest ends where the longest of them begins, in any font
+    const rowText = (r) =>
+      r
+        ? `${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}${
+            K.sharePair(r) ? ` · ${K.sharePair(r)}` : ''
+          } · q ${fq(r.q)}`
+        : 'not tested';
     const LW = 250,
       FX = LW + 10,
-      FW = Wd - FX - 220,
+      NW = Math.max(220, Math.ceil(Math.max(0, ...rows.map((x) => K.tw(rowText(shown(x)), 10.5))) * 1.08) + 12),
+      FW = Wd - FX - NW,
       RH = 22,
       parts = [];
     let y = 16,
@@ -469,17 +477,11 @@
           `<circle cx="${(FX + sc.X(effOf(r), FW)).toFixed(1)}" cy="${cy}" r="4.6" fill="${d === 'ns' ? P.bg : dirColour(P, d)}" stroke="${dirColour(P, d)}" stroke-width="1.5"/>`
         );
       parts.push(
-        txt(
-          P,
-          Wd - 4,
-          cy + 4,
-          r
-            ? `${fxn(effOf(r))}${r.lo != null ? ` [${fxn(r.lo)}–${fxn(r.hi)}]` : ''}${
-                K.sharePair(r) ? ` · ${K.sharePair(r)}` : ''
-              } · q ${fq(r.q)}`
-            : 'not tested',
-          { size: 10.5, anchor: 'end', fill: dirColour(P, d) === P.muted ? P.muted : P.ink }
-        )
+        txt(P, Wd - 4, cy + 4, rowText(r), {
+          size: 10.5,
+          anchor: 'end',
+          fill: dirColour(P, d) === P.muted ? P.muted : P.ink,
+        })
       );
       y += RH;
     });
