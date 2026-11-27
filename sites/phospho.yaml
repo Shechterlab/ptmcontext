@@ -134,13 +134,12 @@ marks:
       optional: true
       label: Functional score
       kind: number
-      filter: true
       help: "Ochoa et al. 2020 functional score of the phosphosite (0 to 1): a model of how likely the site is functionally important, from its conservation, structure, kinase and other features"
     functional_band:
       column: functional_score
       optional: true
       bands: [0.2, 0.5]
-      label: Functional score band
+      label: Functional score (Ochoa 2020)
       kind: category
       values: {b0: "Below 0.2", b1: "0.2 to 0.5", b2: "0.5 or more"}
       colours: {b0: "#cbd5e1", b1: "#38bdf8", b2: "#1e40af"}
@@ -1727,7 +1726,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: RNA and DNA, analyses: [go_binding, binding_protein, crosslink, sequence_proximity]}
     - {name: Other modifications}
     - {name: Residue and evidence, attributes: [residue, evidence_class]}
-    - {name: Functional score, attributes: [functional_score, functional_band]}
+    - {name: Functional score, attributes: [functional_band]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context, sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]}
     - {name: Studies and databases, attributes: [sources, iptmnet_sources]}
