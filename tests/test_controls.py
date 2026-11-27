@@ -362,7 +362,13 @@ def _playwright():
     if not shutil.which('node') or not shutil.which('npm'):
         return None
     root = subprocess.run(['npm', 'root', '-g'], capture_output=True, text=True).stdout.strip()
-    ok = subprocess.run(['node', '-e', "require('playwright')"], env={**__import__('os').environ, 'NODE_PATH': root})
+    # run outside the repo: a repo-local node_modules (the CI test job installs playwright there for the link audit, without
+    # a browser) must not count, since these scripts run from tmp_path with NODE_PATH as their only module path
+    ok = subprocess.run(
+        ['node', '-e', "require('playwright')"],
+        env={**__import__('os').environ, 'NODE_PATH': root},
+        cwd=__import__('tempfile').gettempdir(),
+    )
     return root if ok.returncode == 0 else None
 
 
