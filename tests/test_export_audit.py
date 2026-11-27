@@ -52,3 +52,14 @@ def test_every_export_takes_its_key_through_the_figure_frame():
     assert (
         'const dirLegend' in kit and 'DIR_WORDS' in kit and 'dirLegend,' in kit
     )  # one wording for a page's key and its exports
+
+
+def test_export_rows_keep_their_numbers_clear_of_bars_and_gridlines():
+    assets = SCRIPT.parents[2] / 'ptmcontext' / 'web' / 'assets'
+    kit = (assets / 'kit.js').read_text()
+    # the shares line sits under the bar and its interval (which end at yc + 5; the reference mark at yc + 7.5), in a row tall enough for it
+    assert 'const h = Math.max(sharePair(r) && !r.vs ? 34 : 22, name.length * 15 + 8)' in kit
+    assert "T(VX, yc + 16.5, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted, halo: true }, rp)" in kit
+    # the forest ends where the longest row text begins
+    forest = (assets / 'kit-interactions.js').read_text()
+    assert 'K.tw(rowText(shown(x)), 10.5)' in forest and 'FW = Wd - FX - NW' in forest

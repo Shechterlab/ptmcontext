@@ -25,6 +25,9 @@ def test_disease_variants_names_and_one_home():
     assert "mv: 'clinvar'" in js and 'K.questionHome' in js
     kit = read('kit.js')
     assert 'K.questionHome?.(id)' in kit and 'K.questionHome?.(S.arg)' in kit
+    # a link to a question whose home is another page goes there directly (no old #overview/<id> address in a page)
+    assert "view === 'overview' && arg && !extra && (K.questionHome?.(arg) || movedHome(arg))" in kit
+    assert 'const old = (D.legacy_links || {})[id];' in kit
 
 
 def test_generated_sentences_and_headings():

@@ -2190,6 +2190,17 @@
             scoped,
             gcells(true).map((c) => c.share)
           );
+    const cellOf = (aid, row) =>
+      pctOn() ? pctGridCell(aid, row.map[aid], scoped, gsc) : gridCell(aid, row.map[aid], scoped);
+    const cellText = (c) => c.text ?? (c.circular ? '·' : orText(c.a));
+    // one type size for the grid: the longest cell text (a share and its effect) fits inside its cell, as drawn in any font
+    const widest = Math.max(
+      0,
+      ...L.groups.flatMap(([, rows]) =>
+        rows.flatMap((row) => cols.map((aid) => cellOf(aid, row)).map((c) => (c ? K.tw(cellText(c), 11) * 1.08 : 0)))
+      )
+    );
+    const tsize = widest > CW - 14 ? Math.floor(((11 * (CW - 14)) / widest) * 10) / 10 : 11;
     let y = HH + 4,
       g = '';
     cols.forEach((aid, i) => {
@@ -2212,7 +2223,7 @@
           )}"><rect class="cg-hit" ` +
           `x="0" y="${y}" width="${Wd}" height="${RH}"/><text class="cg-r" x="10" y="${y + 16}">${esc(row.label)}</text>`;
         cols.forEach((aid, i) => {
-          const c = pctOn() ? pctGridCell(aid, row.map[aid], scoped, gsc) : gridCell(aid, row.map[aid], scoped),
+          const c = cellOf(aid, row),
             x = LW + i * CW + 4;
           if (!c) {
             g += `<rect class="cg-c na" x="${x}" y="${y + 2}" width="${CW - 8}" height="${RH - 4}" rx="3"/>`;
@@ -2222,7 +2233,7 @@
             `<g${tipAttr(
               c.tip || cellTip(aid, row.map[aid], c, scoped)
             )}><rect class="cg-c ${c.tone}" x="${x}" y="${y + 2}" width="${CW - 8}" height="${RH - 4}" rx="3"/>` +
-            `<text class="cg-t ${c.tcls || 't' + c.tone.slice(1)}" x="${x + (CW - 8) / 2}" y="${y + 16}" text-anchor="middle">${esc(c.text ?? (c.circular ? '·' : orText(c.a)))}</text></g>`;
+            `<text class="cg-t ${c.tcls || 't' + c.tone.slice(1)}" x="${x + (CW - 8) / 2}" y="${y + 16}" text-anchor="middle"${tsize < 11 ? ` style="font-size:${tsize}px"` : ''}>${esc(cellText(c))}</text></g>`;
         });
         g += '</g>';
         y += RH;

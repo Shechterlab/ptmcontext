@@ -681,7 +681,16 @@
     own.forEach((v, k) => p.set(k, v));
     return '#' + path + (p.toString() ? '?' + p : '');
   }
+  // a question whose home is another page (website.legacy_links, K.questionHome): the address of that page, so that no link goes
+  // through the redirect an old #overview/<id> address takes
+  const movedHome = (id) => {
+    const old = (D.legacy_links || {})[id];
+    if (old?.[0] !== '#') return '';
+    const [v, ...a] = old.slice(1).split('/');
+    return BUILT_IN_VIEWS.includes(v) || K.views[v] ? link(v, a.join('/')) : '';
+  };
   const link = (view, arg, extra) =>
+    (view === 'overview' && arg && !extra && (K.questionHome?.(arg) || movedHome(arg))) ||
     carry('#' + view + (arg ? '/' + pathOf(view, arg) : '') + (extra ? '?' + new URLSearchParams(extra) : ''));
   let shown = null; // the address the page is drawn for (onNav skips a change to it)
   function writeHash(push) {
@@ -4430,7 +4439,7 @@
       // its name (two lines at most), then its meaning where there is room
       let name = wrap(r.label, LW, 11.5);
       if (name.length > 2) name = [name[0], fit(name.slice(1).join(' '), LW, 11.5)];
-      const h = Math.max(sharePair(r) && !r.vs ? 30 : 22, name.length * 15 + 8),
+      const h = Math.max(sharePair(r) && !r.vs ? 34 : 22, name.length * 15 + 8),
         yc = y + h / 2;
       name.forEach((t, k) => {
         const last = k === name.length - 1,
@@ -4473,7 +4482,7 @@
       }
       if (r.ref && r.ref.eff != null)
         rp.push(
-          `<line x1="${r1(X(valOf(r.ref)))}" x2="${r1(X(valOf(r.ref)))}" y1="${yc - 9}" y2="${yc + 9}" stroke="${PAL.ink}" stroke-width="2"/>`
+          `<line x1="${r1(X(valOf(r.ref)))}" x2="${r1(X(valOf(r.ref)))}" y1="${yc - 7.5}" y2="${yc + 7.5}" stroke="${PAL.ink}" stroke-width="2"/>`
         );
       const strong = !r.vs && (r.dir === 'more' || r.dir === 'less');
       T(
@@ -4484,8 +4493,9 @@
         rp
       );
       if (sharePair(r) && !r.vs) {
-        T(VX, yc + 11, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted, halo: true }, rp);
-        gaps.push([VX - tw(sharePair(r), 9.5) - 2, VX + 2, yc + 1, yc + 15]);
+        // beneath the bar, its interval and the reference mark, which end at yc + 7.5
+        T(VX, yc + 16.5, sharePair(r), { size: 9.5, anchor: 'end', fill: PAL.muted, halo: true }, rp);
+        gaps.push([VX - tw(sharePair(r), 9.5) - 2, VX + 2, yc + 7.5, yc + 19]);
       }
       y += h;
     });
