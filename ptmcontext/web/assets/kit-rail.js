@@ -663,6 +663,11 @@
       ...(g.keys || []).filter((k) => validKey(k)),
     ].filter((k) => !k.startsWith('a:') || !sd() || sd().classes[k.slice(2)]); // not a question whose classes the marks do not carry
   }
+  // on a phone the variant switch (the tab bar's, which scrolls out of reach) is the first line of the filters
+  const phoneVariant = () => {
+    const sw = matchMedia('(max-width: 700px)').matches ? K.variantSwitch() : '';
+    return sw ? `<div class="rail-variant">${sw}</div>` : '';
+  };
   function filtersTab() {
     M.need();
     const gs = groups();
@@ -670,7 +675,7 @@
       `<div class="rail-sel">${
         bar() ||
         `<span>All <b>${int(D.counts.marks)}</b> ${esc(W.marks)} on <b>${int(D.counts.proteins)}</b> proteins</span>`
-      }</div>${savedHtml()}` +
+      }</div>${phoneVariant()}${savedHtml()}` +
       gs
         .map((g, gi) => {
           const keys = keysOf(g),

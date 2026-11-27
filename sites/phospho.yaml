@@ -134,13 +134,12 @@ marks:
       optional: true
       label: Functional score
       kind: number
-      filter: true
       help: "Ochoa et al. 2020 functional score of the phosphosite (0 to 1): a model of how likely the site is functionally important, from its conservation, structure, kinase and other features"
     functional_band:
       column: functional_score
       optional: true
       bands: [0.2, 0.5]
-      label: Functional score band
+      label: Functional score (Ochoa 2020)
       kind: category
       values: {b0: "Below 0.2", b1: "0.2 to 0.5", b2: "0.5 or more"}
       colours: {b0: "#cbd5e1", b1: "#38bdf8", b2: "#1e40af"}
@@ -1516,7 +1515,7 @@ website:                  # the look and words of the website (ptmc web); layout
         cards:
           - analysis: disease_ontology
             title: Disease classes (Disease Ontology)
-            classes: ["DOID:14566", "DOID:0014667", "DOID:630", "DOID:150", "DOID:0050117", "DOID:225", "DOID:0080015", "DOID:863", "DOID:1287", "DOID:17", "DOID:2914", "DOID:1579", "DOID:77", "DOID:18", "DOID:15", "DOID:16", "DOID:28", "DOID:74", "DOID:0060118", "DOID:3463"]   # the branches of the Disease Ontology: the children of "disease of anatomical entity" (DOID:7) and the other children of "disease" (DOID:4); the same on every explorer
+            classes: ["DOID:162", "DOID:863", "DOID:150", "DOID:1287", "DOID:2914", "DOID:0014667", "DOID:28", "DOID:17", "DOID:74", "DOID:77", "DOID:1579", "DOID:18", "DOID:15", "DOID:16", "DOID:0050155"]   # the organ-system classes of the Disease Ontology's DO_AGR_slim; the same on every explorer
             views:               # one question, two vocabularies: a switch on its page
               - label: Disease Ontology
                 analysis: disease_ontology
@@ -1727,7 +1726,7 @@ website:                  # the look and words of the website (ptmc web); layout
     - {name: RNA and DNA, analyses: [go_binding, binding_protein, crosslink, sequence_proximity]}
     - {name: Other modifications}
     - {name: Residue and evidence, attributes: [residue, evidence_class]}
-    - {name: Functional score, attributes: [functional_score, functional_band]}
+    - {name: Functional score, attributes: [functional_band]}
     - {name: Sequence motif, keys: ["m:at", "m:near"]}
     - {name: Structural context, analyses: [structure_context, idr_charge, domain_class, disorder, domain_context, sticker_context_3, sticker_context_5, sticker_context_3_idr, sticker_context_5_idr]}
     - {name: Studies and databases, attributes: [sources, iptmnet_sources]}

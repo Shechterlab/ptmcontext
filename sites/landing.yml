@@ -70,24 +70,21 @@ compare:                   # the Compare marks page (compare/index.html): CONTRA
           analysis: disease_ontology
           title: Disease classes (Disease Ontology)
           classes:
-            - {class: "DOID:14566", label: "disease of cellular proliferation"}
-            - {class: "DOID:0014667", label: "disease of metabolism"}
-            - {class: "DOID:630", label: "genetic disease"}
-            - {class: "DOID:150", label: "disease of mental health"}
-            - {class: "DOID:0050117", label: "disease by infectious agent"}
-            - {class: "DOID:225", label: "syndrome"}
-            - {class: "DOID:0080015", label: "physical disorder"}
+            - {class: "DOID:162", label: "cancer"}
             - {class: "DOID:863", label: "nervous system disease"}
+            - {class: "DOID:150", label: "disease of mental health"}
             - {class: "DOID:1287", label: "cardiovascular system disease"}
-            - {class: "DOID:17", label: "musculoskeletal system disease"}
             - {class: "DOID:2914", label: "immune system disease"}
-            - {class: "DOID:1579", label: "respiratory system disease"}
+            - {class: "DOID:0014667", label: "disease of metabolism"}
+            - {class: "DOID:28", label: "endocrine system disease"}
+            - {class: "DOID:17", label: "musculoskeletal system disease"}
+            - {class: "DOID:74", label: "hematopoietic system disease"}
             - {class: "DOID:77", label: "gastrointestinal system disease"}
+            - {class: "DOID:1579", label: "respiratory system disease"}
             - {class: "DOID:18", label: "urinary system disease"}
             - {class: "DOID:15", label: "reproductive system disease"}
             - {class: "DOID:16", label: "integumentary system disease"}
-            - {class: "DOID:28", label: "endocrine system disease"}
-            - {class: "DOID:74", label: "hematopoietic system disease"}
+            - {class: "DOID:0050155", label: "sensory system disease"}
     - id: panther
       title: Protein classes (PANTHER)
       questions:

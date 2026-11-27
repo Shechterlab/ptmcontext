@@ -1,5 +1,5 @@
-"""The Overview's Disease associations tile lists the Disease Ontology's branches: the same fixed list of DOIDs on every
-explorer, the children of "disease of anatomical entity" (DOID:7) and the other children of "disease" (DOID:4)."""
+"""The Overview's Disease associations tile lists the organ-system classes of the Disease Ontology's DO_AGR_slim: the same
+fixed list of DOIDs on every explorer."""
 
 import csv
 import os
@@ -11,6 +11,23 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 SITES = ('methylarginine', 'methyllysine', 'lysine', 'phospho')
 TERMS = 'inputs/disease/hdo_2026-09-30_terms.tsv'
+SLIM = [
+    ('DOID:162', 'cancer'),
+    ('DOID:863', 'nervous system disease'),
+    ('DOID:150', 'disease of mental health'),
+    ('DOID:1287', 'cardiovascular system disease'),
+    ('DOID:2914', 'immune system disease'),
+    ('DOID:0014667', 'disease of metabolism'),
+    ('DOID:28', 'endocrine system disease'),
+    ('DOID:17', 'musculoskeletal system disease'),
+    ('DOID:74', 'hematopoietic system disease'),
+    ('DOID:77', 'gastrointestinal system disease'),
+    ('DOID:1579', 'respiratory system disease'),
+    ('DOID:18', 'urinary system disease'),
+    ('DOID:15', 'reproductive system disease'),
+    ('DOID:16', 'integumentary system disease'),
+    ('DOID:0050155', 'sensory system disease'),
+]
 
 
 def _card(name):
@@ -28,20 +45,16 @@ def test_every_explorer_lists_the_same_branches_and_keeps_the_disgenet_views_on_
         lists.append(card['classes'])
         assert [v['analysis'] for v in card['views']] == ['disease_ontology', 'disease_family']
         assert card['views'][1]['more']['analysis'] == 'disease_family_additional'
-    assert all(x == lists[0] for x in lists) and len(set(lists[0])) == len(lists[0]) == 20
+    assert all(x == lists[0] for x in lists) and lists[0] == [d for d, _ in SLIM]
 
 
-def test_the_listed_branches_are_the_children_of_DOID_7_and_DOID_4():
+def test_the_listed_classes_are_terms_of_the_ontology_with_the_slims_names():
     root = Path(os.environ.get('PTMCONTEXT_ROOT', ROOT.parent / 'PTM_Pipeline'))
     path = root / TERMS
     if not path.exists():
         pytest.skip(f'no {path}')
-    kids = {}
-    for r in csv.DictReader(path.open(), delimiter='\t'):
-        for p in filter(None, (r['parents'] or '').split(';')):
-            kids.setdefault(p, set()).add(r['term_id'])
-    want = (kids['DOID:4'] - {'DOID:7'}) | kids['DOID:7']
-    assert set(_card('methylarginine')[0]['classes']) == want
+    names = {r['term_id']: r['name'] for r in csv.DictReader(path.open(), delimiter='\t')}
+    assert {d: names.get(d) for d, _ in SLIM} == dict(SLIM)
 
 
 def test_a_card_with_classes_draws_exactly_those_rows():
@@ -68,4 +81,4 @@ def test_compare_lists_branches_of_the_overview_list():
     (q,) = grp['questions']
     assert q['analysis'] == 'disease_ontology'
     ids = [c['class'] for c in q['classes']]
-    assert len(ids) == len(set(ids)) and set(ids) <= set(_card('methylarginine')[0]['classes'])
+    assert ids == [d for d, _ in SLIM] and [c['label'] for c in q['classes']] == [n for _, n in SLIM]

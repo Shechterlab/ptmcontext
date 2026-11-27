@@ -329,6 +329,7 @@
     '.pk-bar .p0{background:var(--fig-seq-1)}.pk-bar .p1{background:var(--fig-seq-2)}.pk-bar .p2{background:var(--fig-seq-3)}.pk-bar .p3{background:var(--fig-seq-4)}.pk-bar .p4{background:var(--fig-seq-5)}',
     '.pk-brk{width:9px;height:14px;margin:0 -.35rem 0 -.3rem;fill:none;stroke:var(--ink-2);stroke-width:1.4}',
     '.pk-ref{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}',
+    '.pk-lines .cell-key{flex:1 0 100%}',
     '.pk-tick{display:inline-block;width:2px;height:12px;background:var(--ink);margin-right:.3rem}',
     '@media (max-width:700px){.cell-view button{padding:.3rem .55rem}}',
     '@media(max-width:700px){.cell-cell svg,.cell-svg.cell-cell,.cell-svg.cell-nucleus,.cell-svg.cell-bars,.cell-svg.cell-funnel{min-width:0}.tbl-wrap:has(>.cell-funnel-tbl){overflow-x:auto}}', // a phone: the drawings scale to the width and the funnel table scrolls inside its box, instead of widening the page
@@ -3064,7 +3065,7 @@
     if (VIEW === 'z') {
       const ref = pctRef(scoped),
         clear = rows.filter((p) => p.clear && p.h != null),
-        ith = (p) => `${inText(p.row)} (${hText(p.h)})`,
+        ith = (p) => `${inText(p.row)}, ${hText(p.h)}`,
         up = clear
           .filter((p) => p.h > 0)
           .sort((a, b) => b.h - a.h)
@@ -3758,12 +3759,14 @@
       const { ref } = parts(scoped, 'z'),
         steps = ['f3', 'f2', 'f1', 'f0', 'ns', 'm0', 'm1', 'm2', 'm3'];
       return (
-        `<div class="key cell-keys pct-key" role="group" aria-label="Color key"><span>effect: share against all mapped proteins${
+        `<div class="key cell-keys pct-key pk-lines" role="group" aria-label="Color key"><span>effect: share against all mapped proteins${
           ref != null ? ` (${esc(pctText(ref))})` : ''
         }</span><span class="pk-lo">effect −1</span><span class="pk-bar" role="img" aria-label="effect from −1 to +1; red above, slate below">${steps
           .map((s) => `<i class="${s === 'ns' ? 'f0' : s}"></i>`)
           .join('')}<b class="pk-ref" style="left:50%"></b></span><span class="pk-hi">effect +1</span>` +
-        `<span class="cell-key"><i class="cg-k sm"></i>q ≤ ${Q_MAX} but |effect| &lt; ${MIN_H}; <i class="cg-k hx"></i>q &gt; ${Q_MAX}. Filled where q ≤ ${Q_MAX} and |effect| ≥ ${MIN_H}</span>` +
+        `<span class="cell-key"><i class="cg-k u3"></i><i class="cg-k d3"></i>Filled: q ≤ ${Q_MAX} and |effect| ≥ ${MIN_H}</span>` +
+        `<span class="cell-key"><i class="cg-k sm"></i>Outline: q ≤ ${Q_MAX}, |effect| &lt; ${MIN_H}</span>` +
+        `<span class="cell-key"><i class="cg-k hx"></i>Hatched: q &gt; ${Q_MAX}</span>` +
         (ref != null ? `<span class="cell-key"><i class="pk-tick"></i>${esc(pctRefWords(scoped, ref))}</span>` : '') +
         `<span class="cell-key"><i class="cg-k na"></i> not measured</span>${
           hasSel() ? '<span class="cell-key"><i class="cg-k sel"></i> outlined: your selection</span>' : ''

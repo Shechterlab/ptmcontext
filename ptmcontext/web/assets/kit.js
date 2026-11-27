@@ -2793,6 +2793,9 @@
             .join(' and ')}.</p>`
         : '';
     };
+    // a section of one tile that bears the section's name shows the name once, in the tile (the section's own heading is read, not seen)
+    const namedByTile = (x) =>
+      x.cards.length === 1 && !(K.ovTiles || []).some((t) => t.section === x.name) && tileTitle(x.cards[0]) === head(x);
     const sectionHtml = (x, i, bare) => {
       if (lazyOn && i >= FIRST && !K.ovOpen.has(x.name)) return lazyHtml(x);
       const b = secBody(x, bare);
@@ -2800,7 +2803,7 @@
       const id = esc(x.name.replace(/\W+/g, '-').toLowerCase());
       return (
         `<section class="ov-sec${x.caveat ? ' caveat' : ''}" aria-labelledby="sec-${id}"><header ` +
-        `class="ov-sec-head${x.cell ? ' vh' : ''}"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3></header>` +
+        `class="ov-sec-head${x.cell || namedByTile(x) ? ' vh' : ''}"><h3 class="sec-label${x.caveat ? ' caveat' : ''}" id="sec-${id}">${esc(head(x))}</h3></header>` +
         `<div class="tiles">${b.main}</div>${b.empty}` +
         (b.n
           ? `<details class="sec-more"><summary>${esc(x.more || 'More in ' + x.name)} (${b.n})</summary>` +
