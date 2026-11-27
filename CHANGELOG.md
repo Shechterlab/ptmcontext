@@ -9,7 +9,7 @@
 > Two labeled versions everywhere: App: PTMcontext 0.6.0 and Data: PTM_Pipeline v1.7.0.
 
 - One order on every page: Localization, Disease, Classes and pathways, Enzymes and readers, Other modifications, Position in the protein, More questions, Studies and databases. The Overview, sidebar, filter rail, protein page, site card, Compare and Methods follow it. Old links keep working.
-- Disease classes (Disease Ontology): the Overview, Compare and the protein page group diseases by the Disease Ontology branches under disease and disease of anatomical entity, from the existing disease_ontology rows (no new statistics). The DisGeNET family tiles leave the Overview; the protein page keeps them under "DisGeNET terms and families".
+- Disease classes (Disease Ontology): the Overview, Compare and the protein page group diseases by 15 organ-system classes of the Disease Ontology's curated Alliance of Genome Resources subset (DO_AGR_slim), from the existing disease_ontology rows (no new statistics). The DisGeNET family tiles leave the Overview; the protein page keeps them under "DisGeNET terms and families".
 - "Disease variants" is now "Mutations" (the address `#mutations` is unchanged). The protein page has "Cancer cell dependency (DepMap)" and "Mutations in tumors and cell lines" as two cards; `?open=p-depmap` opens the second.
 - Source names: "gnomAD (population variants)", "TCGA tumors", "DepMap cell lines", "ClinVar (clinical variants)". Disorder rows read "Disordered" and "Ordered". Shorter labels, legends and hover text throughout.
 - Show in 3D opens the experimental entry listed on the site card directly, and names no entry before it is loaded. Phone top bar and selection controls fit at 320–430 px.
